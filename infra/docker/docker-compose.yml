@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  nginx:
+    build:
+      context: ./nginx
+      additional_contexts:
+        src: ../../apps/web/
+      args:
+        - DOMAIN_NAME=localhost
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/snippets:/etc/nginx/snippets
+    depends_on:
+      - api
+  api:
+    build:
+      context: ./api
+      additional_contexts:
+        src: ../../apps/api/

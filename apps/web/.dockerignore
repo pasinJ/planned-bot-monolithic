@@ -1,0 +1,11 @@
+.env
+.husky
+.DS_Store
+
+dist
+cypress
+jest
+node_modules
+test-utils
+
+README.md

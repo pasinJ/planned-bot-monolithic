@@ -1,0 +1,9 @@
+@layer base {
+  img {
+    max-width: 100%;
+  }
+  :root body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+}

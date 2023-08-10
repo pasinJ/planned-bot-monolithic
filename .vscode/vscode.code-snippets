@@ -1,0 +1,104 @@
+{
+  "arrow-function": {
+    "description": "Arrow Function",
+    "prefix": "~af",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["() => {", "\t$0", "}"]
+  },
+  "async-arrow-function": {
+    "description": "Async Arrow Function",
+    "prefix": "~aaf",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["async () => {", "\t$0", "}"]
+  },
+  "fp-ts-option-esm": {
+    "description": "Import Option from fp-ts to ECMA script module",
+    "prefix": "~fpO",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import o from 'fp-ts/lib/Option.js';"]
+  },
+  "fp-ts-option-cjs": {
+    "description": "Import Option from fp-ts to CommonJS",
+    "prefix": "~fpO*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import * as o from 'fp-ts/lib/Option';"]
+  },
+  "fp-ts-either-esm": {
+    "description": "Import Either from fp-ts to ECMA script module",
+    "prefix": "~fpE",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import e from 'fp-ts/lib/Either.js';"]
+  },
+  "fp-ts-either-cjs": {
+    "description": "Import Either from fp-ts to CommonJS",
+    "prefix": "~fpE*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import * as e from 'fp-ts/lib/Either';"]
+  },
+  "fp-ts-task-esm": {
+    "description": "Import Task from fp-ts to ECMA script module",
+    "prefix": "~fpT",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import t from 'fp-ts/lib/Task.js';"]
+  },
+  "fp-ts-task-cjs": {
+    "description": "Import Task from fp-ts to CommonJS",
+    "prefix": "~fpT*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import * as t from 'fp-ts/lib/Task';"]
+  },
+  "fp-ts-taskeither-esm": {
+    "description": "Import TaskEither from fp-ts to ECMA script module",
+    "prefix": "~fpTE",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import te from 'fp-ts/lib/TaskEither.js';"]
+  },
+  "fp-ts-taskeither-cjs": {
+    "description": "Import TaskEither from fp-ts to CommonJS",
+    "prefix": "~fpTE*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import * as te from 'fp-ts/lib/TaskEither';"]
+  },
+  "fp-ts-io-esm": {
+    "description": "Import IO from fp-ts to ECMA script module",
+    "prefix": "~fpIO",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import io from 'fp-ts/lib/IO.js';"]
+  },
+  "fp-ts-io-cjs": {
+    "description": "Import IO from fp-ts to CommonJS",
+    "prefix": "~fpIO*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import * as io from 'fp-ts/lib/IO';"]
+  },
+  "fp-ts-ioe-esm": {
+    "description": "Import IOEither from fp-ts to ECMA script module",
+    "prefix": "~fpIOE",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import ioe from 'fp-ts/lib/IOEither.js';"]
+  },
+  "fp-ts-ioe-cjs": {
+    "description": "Import IOEither from fp-ts to CommonJS",
+    "prefix": "~fpIOE*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import * as ioe from 'fp-ts/lib/IOEither';"]
+  },
+  "fp-ts-pipe-esm": {
+    "description": "Import pipe from fp-ts to ECMA script module",
+    "prefix": "~fpP",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import { pipe } from 'fp-ts/lib/function.js';"]
+  },
+  "fp-ts-pipe-cjs": {
+    "description": "Import pipe from fp-ts to CommonJS",
+    "prefix": "~fpP*",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import { pipe } from 'fp-ts/lib/function';"]
+  },
+  "faker": {
+    "description": "Import faker",
+    "prefix": "~fake",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": ["import { faker } from '@faker-js/faker';"]
+  }
+}
