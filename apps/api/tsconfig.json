@@ -1,0 +1,18 @@
+{
+  "extends": "@tsconfig/node-lts/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "fp-ts-std/*": ["node_modules/fp-ts-std/dist/cjs/*"],
+      "#shared/*": ["src/shared/*"],
+      "#utils/*": ["src/shared/utils/*"],
+      "#config/*": ["src/shared/config/*"],
+      "#infra/*": ["src/infra/*"],
+      "#test-utils/*": ["test-utils/*"]
+    }
+  },
+  "include": ["src", "types", "test-utils", "jest", "e2e"]
+}

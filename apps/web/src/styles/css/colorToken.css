@@ -1,0 +1,72 @@
+@layer base {
+  :root {
+    --primary-color: #009688;
+    --primary-light-color: rgb(51, 171, 159);
+    --primary-dark-color: rgb(0, 105, 95);
+    --secondary-color: #ffa000;
+    --secondary-light-color: rgb(255, 179, 51);
+    --secondary-dark-color: rgb(178, 112, 0);
+    --success-color: #2e7d32;
+    --success-light-color: #4caf50;
+    --success-dark-color: #1b5e20;
+    --info-color: #0288d1;
+    --info-light-color: #03a9f4;
+    --info-dark-color: #01579b;
+    --warn-color: #ed6c02;
+    --warn-light-color: #ff9800;
+    --warn-dark-color: #e65100;
+    --error-color: #d32f2f;
+    --error-light-color: #ef5350;
+    --error-dark-color: #c62828;
+
+    --text-color: rgba(0, 0, 0, 0.87);
+    --text-secondary-color: rgba(0, 0, 0, 0.6);
+    --text-disabled-color: rgba(0, 0, 0, 0.38);
+    --text-on-primary-color: #fff;
+    --text-on-secondary-color: rgba(0, 0, 0, 0.87);
+    --text-on-success-color: #fff;
+    --text-on-info-color: #fff;
+    --text-on-warn-color: #fff;
+    --text-on-error-color: #fff;
+
+    --outline-color: rgba(0, 0, 0, 0.12);
+
+    --background-color: #fff;
+    --surface-color: #fff;
+  }
+  :root .dark {
+    --primary-color: #009688;
+    --primary-light-color: rgb(51, 171, 159);
+    --primary-dark-color: rgb(0, 105, 95);
+    --secondary-color: #ffa000;
+    --secondary-light-color: rgb(255, 179, 51);
+    --secondary-dark-color: rgb(178, 112, 0);
+    --success-color: #66bb6a;
+    --success-light-color: #81c784;
+    --success-dark-color: #388e3c;
+    --info-color: #29b6f6;
+    --info-light-color: #4fc3f7;
+    --info-dark-color: #0288d1;
+    --warn-color: #ffa726;
+    --warn-light-color: #ffb74d;
+    --warn-dark-color: #f57c00;
+    --error-color: #f44336;
+    --error-light-color: #e57373;
+    --error-dark-color: #d32f2f;
+
+    --text-color: #fff;
+    --text-secondary-color: rgba(255, 255, 255, 0.7);
+    --text-disabled-color: rgba(255, 255, 255, 0.5);
+    --text-onPrimary-color: #fff;
+    --text-onSecondary-color: rgba(0, 0, 0, 0.87);
+    --text-onSuccess-color: rgba(0, 0, 0, 0.87);
+    --text-onInfo-color: rgba(0, 0, 0, 0.87);
+    --text-onWarn-color: rgba(0, 0, 0, 0.87);
+    --text-onError-color: #fff;
+
+    --outline-color: rgba(255, 255, 255, 0.12);
+
+    --background-color: #121212;
+    --surface-color: #121212;
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "material-icon-theme.files.associations": {
+    "*.itest.ts": "test-ts"
+  },
+  "material-icon-theme.folders.associations": {
+    "jest": "test",
+    "test-utils": "test"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["Classes \\=([^;]*);", "'([^']*)'"],
+    ["Classes \\=([^;]*);", "\"([^\"]*)\""],
+    ["Classes \\=([^;]*);", "\\`([^\\`]*)\\`"],
+    ["Tw \\=([^;]*);", "'([^']*)'"],
+    ["Tw \\=([^;]*);", "\"([^\"]*)\""],
+    ["Tw \\=([^;]*);", "\\`([^\\`]*)\\`"]
+  ],
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "classes"
+  ],
+  "files.exclude": {
+    "**/.git": false
+  }
+}
