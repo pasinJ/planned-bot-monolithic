@@ -20,5 +20,8 @@
     "className",
     "ngClass",
     "classes"
-  ]
+  ],
+  "files.exclude": {
+    "**/.git": false
+  }
 }
