@@ -1,0 +1,39 @@
+#!/bin/bash
+
+echo "[INFO] Checking commit-message format"
+
+## the first arg is the path to the git commit temporary file
+TEMPORARY_FILE_PATH=$1
+
+## get commit-message (the first line) from the temporary file
+COMMIT_MSG=`head -n1 $TEMPORARY_FILE_PATH`
+
+## init regex to match commit-message format
+REGEX="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([[:alnum:]._-]+\))?(!)?: ([[:alnum:]])+([[:space:][:print:]]*)"
+
+## checking commit-message format
+if ! [[ $COMMIT_MSG =~ $REGEX ]]; then
+	RED='\033[0;31m'
+	BOLD='\033[1m'
+	END_STYLE='\033[0m'
+    echo -e "${RED}[ERROR]${END_STYLE} The commit-message format does not satisfiy the Conventional Commits specification :"
+	echo ""
+	echo ">>>>>>	$COMMIT_MSG"
+	echo ""
+    echo -e "Valid format is ${BOLD}<type>[(scope)][!]: <description>${END_STYLE}"
+    echo "	<type> must be one of [build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test]"
+    echo "	Optionally add (scope) to provide additional contextual information"
+    echo "	Optionally add ! after type and scope to indicate a breaking changes"
+    echo "Examples"
+    echo "	feat: allow provided config object to extend other configs"
+    echo "	feat(api)!: send an email to the customer when a product is shipped"
+    echo "	chore!: drop support for Node 6"
+	echo ""
+    echo "For more information, please check: https://www.conventionalcommits.org/en/v1.0.0/#summary"
+
+    exit 1
+else
+    echo "[INFO] Validate commit-message format passed"
+	echo "====================================================================="
+    exit 0
+fi
