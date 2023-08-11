@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Stop execution instantly while having a non-zero status.
 set -e
 
 echo "[INFO] Pre-commit hook of Web project"
 
-changeNum=$(git status -s apps/web | wc -l)
+changeNum=$(git diff --staged --name-only -- apps/web | wc -l)
 
 if [ $changeNum != 0 ]; then
     CURRENT_DIR=$(dirname "$0")
