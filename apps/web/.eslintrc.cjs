@@ -49,7 +49,12 @@ module.exports = {
     },
     {
       files: ['src/**/!(*.*test).tsx'],
-      extends: ['plugin:react/recommended', 'plugin:react/jsx-runtime', 'plugin:react-hooks/recommended'],
+      extends: [
+        'plugin:react/recommended',
+        'plugin:react/jsx-runtime',
+        'plugin:react-hooks/recommended',
+        'plugin:jsx-a11y/recommended',
+      ],
       settings: { react: { version: 'detect' } },
     },
     {

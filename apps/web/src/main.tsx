@@ -1,15 +1,15 @@
-import { StrictMode } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import InfraProvider from '#contexts/InfraProvider';
 import StateProvider from '#contexts/StateProvider';
 import RoutesProvider from '#routes/RoutesProvider';
 import StyleProvider from '#styles/containers/StyleProvider';
+import reportAccessibility from '#utils/reportAccessibility';
 
 const rootElement = document.getElementById('root') ?? createNewRootElementInBody();
-
 createRoot(rootElement).render(
-  <StrictMode>
+  <React.StrictMode>
     <InfraProvider>
       <StyleProvider rootElem={rootElement}>
         <StateProvider>
@@ -17,8 +17,10 @@ createRoot(rootElement).render(
         </StateProvider>
       </StyleProvider>
     </InfraProvider>
-  </StrictMode>,
+  </React.StrictMode>,
 );
+
+if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
 
 function createNewRootElementInBody() {
   const rootElement = document.createElement('div');
