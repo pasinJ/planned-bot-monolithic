@@ -19,5 +19,6 @@
   "tailwindCSS.classAttributes": ["class", "className", "ngClass", "classes"],
   "files.exclude": {
     "**/.git": false
-  }
+  },
+  "npm.packageManager": "npm"
 }
