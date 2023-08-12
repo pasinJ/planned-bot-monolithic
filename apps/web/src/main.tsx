@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 
-import InfraProvider from '#contexts/InfraProvider';
-import StateProvider from '#contexts/StateProvider';
+import InfraProvider from '#infra/InfraProvider.context';
 import RoutesProvider from '#routes/RoutesProvider';
+import StateProvider from '#state/StateProvider.context';
 import StyleProvider from '#styles/containers/StyleProvider';
 import reportAccessibility from '#utils/reportAccessibility';
 

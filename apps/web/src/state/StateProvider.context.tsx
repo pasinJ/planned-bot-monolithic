@@ -1,6 +1,7 @@
 import { PropsWithChildren } from 'react';
 import { Provider } from 'react-redux';
-import { setupStore } from 'src/store';
+
+import { setupStore } from './store';
 
 export default function StateProvider({ children }: PropsWithChildren) {
   const store = setupStore();

@@ -22,11 +22,12 @@
     "paths": {
       "#assets/*": ["src/assets/*"],
       "#components/*": ["src/components/*"],
-      "#contexts/*": ["src/contexts/*"],
+      "#features/*": ["src/features/*"],
       "#hooks/*": ["src/hooks/*"],
+      "#infra/*": ["src/infra/*"],
       "#pages/*": ["src/pages/*"],
       "#routes/*": ["src/routes/*"],
-      "#store/*": ["src/store/*"],
+      "#state/*": ["src/state/*"],
       "#styles/*": ["src/styles/*"],
       "#utils/*": ["src/utils/*"],
       "#test-utils/*": ["test-utils/*"]

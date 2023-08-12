@@ -3,9 +3,9 @@ import { render, renderHook } from '@testing-library/react';
 import { pipe } from 'fp-ts/lib/function';
 import { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import { Provider } from 'react-redux';
-import { RootState, setupStore } from 'src/store';
 
-import InfraProvider, { InfraContextValue } from '#contexts/InfraProvider';
+import InfraProvider, { InfraContextValue } from '#infra/InfraProvider.context';
+import { RootState, setupStore } from '#state/store';
 
 export function renderWithContexts(
   ui: ReactElement,
