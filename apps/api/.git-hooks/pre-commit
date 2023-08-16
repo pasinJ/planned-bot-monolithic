@@ -17,5 +17,5 @@ if [ $changeNum != 0 ]; then
     
     echo "[INFO] Pre-commit hook of API project done"
 else
-    echo "[INFO] Skipped because no changes from this directory were committed"
+    echo "[INFO] Skipped because no changes from this directory is being committed"
 fi
