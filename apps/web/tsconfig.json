@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -33,5 +33,5 @@
       "#test-utils/*": ["test-utils/*"]
     }
   },
-  "include": ["src", "types", "test-utils", "tailwind.config.ts"]
+  "include": ["src", "types", "test-utils", "mocks", "tailwind.config.ts"]
 }

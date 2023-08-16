@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:cy": "NODE_ENV=test vite",
     "test": "DOTENV_CONFIG_PATH=.env/.env.dev jest",
     "test:u": "npm run test -- --selectProjects DOM NODE --testPathPattern",
     "test:d": "npm run test -- --selectProjects DOM --testPathPattern",
     "test:n": "npm run test -- --selectProjects NODE --testPathPattern",
     "test:i": "npm run test -- --selectProjects INTEGRATION --testPathPattern",
     "test:w": "npm run test:u -- --watch",
-    "cy:open": "cypress open",
+    "cy:open": "cypress open -b chrome --e2e",
     "build": "tsc -p tsconfig.prod.json && vite build",
     "build:clean": "rimraf dist && npm run build",
     "preview": "vite preview",
@@ -23,6 +24,8 @@
     "@emotion/styled": "^11.11.0",
     "@mui/material": "^5.14.3",
     "@reduxjs/toolkit": "^1.9.5",
+    "@tanstack/react-query": "^4.32.6",
+    "axios": "^1.4.0",
     "fp-ts": "^2.16.1",
     "fp-ts-std": "^0.17.1",
     "jest-matchmedia-mock": "^1.1.0",
@@ -30,18 +33,24 @@
     "ramda": "^0.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.45.4",
+    "react-hot-toast": "^2.4.1",
     "react-redux": "^8.1.2",
     "react-router-dom": "^6.14.2",
     "tailwind-merge": "^1.14.0",
+    "ts-custom-error": "^3.3.1",
+    "ts-pattern": "^5.0.5",
     "zod": "^3.21.4",
     "zod-validation-error": "^1.3.1"
   },
   "devDependencies": {
+    "@anatine/zod-mock": "^3.13.2",
     "@axe-core/react": "^4.7.3",
     "@faker-js/faker": "^8.0.2",
     "@relmify/jest-fp-ts": "^2.1.1",
     "@swc/core": "^1.3.74",
     "@swc/jest": "^0.2.27",
+    "@tanstack/eslint-plugin-query": "^4.32.5",
     "@testing-library/cypress": "^9.0.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
@@ -85,5 +94,8 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vite-tsconfig-paths": "^4.2.0"
+  },
+  "msw": {
+    "workerDirectory": "public"
   }
 }

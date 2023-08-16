@@ -16,7 +16,7 @@ function renderUseLocalStorageHook(init?: string) {
 
   if (init) localStorage.setItem(key, init);
 
-  return renderHookWithContexts(() => useLocalStorage({ key }), {
+  return renderHookWithContexts(() => useLocalStorage({ key }), ['Infra'], {
     infraContext: { localStorage, eventEmitter },
   });
 }

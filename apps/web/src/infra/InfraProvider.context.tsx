@@ -1,6 +1,12 @@
 import { PropsWithChildren, createContext } from 'react';
 
-const defaultContext = { localStorage: window.localStorage, eventEmitter: new EventTarget() };
+import { createAxiosHttpClient } from './axiosHttpClient';
+
+const defaultContext = {
+  localStorage: window.localStorage,
+  eventEmitter: new EventTarget(),
+  httpClient: createAxiosHttpClient(),
+};
 
 export type InfraContextValue = typeof defaultContext;
 export const InfraContext = createContext(defaultContext);

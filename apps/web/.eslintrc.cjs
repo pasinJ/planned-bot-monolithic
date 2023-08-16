@@ -13,7 +13,6 @@ module.exports = {
     'eslint:recommended',
     'plugin:@typescript-eslint/strict-type-checked',
     'plugin:@typescript-eslint/stylistic-type-checked',
-    'plugin:promise/recommended',
     'prettier',
   ],
   plugins: ['@typescript-eslint'],
@@ -22,9 +21,6 @@ module.exports = {
     '@typescript-eslint/no-confusing-void-expression': 'off',
   },
   overrides: [
-    {
-      files: ['src/**/*.ts?(x)', 'cypress/**/*.ts'],
-    },
     {
       files: ['src/**/!(*.*test).ts?(x)'],
       settings: {
@@ -36,8 +32,9 @@ module.exports = {
         'plugin:import/typescript',
         'plugin:fp-ts/recommended',
         'plugin:fp-ts/recommended-requiring-type-checking',
+        'plugin:promise/recommended',
       ],
-      plugins: ['import', 'react-refresh'],
+      plugins: ['import', 'react-refresh', '@tanstack/query'],
       rules: {
         'import/no-cycle': 'error',
         'import/no-deprecated': 'error',
@@ -45,6 +42,7 @@ module.exports = {
         'import/no-named-as-default-member': 'off',
         'fp-ts/no-lib-imports': 'off',
         'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+        '@tanstack/query/prefer-query-object-syntax': 'error',
       },
     },
     {
@@ -56,6 +54,11 @@ module.exports = {
         'plugin:jsx-a11y/recommended',
       ],
       settings: { react: { version: 'detect' } },
+    },
+    {
+      files: ['src/**/+(*.*test).tsx', 'src/**/+(*.*test).ts'],
+      plugins: ['@typescript-eslint'],
+      rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
     },
     {
       files: ['src/**/+(*.*test).tsx'],

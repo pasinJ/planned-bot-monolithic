@@ -16,7 +16,7 @@ function renderHookWithoutPreferScheme(init?: Theme) {
 
   if (init) localStorage.setItem('theme', init);
 
-  return renderHookWithContexts(useAppTheme, { infraContext: { localStorage, eventEmitter } });
+  return renderHookWithContexts(useAppTheme, ['Infra'], { infraContext: { localStorage, eventEmitter } });
 }
 function renderHookWithPreferLight(init?: Theme) {
   matchMedia.useMediaQuery('(prefers-color-scheme: light)');
