@@ -40,7 +40,7 @@ export default function CreatePortfolioModal() {
             <MaterialSymbol symbol="close" />
           </IconButton>
         </DialogTitle>
-        <DialogContent className="flex flex-col sm:justify-center sm:min-h-[310px] sm:min-w-[410px]">
+        <DialogContent className="flex flex-col sm:min-h-[310px] sm:min-w-[410px] sm:justify-center">
           <CreatePortfolioForm />
         </DialogContent>
       </Dialog>

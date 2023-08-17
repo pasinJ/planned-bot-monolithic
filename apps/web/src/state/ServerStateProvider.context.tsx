@@ -1,7 +1,7 @@
 import { Query, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { is } from 'ramda';
 import { PropsWithChildren } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: onErrorQuery }),
