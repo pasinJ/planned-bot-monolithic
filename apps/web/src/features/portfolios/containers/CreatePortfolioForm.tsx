@@ -1,10 +1,13 @@
-import Button from '@mui/material/Button';
+import LoadingButton from '@mui/lab/LoadingButton';
+import Alert from '@mui/material/Alert';
+import Collapse from '@mui/material/Collapse';
 import Typography from '@mui/material/Typography';
-import { isNil, omit } from 'ramda';
+import { isNotNil, omit } from 'ramda';
 import { useState } from 'react';
 import { Form, FormSubmitHandler, useController, useForm } from 'react-hook-form';
 
 import { DecimalField } from '#components/DecimalField';
+import MaterialSymbol from '#components/MaterialSymbol';
 
 import useCreatePortfolio from '../hooks/useCreatePortfolio';
 
@@ -26,17 +29,34 @@ export default function CreatePortfolioForm() {
     return (
       <>
         <ErrorMessage error={createPortfolio.error} />
-        <Form control={control} onSubmit={handleSubmit}>
+        <Form control={control} onSubmit={handleSubmit} className="flex w-full flex-col gap-6 pt-4">
           <DecimalField
             id="initial-capital"
             label="Initial capital"
+            InputProps={{ endAdornment: 'USDT' }}
             {...omit(['ref'], initialCapitalField)}
           />
-          <DecimalField id="taker-fee" label="Taker trading fee" {...omit(['ref'], takerFeeField)} />
-          <DecimalField id="maker-fee" label="Maker trading fee" {...omit(['ref'], makerFeeField)} />
-          <Button aria-label="submit create portfolio" variant="contained" color="primary" type="submit">
-            Create
-          </Button>
+          <DecimalField
+            id="taker-fee"
+            label="Taker trading fee"
+            InputProps={{ endAdornment: '%' }}
+            {...omit(['ref'], takerFeeField)}
+          />
+          <DecimalField
+            id="maker-fee"
+            label="Maker trading fee"
+            InputProps={{ endAdornment: '%' }}
+            {...omit(['ref'], makerFeeField)}
+          />
+          <LoadingButton
+            aria-label="submit create portfolio"
+            variant="contained"
+            color="primary"
+            type="submit"
+            loading={createPortfolio.isLoading}
+          >
+            <Typography variant="inherit">Create</Typography>
+          </LoadingButton>
         </Form>
       </>
     );
@@ -45,7 +65,8 @@ export default function CreatePortfolioForm() {
 
 function SuccessfulForm() {
   return (
-    <div>
+    <div className="flex h-full flex-col place-items-center gap-6 px-4 pb-16">
+      <MaterialSymbol symbol="check_circle" className="text-5xl text-success" />
       <Typography variant="body1" color="initial">
         Your portfolio has been successfully created.
       </Typography>
@@ -54,11 +75,11 @@ function SuccessfulForm() {
 }
 
 function ErrorMessage({ error }: { error: Error | null }) {
-  if (isNil(error)) return null;
-  else
-    return (
-      <Typography variant="body1" color="initial">
-        Something went wrong: {error.name} {error.message}
-      </Typography>
-    );
+  return (
+    <Collapse in={isNotNil(error)}>
+      <Alert className="mb-2" severity="error">
+        <Typography variant="body2">Something went wrong: {error?.name}</Typography>
+      </Alert>
+    </Collapse>
+  );
 }
