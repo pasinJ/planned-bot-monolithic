@@ -22,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@anatine/zod-mock": "^3.13.2",
     "@faker-js/faker": "^8.0.2",
     "@relmify/jest-fp-ts": "^2.1.1",
     "@swc/core": "^1.3.74",
