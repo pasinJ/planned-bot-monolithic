@@ -6,7 +6,7 @@ services:
       additional_contexts:
         src: ../../apps/web/
       args:
-        - DOMAIN_NAME=localhost
+        DOMAIN_NAME: ${DOMAIN_NAME}
     ports:
       - 80:80
       - 443:443
@@ -19,3 +19,29 @@ services:
       context: ./api
       additional_contexts:
         src: ../../apps/api/
+    depends_on:
+      - mongodb
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    ports:
+      - 27017:27017
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: ${MONGODB_INITDB_ROOT_USERNAME}
+      MONGODB_INITDB_ROOT_PASSWORD: ${MONGODB_INITDB_ROOT_PASSWORD}
+      MONGODB_INITDB_DATABASE: ${MONGODB_INITDB_DATABASE}
+      BACKEND_USER: ${BACKEND_USER}
+      BACKEND_PASSWORD: ${BACKEND_PASSWORD}
+    volumes:
+      # - ./mongoDb/data:/data/db
+      - ./mongoDb/initiate.js:/docker-entrypoint-initdb.d/initiate.js
+  mongo-express:
+    image: mongo-express:latest
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGODB_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGODB_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: "27017"
+    ports:
+      - 8080:8080
+    depends_on:
+      - mongodb
