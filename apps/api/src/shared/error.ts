@@ -9,7 +9,7 @@ export class ErrorBase<N extends string = string> extends CustomError {
   name: N;
 
   constructor(name: N, message: string, cause?: Cause) {
-    super(message, { cause });
+    super(message, cause ? { cause } : {});
     this.name = name;
   }
 
@@ -51,11 +51,13 @@ export class ErrorBase<N extends string = string> extends CustomError {
 export function createErrorFromUnknown<E extends ErrorBase<Names>, Name extends Names, Names extends string>(
   constructor: new (name: Name, message: string, cause?: Cause) => E,
   name: Name,
+  message?: string,
 ) {
   return (unknown: unknown): E => {
     if (is(String, unknown)) return new constructor(name, unknown);
-    else if (unknown instanceof Error) return new constructor(name, getErrorSummary(unknown), unknown);
-    else return new constructor(name, 'Undefined message (created from unknown)');
+    else if (unknown instanceof Error)
+      return new constructor(name, message ?? getErrorSummary(unknown), unknown);
+    else return new constructor(name, message ?? 'Undefined message (created from unknown)');
   };
 }
 

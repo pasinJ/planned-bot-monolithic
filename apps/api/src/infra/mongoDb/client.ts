@@ -1,12 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { Logger } from 'pino';
 
-import { LoggerIO, wrapLogger } from '#infra/logging.js';
+import { LoggerIO } from '#infra/logging.js';
 import { ErrorBase, createErrorFromUnknown } from '#shared/error.js';
 
-class MongoDbError extends ErrorBase<'CREATE_CONNECTION_ERROR' | 'DISCONNECT_ERROR'> {}
+export class MongoDbError extends ErrorBase<'CREATE_CONNECTION_ERROR' | 'DISCONNECT_ERROR'> {}
 
 export function createMongoDbClient(loggerIO: LoggerIO): te.TaskEither<MongoDbError, PrismaClient> {
   return pipe(
@@ -26,21 +25,18 @@ export function createMongoDbClient(loggerIO: LoggerIO): te.TaskEither<MongoDbEr
   );
 }
 
-export function disconnectMongoDbClient(client: PrismaClient, logger: Logger): Promise<void> {
-  logger.info('MongoDB client start disconnecting from MongoDB');
-  return client
-    .$disconnect()
-    .then(() => logger.info('MongoDB client disconnected'))
-    .catch((error: Error) =>
-      logger.error(
-        {
-          error: new MongoDbError(
-            'DISCONNECT_ERROR',
-            'MongoDB client failed to disconnect a connection from MongoDB',
-            error,
-          ),
-        },
-        'MongoDB client failed to disconnect a connection from MongoDB',
-      ),
-    );
+export function disconnectMongoDbClient(
+  client: PrismaClient,
+  loggerIo: LoggerIO,
+): te.TaskEither<MongoDbError, void> {
+  return pipe(
+    te.fromIO(loggerIo.info('MongoDB client start disconnecting from MongoDB')),
+    te.chain(() =>
+      te.tryCatch(() => client.$disconnect(), createErrorFromUnknown(MongoDbError, 'DISCONNECT_ERROR')),
+    ),
+    te.chainIOK(() => loggerIo.info('MongoDB client successfully disconnected')),
+    te.orElseFirstIOK((error) =>
+      loggerIo.error({ error }, 'MongoDB client failed to disconnect a connection from MongoDB'),
+    ),
+  );
 }

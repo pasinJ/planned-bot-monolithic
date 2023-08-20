@@ -45,7 +45,8 @@ module.exports = {
     },
     {
       files: ['src/**/+(*.*test).ts', 'e2e/**/*.test.ts', 'test-utils/**/*.ts'],
-      extends: ['plugin:jest/recommended', 'plugin:jest/style'],
+      extends: ['plugin:jest/recommended', 'plugin:jest/style', '@typescript-eslint'],
+      rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
     },
   ],
 };

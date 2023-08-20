@@ -1,20 +1,12 @@
-import { addOnSend, addPreValidation } from './hooks.js';
-import type { FastifyServer } from './server.js';
+import ioe from 'fp-ts/lib/IOEither.js';
 
-export function addGeneralRoutes(fastify: FastifyServer) {
-  fastify.head('/', (_, reply) => reply.code(200).send());
-}
+import { createErrorFromUnknown } from '#shared/error.js';
 
-export function addRoutesV1(fastify: FastifyServer) {
-  return fastify.register(
-    (instance: FastifyServer, _, done) => {
-      addPreValidation(instance);
-      addOnSend(instance);
+import { FastifyServer, HttpServerError } from './server.type.js';
 
-      instance.get('/', () => 'Hello');
-
-      done();
-    },
-    { prefix: '/v1' },
+export function addGeneralRoutes(fastify: FastifyServer): ioe.IOEither<HttpServerError, FastifyServer> {
+  return ioe.tryCatch(
+    () => fastify.head('/', (_, reply) => reply.code(200).send()),
+    createErrorFromUnknown(HttpServerError, 'INTERNAL_SERVER_ERROR'),
   );
 }
