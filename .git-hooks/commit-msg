@@ -11,6 +11,18 @@ COMMIT_MSG=`head -n1 $TEMPORARY_FILE_PATH`
 ## init regex to match commit-message format
 REGEX="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test){1}(\([[:alnum:]._-]+\))?(!)?: ([[:alnum:]])+([[:space:][:print:]]*)"
 
+# build:        Changes that affect the build system or external dependencies
+# chore:        Changes that don't directly impact the functionality but are necessary for the development and maintenance
+# ci:           Changes to CI configuration files and scripts
+# docs:         Changes to documentations
+# feat:         Changes that introduce a new feature or functionality
+# fix:          Changes to fix a bug and problem in application
+# perf:         Changes that improve performance
+# refactor:     Changes that restructure and optimize code without neither bug fixes nor new features
+# revert:       Changes that revert the previous changes
+# style:        Changes that affect code style (white-space, indentation, formatting, etc)
+# test:         Changes that add or modify tests
+
 ## checking commit-message format
 if ! [[ $COMMIT_MSG =~ $REGEX ]]; then
 	RED='\033[0;31m'
