@@ -1,10 +1,15 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyError, FastifyInstance } from 'fastify';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { Logger } from 'pino';
 
-import { ErrorBase } from '#shared/error.js';
+import { ErrorBase, ExternalError } from '#shared/error.js';
 
 export type FastifyServer = FastifyInstance<Server, IncomingMessage, ServerResponse, Logger>;
-export class HttpServerError extends ErrorBase<
-  'BUILD_SERVER_ERROR' | 'START_SERVER_ERROR' | 'CLOSE_SERVER_ERROR' | 'INTERNAL_SERVER_ERROR'
+
+export class BuildHttpServerError extends ErrorBase<'BUILD_HTTP_SERVER_ERROR', ExternalError> {}
+export class StartHttpServerError extends ErrorBase<
+  'START_HTTP_SERVER_ERROR',
+  ExternalError | FastifyError
 > {}
+export class CloseHttpServerError extends ErrorBase<'CLOSE_HTTP_SERVER_ERROR', ExternalError> {}
+export class InternalHttpServerError extends ErrorBase<'INTERNAL_HTTP_SERVER_ERROR', FastifyError> {}

@@ -3,9 +3,9 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { assoc, isEmpty, pick, tail, toPairs } from 'ramda';
 
-import { HttpServerError } from './server.type.js';
+import { StartHttpServerError } from './server.type.js';
 
-const infraDeps = { any: ioe.left('any') } as const;
+const infraDeps = { any: ioe.left(new Error()) } as const;
 type InfraDeps = typeof infraDeps;
 type InfraDepsKeys = keyof InfraDeps;
 
@@ -24,11 +24,11 @@ export function pipelineBuildController<
   builder: (args: Deps) => Handler,
   depsList: DepsKey[],
   errorMsg: string,
-): ioe.IOEither<HttpServerError, Handler> {
+): ioe.IOEither<StartHttpServerError, Handler> {
   return pipe(
     getInfraDeps<Deps, DepsKey, Dep>(depsList),
     ioe.map(builder),
-    ioe.mapLeft((error) => new HttpServerError('INTERNAL_SERVER_ERROR', errorMsg, error)),
+    ioe.mapLeft((error) => new StartHttpServerError('START_SERVER_ERROR', errorMsg, error)),
   );
 }
 

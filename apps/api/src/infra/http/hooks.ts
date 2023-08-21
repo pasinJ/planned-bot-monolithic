@@ -3,7 +3,7 @@ import { gte, isNil } from 'ramda';
 
 import { getErrorSummary } from '#shared/error.js';
 
-import { FastifyServer, HttpServerError } from './server.type.js';
+import { FastifyServer, InternalHttpServerError } from './server.type.js';
 
 export const setNotFoundHandler = (fastify: FastifyServer) => {
   return fastify.setNotFoundHandler((req, reply) => {
@@ -22,7 +22,11 @@ export const setErrorHandler = (fastify: FastifyServer): void => {
 
     if (isNil(statusCode) || statusCode === 200) void reply.code(fastifyError.statusCode ?? 500);
 
-    const error = new HttpServerError('INTERNAL_SERVER_ERROR', getErrorSummary(fastifyError), fastifyError);
+    const error = new InternalHttpServerError(
+      'INTERNAL_HTTP_SERVER_ERROR',
+      `Unhandled error happened in HTTP server: ${getErrorSummary(fastifyError)}`,
+      fastifyError,
+    );
     const isServerError = gte(statusCode, 500);
     const logFn = isServerError ? log.error.bind(log) : log.info.bind(log);
     const logMsg = `Fastify handles error: ${getErrorSummary(error)}`;

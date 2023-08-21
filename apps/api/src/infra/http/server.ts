@@ -12,7 +12,12 @@ import { createErrorFromUnknown } from '#shared/error.js';
 import { getHttpConfig } from '../../shared/config/http.js';
 import { setErrorHandler, setNotFoundHandler } from './hooks.js';
 import { addGeneralRoutes } from './routes.js';
-import { FastifyServer, HttpServerError } from './server.type.js';
+import {
+  BuildHttpServerError,
+  CloseHttpServerError,
+  FastifyServer,
+  StartHttpServerError,
+} from './server.type.js';
 
 const fastifyConfig = {
   requestIdHeader: 'request-id',
@@ -22,7 +27,7 @@ const fastifyConfig = {
   genReqId: () => nanoid(),
 };
 
-export function buildHttpServer(): e.Either<HttpServerError, FastifyServer> {
+export function buildHttpServer(): e.Either<BuildHttpServerError, FastifyServer> {
   return e.tryCatch(
     () => {
       const fastify = Fastify({ ...fastifyConfig, logger: createPinoLogger('HTTP') });
@@ -32,11 +37,11 @@ export function buildHttpServer(): e.Either<HttpServerError, FastifyServer> {
 
       return fastify;
     },
-    createErrorFromUnknown(HttpServerError, 'BUILD_SERVER_ERROR'),
+    createErrorFromUnknown(BuildHttpServerError, 'BUILD_HTTP_SERVER_ERROR'),
   );
 }
 
-export function startHttpServer(instnace: FastifyServer): te.TaskEither<HttpServerError, FastifyServer> {
+export function startHttpServer(instnace: FastifyServer): te.TaskEither<StartHttpServerError, FastifyServer> {
   const { PORT_NUMBER } = getHttpConfig();
   return pipe(
     ioe.of(instnace),
@@ -45,7 +50,7 @@ export function startHttpServer(instnace: FastifyServer): te.TaskEither<HttpServ
     te.chainFirst(() =>
       te.tryCatch(
         () => instnace.listen({ host: '0.0.0.0', port: PORT_NUMBER }),
-        createErrorFromUnknown(HttpServerError, 'START_SERVER_ERROR'),
+        createErrorFromUnknown(StartHttpServerError, 'START_HTTP_SERVER_ERROR'),
       ),
     ),
   );
@@ -54,11 +59,14 @@ export function startHttpServer(instnace: FastifyServer): te.TaskEither<HttpServ
 export function closeHttpServer(
   instnace: FastifyServer,
   loggerIo: LoggerIO,
-): te.TaskEither<HttpServerError, void> {
+): te.TaskEither<CloseHttpServerError, void> {
   return pipe(
     te.fromIO(loggerIo.info('Fastify server start closing')),
     te.chain(() =>
-      te.tryCatch(() => instnace.close(), createErrorFromUnknown(HttpServerError, 'CLOSE_SERVER_ERROR')),
+      te.tryCatch(
+        () => instnace.close(),
+        createErrorFromUnknown(CloseHttpServerError, 'CLOSE_HTTP_SERVER_ERROR'),
+      ),
     ),
     te.chainIOK(() => loggerIo.info('Fastify server successfully closed')),
     te.orElseFirstIOK((error) => loggerIo.error({ error }, 'Fastify server failed to close')),
