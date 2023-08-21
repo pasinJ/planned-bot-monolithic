@@ -1,6 +1,6 @@
 import { resetEnvVar, setEnvVar } from '#test-utils/mockEnvVar.js';
 
-import { getAppConfig } from './app.config.js';
+import { getAppConfig } from './app.js';
 
 const originalEnv = process.env;
 

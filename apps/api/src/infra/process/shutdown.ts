@@ -8,7 +8,7 @@ import { closeHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
 import { LoggerIO } from '#infra/logging.js';
 import { disconnectMongoDbClient } from '#infra/mongoDb/client.js';
-import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.config.js';
+import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.js';
 import { getErrorSummary } from '#shared/error.js';
 import { executeT } from '#shared/utils/fp.js';
 

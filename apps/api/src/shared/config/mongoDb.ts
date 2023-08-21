@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { nonEmptyStringSchema } from './common.js';
+import { nonEmptyStringSchema } from './config.util.js';
 
 export type MongoDbConfig = { URI: MongoDbUri };
 

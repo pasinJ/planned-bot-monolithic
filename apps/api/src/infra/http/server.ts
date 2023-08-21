@@ -9,7 +9,7 @@ import { juxt } from 'ramda';
 import { LoggerIO, createPinoLogger } from '#infra/logging.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
-import { getHttpConfig } from '../../shared/config/http.config.js';
+import { getHttpConfig } from '../../shared/config/http.js';
 import { setErrorHandler, setNotFoundHandler } from './hooks.js';
 import { addGeneralRoutes } from './routes.js';
 import { FastifyServer, HttpServerError } from './server.type.js';

@@ -11,7 +11,7 @@ import {
 import pretty, { PrettyOptions } from 'pino-pretty';
 import { mergeDeepWith } from 'ramda';
 
-import { AppConfig, LogFilePath, getAppConfig } from '#config/app.config.js';
+import { AppConfig, LogFilePath, getAppConfig } from '#config/app.js';
 import { mergeConcatArray } from '#utils/general.js';
 
 export type LoggerIO = {
