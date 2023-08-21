@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import io from 'fp-ts/lib/IO.js';
 import t from 'fp-ts/lib/Task.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { Mongoose } from 'mongoose';
 
 import { closeHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
@@ -12,7 +12,7 @@ import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.config.js';
 import { getErrorSummary } from '#shared/error.js';
 import { executeT } from '#shared/utils/fp.js';
 
-type Deps = { server: FastifyServer; mongoDbClient: PrismaClient };
+type Deps = { server: FastifyServer; mongoDbClient: Mongoose };
 
 export function addGracefulShutdown(deps: Deps, loggerIo: LoggerIO): io.IO<void> {
   return () => {
