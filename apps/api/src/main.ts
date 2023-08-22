@@ -3,6 +3,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 
 import { initiatePortfolioRepository } from '#features/portfolios/repositories/portfolio.js';
+import { createAxiosHttpClient } from '#infra/http/client.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
 import { createLoggerIO } from '#infra/logging.js';
 import { createMongoDbClient } from '#infra/mongoDb/client.js';
@@ -16,6 +17,7 @@ await tUtil.execute(
   pipe(
     te.Do,
     te.bindW('mongoDbClient', () => createMongoDbClient(loggerIo)),
+    te.bindW('httpClient', () => te.fromIO(createAxiosHttpClient)),
     te.bindW('binanceService', () => createBinanceService),
     te.bindW('server', () => te.fromIOEither(buildHttpServer)),
     te.chainFirstW(({ mongoDbClient }) => te.fromIOEither(initiatePortfolioRepository(mongoDbClient))),
