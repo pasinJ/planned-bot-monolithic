@@ -12,3 +12,4 @@ export const notionalFilterSchema = z
     avgPriceMins: z.number().int().nonnegative(),
   })
   .strict();
+export type NotionalFilter = z.infer<typeof notionalFilterSchema>;

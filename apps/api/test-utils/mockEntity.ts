@@ -1,11 +1,16 @@
 import { faker } from '@faker-js/faker';
 import { values } from 'ramda';
 
-import { exchangeEnum, orderTypeEnum } from '#features/symbols/domain/symbol.entity.js';
+import { LotSizeFilter } from '#features/symbols/domain/lotSizeFilter.entity.js';
+import { MarketLotSizeFilter } from '#features/symbols/domain/marketLotSizeFilter.entity.js';
+import { MinNotionalFilter } from '#features/symbols/domain/minNotionalFilter.entity.js';
+import { NotionalFilter } from '#features/symbols/domain/notionalFilter.entity.js';
+import { PriceFilter } from '#features/symbols/domain/priceFilter.entity.js';
+import { Symbol, exchangeEnum, orderTypeEnum } from '#features/symbols/domain/symbol.entity.js';
 
 import { anyBoolean, anyString, nonNegativeInt, randomPositiveFloat, randomPrecisionStep } from './faker.js';
 
-export function mockSymbol() {
+export function mockSymbol(): Symbol {
   const minRange: [number, number] = [1, 10];
   const maxRange: [number, number] = [10, 20];
 
@@ -24,17 +29,17 @@ export function mockSymbol() {
       mockMinNotionalFilter(),
       mockNotionalFilter(),
       mockPriceFilter(minRange, maxRange),
-    ],
+    ] as Symbol['filters'],
     version: faker.number.int({ min: 0, max: 10 }),
     createdAt: faker.date.past(),
     updatedAt: faker.date.recent(),
-  };
+  } as Symbol;
 }
 
 export function mockLotSizeFilter(
   minQtyRange: [number, number] = [1, 10],
   maxQtyRange: [number, number] = [10, 20],
-) {
+): LotSizeFilter {
   return {
     type: 'LOT_SIZE',
     minQty: randomPositiveFloat(8, minQtyRange),
@@ -46,7 +51,7 @@ export function mockLotSizeFilter(
 export function mockMarketLotSizeFilter(
   minQtyRange: [number, number] = [1, 10],
   maxQtyRange: [number, number] = [10, 20],
-) {
+): MarketLotSizeFilter {
   return {
     type: 'MARKET_LOT_SIZE',
     minQty: randomPositiveFloat(8, minQtyRange),
@@ -55,7 +60,7 @@ export function mockMarketLotSizeFilter(
   };
 }
 
-export function mockMinNotionalFilter() {
+export function mockMinNotionalFilter(): MinNotionalFilter {
   return {
     type: 'MIN_NOTIONAL',
     minNotional: randomPositiveFloat(8),
@@ -64,7 +69,7 @@ export function mockMinNotionalFilter() {
   };
 }
 
-export function mockNotionalFilter() {
+export function mockNotionalFilter(): NotionalFilter {
   return {
     type: 'NOTIONAL',
     minNotional: randomPositiveFloat(8),
@@ -78,7 +83,7 @@ export function mockNotionalFilter() {
 export function mockPriceFilter(
   minPriceRange: [number, number] = [1, 10],
   maxPriceRange: [number, number] = [10, 20],
-) {
+): PriceFilter {
   return {
     type: 'PRICE_FILTER',
     minPrice: randomPositiveFloat(8, minPriceRange),
