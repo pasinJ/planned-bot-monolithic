@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { values } from 'ramda';
+import { z } from 'zod';
 
 import { LotSizeFilter } from '#features/symbols/domain/lotSizeFilter.entity.js';
 import { MarketLotSizeFilter } from '#features/symbols/domain/marketLotSizeFilter.entity.js';
@@ -10,7 +11,9 @@ import { Symbol, exchangeEnum, orderTypeEnum } from '#features/symbols/domain/sy
 
 import { anyBoolean, anyString, nonNegativeInt, randomPositiveFloat, randomPrecisionStep } from './faker.js';
 
-export function mockSymbol(): Symbol {
+export function mockSymbol(
+  override?: Partial<{ [k in keyof Symbol]: Omit<Symbol[k], typeof z.BRAND> }>,
+): Symbol {
   const minRange: [number, number] = [1, 10];
   const maxRange: [number, number] = [10, 20];
 
@@ -30,7 +33,7 @@ export function mockSymbol(): Symbol {
       mockNotionalFilter(),
       mockPriceFilter(minRange, maxRange),
     ] as Symbol['filters'],
-    version: faker.number.int({ min: 0, max: 10 }),
+    version: override?.version ?? faker.number.int({ min: 0, max: 10 }),
     createdAt: faker.date.past(),
     updatedAt: faker.date.recent(),
   } as Symbol;

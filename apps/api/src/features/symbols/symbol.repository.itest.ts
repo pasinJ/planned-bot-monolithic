@@ -53,7 +53,7 @@ describe('Get symbol repository', () => {
         ioe.chainW(() => getSymbolRepository),
         executeIo,
       );
-      expect(repository).toEqualRight(expect.toContainAllKeys(['add']));
+      expect(repository).toEqualRight(expect.toContainAllKeys(['add', 'getAll']));
     });
   });
 });
@@ -144,6 +144,52 @@ describe('Add new symbols', () => {
       await executeT(symbolRepository.add({ ...symbol2, name: symbol.name, exchange: symbol.exchange }));
 
       await expect(symbolModel.count({ name: symbol.name, exchange: symbol.exchange })).resolves.toBe(1);
+    });
+  });
+});
+
+describe('Get all symbols', () => {
+  let symbolRepository: SymbolRepository;
+  let symbolModel: SymbolModel;
+
+  function setupRepository() {
+    symbolRepository = eUtils.unsafeUnwrap(
+      pipe(
+        createSymbolRepository(client),
+        ioe.chainW(() => getSymbolRepository),
+        executeIo,
+      ),
+    );
+    symbolModel = client.models[symbolModelName];
+  }
+
+  beforeAll(() => setupRepository());
+  afterEach(() => symbolModel.deleteMany());
+  afterAll(() => deleteModel(client, symbolModelName));
+
+  describe('GIVEN there is no existing symbol WHEN get all symbols', () => {
+    it('THEN it should return Right of an empty array', async () => {
+      const getResult = await executeT(symbolRepository.getAll);
+
+      expect(getResult).toEqualRight([]);
+    });
+  });
+  describe('GIVEN there is existing symbols WHEN get all symbols', () => {
+    it('THEN it should return Right of an array with existing symbols', async () => {
+      const symbols = faker.helpers.multiple(() => mockSymbol({ version: 0 }), { count: 2 });
+      await symbolModel.insertMany(symbols);
+
+      const getResult = await executeT(symbolRepository.getAll);
+
+      expect(getResult).toEqualRight(expect.toIncludeAllMembers(symbols));
+    });
+  });
+  describe('WHEN fail to get all symbols', () => {
+    it('THEN it should return Left of GET_ALL_SYMBOLS_ERROR', async () => {
+      jest.spyOn(symbolModel, 'find').mockRejectedValue(new Error());
+      const getResult = await executeT(symbolRepository.getAll);
+
+      expect(getResult).toSubsetEqualLeft({ name: 'GET_ALL_SYMBOLS_ERROR' });
     });
   });
 });
