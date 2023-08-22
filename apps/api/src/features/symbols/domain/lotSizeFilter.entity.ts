@@ -4,12 +4,11 @@ import { positiveFloat8Digits } from '#shared/common.type.js';
 
 export const lotSizeFilterSchema = z
   .object({
-    type: z.enum(['LOT_SIZE']),
+    type: z.literal('LOT_SIZE'),
     minQty: positiveFloat8Digits,
     maxQty: positiveFloat8Digits,
     stepSize: positiveFloat8Digits,
   })
-  .strict()
   .refine(
     ({ minQty, maxQty }) => maxQty > minQty,
     ({ minQty, maxQty }) => ({

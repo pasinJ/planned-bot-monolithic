@@ -1,32 +1,42 @@
 import axios, { AxiosError, AxiosInstance, CreateAxiosDefaults } from 'axios';
+import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { flow, pipe } from 'fp-ts/lib/function.js';
 import { __, allPass, equals, gte, lt, prop } from 'ramda';
 import { match } from 'ts-pattern';
 
+import { LoggerIO, createLoggerIO } from '#infra/logging.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { HTTP_ERRORS, HttpClient, HttpError } from './client.type.js';
 
 export function createAxiosHttpClient(config?: CreateAxiosDefaults): HttpClient {
+  const loggerIo = createLoggerIO('AxiosHttpClient');
   const axiosInstance = axios.create(config);
-  return { sendRequest: sendRequest(axiosInstance) };
+  return { sendRequest: sendRequest(axiosInstance, loggerIo) };
 }
 
-function sendRequest(axiosInstance: AxiosInstance): HttpClient['sendRequest'] {
+function sendRequest(axiosInstance: AxiosInstance, loggerIo: LoggerIO): HttpClient['sendRequest'] {
   return (options) => {
     const { responseSchema, body, ...rest } = options;
     return pipe(
-      te.tryCatch(
-        () => axiosInstance.request({ ...rest, data: body }),
-        (error) => handleFailedRequest(error as AxiosError),
+      te.fromIO(
+        loggerIo.debug(`Start sending request with options: ${JSON.stringify({ ...rest, data: body })}`),
       ),
-      te.chainEitherKW(
-        flow(
-          prop('data'),
-          parseWithZod(responseSchema, 'An Error occurs when try to validate HTTP response'),
+      te.chain(() =>
+        te.tryCatch(
+          () => axiosInstance.request({ ...rest, data: body }),
+          (error) => handleFailedRequest(error as AxiosError),
         ),
       ),
+      te.chainIOK(
+        flow(
+          prop('data'),
+          io.of,
+          io.chainFirst((body) => loggerIo.debug(`Receive response with body: ${JSON.stringify(body)}`)),
+        ),
+      ),
+      te.chainEitherKW(parseWithZod(responseSchema, 'An Error occurs when try to validate HTTP response')),
       te.mapLeft((error) =>
         error instanceof SchemaValidationError
           ? new HttpError(HTTP_ERRORS.INVALID_RESPONSE.name, HTTP_ERRORS.INVALID_RESPONSE.message, error)

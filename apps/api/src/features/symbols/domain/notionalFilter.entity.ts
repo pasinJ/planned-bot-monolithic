@@ -4,7 +4,7 @@ import { positiveFloat8Digits } from '#shared/common.type.js';
 
 export const notionalFilterSchema = z
   .object({
-    type: z.enum(['NOTIONAL']),
+    type: z.literal('NOTIONAL'),
     minNotional: positiveFloat8Digits,
     applyMinToMarket: z.boolean(),
     maxNotional: positiveFloat8Digits,

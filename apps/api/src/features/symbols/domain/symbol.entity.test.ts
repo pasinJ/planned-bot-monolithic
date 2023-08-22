@@ -1,10 +1,10 @@
 import { faker } from '@faker-js/faker';
-import { append, assoc, modify, omit } from 'ramda';
+import { append, assoc, modify, omit, pick } from 'ramda';
 
 import { anyFloat, anyString, invalidDate, negativeInt, randomDateBefore } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/mockEntity.js';
 
-import { symbolSchema } from './symbol.entity.js';
+import { createSymbol, exchangeEnum, symbolSchema } from './symbol.entity.js';
 
 const validSymbol = mockSymbol();
 
@@ -140,6 +140,56 @@ describe('Symbol entity', () => {
   describe('WHEN every property is valid', () => {
     it('THEN the symbol should be valid', () => {
       expect(symbolSchema.parse(validSymbol)).toEqual(validSymbol);
+    });
+  });
+});
+
+describe('Create symbol entity', () => {
+  describe('WHEN successfully create symbol entity', () => {
+    it('THEN it should return Right of symbol', () => {
+      const input = pick(
+        [
+          'id',
+          'name',
+          'baseAsset',
+          'baseAssetPrecision',
+          'quoteAsset',
+          'quoteAssetPrecision',
+          'orderTypes',
+          'filters',
+        ],
+        mockSymbol(),
+      );
+      const currentDate = faker.date.anytime();
+      const result = createSymbol(input, currentDate);
+
+      expect(result).toEqualRight({
+        ...input,
+        exchange: exchangeEnum.BINANCE,
+        version: 0,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+      });
+    });
+  });
+  describe('WHEN creating symbol entity failed', () => {
+    it('THEN it should return Left of CREATE_SYMBOL_ENTITY_ERROR', () => {
+      const input = pick(
+        [
+          'id',
+          'name',
+          'baseAsset',
+          'baseAssetPrecision',
+          'quoteAsset',
+          'quoteAssetPrecision',
+          'orderTypes',
+          'filters',
+        ],
+        mockSymbol(),
+      );
+      const result = createSymbol({ ...input, baseAssetPrecision: -1 }, faker.date.anytime());
+
+      expect(result).toSubsetEqualLeft({ name: 'CREATE_SYMBOL_ENTITY_ERROR' });
     });
   });
 });

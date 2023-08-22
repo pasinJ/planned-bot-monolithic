@@ -1,7 +1,7 @@
 import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
-import { ValidationError, isValidationError, toValidationError } from 'zod-validation-error';
+import { ValidationError, fromZodError, isValidationErrorLike } from 'zod-validation-error';
 
 import { ErrorBase } from '#shared/error.js';
 
@@ -43,15 +43,25 @@ export function parseWithZod<
     pipe(
       e.tryCatch(
         () => schema.parse(value) as typeof schema extends z.ZodType ? Output : string & z.BRAND<B>,
-        toValidationError(),
+        toValidationError,
       ),
-      e.mapLeft((error) =>
-        isValidationError(error)
+      e.mapLeft((error) => {
+        return isValidationErrorLike(error)
           ? new SchemaValidationError('MISMATCH_SCHEMA', message, error)
-          : new SchemaValidationError('SCHEMA_VALIDATION_FAILED', 'Cannot validate the given schema', error),
-      ),
+          : new SchemaValidationError(
+              'SCHEMA_VALIDATION_FAILED',
+              'Unexpected error happened when try to parse with zod',
+              error,
+            );
+      }),
     );
 
   if (value) return internalFn(value);
   else return internalFn;
+}
+
+function toValidationError(error: unknown): ValidationError | Error {
+  if (error instanceof z.ZodError) return fromZodError(error);
+  else if (error instanceof Error) return error;
+  else return new Error('Unknown error happend when try to parse with zod', { cause: error });
 }
