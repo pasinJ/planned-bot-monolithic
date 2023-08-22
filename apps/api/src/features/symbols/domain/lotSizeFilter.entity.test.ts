@@ -11,7 +11,7 @@ import { mockLotSizeFilter } from '#test-utils/mockEntity.js';
 import { lotSizeFilterSchema } from './lotSizeFilter.entity.js';
 
 const minQtyRange: [number, number] = [1, 10];
-const maxQtyRange: [number, number] = [10, 20];
+const maxQtyRange: [number, number] = [11, 20];
 const validLotSizeFilter = mockLotSizeFilter(minQtyRange, maxQtyRange);
 
 describe('Lot size filter entity', () => {

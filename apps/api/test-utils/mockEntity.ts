@@ -15,7 +15,7 @@ export function mockSymbol(
   override?: Partial<{ [k in keyof Symbol]: Omit<Symbol[k], typeof z.BRAND> }>,
 ): Symbol {
   const minRange: [number, number] = [1, 10];
-  const maxRange: [number, number] = [10, 20];
+  const maxRange: [number, number] = [11, 20];
 
   return {
     id: anyString(),
@@ -41,7 +41,7 @@ export function mockSymbol(
 
 export function mockLotSizeFilter(
   minQtyRange: [number, number] = [1, 10],
-  maxQtyRange: [number, number] = [10, 20],
+  maxQtyRange: [number, number] = [11, 20],
 ): LotSizeFilter {
   return {
     type: 'LOT_SIZE',
@@ -53,7 +53,7 @@ export function mockLotSizeFilter(
 
 export function mockMarketLotSizeFilter(
   minQtyRange: [number, number] = [1, 10],
-  maxQtyRange: [number, number] = [10, 20],
+  maxQtyRange: [number, number] = [11, 20],
 ): MarketLotSizeFilter {
   return {
     type: 'MARKET_LOT_SIZE',
@@ -85,7 +85,7 @@ export function mockNotionalFilter(): NotionalFilter {
 
 export function mockPriceFilter(
   minPriceRange: [number, number] = [1, 10],
-  maxPriceRange: [number, number] = [10, 20],
+  maxPriceRange: [number, number] = [11, 20],
 ): PriceFilter {
   return {
     type: 'PRICE_FILTER',

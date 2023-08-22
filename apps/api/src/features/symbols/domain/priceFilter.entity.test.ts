@@ -11,7 +11,7 @@ import { mockPriceFilter } from '#test-utils/mockEntity.js';
 import { priceFilterSchema } from './priceFilter.entity.js';
 
 const minPriceRange: [number, number] = [1, 10];
-const maxPriceRange: [number, number] = [10, 20];
+const maxPriceRange: [number, number] = [11, 20];
 const validPriceFilter = mockPriceFilter(minPriceRange, maxPriceRange);
 
 describe('Price filter entity', () => {
