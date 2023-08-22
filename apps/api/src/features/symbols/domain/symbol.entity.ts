@@ -31,6 +31,7 @@ const orderTypeSchema = z.enum([
   'TAKE_PROFIT_LIMIT',
   'LIMIT_MAKER',
 ]);
+export type OrderType = z.infer<typeof orderTypeSchema>;
 const orderTypesSchema = z.array(orderTypeSchema);
 export const orderTypeEnum = orderTypeSchema.enum;
 
@@ -43,6 +44,7 @@ const filtersSchema = z.array(
     priceFilterSchema,
   ]),
 );
+export type SymbolFilters = z.infer<typeof filtersSchema>;
 
 const versionSchema = nonNegativeInteger.brand('SymbolVersion');
 

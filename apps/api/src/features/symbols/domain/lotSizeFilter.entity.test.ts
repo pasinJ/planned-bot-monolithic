@@ -20,7 +20,7 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(omit(['type'], validLotSizeFilter))).toThrow();
     });
     it('WHEN type property does not equal to LOT_SIZE THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('type', anyString, validLotSizeFilter))).toThrow();
+      expect(() => lotSizeFilterSchema.parse(assoc('type', anyString(), validLotSizeFilter))).toThrow();
     });
   });
   describe('minQty property', () => {
@@ -31,7 +31,7 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(assoc('minQty', 0, validLotSizeFilter))).toThrow();
     });
     it('WHEN minQty property is a negative number THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('minQty', negativeFloat, validLotSizeFilter))).toThrow();
+      expect(() => lotSizeFilterSchema.parse(assoc('minQty', negativeFloat(), validLotSizeFilter))).toThrow();
     });
     it('WHEN minQty property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const { float9Digits, float8Digits } = random9DigitsPositiveFloatWithRoundUp(minQtyRange);
@@ -49,7 +49,7 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(assoc('maxQty', 0, validLotSizeFilter))).toThrow();
     });
     it('WHEN maxQty property is a negative number THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('maxQty', negativeFloat, validLotSizeFilter))).toThrow();
+      expect(() => lotSizeFilterSchema.parse(assoc('maxQty', negativeFloat(), validLotSizeFilter))).toThrow();
     });
     it('WHEN maxQty property is less than minQty property THEN the filter should be invalid', () => {
       const lessThanMinQty = parseFloat(validLotSizeFilter.minQty.toString().slice(0, -1));
@@ -71,7 +71,9 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(assoc('stepSize', 0, validLotSizeFilter))).toThrow();
     });
     it('WHEN stepSize property is a negative number THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('stepSize', negativeFloat, validLotSizeFilter))).toThrow();
+      expect(() =>
+        lotSizeFilterSchema.parse(assoc('stepSize', negativeFloat(), validLotSizeFilter)),
+      ).toThrow();
     });
     it('WHEN stepSize property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const precision9Digits = randomPrecisionStep([9, 9]);

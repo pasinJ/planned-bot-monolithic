@@ -19,7 +19,7 @@ describe('Market lot size filter entity', () => {
       expect(() => notionalFilterSchema.parse(omit(['type'], validNotionalFilter))).toThrow();
     });
     it('WHEN type property does not equal to NOTIONAL THEN the filter should be invalid', () => {
-      expect(() => notionalFilterSchema.parse(assoc('type', anyString, validNotionalFilter))).toThrow();
+      expect(() => notionalFilterSchema.parse(assoc('type', anyString(), validNotionalFilter))).toThrow();
     });
   });
   describe('minNotional property', () => {
@@ -31,7 +31,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN minNotional property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('minNotional', negativeFloat, validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('minNotional', negativeFloat(), validNotionalFilter)),
       ).toThrow();
     });
     it('WHEN minNotional property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
@@ -47,7 +47,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN applyMinToMarket property is not a boolean THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('applyMinToMarket', anyString, validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('applyMinToMarket', anyString(), validNotionalFilter)),
       ).toThrow();
     });
   });
@@ -60,7 +60,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN maxNotional property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('maxNotional', negativeFloat, validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('maxNotional', negativeFloat(), validNotionalFilter)),
       ).toThrow();
     });
     it('WHEN maxNotional property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
@@ -76,7 +76,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN applyMaxToMarket property is not a boolean THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('applyMaxToMarket', anyString, validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('applyMaxToMarket', anyString(), validNotionalFilter)),
       ).toThrow();
     });
   });
@@ -86,12 +86,12 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN avgPriceMins property is a float number THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('avgPriceMins', anyFloat, validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('avgPriceMins', anyFloat(), validNotionalFilter)),
       ).toThrow();
     });
     it('WHEN avgPriceMins property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('avgPriceMins', negativeInt, validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('avgPriceMins', negativeInt(), validNotionalFilter)),
       ).toThrow();
     });
     it('WHEN avgPriceMins property equals to zero THEN the filter should be valid', () => {

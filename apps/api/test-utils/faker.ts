@@ -1,11 +1,11 @@
 import { faker } from '@faker-js/faker';
 import { Decimal } from 'decimal.js';
 
-export const anyString = faker.string.alphanumeric(5);
-export const negativeFloat = faker.number.float({ max: -1, min: -10 });
-export const anyFloat = faker.number.float();
-export const negativeInt = faker.number.int({ min: -100, max: -1 });
-export const nonNegativeInt = faker.number.int({ min: 0, max: 100 });
+export const anyString = () => faker.string.alphanumeric(5);
+export const negativeFloat = () => faker.number.float({ max: -1, min: -10 });
+export const anyFloat = () => faker.number.float();
+export const negativeInt = () => faker.number.int({ min: -100, max: -1 });
+export const nonNegativeInt = () => faker.number.int({ min: 0, max: 100 });
 export const randomPositiveFloat = (precision = 8, between: [number, number] = [1, 10]) => {
   const int = faker.number.int({ min: between[0], max: between[1] });
   if (precision === 0) return int;
@@ -30,4 +30,4 @@ export const randomPrecisionStep = (precisionBetween = [0, 8]) =>
 export const invalidDate = new Date('invalid');
 export const randomDateBefore = (date: Date) => faker.date.recent({ refDate: date });
 
-export const anyBoolean = faker.datatype.boolean();
+export const anyBoolean = () => faker.datatype.boolean();

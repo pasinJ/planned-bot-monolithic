@@ -21,7 +21,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN type property does not equal to MARKET_LOT_SIZE THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('type', anyString, validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('type', anyString(), validMarketLotSizeFilter)),
       ).toThrow();
     });
   });
@@ -34,7 +34,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN minQty property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('minQty', negativeFloat, validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('minQty', negativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN minQty property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
@@ -53,7 +53,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN maxQty property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('maxQty', negativeFloat, validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('maxQty', negativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN maxQty property is less than minQty property THEN the filter should be invalid', () => {
@@ -78,7 +78,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN stepSize property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('stepSize', negativeFloat, validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('stepSize', negativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN stepSize property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {

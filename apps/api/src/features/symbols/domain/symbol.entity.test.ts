@@ -36,7 +36,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['exchange'], validSymbol))).toThrow();
     });
     it('WHEN exchange property does not match enum list THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('exchange', anyString, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('exchange', anyString(), validSymbol))).toThrow();
     });
   });
   describe('baseAsset property', () => {
@@ -55,10 +55,10 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['baseAssetPrecision'], validSymbol))).toThrow();
     });
     it('WHEN baseAssetPrecision property is a float number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', anyFloat, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', anyFloat(), validSymbol))).toThrow();
     });
     it('WHEN baseAssetPrecision property is a negative number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', negativeInt, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', negativeInt(), validSymbol))).toThrow();
     });
   });
   describe('quoteAsset property', () => {
@@ -77,10 +77,10 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['quoteAssetPrecision'], validSymbol))).toThrow();
     });
     it('WHEN quoteAssetPrecision property is a float number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', anyFloat, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', anyFloat(), validSymbol))).toThrow();
     });
     it('WHEN quoteAssetPrecision property is a negative number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', negativeInt, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', negativeInt(), validSymbol))).toThrow();
     });
   });
   describe('orderTypes property', () => {
@@ -88,7 +88,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['orderTypes'], validSymbol))).toThrow();
     });
     it('WHEN orderTypes property includes a element that does not match enum list THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(modify('orderTypes', append(anyString), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(modify('orderTypes', append(anyString()), validSymbol))).toThrow();
     });
   });
   describe('filters property', () => {
@@ -111,10 +111,10 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['version'], validSymbol))).toThrow();
     });
     it('WHEN version property is a float number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('version', anyFloat, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('version', anyFloat(), validSymbol))).toThrow();
     });
     it('WHEN version property is a negative number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('version', negativeInt, validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('version', negativeInt(), validSymbol))).toThrow();
     });
   });
   describe('createdAt property', () => {

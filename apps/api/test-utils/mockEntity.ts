@@ -15,12 +15,12 @@ export function mockSymbol(): Symbol {
   const maxRange: [number, number] = [10, 20];
 
   return {
-    id: anyString,
-    name: anyString,
+    id: anyString(),
+    name: anyString(),
     exchange: faker.helpers.arrayElement(values(exchangeEnum)),
-    baseAsset: anyString,
+    baseAsset: anyString(),
     baseAssetPrecision: faker.number.int({ min: 0, max: 10 }),
-    quoteAsset: anyString,
+    quoteAsset: anyString(),
     quoteAssetPrecision: faker.number.int({ min: 0, max: 10 }),
     orderTypes: faker.helpers.arrayElements(values(orderTypeEnum)),
     filters: [
@@ -64,8 +64,8 @@ export function mockMinNotionalFilter(): MinNotionalFilter {
   return {
     type: 'MIN_NOTIONAL',
     minNotional: randomPositiveFloat(8),
-    applyToMarket: anyBoolean,
-    avgPriceMins: nonNegativeInt,
+    applyToMarket: anyBoolean(),
+    avgPriceMins: nonNegativeInt(),
   };
 }
 
@@ -73,10 +73,10 @@ export function mockNotionalFilter(): NotionalFilter {
   return {
     type: 'NOTIONAL',
     minNotional: randomPositiveFloat(8),
-    applyMinToMarket: anyBoolean,
+    applyMinToMarket: anyBoolean(),
     maxNotional: randomPositiveFloat(8),
-    applyMaxToMarket: anyBoolean,
-    avgPriceMins: nonNegativeInt,
+    applyMaxToMarket: anyBoolean(),
+    avgPriceMins: nonNegativeInt(),
   };
 }
 
