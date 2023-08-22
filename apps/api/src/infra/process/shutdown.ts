@@ -17,30 +17,30 @@ type Deps = { server: FastifyServer; mongoDbClient: Mongoose };
 export function addGracefulShutdown(deps: Deps, loggerIo: LoggerIO): io.IO<void> {
   return () => {
     ['SIGTERM', 'SIGINT'].forEach((signal) => {
-      process.on(signal, () =>
-        pipe(
+      process.on(signal, () => {
+        void pipe(
           t.fromIO(loggerIo.info(`Got ${signal} signal`)),
           t.chain(() => startGracefulShutdown(deps, loggerIo)),
           executeT,
-        ),
-      );
+        );
+      });
     });
 
-    process.on('uncaughtException', (error, origin) =>
-      pipe(
+    process.on('uncaughtException', (error, origin) => {
+      void pipe(
         t.fromIO(loggerIo.error({ error, origin }, 'Got uncaughtException event')),
         t.chain(() => startGracefulShutdown(deps, loggerIo)),
         executeT,
-      ),
-    );
+      );
+    });
 
-    process.on('unhandledRejection', (reason) =>
-      pipe(
+    process.on('unhandledRejection', (reason) => {
+      void pipe(
         t.fromIO(loggerIo.error({ reason }, 'Got unhandledRejection event')),
         t.chain(() => startGracefulShutdown(deps, loggerIo)),
         executeT,
-      ),
-    );
+      );
+    });
   };
 }
 

@@ -63,7 +63,7 @@ export function createErrorFromUnknown<
 >(
   constructor: new (name: Name, message: string, cause?: Cause) => E,
   name: IfIncludeExternalError<Cause, Name>,
-  message?: IfIncludeExternalError<Cause, Name>,
+  message?: IfIncludeExternalError<Cause, string>,
 ) {
   return (unknown: IfIncludeExternalError<Cause, unknown>): E => {
     if (is(String, unknown)) return new constructor(name, unknown);
