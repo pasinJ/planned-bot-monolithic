@@ -11,7 +11,7 @@
     "test:u": "npm run test -- --selectProjects UNIT --testPathPattern",
     "test:i": "npm run test -- --selectProjects INTEGRATION --testPathPattern",
     "test:e": "npm run test -- --selectProjects E2E --testPathPattern",
-    "test:w": "npm run test:u -- --watch --testPathPattern",
+    "test:w": "npm run test -- --selectProjects UNIT INTEGRATION --testPathPattern --watch",
     "start": "node --experimental-specifier-resolution=node --no-warnings dist/main.js",
     "build": "tsc -p tsconfig.prod.json && tsc-alias",
     "build:clean": "rimraf dist && npm run build",
@@ -54,6 +54,7 @@
   "dependencies": {
     "axios": "^1.4.0",
     "date-fns": "^2.30.0",
+    "decimal.js": "^10.4.3",
     "fastify": "^4.21.0",
     "fp-ts": "^2.16.1",
     "fp-ts-std": "^0.17.1",
