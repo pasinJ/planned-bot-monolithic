@@ -1,3 +1,4 @@
+import { CreateAxiosDefaults } from 'axios';
 import Binance from 'binance-api-node';
 import e from 'fp-ts/lib/Either.js';
 import te from 'fp-ts/lib/TaskEither.js';
@@ -8,8 +9,10 @@ import { createSymbol } from '#features/symbols/domain/symbol.entity.js';
 import { createAxiosHttpClient } from '#infra/http/client.js';
 import { HttpClient } from '#infra/http/client.type.js';
 import { PinoLogger, createLoggerIo } from '#infra/logging.js';
+import { getBnbConfig } from '#shared/config/binance.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
+import { BNB_PATHS } from './binanceService.constant.js';
 import {
   BnbService,
   CreateBnbServiceError,
@@ -27,14 +30,15 @@ type CreateBnbServiceDeps = { dateService: DateService; idService: IdService; ma
 export function createBnbService(
   deps: CreateBnbServiceDeps,
 ): te.TaskEither<CreateBnbServiceError, BnbService> {
+  const { HTTP_BASE_URL } = getBnbConfig();
   const logger = createLoggerIo('BnbService', deps.mainLogger);
-  const baseURL = 'https://api.binance.com';
-  const httpClientConfig = { baseURL };
+  const httpClientOptions: CreateAxiosDefaults = { baseURL: HTTP_BASE_URL };
+  const bnbClientOptions: Parameters<typeof BnbClient>[0] = { httpBase: HTTP_BASE_URL };
 
   return pipe(
     te.Do,
-    te.bindW('httpClient', () => te.fromIO(() => createAxiosHttpClient(logger, httpClientConfig))),
-    te.bindW('bnbClient', () => te.fromIO(() => BnbClient({ httpBase: baseURL }))),
+    te.bindW('httpClient', () => te.fromIO(() => createAxiosHttpClient(logger, httpClientOptions))),
+    te.bindW('bnbClient', () => te.fromIO(() => BnbClient(bnbClientOptions))),
     te.bindW('deps', ({ httpClient, bnbClient }) => te.of({ ...deps, httpClient, bnbClient })),
     te.chainFirst(({ bnbClient }) =>
       te.tryCatch(
@@ -72,7 +76,7 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
   return pipe(
     httpClient.sendRequest({
       method: 'GET',
-      url: '/api/v3/exchangeInfo',
+      url: BNB_PATHS.exchangeInfo,
       params: { permissions: 'SPOT' },
       responseSchema: exchangeInfoRespSchema,
     }),

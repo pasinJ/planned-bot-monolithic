@@ -4,14 +4,17 @@ import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
 import { createMainLogger } from '#infra/logging.js';
+import { getBnbConfig } from '#shared/config/binance.js';
 import { executeT } from '#shared/utils/fp.js';
 import exchangeInfoResp from '#test-utils/exchangeInfo.resp.json';
 import { mockDateService, mockIdService } from '#test-utils/mockService.js';
 
+import { BNB_PATHS } from './binanceService.constant.js';
 import { createBnbService as createBnbServiceOrg } from './binanceService.js';
 
-const baseURL = 'https://api.binance.com';
-const pingPath = `${baseURL}/api/v3/ping`;
+const { HTTP_BASE_URL } = getBnbConfig();
+const { ping, exchangeInfo } = BNB_PATHS;
+const pingPath = `${HTTP_BASE_URL}${ping}`;
 
 const msw = setupServer(rest.get(pingPath, (_, res, ctx) => res(ctx.status(200), ctx.json({}))));
 
@@ -46,7 +49,7 @@ describe('Create Binance service', () => {
 });
 
 describe('Get SPOT symbols', () => {
-  const exchangeInfoPath = `${baseURL}/api/v3/exchangeInfo`;
+  const exchangeInfoPath = `${HTTP_BASE_URL}${exchangeInfo}`;
 
   describe('WHEN successfully get SPOT symbols', () => {
     it('THEN it should return Right of a list of symbols', async () => {
