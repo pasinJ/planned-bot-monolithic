@@ -8,7 +8,7 @@ export type FastifyServer = FastifyInstance<Server, IncomingMessage, ServerRespo
 
 export class BuildHttpServerError extends ErrorBase<'BUILD_HTTP_SERVER_ERROR', ExternalError> {}
 export class StartHttpServerError extends ErrorBase<
-  'START_HTTP_SERVER_ERROR',
+  'ADD_ROUTE_ERROR' | 'START_HTTP_SERVER_ERROR',
   ExternalError | FastifyError
 > {}
 export class CloseHttpServerError extends ErrorBase<'CLOSE_HTTP_SERVER_ERROR', ExternalError> {}

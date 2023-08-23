@@ -2,10 +2,12 @@ import Fastify from 'fastify';
 import e from 'fp-ts/lib/Either.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
-import { flow, pipe } from 'fp-ts/lib/function.js';
+import { pipe } from 'fp-ts/lib/function.js';
 import { nanoid } from 'nanoid';
 import { juxt } from 'ramda';
 
+import { addSymbolsRoutes } from '#features/symbols/routes.js';
+import { ApplicationDeps } from '#infra/common.type.js';
 import { PinoLogger, createLogger } from '#infra/logging.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
@@ -41,31 +43,35 @@ export function buildHttpServer(mainLogger: PinoLogger): e.Either<BuildHttpServe
   );
 }
 
-export function startHttpServer(instnace: FastifyServer): te.TaskEither<StartHttpServerError, FastifyServer> {
+export function startHttpServer(
+  instance: FastifyServer,
+  deps: ApplicationDeps,
+): te.TaskEither<StartHttpServerError, FastifyServer> {
   const { PORT_NUMBER } = getHttpConfig();
   return pipe(
-    ioe.of(instnace),
-    ioe.chainFirst(flow(juxt([addGeneralRoutes]), ioe.sequenceArray)),
+    juxt([addGeneralRoutes, addSymbolsRoutes])(instance, deps),
+    ioe.sequenceArray,
     te.fromIOEither,
     te.chainFirst(() =>
       te.tryCatch(
-        () => instnace.listen({ host: '0.0.0.0', port: PORT_NUMBER }),
+        () => instance.listen({ host: '0.0.0.0', port: PORT_NUMBER }),
         createErrorFromUnknown(StartHttpServerError, 'START_HTTP_SERVER_ERROR'),
       ),
     ),
+    te.map(() => instance),
   );
 }
 
-export function closeHttpServer(instnace: FastifyServer): te.TaskEither<CloseHttpServerError, void> {
+export function closeHttpServer(instance: FastifyServer): te.TaskEither<CloseHttpServerError, void> {
   return pipe(
-    te.fromIO(() => instnace.log.info('Fastify server start closing')),
+    te.fromIO(() => instance.log.info('Fastify server start closing')),
     te.chain(() =>
       te.tryCatch(
-        () => instnace.close(),
+        () => instance.close(),
         createErrorFromUnknown(CloseHttpServerError, 'CLOSE_HTTP_SERVER_ERROR'),
       ),
     ),
-    te.chainIOK(() => () => instnace.log.info('Fastify server successfully closed')),
-    te.orElseFirstIOK((error) => () => instnace.log.error({ error }, 'Fastify server failed to close')),
+    te.chainIOK(() => () => instance.log.info('Fastify server successfully closed')),
+    te.orElseFirstIOK((error) => () => instance.log.error({ error }, 'Fastify server failed to close')),
   );
 }

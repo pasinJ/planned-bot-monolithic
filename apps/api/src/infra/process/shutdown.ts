@@ -12,7 +12,7 @@ import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.js';
 import { getErrorSummary } from '#shared/error.js';
 import { executeT } from '#shared/utils/fp.js';
 
-type Deps = { server: FastifyServer; mongoDbClient: Mongoose };
+type Deps = { httpServer: FastifyServer; mongoDbClient: Mongoose };
 
 export function addGracefulShutdown(deps: Deps, logger: LoggerIo): io.IO<void> {
   return () => {
@@ -45,13 +45,13 @@ export function addGracefulShutdown(deps: Deps, logger: LoggerIo): io.IO<void> {
 }
 
 function startGracefulShutdown(deps: Deps, logger: LoggerIo): t.Task<never> {
-  const { server, mongoDbClient } = deps;
+  const { httpServer, mongoDbClient } = deps;
   const { GRACEFUL_PERIOD_MS } = getAppConfig();
 
   return pipe(
     te.fromIO(logger.infoIo('Graceful shutdown start')),
     te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
-    te.chainFirstW(() => te.sequenceArray([closeHttpServer(server)])),
+    te.chainFirstW(() => te.sequenceArray([closeHttpServer(httpServer)])),
     te.chainFirstW(() => te.sequenceArray([disconnectMongoDbClient(mongoDbClient, logger)])),
     te.chainIOK((timer) =>
       pipe(

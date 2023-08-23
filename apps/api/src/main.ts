@@ -1,16 +1,17 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
+import { omit } from 'ramda';
 
 import { createSymbolRepository } from '#features/symbols/symbol.repository.js';
-import { SymbolRepository } from '#features/symbols/symbol.repository.type.js';
+import { ApplicationDeps } from '#infra/common.type.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
+import { FastifyServer } from '#infra/http/server.type.js';
 import { createLoggerIo, createMainLogger } from '#infra/logging.js';
 import { createMongoDbClient } from '#infra/mongoDb/client.js';
 import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { startupProcess } from '#infra/process/startup.js';
 import { createBnbService } from '#infra/services/binance.js';
-import { BnbService } from '#infra/services/binance.type.js';
 import { dateService } from '#infra/services/date.js';
 import { idService } from '#infra/services/id.js';
 import { getErrorSummary } from '#shared/error.js';
@@ -25,9 +26,9 @@ await executeT(
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
     te.bindW('bnbService', () => createBnbServiceWithDeps()),
     te.bindW('symbolRepository', (deps) => createSymbolRepositoryWithDeps(deps)),
-    te.bindW('server', () => te.fromEither(buildHttpServer(mainLogger))),
+    te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
-    te.chainFirstW(({ server }) => startHttpServer(server)),
+    te.chainFirstW((deps) => startHttpServerWithDeps(deps)),
     te.chainFirstIOK((deps) => addGracefulShutdown(deps, logger)),
     te.orElseFirstIOK((error) =>
       logger.errorIo({ error }, 'Starting process failed: %s', getErrorSummary(error)),
@@ -36,12 +37,21 @@ await executeT(
   ),
 );
 
+type Deps = Omit<ApplicationDeps, 'dateService' | 'idService'> & {
+  mongoDbClient: Mongoose;
+  httpServer: FastifyServer;
+};
+
 function createBnbServiceWithDeps() {
   return createBnbService({ dateService, idService, mainLogger });
 }
-function createSymbolRepositoryWithDeps({ mongoDbClient }: { mongoDbClient: Mongoose }) {
+function createSymbolRepositoryWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createSymbolRepository(mongoDbClient));
 }
-function startupProcessWithDeps(deps: { bnbService: BnbService; symbolRepository: SymbolRepository }) {
+function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepository'>) {
   return startupProcess({ ...deps, logger: logger });
+}
+function startHttpServerWithDeps(deps: Deps) {
+  const { httpServer } = deps;
+  return startHttpServer(httpServer, { ...omit(['mongoDbClient', 'server'], deps), dateService, idService });
 }
