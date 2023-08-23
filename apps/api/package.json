@@ -5,8 +5,9 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
-    "dev": "DOTENV_CONFIG_PATH=.env/.env.dev NODE_OPTIONS=--trace-warnings tsx --require dotenv/config src/main.ts",
+    "dev": "DOTENV_CONFIG_PATH=.env/.env.dev tsx --require dotenv/config src/main.ts",
     "dev:w": "DOTENV_CONFIG_PATH=.env/.env.dev tsx watch --require dotenv/config src/main.ts",
+    "dev:t": "DOTENV_CONFIG_PATH=.env/.env.test tsx watch --require dotenv/config src/main.ts",
     "test": "DOTENV_CONFIG_PATH=.env/.env.dev tsx --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js",
     "test:u": "npm run test -- --selectProjects UNIT --testPathPattern",
     "test:i": "npm run test -- --selectProjects INTEGRATION --testPathPattern",
