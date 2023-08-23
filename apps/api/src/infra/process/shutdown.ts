@@ -51,7 +51,7 @@ function startGracefulShutdown(deps: Deps, logger: LoggerIo): t.Task<never> {
   return pipe(
     te.fromIO(logger.infoIo('Graceful shutdown start')),
     te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
-    te.chainFirstW(() => te.sequenceArray([closeHttpServer(server, logger)])),
+    te.chainFirstW(() => te.sequenceArray([closeHttpServer(server)])),
     te.chainFirstW(() => te.sequenceArray([disconnectMongoDbClient(mongoDbClient, logger)])),
     te.chainIOK((timer) =>
       pipe(

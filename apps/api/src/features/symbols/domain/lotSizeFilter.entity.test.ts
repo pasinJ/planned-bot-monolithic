@@ -27,11 +27,11 @@ describe('Lot size filter entity', () => {
     it('WHEN minQty property is missing THEN the filter should be invalid', () => {
       expect(() => lotSizeFilterSchema.parse(omit(['minQty'], validLotSizeFilter))).toThrow();
     });
-    it('WHEN minQty property equals to zero THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('minQty', 0, validLotSizeFilter))).toThrow();
-    });
     it('WHEN minQty property is a negative number THEN the filter should be invalid', () => {
       expect(() => lotSizeFilterSchema.parse(assoc('minQty', negativeFloat(), validLotSizeFilter))).toThrow();
+    });
+    it('WHEN minQty property equals to zero THEN the filter should be valid', () => {
+      expect(() => lotSizeFilterSchema.parse(assoc('minQty', 0, validLotSizeFilter))).not.toThrow();
     });
     it('WHEN minQty property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const { float9Digits, float8Digits } = random9DigitsPositiveFloatWithRoundUp(minQtyRange);
@@ -67,13 +67,13 @@ describe('Lot size filter entity', () => {
     it('WHEN stepSize property is missing THEN the filter should be invalid', () => {
       expect(() => lotSizeFilterSchema.parse(omit(['stepSize'], validLotSizeFilter))).toThrow();
     });
-    it('WHEN stepSize property equals to zero THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('stepSize', 0, validLotSizeFilter))).toThrow();
-    });
     it('WHEN stepSize property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
         lotSizeFilterSchema.parse(assoc('stepSize', negativeFloat(), validLotSizeFilter)),
       ).toThrow();
+    });
+    it('WHEN stepSize property equals to zero THEN the filter should be valid', () => {
+      expect(() => lotSizeFilterSchema.parse(assoc('stepSize', 0, validLotSizeFilter))).not.toThrow();
     });
     it('WHEN stepSize property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const precision9Digits = randomPrecisionStep([9, 9]);

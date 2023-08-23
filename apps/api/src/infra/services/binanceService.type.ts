@@ -49,6 +49,14 @@ const exchangeInfoRespFilterSchema = z.discriminatedUnion('filterType', [
     maxPrice: z.coerce.number(),
     tickSize: z.coerce.number(),
   }),
+  z.object({ filterType: z.literal('PERCENT_PRICE') }),
+  z.object({ filterType: z.literal('PERCENT_PRICE_BY_SIDE') }),
+  z.object({ filterType: z.literal('ICEBERG_PARTS') }),
+  z.object({ filterType: z.literal('MAX_NUM_ORDERS') }),
+  z.object({ filterType: z.literal('MAX_NUM_ALGO_ORDERS') }),
+  z.object({ filterType: z.literal('MAX_NUM_ICEBERG_ORDERS') }),
+  z.object({ filterType: z.literal('MAX_POSITION') }),
+  z.object({ filterType: z.literal('TRAILING_DELTA') }),
 ]);
 export const exchangeInfoRespSchema = z.object({
   timezone: z.string(),

@@ -80,9 +80,15 @@ describe('Get SPOT symbols', () => {
             },
             {
               type: 'LOT_SIZE',
-              minQty: 0.0001,
+              minQty: 0,
               maxQty: 100000.0,
               stepSize: 0.0001,
+            },
+            {
+              type: 'MARKET_LOT_SIZE',
+              minQty: 0.001,
+              maxQty: 100000.0,
+              stepSize: 0,
             },
           ],
           version: 0,

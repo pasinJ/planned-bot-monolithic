@@ -1,5 +1,5 @@
-import ior from 'fp-ts/IORef';
 import ioe from 'fp-ts/lib/IOEither.js';
+import ior from 'fp-ts/lib/IORef.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid, pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
@@ -10,6 +10,7 @@ import { createErrorFromUnknown } from '#shared/error.js';
 import { SymbolModel, createSymbolModel } from './symbol.model.js';
 import {
   AddSymbolsError,
+  CountAllSymbolsError,
   CreateSymbolRepositoryError,
   GetAllSymbolsError,
   GetSymbolRepositoryError,
@@ -18,11 +19,17 @@ import {
 
 const symbolRepository = new ior.IORef<SymbolRepository | undefined>(undefined);
 
-export function createSymbolRepository(client: Mongoose): ioe.IOEither<CreateSymbolRepositoryError, void> {
+export function createSymbolRepository(
+  client: Mongoose,
+): ioe.IOEither<CreateSymbolRepositoryError, SymbolRepository> {
   return pipe(
     createSymbolModel(client),
-    ioe.map((model) => ({ add: buildAddSymbols(model), getAll: buildGetAll(model) })),
-    ioe.chainIOK((repository) => symbolRepository.write(repository)),
+    ioe.map((model) => ({
+      add: buildAddSymbols(model),
+      getAll: buildGetAll(model),
+      countAll: buildCountAll(model),
+    })),
+    ioe.chainFirstIOK((repository) => symbolRepository.write(repository)),
   );
 }
 
@@ -54,5 +61,12 @@ function buildGetAll(model: SymbolModel): SymbolRepository['getAll'] {
   return pipe(
     te.tryCatch(() => model.find(), createErrorFromUnknown(GetAllSymbolsError, 'GET_ALL_SYMBOLS_ERROR')),
     te.map((list) => list.map((doc) => omit(['_id', '__v'], doc.toJSON({ virtuals: true })))),
+  );
+}
+
+function buildCountAll(model: SymbolModel): SymbolRepository['countAll'] {
+  return te.tryCatch(
+    () => model.count(),
+    createErrorFromUnknown(CountAllSymbolsError, 'COUNT_ALL_SYMBOLS_ERROR'),
   );
 }

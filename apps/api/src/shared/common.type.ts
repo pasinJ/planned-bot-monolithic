@@ -7,3 +7,7 @@ export const positiveFloat8Digits = z
   .number()
   .positive()
   .transform((val) => new Decimal(val).toDecimalPlaces(8, Decimal.ROUND_UP).toNumber());
+export const nonNegativeFloat8Digits = z
+  .number()
+  .nonnegative()
+  .transform((val) => new Decimal(val).toDecimalPlaces(8, Decimal.ROUND_UP).toNumber());

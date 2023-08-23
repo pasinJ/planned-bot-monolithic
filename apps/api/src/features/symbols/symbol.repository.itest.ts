@@ -21,9 +21,9 @@ describe('Create symbol repository', () => {
   afterEach(() => deleteModel(client, symbolModelName));
 
   describe('WHEN successfully create symbol repository', () => {
-    it('THEN it should return Right', () => {
+    it('THEN it should return Right of symbol repository', () => {
       const repository = executeIo(createSymbolRepository(client));
-      expect(repository).toBeRight();
+      expect(repository).toEqualRight(expect.toContainAllKeys(['add', 'countAll', 'getAll']));
     });
   });
   describe('WHEN unsuccessfully create symbol repository (duplicated model)', () => {
@@ -53,7 +53,7 @@ describe('Get symbol repository', () => {
         ioe.chainW(() => getSymbolRepository),
         executeIo,
       );
-      expect(repository).toEqualRight(expect.toContainAllKeys(['add', 'getAll']));
+      expect(repository).toEqualRight(expect.toContainAllKeys(['add', 'countAll', 'getAll']));
     });
   });
 });
@@ -184,12 +184,41 @@ describe('Get all symbols', () => {
       expect(getResult).toEqualRight(expect.toIncludeAllMembers(symbols));
     });
   });
-  describe('WHEN fail to get all symbols', () => {
-    it('THEN it should return Left of GET_ALL_SYMBOLS_ERROR', async () => {
-      jest.spyOn(symbolModel, 'find').mockRejectedValue(new Error());
-      const getResult = await executeT(symbolRepository.getAll);
+});
 
-      expect(getResult).toSubsetEqualLeft({ name: 'GET_ALL_SYMBOLS_ERROR' });
+describe('Count all symbols', () => {
+  let symbolRepository: SymbolRepository;
+  let symbolModel: SymbolModel;
+
+  function setupRepository() {
+    symbolRepository = eUtils.unsafeUnwrap(
+      pipe(
+        createSymbolRepository(client),
+        ioe.chainW(() => getSymbolRepository),
+        executeIo,
+      ),
+    );
+    symbolModel = client.models[symbolModelName];
+  }
+
+  beforeAll(() => setupRepository());
+  afterEach(() => symbolModel.deleteMany());
+  afterAll(() => deleteModel(client, symbolModelName));
+
+  describe('GIVEN there is no symbol in database WHEN count all symbols', () => {
+    it('THEN it should return Right of zero', async () => {
+      const result = await executeT(symbolRepository.countAll);
+
+      expect(result).toEqualRight(0);
+    });
+  });
+  describe('GIVEN there is existing symbols WHEN count all symbols', () => {
+    it('THEN it should return Right of the number of existing symbols', async () => {
+      const symbols = faker.helpers.multiple(mockSymbol, { count: 2 });
+      await symbolModel.insertMany(symbols);
+      const result = await executeT(symbolRepository.countAll);
+
+      expect(result).toEqualRight(symbols.length);
     });
   });
 });

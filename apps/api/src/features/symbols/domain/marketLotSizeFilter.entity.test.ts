@@ -29,13 +29,15 @@ describe('Market lot size filter entity', () => {
     it('WHEN minQty property is missing THEN the filter should be invalid', () => {
       expect(() => marketLotSizeFilterSchema.parse(omit(['minQty'], validMarketLotSizeFilter))).toThrow();
     });
-    it('WHEN minQty property equals to zero THEN the filter should be invalid', () => {
-      expect(() => marketLotSizeFilterSchema.parse(assoc('minQty', 0, validMarketLotSizeFilter))).toThrow();
-    });
     it('WHEN minQty property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
         marketLotSizeFilterSchema.parse(assoc('minQty', negativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
+    });
+    it('WHEN minQty property equals to zero THEN the filter should be valid', () => {
+      expect(() =>
+        marketLotSizeFilterSchema.parse(assoc('minQty', 0, validMarketLotSizeFilter)),
+      ).not.toThrow();
     });
     it('WHEN minQty property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const { float9Digits, float8Digits } = random9DigitsPositiveFloatWithRoundUp(minQtyRange);
@@ -73,13 +75,15 @@ describe('Market lot size filter entity', () => {
     it('WHEN stepSize property is missing THEN the filter should be invalid', () => {
       expect(() => marketLotSizeFilterSchema.parse(omit(['stepSize'], validMarketLotSizeFilter))).toThrow();
     });
-    it('WHEN stepSize property equals to zero THEN the filter should be invalid', () => {
-      expect(() => marketLotSizeFilterSchema.parse(assoc('stepSize', 0, validMarketLotSizeFilter))).toThrow();
-    });
     it('WHEN stepSize property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
         marketLotSizeFilterSchema.parse(assoc('stepSize', negativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
+    });
+    it('WHEN stepSize property equals to zero THEN the filter should be valid', () => {
+      expect(() =>
+        marketLotSizeFilterSchema.parse(assoc('stepSize', 0, validMarketLotSizeFilter)),
+      ).not.toThrow();
     });
     it('WHEN stepSize property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const precision9Digits = randomPrecisionStep([9, 9]);
