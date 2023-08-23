@@ -5,10 +5,14 @@ import { zipObj } from 'ramda';
 import { z } from 'zod';
 
 import { executeT } from '#shared/utils/fp.js';
+import { mockLoggerIo } from '#test-utils/mockService.js';
 
-import { createAxiosHttpClient } from './client.js';
+import { createAxiosHttpClient as createAxiosHttpClientOrg } from './client.js';
 import { HTTP_ERRORS, HttpClient, Method } from './client.type.js';
 
+function createAxiosHttpClient(config?: Parameters<typeof createAxiosHttpClientOrg>[1]) {
+  return createAxiosHttpClientOrg(mockLoggerIo(), config);
+}
 function randomUrl(prefix = '/echo') {
   return prefix + '/' + faker.word.noun();
 }
@@ -30,7 +34,7 @@ function createSendRequestOptions(overrides?: Partial<Parameters<HttpClient['sen
   } as const;
 }
 
-const BASE_URL = 'http://localhost'
+const BASE_URL = 'http://localhost';
 const msw = setupServer(
   rest.all(`${BASE_URL}/200`, (_, res, ctx) => res(ctx.status(200), ctx.json({ success: true }))),
   rest.all(`${BASE_URL}/400`, (_, res, ctx) => res(ctx.status(400))),

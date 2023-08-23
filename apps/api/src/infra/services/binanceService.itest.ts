@@ -3,21 +3,26 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
-import { createAxiosHttpClient } from '#infra/http/client.js';
+import { createMainLogger } from '#infra/logging.js';
 import { executeT } from '#shared/utils/fp.js';
 import exchangeInfoResp from '#test-utils/exchangeInfo.resp.json';
 import { mockDateService, mockIdService } from '#test-utils/mockService.js';
 
-import { createBnbService } from './binanceService.js';
+import { createBnbService as createBnbServiceOrg } from './binanceService.js';
 
 const baseURL = 'https://api.binance.com';
 const pingPath = `${baseURL}/api/v3/ping`;
-const createServiceDeps = {
-  httpClient: createAxiosHttpClient({ baseURL }),
-  dateService: mockDateService(),
-  idService: mockIdService(),
-};
+
 const msw = setupServer(rest.get(pingPath, (_, res, ctx) => res(ctx.status(200), ctx.json({}))));
+
+function createBnbService() {
+  const createServiceDeps = {
+    dateService: mockDateService(),
+    idService: mockIdService(),
+    mainLogger: createMainLogger(),
+  };
+  return createBnbServiceOrg(createServiceDeps);
+}
 
 beforeAll(() => msw.listen());
 afterEach(() => msw.resetHandlers());
@@ -26,7 +31,7 @@ afterAll(() => msw.close());
 describe('Create Binance service', () => {
   describe('WHEN successfully create Binance service', () => {
     it('THEN it should return Right of Binance service', async () => {
-      const result = await executeT(createBnbService(createServiceDeps));
+      const result = await executeT(createBnbService());
       expect(result).toEqualRight(expect.toContainAllKeys(['getSpotSymbols']));
     });
   });
@@ -34,7 +39,7 @@ describe('Create Binance service', () => {
     it('THEN it should return Left of CREATE_BNB_SERVICE_ERROR', async () => {
       msw.use(rest.get(pingPath, (_, res, ctx) => res(ctx.status(500))));
 
-      const result = await executeT(createBnbService(createServiceDeps));
+      const result = await executeT(createBnbService());
       expect(result).toSubsetEqualLeft({ name: 'CREATE_BNB_SERVICE_ERROR' });
     });
   });
@@ -48,7 +53,7 @@ describe('Get SPOT symbols', () => {
       msw.use(rest.get(exchangeInfoPath, (_, res, ctx) => res(ctx.status(200), ctx.json(exchangeInfoResp))));
 
       const result = await pipe(
-        createBnbService(createServiceDeps),
+        createBnbService(),
         te.chainW((service) => service.getSpotSymbols),
         executeT,
       );
@@ -90,7 +95,7 @@ describe('Get SPOT symbols', () => {
       msw.use(rest.get(exchangeInfoPath, (_, res, ctx) => res(ctx.status(500))));
 
       const result = await pipe(
-        createBnbService(createServiceDeps),
+        createBnbService(),
         te.chainW((service) => service.getSpotSymbols),
         executeT,
       );

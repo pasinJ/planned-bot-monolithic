@@ -6,7 +6,7 @@ import { Mongoose } from 'mongoose';
 
 import { closeHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
-import { LoggerIO } from '#infra/logging.js';
+import { LoggerIo } from '#infra/logging.js';
 import { disconnectMongoDbClient } from '#infra/mongoDb/client.js';
 import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.js';
 import { getErrorSummary } from '#shared/error.js';
@@ -14,13 +14,13 @@ import { executeT } from '#shared/utils/fp.js';
 
 type Deps = { server: FastifyServer; mongoDbClient: Mongoose };
 
-export function addGracefulShutdown(deps: Deps, loggerIo: LoggerIO): io.IO<void> {
+export function addGracefulShutdown(deps: Deps, logger: LoggerIo): io.IO<void> {
   return () => {
     ['SIGTERM', 'SIGINT'].forEach((signal) => {
       process.on(signal, () => {
         void pipe(
-          t.fromIO(loggerIo.info(`Got ${signal} signal`)),
-          t.chain(() => startGracefulShutdown(deps, loggerIo)),
+          t.fromIO(logger.infoIo(`Got ${signal} signal`)),
+          t.chain(() => startGracefulShutdown(deps, logger)),
           executeT,
         );
       });
@@ -28,41 +28,41 @@ export function addGracefulShutdown(deps: Deps, loggerIo: LoggerIO): io.IO<void>
 
     process.on('uncaughtException', (error, origin) => {
       void pipe(
-        t.fromIO(loggerIo.error({ error, origin }, 'Got uncaughtException event')),
-        t.chain(() => startGracefulShutdown(deps, loggerIo)),
+        t.fromIO(logger.errorIo({ error, origin }, 'Got uncaughtException event')),
+        t.chain(() => startGracefulShutdown(deps, logger)),
         executeT,
       );
     });
 
     process.on('unhandledRejection', (reason) => {
       void pipe(
-        t.fromIO(loggerIo.error({ reason }, 'Got unhandledRejection event')),
-        t.chain(() => startGracefulShutdown(deps, loggerIo)),
+        t.fromIO(logger.errorIo({ reason }, 'Got unhandledRejection event')),
+        t.chain(() => startGracefulShutdown(deps, logger)),
         executeT,
       );
     });
   };
 }
 
-function startGracefulShutdown(deps: Deps, loggerIo: LoggerIO): t.Task<never> {
+function startGracefulShutdown(deps: Deps, logger: LoggerIo): t.Task<never> {
   const { server, mongoDbClient } = deps;
   const { GRACEFUL_PERIOD_MS } = getAppConfig();
 
   return pipe(
-    te.fromIO(loggerIo.info('Graceful shutdown start')),
-    te.map(() => startForceExitTimer(loggerIo, GRACEFUL_PERIOD_MS)),
-    te.chainFirstW(() => te.sequenceArray([closeHttpServer(server, loggerIo)])),
-    te.chainFirstW(() => te.sequenceArray([disconnectMongoDbClient(mongoDbClient, loggerIo)])),
+    te.fromIO(logger.infoIo('Graceful shutdown start')),
+    te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
+    te.chainFirstW(() => te.sequenceArray([closeHttpServer(server, logger)])),
+    te.chainFirstW(() => te.sequenceArray([disconnectMongoDbClient(mongoDbClient, logger)])),
     te.chainIOK((timer) =>
       pipe(
         () => clearTimeout(timer),
-        io.chain(() => loggerIo.info('Graceful shutdown done')),
+        io.chain(() => logger.infoIo('Graceful shutdown done')),
         io.map(() => process.exit(0)),
       ),
     ),
     te.orLeft((error) =>
       pipe(
-        loggerIo.error({ error }, `Graceful shutdown failed: ${getErrorSummary(error)}`),
+        logger.errorIo({ error }, `Graceful shutdown failed: ${getErrorSummary(error)}`),
         io.map(() => process.exit(1)),
         t.fromIO,
       ),
@@ -71,10 +71,10 @@ function startGracefulShutdown(deps: Deps, loggerIo: LoggerIO): t.Task<never> {
   );
 }
 
-function startForceExitTimer(loggerIo: LoggerIO, GRACEFUL_PERIOD_MS: GracefulPeriodMs) {
+function startForceExitTimer(logger: LoggerIo, GRACEFUL_PERIOD_MS: GracefulPeriodMs) {
   return setTimeout(
     pipe(
-      loggerIo.error(`Graceful shutdown timeout after ${GRACEFUL_PERIOD_MS} ms`),
+      logger.errorIo(`Graceful shutdown timeout after ${GRACEFUL_PERIOD_MS} ms`),
       io.map(() => process.exit(1)),
     ),
     GRACEFUL_PERIOD_MS,

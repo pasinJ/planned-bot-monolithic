@@ -5,24 +5,21 @@ import { flow, pipe } from 'fp-ts/lib/function.js';
 import { __, allPass, equals, gte, lt, prop } from 'ramda';
 import { match } from 'ts-pattern';
 
-import { LoggerIO, createLoggerIO } from '#infra/logging.js';
+import { LoggerIo } from '#infra/logging.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { HTTP_ERRORS, HttpClient, HttpError } from './client.type.js';
 
-export function createAxiosHttpClient(config?: CreateAxiosDefaults): HttpClient {
-  const loggerIo = createLoggerIO('AxiosHttpClient');
+export function createAxiosHttpClient(logger: LoggerIo, config?: CreateAxiosDefaults): HttpClient {
   const axiosInstance = axios.create(config);
-  return { sendRequest: sendRequest(axiosInstance, loggerIo) };
+  return { sendRequest: sendRequest(axiosInstance, logger) };
 }
 
-function sendRequest(axiosInstance: AxiosInstance, loggerIo: LoggerIO): HttpClient['sendRequest'] {
+function sendRequest(axiosInstance: AxiosInstance, logger: LoggerIo): HttpClient['sendRequest'] {
   return (options) => {
     const { responseSchema, body, ...rest } = options;
     return pipe(
-      te.fromIO(
-        loggerIo.debug(`Start sending request with options: ${JSON.stringify({ ...rest, data: body })}`),
-      ),
+      te.fromIO(logger.debugIo(`Start sending request with options: %j`, { ...rest, data: body })),
       te.chain(() =>
         te.tryCatch(
           () => axiosInstance.request({ ...rest, data: body }),
@@ -33,7 +30,7 @@ function sendRequest(axiosInstance: AxiosInstance, loggerIo: LoggerIO): HttpClie
         flow(
           prop('data'),
           io.of,
-          io.chainFirst((body) => loggerIo.debug(`Receive response with body: ${JSON.stringify(body)}`)),
+          io.chainFirst((body) => logger.debugIo(`Receive response with body: %j`, body)),
         ),
       ),
       te.chainEitherKW(parseWithZod(responseSchema, 'An Error occurs when try to validate HTTP response')),

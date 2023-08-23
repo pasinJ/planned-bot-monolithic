@@ -1,7 +1,6 @@
 import io from 'fp-ts/lib/IO.js';
 import {
-  LoggerOptions,
-  Logger as PinoLogger,
+  LoggerOptions as PinoLoggerOptions,
   StreamEntry,
   destination,
   levels,
@@ -9,24 +8,42 @@ import {
   pino,
 } from 'pino';
 import pretty, { PrettyOptions } from 'pino-pretty';
-import { mergeDeepWith } from 'ramda';
+import { mergeDeepWith, pick } from 'ramda';
 
 import { AppConfig, LogFilePath, getAppConfig } from '#config/app.js';
 import { mergeConcatArray } from '#utils/general.js';
 
-export type LoggerIO = {
-  trace: <T extends object>(objOrMsg?: T | string, msg?: string) => io.IO<void>;
-  debug: <T extends object>(objOrMsg?: T | string, msg?: string) => io.IO<void>;
-  info: <T extends object>(objOrMsg?: T | string, msg?: string) => io.IO<void>;
-  warn: <T extends object>(objOrMsg?: T | string, msg?: string) => io.IO<void>;
-  error: <T extends object>(objOrMsg?: T | string, msg?: string) => io.IO<void>;
-  fatal: <T extends object>(objOrMsg?: T | string, msg?: string) => io.IO<void>;
+type LogFn = {
+  <T extends object>(obj: T, msg?: string, ...args: unknown[]): void;
+  (obj: unknown, msg?: string, ...args: unknown[]): void;
+  (msg: string, ...args: unknown[]): void;
+};
+type LogFnIo = {
+  <T extends object>(obj: T, msg?: string, ...args: unknown[]): io.IO<void>;
+  (obj: unknown, msg?: string, ...args: unknown[]): io.IO<void>;
+  (msg: string, ...args: unknown[]): io.IO<void>;
 };
 
-const mixinHook: LoggerOptions['mixin'] = (_, level) => ({ levelLabel: levels.labels[level] });
-const mixinStrategy: LoggerOptions['mixinMergeStrategy'] = mergeDeepWith(mergeConcatArray);
+export type PinoLogger = pino.Logger;
+export type LoggerIo = {
+  trace: LogFn;
+  debug: LogFn;
+  info: LogFn;
+  warn: LogFn;
+  error: LogFn;
+  fatal: LogFn;
+  traceIo: LogFnIo;
+  debugIo: LogFnIo;
+  infoIo: LogFnIo;
+  warnIo: LogFnIo;
+  errorIo: LogFnIo;
+  fatalIo: LogFnIo;
+};
 
-const baseLogOptions: LoggerOptions = {
+const mixinHook: PinoLoggerOptions['mixin'] = (_, level) => ({ levelLabel: levels.labels[level] });
+const mixinStrategy: PinoLoggerOptions['mixinMergeStrategy'] = mergeDeepWith(mergeConcatArray);
+
+const baseLogOptions: PinoLoggerOptions = {
   messageKey: 'message',
   errorKey: 'error',
   nestedKey: 'details',
@@ -34,7 +51,7 @@ const baseLogOptions: LoggerOptions = {
   mixinMergeStrategy: mixinStrategy,
 };
 
-const redactConf: LoggerOptions['redact'] = {
+const redactConf: PinoLoggerOptions['redact'] = {
   paths: ['details.request.headers.cookies', 'details.request.body.password'],
   censor: '** REDACTED **',
 };
@@ -44,22 +61,20 @@ function createTestLogger(): PinoLogger {
 }
 
 function createDevLogger(
-  loggerName: string,
   logConfig: Pick<AppConfig, 'LOG_LEVEL' | 'LOG_FILE_ENABLE' | 'LOG_FILE_PATH'>,
 ): PinoLogger {
   const { LOG_LEVEL, LOG_FILE_ENABLE, LOG_FILE_PATH } = logConfig;
-  const options = { ...baseLogOptions, name: loggerName, level: LOG_LEVEL };
+  const options = { ...baseLogOptions, level: LOG_LEVEL };
   const streams = createOutputStreams(LOG_FILE_ENABLE, LOG_FILE_PATH);
 
   return pino(options, streams);
 }
 
 function createProdLogger(
-  loggerName: string,
   logConfig: Pick<AppConfig, 'LOG_LEVEL' | 'LOG_FILE_ENABLE' | 'LOG_FILE_PATH'>,
 ): PinoLogger {
   const { LOG_LEVEL, LOG_FILE_ENABLE, LOG_FILE_PATH } = logConfig;
-  const options = { ...baseLogOptions, name: loggerName, level: LOG_LEVEL, redact: redactConf };
+  const options = { ...baseLogOptions, level: LOG_LEVEL, redact: redactConf };
   const streams = createOutputStreams(LOG_FILE_ENABLE, LOG_FILE_PATH);
 
   return pino(options, streams);
@@ -87,26 +102,43 @@ function createOutputStreams(enableLogFile: boolean, logFilePath: LogFilePath) {
     : multistream(stdStreams, { dedupe: true });
 }
 
-export function createPinoLogger(loggerName: string): PinoLogger {
+export function createMainLogger(): PinoLogger {
   const appConfig = getAppConfig();
   return appConfig.ENV === 'test'
     ? createTestLogger()
     : appConfig.ENV === 'production'
-    ? createProdLogger(loggerName, appConfig)
-    : createDevLogger(loggerName, appConfig);
+    ? createProdLogger(appConfig)
+    : createDevLogger(appConfig);
 }
 
-export function createLoggerIO(loggerName: string): LoggerIO {
-  return wrapLogger(createPinoLogger(loggerName));
+export function createLogger(loggerName: string, mainLogger: PinoLogger): PinoLogger {
+  return mainLogger.child({ name: loggerName });
 }
 
-export function wrapLogger(loggerInstance: PinoLogger): LoggerIO {
+export function createLoggerIo(loggerName: string, mainLogger: PinoLogger): LoggerIo {
+  return wrapLogger(createLogger(loggerName, mainLogger));
+}
+
+export function wrapLogger(logger: PinoLogger): LoggerIo {
   return {
-    trace: (objOrMsg, msg) => () => loggerInstance.trace(objOrMsg, msg),
-    debug: (objOrMsg, msg) => () => loggerInstance.debug(objOrMsg, msg),
-    info: (objOrMsg, msg) => () => loggerInstance.info(objOrMsg, msg),
-    warn: (objOrMsg, msg) => () => loggerInstance.warn(objOrMsg, msg),
-    error: (objOrMsg, msg) => () => loggerInstance.error(objOrMsg, msg),
-    fatal: (objOrMsg, msg) => () => loggerInstance.fatal(objOrMsg, msg),
+    ...pick(['trace', 'debug', 'info', 'warn', 'error', 'fatal'], logger),
+    traceIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.trace(...args)) as LogFnIo,
+    debugIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.debug(...args)) as LogFnIo,
+    infoIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.info(...args)) as LogFnIo,
+    warnIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.warn(...args)) as LogFnIo,
+    errorIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.error(...args)) as LogFnIo,
+    fatalIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.fatal(...args)) as LogFnIo,
   };
 }

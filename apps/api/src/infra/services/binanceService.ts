@@ -7,6 +7,7 @@ import { filter, includes, map, pick, prop, propEq } from 'ramda';
 import { createSymbol } from '#features/symbols/domain/symbol.entity.js';
 import { createAxiosHttpClient } from '#infra/http/client.js';
 import { HttpClient } from '#infra/http/client.type.js';
+import { PinoLogger, createLoggerIo } from '#infra/logging.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
 import {
@@ -22,14 +23,18 @@ import { IdService } from './idService.type.js';
 // @ts-expect-error The exported type of 'binance-api-node' may not support ESM, cannot use default export directly
 const BnbClient = Binance.default as unknown as typeof Binance;
 
-type CreateBnbServiceDeps = { dateService: DateService; idService: IdService };
+type CreateBnbServiceDeps = { dateService: DateService; idService: IdService; mainLogger: PinoLogger };
 export function createBnbService(
   deps: CreateBnbServiceDeps,
 ): te.TaskEither<CreateBnbServiceError, BnbService> {
+  const logger = createLoggerIo('BnbService', deps.mainLogger);
+  const baseURL = 'https://api.binance.com';
+  const httpClientConfig = { baseURL };
+
   return pipe(
     te.Do,
-    te.bindW('httpClient', () => te.fromIO(() => createAxiosHttpClient())),
-    te.bindW('bnbClient', () => te.fromIO(() => BnbClient())),
+    te.bindW('httpClient', () => te.fromIO(() => createAxiosHttpClient(logger, httpClientConfig))),
+    te.bindW('bnbClient', () => te.fromIO(() => BnbClient({ httpBase: baseURL }))),
     te.bindW('deps', ({ httpClient, bnbClient }) => te.of({ ...deps, httpClient, bnbClient })),
     te.chainFirst(({ bnbClient }) =>
       te.tryCatch(
@@ -42,6 +47,7 @@ export function createBnbService(
       ),
     ),
     te.map(({ deps }) => ({ getSpotSymbols: buildGetSpotSymbols(deps) })),
+    te.chainFirstIOK(() => logger.infoIo('Binance service created')),
   );
 }
 

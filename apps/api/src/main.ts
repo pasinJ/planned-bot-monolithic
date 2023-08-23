@@ -5,7 +5,7 @@ import { Mongoose } from 'mongoose';
 
 import { initiatePortfolioRepository } from '#features/portfolios/repositories/portfolio.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
-import { createLoggerIO } from '#infra/logging.js';
+import { createLoggerIo, createMainLogger } from '#infra/logging.js';
 import { createMongoDbClient } from '#infra/mongoDb/client.js';
 import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { createBnbService } from '#infra/services/binanceService.js';
@@ -13,25 +13,26 @@ import { dateService } from '#infra/services/dateService.js';
 import { idService } from '#infra/services/idService.js';
 import { getErrorSummary } from '#shared/error.js';
 
-const loggerIo = createLoggerIO('Process');
+const mainLogger = createMainLogger();
+const processLogger = createLoggerIo('Process', mainLogger);
 
 await tUtil.execute(
   pipe(
     te.Do,
-    te.bindW('mongoDbClient', () => createMongoDbClient(loggerIo)),
+    te.bindW('mongoDbClient', () => createMongoDbClient(processLogger)),
     te.bindW('binanceService', () => createBnbServiceWithDeps()),
-    te.bindW('server', () => te.fromIOEither(buildHttpServer)),
+    te.bindW('server', () => te.fromEither(buildHttpServer(mainLogger))),
     te.chainFirstW((deps) => initiatePortfolioRepositoryWithDeps(deps)),
     te.chainFirstW(({ server }) => startHttpServer(server)),
-    te.chainFirstIOK((deps) => addGracefulShutdown(deps, loggerIo)),
+    te.chainFirstIOK((deps) => addGracefulShutdown(deps, processLogger)),
     te.orElseFirstIOK((error) =>
-      loggerIo.error({ error }, `Starting process failed: ${getErrorSummary(error)}`),
+      processLogger.errorIo({ error }, `Starting process failed: ${getErrorSummary(error)}`),
     ),
   ),
 );
 
 function createBnbServiceWithDeps() {
-  return createBnbService({ dateService, idService });
+  return createBnbService({ dateService, idService, mainLogger });
 }
 function initiatePortfolioRepositoryWithDeps({ mongoDbClient }: { mongoDbClient: Mongoose }) {
   return te.fromIOEither(initiatePortfolioRepository(mongoDbClient));
