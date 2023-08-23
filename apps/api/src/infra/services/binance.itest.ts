@@ -9,8 +9,8 @@ import { executeT } from '#shared/utils/fp.js';
 import exchangeInfoResp from '#test-utils/exchangeInfo.resp.json';
 import { mockDateService, mockIdService } from '#test-utils/mockService.js';
 
-import { BNB_PATHS } from './binanceService.constant.js';
-import { createBnbService as createBnbServiceOrg } from './binanceService.js';
+import { BNB_PATHS } from './binance.constant.js';
+import { createBnbService as createBnbServiceOrg } from './binance.js';
 
 const { HTTP_BASE_URL } = getBnbConfig();
 const { ping, exchangeInfo } = BNB_PATHS;

@@ -7,7 +7,7 @@ import {
   SymbolRepository,
 } from '#features/symbols/symbol.repository.type.js';
 import { LoggerIo } from '#infra/logging.js';
-import { BnbService, GetBnbSpotSymbolsError } from '#infra/services/binanceService.type.js';
+import { BnbService, GetBnbSpotSymbolsError } from '#infra/services/binance.type.js';
 
 type StartupProcessDeps = { bnbService: BnbService; symbolRepository: SymbolRepository; logger: LoggerIo };
 type StartupError = CountAllSymbolsError | GetBnbSpotSymbolsError | AddSymbolsError;

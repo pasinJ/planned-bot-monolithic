@@ -1,4 +1,4 @@
-import { dateService } from './dateService.js';
+import { dateService } from './date.js';
 
 describe('Get current date', () => {
   it('WHEN get current date THEN it should return a valid date', () => {

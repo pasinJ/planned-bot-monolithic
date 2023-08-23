@@ -12,16 +12,16 @@ import { PinoLogger, createLoggerIo } from '#infra/logging.js';
 import { getBnbConfig } from '#shared/config/binance.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
-import { BNB_PATHS } from './binanceService.constant.js';
+import { BNB_PATHS } from './binance.constant.js';
 import {
   BnbService,
   CreateBnbServiceError,
   ExchangeInfoRespFilterSchema,
   GetBnbSpotSymbolsError,
   exchangeInfoRespSchema,
-} from './binanceService.type.js';
-import { DateService } from './dateService.type.js';
-import { IdService } from './idService.type.js';
+} from './binance.type.js';
+import { DateService } from './date.type.js';
+import { IdService } from './id.type.js';
 
 // @ts-expect-error The exported type of 'binance-api-node' may not support ESM, cannot use default export directly
 const BnbClient = Binance.default as unknown as typeof Binance;
@@ -71,7 +71,23 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
     'orderTypes',
     'filters',
   ];
-  const filterTypesList = ['LOT_SIZE', 'MARKET_LOT_SIZE', 'MIN_NOTIONAL', 'NOTIONAL', 'PRICE_FILTER'];
+  const filterTypesList = [
+    'LOT_SIZE',
+    'MARKET_LOT_SIZE',
+    'MIN_NOTIONAL',
+    'NOTIONAL',
+    'PRICE_FILTER',
+  ] as const;
+  type RequiredFilterTypes = Extract<
+    ExchangeInfoRespFilterSchema['filterType'],
+    (typeof filterTypesList)[number]
+  >;
+  type RequiredFilter = Extract<ExchangeInfoRespFilterSchema, { filterType: RequiredFilterTypes }>;
+  type RenameFilterKey<T extends RequiredFilter['filterType']> = {
+    [k in RequiredFilter['filterType']]: Omit<Extract<RequiredFilter, { filterType: k }>, 'filterType'> & {
+      type: k;
+    };
+  }[T];
 
   return pipe(
     httpClient.sendRequest({
@@ -85,7 +101,9 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
       flow(
         map(({ filters, ...rest }) => ({
           ...rest,
-          filters: filters.filter(({ filterType }) => includes(filterType, filterTypesList)),
+          filters: filters.filter(({ filterType }) =>
+            includes(filterType, filterTypesList),
+          ) as RequiredFilter[],
         })),
         map(({ symbol, filters, ...rest }) => ({
           ...rest,
@@ -112,9 +130,3 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
     ),
   );
 }
-type RenameFilterKey<T extends ExchangeInfoRespFilterSchema['filterType']> = {
-  [k in ExchangeInfoRespFilterSchema['filterType']]: Omit<
-    Extract<ExchangeInfoRespFilterSchema, { filterType: k }>,
-    'filterType'
-  > & { type: k };
-}[T];

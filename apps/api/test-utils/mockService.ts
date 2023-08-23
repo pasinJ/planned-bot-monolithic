@@ -3,9 +3,9 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid } from 'fp-ts/lib/function.js';
 
 import { LoggerIo } from '#infra/logging.js';
-import { BnbService } from '#infra/services/binanceService.type.js';
-import { DateService } from '#infra/services/dateService.type.js';
-import { IdService } from '#infra/services/idService.type.js';
+import { BnbService } from '#infra/services/binance.type.js';
+import { DateService } from '#infra/services/date.type.js';
+import { IdService } from '#infra/services/id.type.js';
 
 export function mockDateService(): DateService {
   return { getCurrentDate: () => faker.date.recent() };

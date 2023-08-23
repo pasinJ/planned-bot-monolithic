@@ -3,7 +3,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid } from 'fp-ts/lib/function.js';
 import { is } from 'ramda';
 
-import { GetBnbSpotSymbolsError } from '#infra/services/binanceService.type.js';
+import { GetBnbSpotSymbolsError } from '#infra/services/binance.type.js';
 import { executeT } from '#shared/utils/fp.js';
 import { mockSymbol } from '#test-utils/mockEntity.js';
 import { mockSymbolRepository } from '#test-utils/mockRepository.js';
