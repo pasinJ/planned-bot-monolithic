@@ -5,12 +5,14 @@
     "sourceMap": true,
     "outDir": "dist",
     "baseUrl": ".",
+    "resolveJsonModule": true,
     "paths": {
       "fp-ts-std/*": ["node_modules/fp-ts-std/dist/cjs/*"],
+      "#features/*": ["src/features/*"],
+      "#infra/*": ["src/infra/*"],
       "#shared/*": ["src/shared/*"],
       "#utils/*": ["src/shared/utils/*"],
       "#config/*": ["src/shared/config/*"],
-      "#infra/*": ["src/infra/*"],
       "#test-utils/*": ["test-utils/*"]
     }
   },

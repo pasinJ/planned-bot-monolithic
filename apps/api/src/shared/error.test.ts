@@ -19,12 +19,12 @@ function createCustomErrorWithCause(causeType: 'string' | 'error') {
 
 describe('Custom error', () => {
   describe('WHEN create an instance', () => {
-    it('THEN it should return an instance with the passed name and message, and undefined cause', () => {
+    it('THEN it should return an instance with the passed name and message without cause', () => {
       const { error, name, msg } = createCustomError();
 
       expect(error).toHaveProperty('name', name);
       expect(error).toHaveProperty('message', msg);
-      expect(error).toHaveProperty('cause', undefined);
+      expect(error).not.toHaveProperty('cause');
     });
     it('THEN it should inherit CustomError and Error', () => {
       const { error } = createCustomError();
@@ -204,8 +204,8 @@ describe('Create custom error from unknown', () => {
       expect(error).toHaveProperty('message', input);
     });
   });
-  describe('WHEN try to create a custom error from Error', () => {
-    it('THEN it should return an error with message equal to summary of that error', () => {
+  describe('WHEN try to create a custom error from Error without specific message', () => {
+    it('THEN it should return an error with message equal to summary of that error and cause equal to an External error', () => {
       const { error: input } = createCustomErrorWithCause('string');
       const name = faker.string.alpha(5);
       const error = createErrorFromUnknown(ErrorBase, name)(input);
@@ -213,17 +213,42 @@ describe('Create custom error from unknown', () => {
       const summary = `[${input.name}] ${input.message}`;
       expect(error).toHaveProperty('name', name);
       expect(error).toHaveProperty('message', summary);
-      expect(error).toHaveProperty('cause', input);
+      expect(error).toHaveProperty('cause.name', 'EXTERNAL_ERROR');
+      expect(error).toHaveProperty('cause.cause', input);
     });
   });
-  describe('(Otherwise) WHEN try to create a custom error', () => {
+  describe('WHEN try to create a custom error from Error with specific message', () => {
+    it('THEN it should return an error with message equal to the given message and cause equal to an External error', () => {
+      const { error: input } = createCustomErrorWithCause('string');
+      const name = faker.string.alpha(5);
+      const msg = faker.string.alpha(5);
+      const error = createErrorFromUnknown(ErrorBase, name, msg)(input);
+
+      expect(error).toHaveProperty('name', name);
+      expect(error).toHaveProperty('message', msg);
+      expect(error).toHaveProperty('cause.name', 'EXTERNAL_ERROR');
+      expect(error).toHaveProperty('cause.cause', input);
+    });
+  });
+  describe('(Otherwise) WHEN try to create a custom error without specific message', () => {
     it('THEN it should return an error with predefined message', () => {
       const name = faker.string.alpha(5);
       const error = createErrorFromUnknown(ErrorBase, name)(undefined);
 
       expect(error).toHaveProperty('name', name);
       expect(error).toHaveProperty('message', 'Undefined message (created from unknown)');
-      expect(error).toHaveProperty('cause', undefined);
+      expect(error).not.toHaveProperty('cause');
+    });
+  });
+  describe('(Otherwise) WHEN try to create a custom error with specific message', () => {
+    it('THEN it should return an error with the given message', () => {
+      const name = faker.string.alpha(5);
+      const msg = faker.string.alpha(5);
+      const error = createErrorFromUnknown(ErrorBase, name, msg)(undefined);
+
+      expect(error).toHaveProperty('name', name);
+      expect(error).toHaveProperty('message', msg);
+      expect(error).not.toHaveProperty('cause');
     });
   });
 });

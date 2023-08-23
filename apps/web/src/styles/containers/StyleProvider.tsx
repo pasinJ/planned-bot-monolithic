@@ -6,14 +6,30 @@ import { PropsWithChildren, useLayoutEffect } from 'react';
 
 import '../css/index.css';
 import useAppTheme from '../hooks/useAppTheme';
-import { PRIMARY, SECONDARY } from '../theme.constant';
+import { LG_SCREEN, MD_SCREEN, PRIMARY, SECONDARY, SM_SCREEN } from '../theme.constant';
 import { themeEnum } from '../theme.schema';
+
+declare module '@mui/material/styles' {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+  interface BreakpointOverrides {
+    xs: true;
+    sm: true;
+    md: true;
+    lg: true;
+    xl: false;
+    mobile: false;
+    tablet: false;
+    laptop: false;
+    desktop: false;
+  }
+}
 
 export default function StyleProvider({ children, rootElem }: PropsWithChildren<{ rootElem: HTMLElement }>) {
   const { appTheme } = useAppTheme();
 
   // https://mui.com/material-ui/guides/interoperability/#tailwind-css
   const muiThemeOptions: ThemeOptions = {
+    breakpoints: { values: { xs: 0, sm: SM_SCREEN, md: MD_SCREEN, lg: LG_SCREEN } },
     palette: { primary: { main: PRIMARY }, secondary: { main: SECONDARY } },
     components: {
       MuiPopover: { defaultProps: { container: rootElem } },

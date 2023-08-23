@@ -1,31 +1,18 @@
-import { PropsWithChildren, createContext } from 'react';
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
 import LazyWrapper from '#components/LazyWrapper';
 
-import { HOME_ROUTE } from './routes.constant';
+import { DASHBOARD_ROUTE, HOME_ROUTE } from './routes.constant';
 
 const HomePage = () => import('#pages/HomePage');
+const DashboardPage = () => import('#pages/DashboardPage');
 
-export default function RoutesProvider({ children }: PropsWithChildren) {
-  return (
-    <BrowserRouter>
-      <RoutingProvider>
-        <Routes>
-          <Route element={<LazyWrapper component={HomePage} />} path={HOME_ROUTE} />
-          <Route element={<>Empty</>} path="*" />
-        </Routes>
-        {children}
-      </RoutingProvider>
-    </BrowserRouter>
-  );
-}
+const router = createBrowserRouter([
+  { path: HOME_ROUTE, element: <LazyWrapper component={HomePage} /> },
+  { path: DASHBOARD_ROUTE, element: <LazyWrapper component={DashboardPage} /> },
+  { path: '*', element: 'empty' },
+]);
 
-const RoutingContext = createContext({});
-
-function RoutingProvider({ children }: PropsWithChildren) {
-  const navigate = useNavigate();
-  const routingState = { navigateToHome: () => navigate(HOME_ROUTE) };
-
-  return <RoutingContext.Provider value={routingState}>{children}</RoutingContext.Provider>;
+export default function RoutesProvider() {
+  return <RouterProvider router={router} />;
 }

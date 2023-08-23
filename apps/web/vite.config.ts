@@ -19,8 +19,16 @@ export default defineConfig({
 });
 
 function replaceColorCssVariables() {
-  const templatePath = './src/styles/css/colorToken.template.css';
-  const outputPath = './src/styles/css/colorToken.css';
+  const filesList = [
+    {
+      templatePath: './src/styles/css/colorToken.template.css',
+      outputPath: './src/styles/css/colorToken.css',
+    },
+    {
+      templatePath: './src/styles/css/toastColor.template.css',
+      outputPath: './src/styles/css/toastColor.css',
+    },
+  ];
   const lightThemePrefix = 'LT_';
   const darkThemePrefix = 'DT_';
   const paletteOptions = { primary: { main: PRIMARY }, secondary: { main: SECONDARY } };
@@ -33,14 +41,17 @@ function replaceColorCssVariables() {
   const lightColorTemplateMapping = generateColorMapping(lightPalette, lightThemePrefix);
   const darkColorTemplateMapping = generateColorMapping(darkPalette, darkThemePrefix);
 
-  copyColorTemplate(templatePath, outputPath);
-  const replaceResult = replace.sync({
-    files: outputPath,
-    from: concat(lightColorTemplateMapping.from, darkColorTemplateMapping.from),
-    to: concat(lightColorTemplateMapping.to, darkColorTemplateMapping.to),
+  filesList.forEach(({ templatePath, outputPath }) => {
+    copyColorTemplate(templatePath, outputPath);
+    const replaceResult = replace.sync({
+      files: outputPath,
+      from: concat(lightColorTemplateMapping.from, darkColorTemplateMapping.from),
+      to: concat(lightColorTemplateMapping.to, darkColorTemplateMapping.to),
+    });
+    console.log(replaceResult);
   });
 
-  console.log('Replacing color CSS variables done', replaceResult);
+  console.log('Replacing color CSS variables done');
 }
 
 function copyColorTemplate(templatePath: string, outputPath: string) {
@@ -93,9 +104,9 @@ function generateColorMapping(palette: Palette, prefix: string) {
 
   const [from, to] = pipe(
     toPairs(mapper),
-    map(([key, value]) => [`'%${prefix}${key}%'`, value]),
+    map(([key, value]) => [new RegExp(`'%${prefix}${key}%'`, 'g'), value]),
     transpose,
-  );
+  ) as [RegExp[], string[]];
 
   return { from, to };
 }

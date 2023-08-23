@@ -1,0 +1,33 @@
+import * as te from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/function';
+
+import { API_ENDPOINTS } from './portfolioRepository.constant';
+import {
+  CreatePortfolio,
+  CreatePortfolioError,
+  GetPortfolios,
+  GetPortfoliosError,
+} from './portfolioRepository.type';
+
+export function getPortfolios(...[{ httpClient }]: Parameters<GetPortfolios>): ReturnType<GetPortfolios> {
+  const { method, url, responseSchema } = API_ENDPOINTS.GET_PORTFOLIOS;
+  return pipe(
+    httpClient.sendRequest({ method, url, responseSchema }),
+    te.mapLeft(
+      (error) =>
+        new GetPortfoliosError('GET_PORTFOLIOS_ERROR', 'Getting portfolios from server error', error),
+    ),
+  );
+}
+
+export function createPortfolio(
+  ...[body, { httpClient }]: Parameters<CreatePortfolio>
+): ReturnType<CreatePortfolio> {
+  const { method, url, responseSchema } = API_ENDPOINTS.CREATE_PORTFOLIO;
+  return pipe(
+    httpClient.sendRequest({ method, url, body, responseSchema }),
+    te.mapLeft(
+      (error) => new CreatePortfolioError('CREATE_PORTFOLIO_ERROR', 'Creating portfolio error', error),
+    ),
+  );
+}

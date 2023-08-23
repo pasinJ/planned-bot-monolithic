@@ -1,7 +1,8 @@
 {
   "eslint.workingDirectories": [{ "mode": "auto" }],
   "material-icon-theme.files.associations": {
-    "*.itest.ts": "test-ts"
+    "*.itest.ts": "test-ts",
+    "*.cy.ts": "cypress"
   },
   "material-icon-theme.folders.associations": {
     "jest": "test",
@@ -15,13 +16,9 @@
     ["Tw \\=([^;]*);", "\"([^\"]*)\""],
     ["Tw \\=([^;]*);", "\\`([^\\`]*)\\`"]
   ],
-  "tailwindCSS.classAttributes": [
-    "class",
-    "className",
-    "ngClass",
-    "classes"
-  ],
+  "tailwindCSS.classAttributes": ["class", "className", "ngClass", "classes"],
   "files.exclude": {
     "**/.git": false
-  }
+  },
+  "npm.packageManager": "npm"
 }

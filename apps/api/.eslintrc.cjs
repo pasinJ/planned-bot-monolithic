@@ -20,6 +20,8 @@ module.exports = {
   rules: {
     '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     '@typescript-eslint/no-confusing-void-expression': 'off',
+
+    '@typescript-eslint/ban-types': ['error', { types: { Symbol: false }, extendDefaults: true }],
   },
   overrides: [
     {
@@ -46,6 +48,8 @@ module.exports = {
     {
       files: ['src/**/+(*.*test).ts', 'e2e/**/*.test.ts', 'test-utils/**/*.ts'],
       extends: ['plugin:jest/recommended', 'plugin:jest/style'],
+      plugins: ['@typescript-eslint'],
+      rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
     },
   ],
 };

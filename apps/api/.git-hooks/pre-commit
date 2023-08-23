@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 # Stop execution instantly while having a non-zero status.
 set -e
 
 echo "[INFO] Pre-commit hook of API project"
 
-changeNum=$(git status -s apps/api | wc -l)
+changeNum=$(git diff --staged --name-only -- apps/api | wc -l)
 
 if [ $changeNum != 0 ]; then
     CURRENT_DIR=$(dirname "$0")
@@ -17,5 +17,5 @@ if [ $changeNum != 0 ]; then
     
     echo "[INFO] Pre-commit hook of API project done"
 else
-    echo "[INFO] Skipped because no changes from this directory were committed"
+    echo "[INFO] Skipped because no changes from this directory is being committed"
 fi

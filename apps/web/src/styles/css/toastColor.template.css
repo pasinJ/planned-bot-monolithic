@@ -1,0 +1,22 @@
+@layer base {
+  :root {
+    --toastify-color-light: '%DT_BG%';
+    --toastify-color-dark: '%LT_BG%';
+    --toastify-color-info: '%DT_INFO%';
+    --toastify-color-success: '%DT_SUCCESS%';
+    --toastify-color-warning: '%DT_WARN%';
+    --toastify-color-error: '%DT_ERROR%';
+    --toastify-text-color-light: '%DT_TEXT%';
+    --toastify-text-color-dark: '%LT_TEXT%';
+  }
+  :root .dark {
+    --toastify-color-light: '%DT_BG%';
+    --toastify-color-dark: '%LT_BG%';
+    --toastify-color-info: '%DT_INFO%';
+    --toastify-color-success: '%DT_SUCCESS%';
+    --toastify-color-warning: '%DT_WARN%';
+    --toastify-color-error: '%DT_ERROR%';
+    --toastify-text-color-light: '%DT_TEXT%';
+    --toastify-text-color-dark: '%LT_TEXT%';
+  }
+}

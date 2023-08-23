@@ -3,7 +3,7 @@ import * as o from 'fp-ts/lib/Option';
 import { constVoid, pipe } from 'fp-ts/lib/function';
 import { useContext } from 'react';
 
-import { InfraContext } from '#contexts/InfraProvider';
+import { InfraContext } from '#infra/InfraProvider.context';
 
 type UseLocalStorageResult<T extends string> = {
   get: () => o.Option<T>;

@@ -1,20 +1,23 @@
 import { append, is } from 'ramda';
 import { CustomError } from 'ts-custom-error';
 
-type Cause = Error | string;
+export type GeneralCause = Error | string;
 type Constructor<T> = new (...args: never[]) => T;
 type ArrayType<T extends unknown[]> = T extends (infer U)[] ? U : never;
 
-export class ErrorBase<N extends string = string> extends CustomError {
-  name: N;
+export class ErrorBase<
+  Name extends string = string,
+  Cause extends GeneralCause = GeneralCause,
+> extends CustomError {
+  name: Name;
 
-  constructor(name: N, message: string, cause?: Cause) {
-    super(message, { cause });
+  constructor(name: Name, message: string, cause?: Cause) {
+    super(message, cause ? { cause } : {});
     this.name = name;
   }
 
   public causedBy(cause: Cause): this {
-    this.cause = cause;
+    super.cause = cause;
     return this;
   }
 
@@ -48,14 +51,29 @@ export class ErrorBase<N extends string = string> extends CustomError {
   }
 }
 
-export function createErrorFromUnknown<E extends ErrorBase<Names>, Name extends Names, Names extends string>(
+export class ExternalError extends ErrorBase<'EXTERNAL_ERROR'> {}
+
+type IfIncludeExternalError<Cause extends GeneralCause, T> = ExternalError extends Cause ? T : never;
+
+export function createErrorFromUnknown<
+  E extends ErrorBase<Names, Cause>,
+  Names extends string,
+  Name extends Names,
+  Cause extends ExternalError | GeneralCause,
+>(
   constructor: new (name: Name, message: string, cause?: Cause) => E,
-  name: Name,
+  name: IfIncludeExternalError<Cause, Name>,
+  message?: IfIncludeExternalError<Cause, string>,
 ) {
-  return (unknown: unknown): E => {
+  return (unknown: IfIncludeExternalError<Cause, unknown>): E => {
     if (is(String, unknown)) return new constructor(name, unknown);
-    else if (unknown instanceof Error) return new constructor(name, getErrorSummary(unknown), unknown);
-    else return new constructor(name, 'Undefined message (created from unknown)');
+    else if (unknown instanceof Error)
+      return new constructor(
+        name,
+        message ?? getErrorSummary(unknown),
+        new ExternalError('EXTERNAL_ERROR', getErrorSummary(unknown), unknown) as Cause,
+      );
+    else return new constructor(name, message ?? 'Undefined message (created from unknown)');
   };
 }
 
