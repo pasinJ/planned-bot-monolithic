@@ -1,6 +1,7 @@
+import io from 'fp-ts/lib/IO.js';
 import { z } from 'zod';
 
-import { nonEmptyStringSchema } from './config.util.js';
+import { nonEmptyString } from '#shared/common.type.js';
 
 export type AppConfig = {
   ENV: Env;
@@ -13,37 +14,37 @@ export type AppConfig = {
 };
 
 export type Env = z.infer<typeof envSchema>;
-const envSchema = nonEmptyStringSchema.toLowerCase().catch('development').brand('Env');
+const envSchema = nonEmptyString.toLowerCase().catch('development').brand('Env');
 
 export type AppName = z.infer<typeof appNameSchema>;
-const appNameSchema = nonEmptyStringSchema.catch('undefined name').brand('AppName');
+const appNameSchema = nonEmptyString.catch('undefined name').brand('AppName');
 
 export type AppVersion = z.infer<typeof appVersionSchema>;
-const appVersionSchema = nonEmptyStringSchema.catch('undefined version').brand('AppVersion');
+const appVersionSchema = nonEmptyString.catch('undefined version').brand('AppVersion');
 
 export type GracefulPeriodMs = z.infer<typeof gracefulPeriodMsSchema>;
-const gracefulPeriodMsSchema = nonEmptyStringSchema
+const gracefulPeriodMsSchema = nonEmptyString
   .pipe(z.coerce.number().int().nonnegative())
   .catch(10000)
   .brand('GracefulPeriodMs');
 
 export type LogLevel = z.infer<typeof logLevelSchema>;
-const logLevelSchema = nonEmptyStringSchema
+const logLevelSchema = nonEmptyString
   .toLowerCase()
   .pipe(z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']))
   .catch('info')
   .brand('LogLevel');
 
-const logFileEnablSchema = nonEmptyStringSchema
+const logFileEnablSchema = nonEmptyString
   .toLowerCase()
   .pipe(z.enum(['true', 'false']))
   .pipe(z.coerce.boolean())
   .catch(false);
 
 export type LogFilePath = z.infer<typeof logFilePathSchema>;
-const logFilePathSchema = nonEmptyStringSchema.brand('LogFilePath').or(z.undefined()).catch(undefined);
+const logFilePathSchema = nonEmptyString.brand('LogFilePath').or(z.undefined()).catch(undefined);
 
-export function getAppConfig(): AppConfig {
+export const getAppConfig: io.IO<AppConfig> = () => {
   return {
     ENV: envSchema.parse(process.env.NODE_ENV),
     NAME: appNameSchema.parse(process.env.APP_NAME),
@@ -53,4 +54,4 @@ export function getAppConfig(): AppConfig {
     LOG_FILE_ENABLE: logFileEnablSchema.parse(process.env.LOG_FILE_ENABLE),
     LOG_FILE_PATH: logFilePathSchema.parse(process.env.LOG_FILE_PATH),
   };
-}
+};

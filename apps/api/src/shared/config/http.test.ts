@@ -6,7 +6,7 @@ const originalEnv = process.env;
 
 afterEach(resetEnvVar(originalEnv));
 
-describe('HTTP_CONF.PORT_NUMBER', () => {
+describe('PORT_NUMBER property', () => {
   describe.each([
     { env: '8080', expected: 8080 },
     { env: '0', expected: 80 },
@@ -17,7 +17,7 @@ describe('HTTP_CONF.PORT_NUMBER', () => {
   ])('WHEN process.env.HTTP_PORT_NUMBER = "$env"', ({ env, expected }) => {
     beforeEach(setEnvVar('HTTP_PORT_NUMBER', env));
 
-    it(`THEN HTTP_CONF.PORT_NUMBER should equal to "${expected}"`, () => {
+    it(`THEN PORT_NUMBER property should equal to "${expected}"`, () => {
       expect(getHttpConfig()).toHaveProperty('PORT_NUMBER', expected);
     });
   });

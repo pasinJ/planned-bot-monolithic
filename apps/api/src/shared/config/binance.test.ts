@@ -6,7 +6,7 @@ const originalEnv = process.env;
 
 afterEach(resetEnvVar(originalEnv));
 
-describe('HTTP_BASE_URL configuration', () => {
+describe('HTTP_BASE_URL property', () => {
   describe.each([
     { env: 'http://localhost', expected: 'http://localhost' },
     { env: 'localhost', expected: 'https://api.binance.com' },
