@@ -1,4 +1,5 @@
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import MainLayout from 'src/layouts/MainLayout';
 
 import LazyWrapper from '#components/LazyWrapper';
 
@@ -8,8 +9,14 @@ const HomePage = () => import('#pages/HomePage');
 const DashboardPage = () => import('#pages/DashboardPage');
 
 const router = createBrowserRouter([
-  { path: HOME_ROUTE, element: <LazyWrapper component={HomePage} /> },
-  { path: DASHBOARD_ROUTE, element: <LazyWrapper component={DashboardPage} /> },
+  {
+    path: HOME_ROUTE,
+    element: <MainLayout />,
+    children: [
+      { path: HOME_ROUTE, element: <LazyWrapper component={HomePage} /> },
+      { path: DASHBOARD_ROUTE, element: <LazyWrapper component={DashboardPage} /> },
+    ],
+  },
   { path: '*', element: 'empty' },
 ]);
 
