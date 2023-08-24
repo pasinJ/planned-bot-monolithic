@@ -2,6 +2,7 @@ import { Palette, createTheme } from '@mui/material/styles';
 import react from '@vitejs/plugin-react-swc';
 import { pipe } from 'fp-ts/lib/function';
 import fs from 'fs';
+import hexRgb from 'hex-rgb';
 import { concat, map, toPairs, transpose } from 'ramda';
 import replace from 'replace-in-file';
 import { defineConfig } from 'vite';
@@ -104,9 +105,20 @@ function generateColorMapping(palette: Palette, prefix: string) {
 
   const [from, to] = pipe(
     toPairs(mapper),
-    map(([key, value]) => [new RegExp(`'%${prefix}${key}%'`, 'g'), value]),
+    map(([key, value]) => [new RegExp(`'%${prefix}${key}%'`, 'g'), transformColorToRgb(value)]),
     transpose,
   ) as [RegExp[], string[]];
 
   return { from, to };
+}
+
+function transformColorToRgb(color: string) {
+  if (color.trim().startsWith('#')) {
+    const { red, green, blue } = hexRgb(color);
+    return `${red}, ${green}, ${blue}`;
+  } else if (color.trim().startsWith('rgb(')) {
+    const result = color.trim().match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\s*\)$/);
+    if (result && result.length === 4) return `${result[1]}, ${result[2]}, ${result[3]}`;
+  }
+  return color;
 }
