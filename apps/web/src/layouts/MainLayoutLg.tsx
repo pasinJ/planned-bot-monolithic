@@ -41,7 +41,7 @@ function SideNav() {
   const handleDrawerOpen = () => setOpen(true);
   const handleDrawerClose = () => setOpen(false);
 
-  const drawerCommonClassName = `bg-slate-700 flex overflow-x-hidden transition-width text-slate-400`;
+  const drawerCommonClassName = `bg-surface-1 flex overflow-x-hidden transition-width text-textColor-onPrimary`;
   const drawerClosedClassName = 'w-20 whitespace-nowrap';
   const paperClassName = open
     ? `w-60 shadow-8 duration-muiEnter ease-sharp ${drawerCommonClassName}`
@@ -110,7 +110,7 @@ function SideNavItemButton({
   text: string;
 }) {
   return (
-    <ListItemButton className="hover:text-primary-light">
+    <ListItemButton className="hover:text-primary-light hover:bg-surface-2">
       <ListItemIcon className="text-inherit">
         <MaterialSymbol symbol={symbol} className="pb-1 pl-1.5 text-4xl" />
       </ListItemIcon>
