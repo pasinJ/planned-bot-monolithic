@@ -55,8 +55,6 @@ function SideNav({
   isDrawerOpening: boolean;
   toggleDrawer: MouseEventHandler;
 }) {
-  const paperClassName = 'box-border w-72';
-
   return (
     <Box component="nav">
       <Drawer
@@ -64,9 +62,9 @@ function SideNav({
         open={isDrawerOpening}
         onClose={toggleDrawer}
         ModalProps={{ keepMounted: true }}
-        PaperProps={{ className: paperClassName }}
+        PaperProps={{ className: 'box-border w-72' }}
       >
-        <Box className="py-2 px-4 text-right">
+        <Box className="px-4 py-2 text-right">
           <IconButton color="inherit" aria-label="close drawer" onClick={toggleDrawer}>
             <MaterialSymbol symbol="close" className="text-3xl" />
           </IconButton>
