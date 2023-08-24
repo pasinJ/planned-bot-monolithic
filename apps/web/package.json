@@ -82,6 +82,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "eslint-plugin-testing-library": "^5.11.1",
+    "hex-rgb": "^5.0.0",
     "jest": "^29.6.2",
     "jest-environment-jsdom": "^29.6.2",
     "jest-extended": "^4.0.1",

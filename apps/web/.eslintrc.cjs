@@ -40,6 +40,7 @@ module.exports = {
         'import/no-deprecated': 'error',
         'import/no-named-as-default': 'off',
         'import/no-named-as-default-member': 'off',
+        'import/no-unresolved': [2, { ignore: ['\\.png$'] }],
         'fp-ts/no-lib-imports': 'off',
         'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
         '@tanstack/query/prefer-query-object-syntax': 'error',
