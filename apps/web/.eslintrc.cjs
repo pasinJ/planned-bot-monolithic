@@ -22,6 +22,13 @@ module.exports = {
   },
   overrides: [
     {
+      files: ['**/*.d.ts'],
+      plugins: ['@typescript-eslint'],
+      rules: {
+        '@typescript-eslint/consistent-type-definitions': 'off',
+      },
+    },
+    {
       files: ['src/**/!(*.*test).ts?(x)'],
       settings: {
         'import/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx'] },
