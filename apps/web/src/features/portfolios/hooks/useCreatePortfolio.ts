@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { InfraContext } from '#infra/InfraProvider.context';
 import { executeTeToPromise } from '#utils/fpExecute';
-import { SchemaError, parseWithZod } from '#utils/zod';
+import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { Portfolio } from '../domain/portfolio.entity';
 import { createPortfolio } from '../repositories/portfolioRepository';
@@ -23,7 +23,7 @@ export default function useCreatePortfolio({
   onSuccess?: () => void;
 }): UseMutationResult<
   Portfolio,
-  CreatePortfolioError | SchemaError,
+  CreatePortfolioError | SchemaValidationError,
   { initialCapital: string; takerFee: string; makerFee: string }
 > {
   const { httpClient } = useContext(InfraContext);
