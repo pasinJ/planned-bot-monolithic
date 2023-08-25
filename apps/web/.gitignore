@@ -25,5 +25,7 @@ dist-ssr
 
 .eslintcache
 
+.scannerwork
+
 .env/*
 !.env/.env.template

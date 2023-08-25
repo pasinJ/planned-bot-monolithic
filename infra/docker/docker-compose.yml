@@ -46,3 +46,11 @@ services:
       - 8080:8081
     depends_on:
       - mongodb
+  sonarqube:
+    image: sonarqube:10-community
+    # volumes:
+    #   - ./sonarqube/extensions:/opt/sonarqube/extensions
+    #   - ./sonarqube/logs:/opt/sonarqube/logs
+    #   - ./sonarqube/data:/opt/sonarqube/data
+    ports:
+      - 9000:9000
