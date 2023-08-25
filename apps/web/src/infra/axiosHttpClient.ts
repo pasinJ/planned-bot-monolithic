@@ -4,7 +4,7 @@ import { flow, pipe } from 'fp-ts/lib/function';
 import { __, allPass, equals, gte, lt, prop } from 'ramda';
 import { match } from 'ts-pattern';
 
-import { SchemaError, parseWithZod } from '#utils/zod';
+import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { BASE_URL, HTTP_ERRORS } from './httpClient.constant';
 import { HttpClient, HttpError } from './httpClient.type';
@@ -29,7 +29,7 @@ function sendRequest(axiosInstance: AxiosInstance): HttpClient['sendRequest'] {
         ),
       ),
       te.mapLeft((error) =>
-        error instanceof SchemaError
+        error instanceof SchemaValidationError
           ? new HttpError(HTTP_ERRORS.INVALID_RESPONSE.name, HTTP_ERRORS.INVALID_RESPONSE.message, error)
           : error,
       ),
