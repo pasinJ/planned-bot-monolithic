@@ -3,7 +3,7 @@ import { is } from 'ramda';
 
 import { HttpError } from '#infra/httpClient.type';
 import { mockBacktestingStrategy } from '#test-utils/mockEntity';
-import { executeT } from '#utils/fpExecute';
+import { executeT } from '#utils/fp';
 
 import { getBacktestingStrategies } from './backtestingStrategy';
 import { API_ENDPOINTS } from './backtestingStrategy.constant';

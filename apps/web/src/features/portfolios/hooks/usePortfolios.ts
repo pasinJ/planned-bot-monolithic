@@ -2,7 +2,7 @@ import { UseQueryResult, useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 
 import { InfraContext } from '#infra/InfraProvider.context';
-import { executeTeToPromise } from '#utils/fpExecute';
+import { executeTeToPromise } from '#utils/fp';
 
 import { Portfolio } from '../domain/portfolio.entity';
 import { getPortfolios } from '../repositories/portfolioRepository';

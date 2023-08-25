@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import * as e from 'fp-ts/lib/Either';
 
 import { mockHttpClient, mockPortfolio } from '#test-utils/mock';
-import { executeT } from '#utils/fpExecute';
+import { executeT } from '#utils/fp';
 
 import { createPortfolio, getPortfolios } from './portfolioRepository';
 

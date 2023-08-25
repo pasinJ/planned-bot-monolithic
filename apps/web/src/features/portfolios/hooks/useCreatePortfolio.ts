@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { z } from 'zod';
 
 import { InfraContext } from '#infra/InfraProvider.context';
-import { executeTeToPromise } from '#utils/fpExecute';
+import { executeTeToPromise } from '#utils/fp';
 import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { Portfolio } from '../domain/portfolio.entity';

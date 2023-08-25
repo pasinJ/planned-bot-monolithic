@@ -4,7 +4,7 @@ import { setupServer } from 'msw/node';
 import { zipObj } from 'ramda';
 import { z } from 'zod';
 
-import { executeT } from '#utils/fpExecute';
+import { executeT } from '#utils/fp';
 
 import { createAxiosHttpClient } from './axiosHttpClient';
 import { BASE_URL, HTTP_ERRORS } from './httpClient.constant';

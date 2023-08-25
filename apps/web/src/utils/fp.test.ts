@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { executeTeToPromise } from './fpExecute';
+import { executeTeToPromise } from './fp';
 
 describe('Execute TaskEither to Promise', () => {
   it('WHEN execute TaskEither.right THEN it should return a Promise that resolve with the right value', async () => {
