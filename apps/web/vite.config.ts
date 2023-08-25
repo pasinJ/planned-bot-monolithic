@@ -10,9 +10,11 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 import { PRIMARY, SECONDARY } from './src/styles/theme.constant';
 
-replaceColorCssVariables();
-if (process.env.NODE_ENV === 'development')
-  fs.watch('./src/styles/theme.constant.ts', replaceColorCssVariables);
+if (process.env.npm_lifecycle_event !== 'cy:open') {
+  replaceColorCssVariables();
+  if (process.env.NODE_ENV === 'development')
+    fs.watch('./src/styles/theme.constant.ts', replaceColorCssVariables);
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
