@@ -84,6 +84,7 @@ export default {
       transitionProperty: { width: 'width' },
       transitionDuration: { muiEnter: '225', muiLeave: '195' },
       transitionTimingFunction: { sharp: 'cubic-bezier(0.4, 0, 0.6, 1)' },
+      aria: { page: 'current="page"' },
     },
   },
   plugins: [],
