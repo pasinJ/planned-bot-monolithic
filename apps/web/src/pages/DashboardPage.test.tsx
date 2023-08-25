@@ -99,11 +99,11 @@ describe('WHEN user click on the retry fetching button', () => {
     renderDashboardPage();
 
     const retryButton = await findRetryButton();
-    expect(serverCount).toEqual(3);
+    expect(serverCount).toBe(3);
 
     const user = userEvent.setup();
     await user.click(retryButton);
     await findRetryButton();
-    expect(serverCount).toEqual(6);
+    expect(serverCount).toBe(6);
   });
 });

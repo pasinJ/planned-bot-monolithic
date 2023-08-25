@@ -30,7 +30,7 @@ describe('WHEN pass enabled = true to the hook', () => {
 
     const { result } = renderUsePortfolios(true);
 
-    expect(result.current.isInitialLoading).toEqual(true);
+    expect(result.current.isInitialLoading).toBe(true);
   });
 });
 
@@ -38,7 +38,7 @@ describe('WHEN pass enabled = false to the hook', () => {
   it('THEN it should not load any data', () => {
     const { result } = renderUsePortfolios(false);
 
-    expect(result.current.isInitialLoading).toEqual(false);
+    expect(result.current.isInitialLoading).toBe(false);
   });
 });
 

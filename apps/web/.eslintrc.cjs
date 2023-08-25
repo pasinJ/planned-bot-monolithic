@@ -70,7 +70,12 @@ module.exports = {
     },
     {
       files: ['src/**/+(*.*test).tsx'],
-      extends: ['plugin:testing-library/react', 'plugin:jest-dom/recommended'],
+      extends: [
+        'plugin:jest/recommended',
+        'plugin:jest/style',
+        'plugin:testing-library/react',
+        'plugin:jest-dom/recommended',
+      ],
     },
     {
       files: ['src/**/+(*.*test).ts'],

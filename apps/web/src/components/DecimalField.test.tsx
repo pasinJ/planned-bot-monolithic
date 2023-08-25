@@ -22,7 +22,7 @@ describe('GIVEN parent component passed onChange function to the component WHEN 
     await user.type(screen.getByRole('textbox'), value);
 
     expect(onChangeSpy).toHaveBeenCalledOnce();
-    expect(targetValue).toEqual('');
+    expect(targetValue).toBe('');
   });
 });
 
@@ -39,6 +39,6 @@ describe('GIVEN parent component passed onBlur function to the component WHEN on
     await user.click(document.body);
 
     expect(onBlurSpy).toHaveBeenCalledOnce();
-    expect(targetValue).toEqual('1.0');
+    expect(targetValue).toBe('1.0');
   });
 });
