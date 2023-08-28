@@ -1,4 +1,4 @@
-import { useMediaQuery } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { execute as executeIO } from 'fp-ts-std/IO';
 import * as io from 'fp-ts/lib/IO';
 import * as o from 'fp-ts/lib/Option';
