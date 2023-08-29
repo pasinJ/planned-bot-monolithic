@@ -7,11 +7,12 @@ import { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { RouteObject, RouterProvider, createMemoryRouter } from 'react-router-dom';
 
+import LocalizationDateProvider from '#components/LocalizationDateProvider';
 import InfraProvider, { InfraContextValue } from '#infra/InfraProvider.context';
 import { RootState, setupStore } from '#state/store';
 import StyleProvider from '#styles/containers/StyleProvider';
 
-type Layer = 'Infra' | 'ClientState' | 'ServerState' | 'Style' | 'Routes';
+type Layer = 'Infra' | 'ClientState' | 'ServerState' | 'Style' | 'Routes' | 'Date';
 
 export function renderWithContexts(
   ui: ReactElement,
@@ -49,6 +50,7 @@ export function renderWithAppContext(
     wrapper: ({ children }: PropsWithChildren) =>
       flow(
         RoutesWrapper(contexts.routes),
+        DateWrapper,
         StyleWrapper,
         ServerStateWrapper,
         ClientStateWrapper(contexts.clientState),
@@ -69,6 +71,7 @@ function ContextWrapper(
     let element = children;
 
     if (includes('Routes', layers)) element = RoutesWrapper(contexts.routes)(element);
+    if (includes('Date', layers)) element = DateWrapper(element);
     if (includes('Style', layers)) element = StyleWrapper(element);
     if (includes('ServerState', layers)) element = ServerStateWrapper(element);
     if (includes('ClientState', layers)) element = ClientStateWrapper(contexts.clientState)(element);
@@ -103,6 +106,9 @@ function RoutesWrapper(routes: RouteObject[] = []) {
     });
     return <RouterProvider router={router} />;
   };
+}
+function DateWrapper(ui: ReactNode) {
+  return <LocalizationDateProvider>{ui}</LocalizationDateProvider>;
 }
 
 export function cleanupDocument() {

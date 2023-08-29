@@ -1,13 +1,11 @@
 import { isBefore, isEqual } from 'date-fns';
 import { z } from 'zod';
 
+import { exchangeSchema } from '#features/shared/domain/exchange';
 import { nonEmptyString, nonNegativePercentage } from '#utils/common.type';
 
 export type BacktestingStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BacktestingStrategyId');
-
-const exchangeSchema = z.enum(['BINANCE']);
-export const exchangeEnum = exchangeSchema.enum;
 
 export type BacktestingStrategy = z.infer<typeof backtestingStrategySchema>;
 export const backtestingStrategySchema = z

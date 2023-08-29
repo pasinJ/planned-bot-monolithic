@@ -4,8 +4,8 @@ import { values } from 'ramda';
 import {
   BacktestingStrategy,
   BacktestingStrategyId,
-  exchangeEnum,
-} from '#features/backtesting-strategy/domain/backtestingStrategy.entity';
+} from '#features/backtesting-strategies/domain/backtestingStrategy.entity';
+import { exchangeEnum } from '#features/shared/domain/exchange';
 
 import { anyString, nonNegativeFloat, nonNegativeInt, positiveInt } from './faker';
 

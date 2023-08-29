@@ -3,11 +3,12 @@ import MainLayout from 'src/layouts/MainLayout';
 
 import LazyWrapper from '#components/LazyWrapper';
 
-import { BACKTEST_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE } from './routes.constant';
+import { BACKTESTING_CREATE_ROUTE, BACKTESTING_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE } from './routes.constant';
 
 const HomePage = () => import('#pages/HomePage');
 const DashboardPage = () => import('#pages/DashboardPage');
-const BacktestPage = () => import('#pages/BacktestingPage');
+const BacktestingPage = () => import('#features/backtesting-strategies/pages/BacktestingPage');
+const BacktestingCreatePage = () => import('#features/backtesting-strategies/pages/BacktestingCreatePage');
 
 const router = createBrowserRouter([
   {
@@ -16,7 +17,8 @@ const router = createBrowserRouter([
     children: [
       { path: HOME_ROUTE, element: <LazyWrapper component={HomePage} /> },
       { path: DASHBOARD_ROUTE, element: <LazyWrapper component={DashboardPage} /> },
-      { path: BACKTEST_ROUTE, element: <LazyWrapper component={BacktestPage} /> },
+      { path: BACKTESTING_ROUTE, element: <LazyWrapper component={BacktestingPage} /> },
+      { path: BACKTESTING_CREATE_ROUTE, element: <LazyWrapper component={BacktestingCreatePage} /> },
     ],
   },
   { path: '*', element: 'empty' },

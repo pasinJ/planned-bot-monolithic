@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 
+import LocalizationDateProvider from '#components/LocalizationDateProvider';
 import Toaster from '#components/Toaster';
 import InfraProvider from '#infra/InfraProvider.context';
 import RoutesProvider from '#routes/RoutesProvider';
@@ -21,7 +22,9 @@ createRoot(rootElement).render(
       <ClientStateProvider>
         <ServerStateProvider>
           <StyleProvider rootElem={rootElement}>
-            <RoutesProvider />
+            <LocalizationDateProvider>
+              <RoutesProvider />
+            </LocalizationDateProvider>
             <Toaster />
           </StyleProvider>
         </ServerStateProvider>
