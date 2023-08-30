@@ -1,6 +1,6 @@
 import * as e from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function.js';
-import { z } from 'zod';
+import { ZodTypeDef, z } from 'zod';
 import { ValidationError, fromZodError, isValidationErrorLike } from 'zod-validation-error';
 
 import { ErrorBase } from '#utils/error';
@@ -11,40 +11,26 @@ export class SchemaValidationError extends ErrorBase<
 > {}
 
 export function parseWithZod<
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
->(
-  schema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>,
-  message: string,
-): (
-  value: unknown,
-) => e.Either<SchemaValidationError, typeof schema extends z.ZodType ? Output : string & z.BRAND<B>>;
+>(schema: T, message: string): (value: unknown) => e.Either<SchemaValidationError, z.output<T>>;
 export function parseWithZod<
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
->(
-  schema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>,
-  message: string,
-  value: unknown,
-): e.Either<SchemaValidationError, typeof schema extends z.ZodType ? Output : string & z.BRAND<B>>;
+>(schema: T, message: string, value: unknown): e.Either<SchemaValidationError, z.output<T>>;
 export function parseWithZod<
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
->(schema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>, message: string, value?: unknown) {
-  const internalFn = (
-    value: unknown,
-  ): e.Either<SchemaValidationError, typeof schema extends z.ZodType ? Output : string & z.BRAND<B>> =>
+>(schema: T, message: string, value?: unknown) {
+  const internalFn = (value: unknown): e.Either<SchemaValidationError, z.output<T>> =>
     pipe(
-      e.tryCatch(
-        () => schema.parse(value) as typeof schema extends z.ZodType ? Output : string & z.BRAND<B>,
-        toValidationError,
-      ),
+      e.tryCatch(() => schema.parse(value), toValidationError),
       e.mapLeft((error) => {
         return isValidationErrorLike(error)
           ? new SchemaValidationError('MISMATCH_SCHEMA', message, error)

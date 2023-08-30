@@ -19,7 +19,7 @@ export default function MainLayoutLg({ children }: PropsWithChildren) {
     <div className="flex">
       <SideNav />
       <Box component="main" className="w-full">
-        {children}
+        <Box className="w-full bg-gray-100 px-10 py-6">{children}</Box>
       </Box>
     </div>
   );

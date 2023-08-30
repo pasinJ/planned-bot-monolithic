@@ -35,3 +35,18 @@ export async function selectOptionAutoComplete(
   const optionsList = await screen.findByRole('listbox', { name: autoCompleteLabel });
   await user.selectOptions(optionsList, value);
 }
+
+export async function selectOption(
+  label: string | RegExp,
+  optionValue: string,
+  user = userEvent.setup(),
+  container: HTMLElement | typeof screen = screen,
+) {
+  const parent = container instanceof HTMLElement ? within(container) : container;
+  const dropdown = await parent.findByRole('button', { name: label });
+  await user.click(dropdown);
+
+  const optionsList = await screen.findByRole('listbox', { name: label });
+  const option = await within(optionsList).findByRole('option', { name: optionValue });
+  await user.click(option);
+}

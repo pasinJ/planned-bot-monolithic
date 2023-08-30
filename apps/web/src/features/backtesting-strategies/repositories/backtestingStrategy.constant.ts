@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { stringDatetimeToDate } from '#utils/common.type';
+
 import { backtestingStrategySchema } from '../domain/backtestingStrategy.entity';
 
 export const API_ENDPOINTS = {
@@ -11,6 +13,14 @@ export const API_ENDPOINTS = {
   CREATE_BACKTESTING_STRATEGY: {
     method: 'POST',
     url: '/api/v1/backtesting-strategies',
-    responseSchema: backtestingStrategySchema,
+    responseSchema: z
+      .object({
+        startTimestamp: stringDatetimeToDate,
+        endTimestamp: stringDatetimeToDate,
+        createdAt: stringDatetimeToDate,
+        updatedAt: stringDatetimeToDate,
+      })
+      .passthrough()
+      .pipe(backtestingStrategySchema),
   },
 } as const;

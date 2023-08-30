@@ -23,6 +23,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@monaco-editor/react": "^4.5.2",
     "@mui/lab": "^5.0.0-alpha.140",
     "@mui/material": "^5.14.3",
     "@mui/x-date-pickers": "^6.12.0",
@@ -34,6 +35,7 @@
     "fp-ts": "^2.16.1",
     "fp-ts-std": "^0.17.1",
     "material-symbols": "^0.10.3",
+    "monaco-editor": "^0.41.0",
     "ramda": "^0.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

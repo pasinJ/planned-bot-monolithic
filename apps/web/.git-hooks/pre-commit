@@ -13,7 +13,7 @@ if [ $changeNum != 0 ]; then
 
     npm run lint
     npm run prettier
-    npm run test:u
+    npm run test:u -- --onlyChanged
     
     echo "[INFO] Pre-commit hook of Web project done"
 else

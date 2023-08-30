@@ -47,6 +47,17 @@ describe('Backtesting strategy schema', () => {
       ).toThrow();
     });
   });
+  describe('symbol property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() => backtestingStrategySchema.parse(dissoc('symbol', validBacktestingStrategy))).toThrow();
+    });
+    it('WHEN the property is an empty string THEN the entity should be invalid', () => {
+      expect(() => backtestingStrategySchema.parse(assoc('symbol', '', validBacktestingStrategy))).toThrow();
+    });
+    it('WHEN the property is a string with only whitespace THEN the entity should be invalid', () => {
+      expect(() => backtestingStrategySchema.parse(assoc('symbol', ' ', validBacktestingStrategy))).toThrow();
+    });
+  });
   describe('currency property', () => {
     it('WHEN the property is missing THEN the entity should be invalid', () => {
       expect(() => backtestingStrategySchema.parse(dissoc('currency', validBacktestingStrategy))).toThrow();
@@ -60,6 +71,71 @@ describe('Backtesting strategy schema', () => {
       expect(() =>
         backtestingStrategySchema.parse(assoc('currency', ' ', validBacktestingStrategy)),
       ).toThrow();
+    });
+  });
+  describe('timeframe property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() => backtestingStrategySchema.parse(dissoc('timeframe', validBacktestingStrategy))).toThrow();
+    });
+    it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('timeframe', anyString(), validBacktestingStrategy)),
+      ).toThrow();
+    });
+  });
+  describe('maxNumKlines property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(dissoc('maxNumKlines', validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is a negative number THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('maxNumKlines', negativeInt(), validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is NaN THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('maxNumKlines', NaN, validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is zero THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('maxNumKlines', 0, validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is a float number THEN it should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('maxNumKlines', nonNegativeFloat(), validBacktestingStrategy)),
+      ).toThrow();
+    });
+  });
+  describe('initial capital property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(dissoc('initialCapital', validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is a negative number THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('initialCapital', negativeInt(), validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is NaN THEN the entity should be invalid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('initialCapital', NaN, validBacktestingStrategy)),
+      ).toThrow();
+    });
+    it('WHEN the property is zero THEN the entity should be valid', () => {
+      expect(() =>
+        backtestingStrategySchema.parse(assoc('initialCapital', 0, validBacktestingStrategy)),
+      ).not.toThrow();
+    });
+    it('WHEN the property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
+      const { float9Digits, float8Digits } = random9DigitsPositiveFloatWithRoundUp();
+      expect(
+        backtestingStrategySchema.parse(assoc('initialCapital', float9Digits, validBacktestingStrategy)),
+      ).toHaveProperty('initialCapital', float8Digits);
     });
   });
   describe('takerFeeRate property', () => {
@@ -128,32 +204,33 @@ describe('Backtesting strategy schema', () => {
       ).toHaveProperty('makerFeeRate', float8Digits);
     });
   });
-  describe('maxNumLastKline property', () => {
+  describe('start timestamp property', () => {
     it('WHEN the property is missing THEN the entity should be invalid', () => {
       expect(() =>
-        backtestingStrategySchema.parse(dissoc('maxNumLastKline', validBacktestingStrategy)),
+        backtestingStrategySchema.parse(dissoc('startTimestamp', validBacktestingStrategy)),
       ).toThrow();
     });
-    it('WHEN the property is a negative number THEN the entity should be invalid', () => {
+    it('WHEN the property is an invalid date THEN the entity should be invalid', () => {
       expect(() =>
-        backtestingStrategySchema.parse(assoc('maxNumLastKline', negativeInt(), validBacktestingStrategy)),
+        backtestingStrategySchema.parse(assoc('startTimestamp', invalidDate, validBacktestingStrategy)),
       ).toThrow();
     });
-    it('WHEN the property is NaN THEN the entity should be invalid', () => {
+  });
+  describe('end timestamp property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
       expect(() =>
-        backtestingStrategySchema.parse(assoc('maxNumLastKline', NaN, validBacktestingStrategy)),
+        backtestingStrategySchema.parse(dissoc('endTimestamp', validBacktestingStrategy)),
       ).toThrow();
     });
-    it('WHEN the property is zero THEN the entity should be invalid', () => {
+    it('WHEN the property is an invalid date THEN the entity should be invalid', () => {
       expect(() =>
-        backtestingStrategySchema.parse(assoc('maxNumLastKline', 0, validBacktestingStrategy)),
+        backtestingStrategySchema.parse(assoc('endTimestamp', invalidDate, validBacktestingStrategy)),
       ).toThrow();
     });
-    it('WHEN the property is a float number THEN it should be invalid', () => {
+    it('WHEN the property is a date before start timestamp THEN the entity should be invalid', () => {
+      const dateBefore = randomDateBefore(validBacktestingStrategy.startTimestamp);
       expect(() =>
-        backtestingStrategySchema.parse(
-          assoc('maxNumLastKline', nonNegativeFloat(), validBacktestingStrategy),
-        ),
+        backtestingStrategySchema.parse(assoc('endTimestamp', dateBefore, validBacktestingStrategy)),
       ).toThrow();
     });
   });
