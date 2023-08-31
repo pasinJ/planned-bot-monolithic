@@ -12,7 +12,7 @@
     "test:u": "npm run test -- --selectProjects UNIT --testPathPattern",
     "test:i": "npm run test -- --selectProjects INTEGRATION --testPathPattern",
     "test:e": "npm run test -- --selectProjects E2E --testPathPattern",
-    "test:w": "npm run test -- --selectProjects UNIT INTEGRATION --testPathPattern --watch",
+    "test:w": "npm run test -- --selectProjects UNIT INTEGRATION --testPathPattern --watch --onlyChanged",
     "start": "node --experimental-specifier-resolution=node --no-warnings dist/main.js",
     "build": "tsc -p tsconfig.prod.json && tsc-alias",
     "build:clean": "rimraf dist && npm run build",
@@ -54,6 +54,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@fastify/cors": "^8.3.0",
     "axios": "^1.4.0",
     "binance-api-node": "^0.12.6",
     "date-fns": "^2.30.0",

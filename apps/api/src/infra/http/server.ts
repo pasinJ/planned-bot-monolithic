@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import e from 'fp-ts/lib/Either.js';
 import ioe from 'fp-ts/lib/IOEither.js';
@@ -28,6 +29,7 @@ const fastifyConfig = {
   trustProxy: true,
   genReqId: () => nanoid(),
 };
+const corsConfig: cors.FastifyCorsOptions = { origin: [/^http:\/\/localhost/] };
 
 export function buildHttpServer(mainLogger: PinoLogger): e.Either<BuildHttpServerError, FastifyServer> {
   return e.tryCatch(() => {
@@ -46,8 +48,12 @@ export function startHttpServer(
 ): te.TaskEither<StartHttpServerError, FastifyServer> {
   const { PORT_NUMBER } = getHttpConfig();
   return pipe(
-    juxt([addGeneralRoutes, addSymbolsRoutes])(instance, deps),
-    ioe.sequenceArray,
+    ioe.tryCatch(
+      () => instance.register(cors, corsConfig),
+      createErrorFromUnknown(StartHttpServerError, 'ADD_PLUGIN_ERROR', 'Adding CORS plugin failed'),
+    ),
+    ioe.map(() => juxt([addGeneralRoutes, addSymbolsRoutes])(instance, deps)),
+    ioe.chain(ioe.sequenceArray),
     te.fromIOEither,
     te.chainFirst(() =>
       te.tryCatch(

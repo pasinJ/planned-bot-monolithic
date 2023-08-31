@@ -11,7 +11,7 @@ export class BuildHttpServerError extends CustomError<'BUILD_HTTP_SERVER_ERROR',
   'Error happened when try to build a HTTP server',
 ) {}
 export class StartHttpServerError extends CustomError<
-  'ADD_ROUTE_ERROR' | 'START_HTTP_SERVER_ERROR',
+  'ADD_ROUTE_ERROR' | 'ADD_PLUGIN_ERROR' | 'START_HTTP_SERVER_ERROR',
   ExternalError | FastifyError
 >('START_HTTP_SERVER_ERROR', 'Error happened when try to start a HTTP server') {}
 

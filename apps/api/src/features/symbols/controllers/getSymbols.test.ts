@@ -67,7 +67,7 @@ describe('GIVEN there is an existing symbol WHEN get symbols', () => {
     const respBody = resp.json();
 
     expect(resp.statusCode).toBe(200);
-    expect(respBody).toIncludeAllMembers(symbols.map(pick(['name', 'baseAsset', 'quoteAsset'])));
+    expect(respBody).toIncludeAllMembers(symbols.map(pick(['name', 'exchange', 'baseAsset', 'quoteAsset'])));
   });
 });
 

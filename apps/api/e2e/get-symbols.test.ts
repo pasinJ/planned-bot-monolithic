@@ -37,6 +37,8 @@ describe('GIVEN some symbols have been added WHEN get symbols', () => {
 
     expectHttpStatus(getResp, 200);
     expect(getResp.data).toBeArrayOfSize(symbols.length);
-    expect(getResp.data).toIncludeAllMembers(symbols.map(pick(['name', 'baseAsset', 'quoteAsset'])));
+    expect(getResp.data).toIncludeAllMembers(
+      symbols.map(pick(['name', 'exchange', 'baseAsset', 'quoteAsset'])),
+    );
   });
 });
