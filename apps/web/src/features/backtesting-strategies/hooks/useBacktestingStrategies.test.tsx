@@ -6,12 +6,12 @@ import { HttpClient } from '#infra/httpClient.type';
 import { mockBacktestingStrategy } from '#test-utils/mockEntity';
 import { renderHookWithContexts } from '#test-utils/render';
 
-import { GetBacktestingStrategiesError } from '../repositories/backtestingStrategy.type';
-import useBacktestingStrategies from './useBacktestingStrategies';
+import { GetBtStrategiesError } from '../repositories/backtestingStrategy.type';
+import useBtStrategies from './useBacktestingStrategies';
 
 function renderUseBacktestingStrategies(enabled: boolean, overrides?: { httpClient: HttpClient }) {
   return renderHookWithContexts(
-    () => useBacktestingStrategies(enabled),
+    () => useBtStrategies(enabled),
     ['Infra', 'ServerState'],
     overrides ? { infraContext: { httpClient: overrides.httpClient } } : undefined,
   );
@@ -54,6 +54,6 @@ describe('WHEN fetching data fails', () => {
       httpClient: { sendRequest: jest.fn().mockReturnValue(te.left(new Error('Mock error'))) },
     });
 
-    await waitFor(() => expect(result.current.error).toSatisfy(is(GetBacktestingStrategiesError)));
+    await waitFor(() => expect(result.current.error).toSatisfy(is(GetBtStrategiesError)));
   });
 });

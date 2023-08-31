@@ -11,7 +11,7 @@ import { mockSymbol } from '#test-utils/mockValueObject';
 
 const { GET_PORTFOLIOS, CREATE_PORTFOLIO } = API_ENDPOINTS;
 const { GET_SYMBOLS } = SYMBOL_API_ENDPOINTS;
-const { CREATE_BACKTESTING_STRATEGY } = BACKTEST_API_ENDPOINTS;
+const { ADD_BT_STRATEGY: CREATE_BACKTESTING_STRATEGY } = BACKTEST_API_ENDPOINTS;
 
 const getPortfoliosUrl = BASE_URL + GET_PORTFOLIOS.url;
 const mockGetPortfoliosResp = generateMock(GET_PORTFOLIOS.responseSchema);

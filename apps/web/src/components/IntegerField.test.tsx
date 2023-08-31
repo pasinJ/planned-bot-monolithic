@@ -15,7 +15,7 @@ const ui = {
   field: byRole('textbox'),
 };
 
-describe('GIVEN parent component passed onChange function to the component WHEN onChange event happen', () => {
+describe('GIVEN parent component passed onChange function to the component WHEN a change event happen', () => {
   it('THEN it should call the passed onChange function with parsed value', async () => {
     let targetValue = undefined;
     const onChangeSpy = jest.fn().mockImplementation((e) => {
@@ -32,7 +32,7 @@ describe('GIVEN parent component passed onChange function to the component WHEN 
   });
 });
 
-describe('GIVEN parent component passed onBlur function to the component WHEN onBlur event happen', () => {
+describe('GIVEN parent component passed onBlur function to the component WHEN a blur event happen', () => {
   it('THEN it should call the passed onBlur function with parsed value', async () => {
     let targetValue = undefined;
     const onBlurSpy = jest.fn().mockImplementation((e) => {

@@ -1,7 +1,7 @@
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import { ChangeEventHandler, FocusEventHandler } from 'react';
 
-import { decimalStringLoose, formatDecimalString } from './DecimalField.utils';
+import { decimalStringLoose, formatDecimalString } from './DecimalField.util';
 
 export function DecimalField(props: Omit<TextFieldProps, 'value'> & { value: string }) {
   const { value, onChange, onBlur, ...restProps } = props;

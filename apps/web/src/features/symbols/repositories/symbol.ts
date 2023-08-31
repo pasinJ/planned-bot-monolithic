@@ -10,6 +10,6 @@ export function getSymbols(...[{ httpClient }]: Parameters<GetSymbols>): ReturnT
   const { method, url, responseSchema } = GET_SYMBOLS;
   return pipe(
     httpClient.sendRequest({ method, url, responseSchema }),
-    te.mapLeft((error) => new GetSymbolsError('GET_SYMBOLS_ERROR', 'Failed to get symbols', error)),
+    te.mapLeft((error) => new GetSymbolsError().causedBy(error)),
   );
 }

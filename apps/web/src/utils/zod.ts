@@ -3,12 +3,14 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { ZodTypeDef, z } from 'zod';
 import { ValidationError, fromZodError, isValidationErrorLike } from 'zod-validation-error';
 
-import { ErrorBase } from '#utils/error';
+import { CustomError } from '#utils/error';
 
-export class SchemaValidationError extends ErrorBase<
-  'MISMATCH_SCHEMA' | 'SCHEMA_VALIDATION_FAILED',
-  ValidationError | Error
-> {}
+export class SchemaValidationError extends CustomError<SchemaValidationErrorName, SchemaValidationErrorCause>(
+  'MISMATCH_SCHEMA',
+  'Error happened when try to parse value with zod schema',
+) {}
+type SchemaValidationErrorName = 'MISMATCH_SCHEMA' | 'SCHEMA_VALIDATION_FAILED';
+type SchemaValidationErrorCause = ValidationError | Error;
 
 export function parseWithZod<
   T extends z.ZodType<Output, Def, Input>,
@@ -33,12 +35,11 @@ export function parseWithZod<
       e.tryCatch(() => schema.parse(value), toValidationError),
       e.mapLeft((error) => {
         return isValidationErrorLike(error)
-          ? new SchemaValidationError('MISMATCH_SCHEMA', message, error)
+          ? new SchemaValidationError('MISMATCH_SCHEMA', message).causedBy(error)
           : new SchemaValidationError(
               'SCHEMA_VALIDATION_FAILED',
               'Unexpected error happened when try to parse with zod',
-              error,
-            );
+            ).causedBy(error);
       }),
     );
 

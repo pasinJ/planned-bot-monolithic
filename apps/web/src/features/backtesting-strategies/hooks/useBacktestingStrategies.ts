@@ -5,17 +5,17 @@ import { InfraContext } from '#infra/InfraProvider.context';
 import { executeTeToPromise } from '#utils/fp';
 
 import { BacktestingStrategy } from '../domain/backtestingStrategy.entity';
-import { getBacktestingStrategies } from '../repositories/backtestingStrategy';
-import { GetBacktestingStrategiesError } from '../repositories/backtestingStrategy.type';
+import { getBtStrategies } from '../repositories/backtestingStrategy';
+import { GetBtStrategiesError } from '../repositories/backtestingStrategy.type';
 
-export default function useBacktestingStrategies(
+export default function useBtStrategies(
   enabled: boolean,
-): UseQueryResult<readonly BacktestingStrategy[], GetBacktestingStrategiesError> {
+): UseQueryResult<readonly BacktestingStrategy[], GetBtStrategiesError> {
   const { httpClient } = useContext(InfraContext);
 
-  return useQuery<readonly BacktestingStrategy[], GetBacktestingStrategiesError>({
+  return useQuery<readonly BacktestingStrategy[], GetBtStrategiesError>({
     queryKey: ['portfolios'],
-    queryFn: () => executeTeToPromise(getBacktestingStrategies({ httpClient })),
+    queryFn: () => executeTeToPromise(getBtStrategies({ httpClient })),
     enabled,
   });
 }

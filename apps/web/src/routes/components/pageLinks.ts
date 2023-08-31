@@ -2,8 +2,8 @@ import { BACKTESTING_CREATE_ROUTE, BACKTESTING_ROUTE } from '#routes/routes.cons
 
 import NavLinkBase from './NavLinkBase';
 
-export const BacktestingPageLink = NavLinkBase({ to: BACKTESTING_ROUTE, 'aria-label': 'backtesting page' });
-export const BacktestingCreatePageLink = NavLinkBase({
+export const BtPageLink = NavLinkBase({ to: BACKTESTING_ROUTE, label: 'backtesting page' });
+export const AddBtPageLink = NavLinkBase({
   to: BACKTESTING_CREATE_ROUTE,
-  'aria-label': 'go to create backtesting strategy form',
+  label: 'go to add backtesting strategy page',
 });

@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-import { exchangeSchema } from '#features/shared/domain/exchange';
+import { exchangeNameSchema } from '#features/shared/domain/exchange';
 import { nonEmptyString } from '#utils/common.type';
 
 export const symbolSchema = z
   .object({
     name: nonEmptyString,
-    exchange: exchangeSchema,
+    exchange: exchangeNameSchema,
     baseAsset: nonEmptyString,
     quoteAsset: nonEmptyString,
   })

@@ -13,10 +13,7 @@ export function getPortfolios(...[{ httpClient }]: Parameters<GetPortfolios>): R
   const { method, url, responseSchema } = API_ENDPOINTS.GET_PORTFOLIOS;
   return pipe(
     httpClient.sendRequest({ method, url, responseSchema }),
-    te.mapLeft(
-      (error) =>
-        new GetPortfoliosError('GET_PORTFOLIOS_ERROR', 'Getting portfolios from server error', error),
-    ),
+    te.mapLeft((error) => new GetPortfoliosError().causedBy(error)),
   );
 }
 
@@ -26,8 +23,6 @@ export function createPortfolio(
   const { method, url, responseSchema } = API_ENDPOINTS.CREATE_PORTFOLIO;
   return pipe(
     httpClient.sendRequest({ method, url, body, responseSchema }),
-    te.mapLeft(
-      (error) => new CreatePortfolioError('CREATE_PORTFOLIO_ERROR', 'Creating portfolio error', error),
-    ),
+    te.mapLeft((error) => new CreatePortfolioError().causedBy(error)),
   );
 }

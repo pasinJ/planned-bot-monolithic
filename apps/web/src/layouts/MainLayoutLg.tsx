@@ -12,14 +12,14 @@ import { PropsWithChildren, useState } from 'react';
 import logo from '#assets/favicon-64x64.png';
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
-import { BacktestingPageLink } from '#routes/components/pageLinks';
+import { BtPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutLg({ children }: PropsWithChildren) {
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       <SideNav />
-      <Box component="main" className="w-full">
-        <Box className="w-full bg-gray-100 px-10 py-6">{children}</Box>
+      <Box component="main" className="h-full w-full">
+        <Box className="h-full w-full bg-gray-100 px-10 py-6">{children}</Box>
       </Box>
     </div>
   );
@@ -52,7 +52,7 @@ function SideNav() {
         isNavOpening={open}
         symbol="youtube_searched_for"
         text="Backtesting"
-        navLinkComponent={BacktestingPageLink}
+        navLinkComponent={BtPageLink}
       />
     </List>
   );

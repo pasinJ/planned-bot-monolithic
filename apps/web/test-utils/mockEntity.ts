@@ -5,7 +5,7 @@ import {
   BacktestingStrategy,
   BacktestingStrategyId,
 } from '#features/backtesting-strategies/domain/backtestingStrategy.entity';
-import { exchangeEnum } from '#features/shared/domain/exchange';
+import { exchangeNameEnum } from '#features/shared/domain/exchange';
 import { timeframeEnum } from '#features/shared/domain/timeframe';
 
 import { anyString, nonNegativeFloat, nonNegativeInt, positiveInt } from './faker';
@@ -14,7 +14,7 @@ export function mockBacktestingStrategy(overrides?: Partial<BacktestingStrategy>
   return {
     id: anyString() as BacktestingStrategyId,
     name: anyString(),
-    exchange: faker.helpers.arrayElement(values(exchangeEnum)),
+    exchange: faker.helpers.arrayElement(values(exchangeNameEnum)),
     symbol: faker.string.alpha(6),
     currency: anyString(),
     timeframe: faker.helpers.arrayElement(values(timeframeEnum)),

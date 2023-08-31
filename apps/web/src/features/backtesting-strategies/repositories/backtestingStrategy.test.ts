@@ -5,19 +5,19 @@ import { HttpError } from '#infra/httpClient.type';
 import { mockBacktestingStrategy } from '#test-utils/mockEntity';
 import { executeT } from '#utils/fp';
 
-import { createBacktestingStrategy, getBacktestingStrategies } from './backtestingStrategy';
+import { addBtStrategy, getBtStrategies } from './backtestingStrategy';
 import { API_ENDPOINTS } from './backtestingStrategy.constant';
-import { CreateBacktestingStrategyError, GetBacktestingStrategiesError } from './backtestingStrategy.type';
+import { AddBtStrategyError, GetBtStrategiesError } from './backtestingStrategy.type';
 
-const { GET_BACKTESTING_STRATEGIES, CREATE_BACKTESTING_STRATEGY } = API_ENDPOINTS;
+const { GET_BT_STRATEGIES, ADD_BT_STRATEGY } = API_ENDPOINTS;
 
 describe('Get backtesting strategies', () => {
   describe('WHEN get backtesting strategies', () => {
     it('THEN it should send request with configured method, path, and response schema', async () => {
-      const { method, url, responseSchema } = GET_BACKTESTING_STRATEGIES;
+      const { method, url, responseSchema } = GET_BT_STRATEGIES;
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([])) };
 
-      await executeT(getBacktestingStrategies({ httpClient }));
+      await executeT(getBtStrategies({ httpClient }));
 
       expect(httpClient.sendRequest).toHaveBeenCalledExactlyOnceWith({ method, url, responseSchema });
     });
@@ -27,7 +27,7 @@ describe('Get backtesting strategies', () => {
       const strategy = mockBacktestingStrategy();
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([strategy])) };
 
-      const result = await executeT(getBacktestingStrategies({ httpClient }));
+      const result = await executeT(getBtStrategies({ httpClient }));
 
       expect(result).toEqualRight([strategy]);
     });
@@ -38,25 +38,25 @@ describe('Get backtesting strategies', () => {
         sendRequest: jest.fn().mockReturnValue(te.left(new HttpError('INTERNAL_SERVER_ERROR', 'Mock error'))),
       };
 
-      const result = await executeT(getBacktestingStrategies({ httpClient }));
+      const result = await executeT(getBtStrategies({ httpClient }));
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(GetBacktestingStrategiesError)));
+      expect(result).toEqualLeft(expect.toSatisfy(is(GetBtStrategiesError)));
     });
   });
 });
 
-describe('Create backtesting strategy', () => {
+describe('Add backtesting strategy', () => {
   function mockData() {
     return omit(['id', 'version', 'createdAt', 'updatedAt'], mockBacktestingStrategy());
   }
 
-  describe('WHEN create backtesting strategy', () => {
+  describe('WHEN add backtesting strategy', () => {
     it('THEN it should send request with given data and the configured method, path, and response schema', async () => {
-      const { method, url, responseSchema } = CREATE_BACKTESTING_STRATEGY;
+      const { method, url, responseSchema } = ADD_BT_STRATEGY;
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(undefined)) };
       const data = mockData();
 
-      await executeT(createBacktestingStrategy(data, { httpClient }));
+      await executeT(addBtStrategy(data, { httpClient }));
 
       expect(httpClient.sendRequest).toHaveBeenCalledExactlyOnceWith({
         body: data,
@@ -71,7 +71,7 @@ describe('Create backtesting strategy', () => {
       const strategy = mockBacktestingStrategy();
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(strategy)) };
 
-      const result = await executeT(createBacktestingStrategy(mockData(), { httpClient }));
+      const result = await executeT(addBtStrategy(mockData(), { httpClient }));
 
       expect(result).toEqualRight(strategy);
     });
@@ -81,9 +81,9 @@ describe('Create backtesting strategy', () => {
       const error = new HttpError('INTERNAL_SERVER_ERROR', 'Mock error');
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.left(error)) };
 
-      const result = await executeT(createBacktestingStrategy(mockData(), { httpClient }));
+      const result = await executeT(addBtStrategy(mockData(), { httpClient }));
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(CreateBacktestingStrategyError)));
+      expect(result).toEqualLeft(expect.toSatisfy(is(AddBtStrategyError)));
     });
   });
 });

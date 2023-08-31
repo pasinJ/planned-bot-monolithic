@@ -9,7 +9,7 @@ export type NavLinkComponent = ForwardRefExoticComponent<
   } & RefAttributes<HTMLAnchorElement>
 >;
 
-export default function NavLinkBase(baseProps: { to: To; 'aria-label': string }) {
+export default function NavLinkBase(baseProps: { to: To; label: string }) {
   return forwardRef<
     HTMLAnchorElement,
     Omit<NavLinkProps, 'to' | 'className'> & {
@@ -23,7 +23,7 @@ export default function NavLinkBase(baseProps: { to: To; 'aria-label': string })
       <NavLink
         ref={ref}
         to={baseProps.to}
-        aria-label={baseProps['aria-label']}
+        aria-label={baseProps.label}
         className={({ isActive, isPending }) =>
           `${className} ${isActive ? activeClassName : ''} ${isPending ? pendingClassName : ''}`
         }

@@ -1,7 +1,7 @@
 import { isBefore, isEqual } from 'date-fns';
 import { z } from 'zod';
 
-import { exchangeSchema } from '#features/shared/domain/exchange';
+import { exchangeNameSchema } from '#features/shared/domain/exchange';
 import { timeframeSchema } from '#features/shared/domain/timeframe';
 import { nonEmptyString, nonNegativeFloat, nonNegativePercentage } from '#utils/common.type';
 
@@ -13,7 +13,7 @@ export const backtestingStrategySchema = z
   .object({
     id: idSchema,
     name: nonEmptyString,
-    exchange: exchangeSchema,
+    exchange: exchangeNameSchema,
     symbol: nonEmptyString,
     currency: nonEmptyString,
     timeframe: timeframeSchema,

@@ -1,11 +1,14 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { ZodTypeDef, z } from 'zod';
 
-import { ErrorBase } from '#utils/error';
+import { CustomError } from '#utils/error';
 
 export type HttpClient = { sendRequest: SendRequest };
 
-export class HttpError extends ErrorBase<HttpErrorName> {}
+export class HttpError extends CustomError<HttpErrorName>(
+  'UNHANDLED_ERROR',
+  'Error happened when try to send HTTP request to external system',
+) {}
 export type HttpErrorName =
   | 'INVALID_REQUEST'
   | 'UNAUTHORIZED'

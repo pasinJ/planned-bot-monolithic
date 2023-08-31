@@ -13,7 +13,7 @@ import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
-import { BacktestingPageLink } from '#routes/components/pageLinks';
+import { BtPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutSm({ children }: PropsWithChildren) {
   const [isDrawerOpening, setIsDrawerOpening] = useState(false);
@@ -26,7 +26,7 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
       <SideNav isDrawerOpening={isDrawerOpening} toggleDrawer={toggleDrawer} />
       <Box component="main" className="flex w-full flex-col">
         <Toolbar />
-        {children}
+        <Box className="h-full w-full bg-gray-100 px-4 py-6">{children}</Box>
       </Box>
     </Box>
   );
@@ -34,7 +34,7 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
 
 function TopAppBar({ toggleDrawer }: { toggleDrawer: MouseEventHandler }) {
   return (
-    <AppBar component="nav" className="bg-primary/[.04] text-textColor-onPrimary">
+    <AppBar component="nav" className="bg-surface-1 text-textColor-onPrimary">
       <Toolbar className="grid grid-cols-[1fr_auto_1fr] items-center">
         <Box>
           <IconButton color="inherit" aria-label="open navigation drawer" onClick={toggleDrawer}>
@@ -75,7 +75,7 @@ function SideNav({
           <SideNavItemButton
             symbol="youtube_searched_for"
             text="Backtesting"
-            navLinkComponent={BacktestingPageLink}
+            navLinkComponent={BtPageLink}
             toggleDrawer={toggleDrawer}
           />
         </List>
