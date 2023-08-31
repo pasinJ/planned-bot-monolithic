@@ -12,8 +12,9 @@ export default function useSymbols(enabled: boolean): UseQueryResult<readonly Sy
   const { httpClient } = useContext(InfraContext);
 
   return useQuery<readonly Symbol[], GetSymbolsError>({
-    queryKey: ['portfolios'],
+    queryKey: ['symbols'],
     queryFn: () => executeTeToPromise(getSymbols({ httpClient })),
+    staleTime: 5 * 60000,
     enabled,
   });
 }
