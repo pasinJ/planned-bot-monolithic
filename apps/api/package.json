@@ -17,7 +17,8 @@
     "build": "tsc -p tsconfig.prod.json && tsc-alias",
     "build:clean": "rimraf dist && npm run build",
     "lint": "eslint . --ext .ts --cache .",
-    "prettier": "prettier . --write --cache --log-level warn"
+    "prettier": "prettier . --write --cache --log-level warn",
+    "sonar": "node sonarscan.cjs"
   },
   "keywords": [],
   "author": "",
@@ -49,6 +50,7 @@
     "msw": "^1.2.3",
     "prettier": "^3.0.1",
     "rimraf": "^5.0.1",
+    "sonarqube-scanner": "^3.1.0",
     "tsc-alias": "^1.8.7",
     "tsx": "^3.12.7",
     "typescript": "^5.1.6"
