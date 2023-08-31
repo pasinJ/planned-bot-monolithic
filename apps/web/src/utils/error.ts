@@ -62,9 +62,9 @@ export function CustomError<Name extends string, Cause extends GeneralCause = Ge
   defaultMessage: string,
 ) {
   return class extends ErrorBase<Name, Cause> {
-    constructor(name: Name, message: string);
     constructor(message?: string);
-    constructor(nameOrMsg?: string, msg?: string) {
+    constructor(name: Name, message: string);
+    constructor(nameOrMsg?: Name | string, msg?: string) {
       super({ name: defaultName, message: defaultMessage }, nameOrMsg, msg);
     }
   };
@@ -84,7 +84,7 @@ export function createErrorFromUnknown<
   Name extends Names,
   Cause extends ExternalError | GeneralCause,
 >(
-  constructor: new (nameOrMsg?: Name | string, msg?: string) => E,
+  constructor: new (nameOrMsg?: Name, msg?: string) => E,
   name?: IfIncludeExternalError<Cause, Name>,
   message?: IfIncludeExternalError<Cause, string>,
 ) {
