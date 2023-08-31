@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
-import { BASE_URL } from '#infra/httpClient.constant';
+import { API_BASE_URL } from '#infra/httpClient.constant';
 import { renderWithContexts } from '#test-utils/render';
 
 import { API_ENDPOINTS } from '../repositories/portfolioRepository.constant';
@@ -13,7 +13,7 @@ import CreatePortfolioForm from './CreatePortfolioForm';
 
 const { url, responseSchema } = API_ENDPOINTS.CREATE_PORTFOLIO;
 const server = setupServer();
-const serverUrl = `${BASE_URL}${url}`;
+const serverUrl = `${API_BASE_URL}${url}`;
 
 function renderCreatePortfolioForm() {
   return renderWithContexts(<CreatePortfolioForm />, ['Infra', 'ServerState']);

@@ -6,13 +6,13 @@ import { match } from 'ts-pattern';
 
 import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
-import { BASE_URL, HTTP_ERRORS } from './httpClient.constant';
+import { API_BASE_URL, HTTP_ERRORS } from './httpClient.constant';
 import { HttpClient, HttpError } from './httpClient.type';
 
 const { INVALID_RESPONSE } = HTTP_ERRORS;
 
 export function createAxiosHttpClient(config?: CreateAxiosDefaults): HttpClient {
-  const axiosInstance = axios.create({ baseURL: BASE_URL, ...config });
+  const axiosInstance = axios.create({ baseURL: API_BASE_URL, ...config });
   return { sendRequest: sendRequest(axiosInstance) };
 }
 

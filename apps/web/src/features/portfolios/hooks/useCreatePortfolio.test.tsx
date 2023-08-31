@@ -4,7 +4,7 @@ import { act, waitFor } from '@testing-library/react';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
-import { BASE_URL } from '#infra/httpClient.constant';
+import { API_BASE_URL } from '#infra/httpClient.constant';
 import { renderHookWithContexts } from '#test-utils/render';
 
 import { API_ENDPOINTS } from '../repositories/portfolioRepository.constant';
@@ -12,7 +12,7 @@ import useCreatePortfolio from './useCreatePortfolio';
 
 const { url, responseSchema } = API_ENDPOINTS.CREATE_PORTFOLIO;
 const server = setupServer();
-const serverUrl = `${BASE_URL}${url}`;
+const serverUrl = `${API_BASE_URL}${url}`;
 
 function renderUseCreatePortfolio(init?: { onSuccess?: () => void }) {
   return renderHookWithContexts(

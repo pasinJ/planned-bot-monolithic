@@ -18,6 +18,7 @@ if (process.env.npm_lifecycle_event !== 'cy:open') {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  envDir: 'env',
   plugins: [react(), tsconfigPaths()],
 });
 

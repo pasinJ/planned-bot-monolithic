@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:cy": "NODE_ENV=test vite",
-    "test": "DOTENV_CONFIG_PATH=.env/.env.dev jest",
+    "test": "DOTENV_CONFIG_PATH=env/.env.dev jest",
     "test:u": "npm run test -- --selectProjects DOM NODE --testPathPattern",
     "test:d": "npm run test -- --selectProjects DOM --testPathPattern",
     "test:n": "npm run test -- --selectProjects NODE --testPathPattern",

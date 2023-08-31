@@ -5,14 +5,14 @@ import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
 import { API_ENDPOINTS } from '#features/portfolios/repositories/portfolioRepository.constant';
-import { BASE_URL } from '#infra/httpClient.constant';
+import { API_BASE_URL } from '#infra/httpClient.constant';
 import { renderWithContexts } from '#test-utils/render';
 
 import DashboardPage from './DashboardPage';
 
 const { url, responseSchema } = API_ENDPOINTS.GET_PORTFOLIOS;
 const server = setupServer();
-const serverUrl = `${BASE_URL}${url}`;
+const serverUrl = `${API_BASE_URL}${url}`;
 
 function renderDashboardPage() {
   return renderWithContexts(<DashboardPage />, ['Infra', 'ServerState', 'Routes']);

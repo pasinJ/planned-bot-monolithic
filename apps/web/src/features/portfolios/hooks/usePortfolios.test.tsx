@@ -3,7 +3,7 @@ import { waitFor } from '@testing-library/react';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 
-import { BASE_URL } from '#infra/httpClient.constant';
+import { API_BASE_URL } from '#infra/httpClient.constant';
 import { renderHookWithContexts } from '#test-utils/render';
 
 import { API_ENDPOINTS } from '../repositories/portfolioRepository.constant';
@@ -11,7 +11,7 @@ import usePortfolios from './usePortfolios';
 
 const { url, responseSchema } = API_ENDPOINTS.GET_PORTFOLIOS;
 const server = setupServer();
-const serverUrl = `${BASE_URL}${url}`;
+const serverUrl = `${API_BASE_URL}${url}`;
 
 function renderUsePortfolios(enabled: boolean) {
   return renderHookWithContexts(() => usePortfolios(enabled), ['Infra', 'ServerState']);
