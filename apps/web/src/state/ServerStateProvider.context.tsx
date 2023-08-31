@@ -1,4 +1,5 @@
 import { Query, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { is } from 'ramda';
 import { PropsWithChildren } from 'react';
 import { toast } from 'react-toastify';
@@ -8,7 +9,12 @@ const queryClient = new QueryClient({
 });
 
 export default function ServerStateProvider({ children }: PropsWithChildren) {
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
 }
 
 function onErrorQuery(error: unknown, query: Query<unknown, unknown, unknown>): void {

@@ -10,7 +10,7 @@ import ServerStateProvider from '#state/ServerStateProvider.context';
 import StyleProvider from '#styles/containers/StyleProvider';
 import reportAccessibility from '#utils/reportAccessibility';
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'preview') {
   const { worker } = await import('../mocks/browser');
   await worker.start({ onUnhandledRequest: 'bypass' });
 }
