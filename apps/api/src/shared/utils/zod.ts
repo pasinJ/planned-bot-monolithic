@@ -1,58 +1,45 @@
 import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { z } from 'zod';
+import { ZodTypeDef, z } from 'zod';
 import { ValidationError, fromZodError, isValidationErrorLike } from 'zod-validation-error';
 
-import { ErrorBase } from '#shared/error.js';
+import { CustomError } from '#shared/error.js';
 
-export class SchemaValidationError extends ErrorBase<
-  'MISMATCH_SCHEMA' | 'SCHEMA_VALIDATION_FAILED',
-  ValidationError | Error
-> {}
+export class SchemaValidationError extends CustomError<SchemaValidationErrorName, SchemaValidationErrorCause>(
+  'MISMATCH_SCHEMA',
+  'Error happened when try to parse value with zod schema',
+) {}
+type SchemaValidationErrorName = 'MISMATCH_SCHEMA' | 'SCHEMA_VALIDATION_FAILED';
+type SchemaValidationErrorCause = ValidationError | Error;
 
 export function parseWithZod<
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
->(
-  schema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>,
-  message: string,
-): (
-  value: unknown,
-) => e.Either<SchemaValidationError, typeof schema extends z.ZodType ? Output : string & z.BRAND<B>>;
+>(schema: T, message: string): (value: unknown) => e.Either<SchemaValidationError, z.output<T>>;
 export function parseWithZod<
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
->(
-  schema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>,
-  message: string,
-  value: unknown,
-): e.Either<SchemaValidationError, typeof schema extends z.ZodType ? Output : string & z.BRAND<B>>;
+>(schema: T, message: string, value: unknown): e.Either<SchemaValidationError, z.output<T>>;
 export function parseWithZod<
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
->(schema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>, message: string, value?: unknown) {
-  const internalFn = (
-    value: unknown,
-  ): e.Either<SchemaValidationError, typeof schema extends z.ZodType ? Output : string & z.BRAND<B>> =>
+>(schema: T, message: string, value?: unknown) {
+  const internalFn = (value: unknown): e.Either<SchemaValidationError, z.output<T>> =>
     pipe(
-      e.tryCatch(
-        () => schema.parse(value) as typeof schema extends z.ZodType ? Output : string & z.BRAND<B>,
-        toValidationError,
-      ),
+      e.tryCatch(() => schema.parse(value), toValidationError),
       e.mapLeft((error) => {
         return isValidationErrorLike(error)
-          ? new SchemaValidationError('MISMATCH_SCHEMA', message, error)
+          ? new SchemaValidationError('MISMATCH_SCHEMA', message).causedBy(error)
           : new SchemaValidationError(
               'SCHEMA_VALIDATION_FAILED',
               'Unexpected error happened when try to parse with zod',
-              error,
-            );
+            ).causedBy(error);
       }),
     );
 

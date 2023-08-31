@@ -4,20 +4,14 @@ import mongoose, { Mongoose } from 'mongoose';
 
 import { LoggerIo } from '#infra/logging.js';
 import { getMongoDbConfig } from '#shared/config/mongoDb.js';
-import { ErrorBase, ExternalError, createErrorFromUnknown } from '#shared/error.js';
-
-export class CreateMongoDbClientError extends ErrorBase<'CREATE_CLIENT_ERROR', ExternalError> {}
-export class DisconnectMongoDbClientError extends ErrorBase<'DISCONNECT_CLIENT_ERROR', ExternalError> {}
+import { CustomError, ExternalError, createErrorFromUnknown } from '#shared/error.js';
 
 export function createMongoDbClient(logger: LoggerIo): te.TaskEither<CreateMongoDbClientError, Mongoose> {
   const { URI } = getMongoDbConfig();
   return pipe(
     te.fromIO(logger.infoIo('MongoDB client start connecting to MongoDB')),
     te.chain(() =>
-      te.tryCatch(
-        () => mongoose.connect(URI),
-        createErrorFromUnknown(CreateMongoDbClientError, 'CREATE_CLIENT_ERROR'),
-      ),
+      te.tryCatch(() => mongoose.connect(URI), createErrorFromUnknown(CreateMongoDbClientError)),
     ),
     te.chainFirstIOK(() => logger.infoIo('MongoDB client connected')),
   );
@@ -30,10 +24,7 @@ export function disconnectMongoDbClient(
   return pipe(
     te.fromIO(logger.infoIo('MongoDB client start disconnecting from MongoDB')),
     te.chain(() =>
-      te.tryCatch(
-        () => client.disconnect(),
-        createErrorFromUnknown(DisconnectMongoDbClientError, 'DISCONNECT_CLIENT_ERROR'),
-      ),
+      te.tryCatch(() => client.disconnect(), createErrorFromUnknown(DisconnectMongoDbClientError)),
     ),
     te.chainIOK(() => logger.infoIo('MongoDB client successfully disconnected')),
     te.orElseFirstIOK((error) =>
@@ -41,3 +32,12 @@ export function disconnectMongoDbClient(
     ),
   );
 }
+
+export class CreateMongoDbClientError extends CustomError<'CREATE_CLIENT_ERROR', ExternalError>(
+  'CREATE_CLIENT_ERROR',
+  'Error happened when try to create a MongoDb client',
+) {}
+export class DisconnectMongoDbClientError extends CustomError<'DISCONNECT_CLIENT_ERROR', ExternalError>(
+  'DISCONNECT_CLIENT_ERROR',
+  'Error happened when try to disconnect a MongoDb client',
+) {}

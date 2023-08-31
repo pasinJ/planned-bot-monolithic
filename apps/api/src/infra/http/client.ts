@@ -10,6 +10,8 @@ import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { HTTP_ERRORS, HttpClient, HttpError } from './client.type.js';
 
+const { INVALID_RESPONSE } = HTTP_ERRORS;
+
 export function createAxiosHttpClient(logger: LoggerIo, config?: CreateAxiosDefaults): HttpClient {
   const axiosInstance = axios.create(config);
   return { sendRequest: sendRequest(axiosInstance, logger) };
@@ -36,7 +38,7 @@ function sendRequest(axiosInstance: AxiosInstance, logger: LoggerIo): HttpClient
       te.chainEitherKW(parseWithZod(responseSchema, 'An Error occurs when try to validate HTTP response')),
       te.mapLeft((error) =>
         error instanceof SchemaValidationError
-          ? new HttpError(HTTP_ERRORS.INVALID_RESPONSE.name, HTTP_ERRORS.INVALID_RESPONSE.message, error)
+          ? new HttpError(INVALID_RESPONSE.name, INVALID_RESPONSE.message).causedBy(error)
           : error,
       ),
     );

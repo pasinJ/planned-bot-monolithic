@@ -5,7 +5,7 @@ import { all, collectBy, equals, length, map, prop } from 'ramda';
 import { z } from 'zod';
 
 import { nonEmptyString, nonNegativeInteger } from '#shared/common.type.js';
-import { ErrorBase } from '#shared/error.js';
+import { CustomError } from '#shared/error.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { LotSizeFilter, lotSizeFilterSchema } from './lotSizeFilter.entity.js';
@@ -82,8 +82,6 @@ export const symbolSchema = z
   );
 export type Symbol = z.infer<typeof symbolSchema>;
 
-export class CreateSymbolError extends ErrorBase<'CREATE_SYMBOL_ENTITY_ERROR', SchemaValidationError> {}
-
 type CreateSymbolData = {
   id: string;
   name: string;
@@ -103,13 +101,10 @@ export function createSymbol(data: CreateSymbolData, currentDate: Date): e.Eithe
       createdAt: currentDate,
       updatedAt: currentDate,
     }),
-    e.mapLeft(
-      (error) =>
-        new CreateSymbolError(
-          'CREATE_SYMBOL_ENTITY_ERROR',
-          'Creating symbol entity failed because the given data is invalid',
-          error,
-        ),
-    ),
+    e.mapLeft((error) => new CreateSymbolError().causedBy(error)),
   );
 }
+export class CreateSymbolError extends CustomError<'CREATE_SYMBOL_ENTITY_ERROR', SchemaValidationError>(
+  'CREATE_SYMBOL_ENTITY_ERROR',
+  'Error happened when try to create a symbol entity',
+) {}

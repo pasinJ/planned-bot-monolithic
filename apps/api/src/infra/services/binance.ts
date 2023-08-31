@@ -120,13 +120,6 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
         symbols.map((symbol) => createSymbol({ ...symbol, id: generateSymbolId() }, getCurrentDate())),
       ),
     ),
-    te.mapLeft(
-      (error) =>
-        new GetBnbSpotSymbolsError(
-          'GET_BNB_SPOT_SYMBOLS_ERROR',
-          'Getting SPOT symbols from Binance server failed',
-          error,
-        ),
-    ),
+    te.mapLeft((error) => new GetBnbSpotSymbolsError().causedBy(error)),
   );
 }

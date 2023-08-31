@@ -30,7 +30,7 @@ export function pipelineBuildController<
   return pipe(
     getInfraDeps<Deps, DepsKey, Dep>(depsList),
     ioe.map(builder),
-    ioe.mapLeft((error) => new StartHttpServerError('START_HTTP_SERVER_ERROR', errorMsg, error)),
+    ioe.mapLeft((error) => new StartHttpServerError('START_HTTP_SERVER_ERROR', errorMsg).causedBy(error)),
   );
 }
 

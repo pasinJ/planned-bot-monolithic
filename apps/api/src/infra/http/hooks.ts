@@ -25,8 +25,7 @@ export const setErrorHandler = (fastify: FastifyServer): void => {
     const error = new InternalHttpServerError(
       'INTERNAL_HTTP_SERVER_ERROR',
       `Unhandled error happened in HTTP server: ${getErrorSummary(fastifyError)}`,
-      fastifyError,
-    );
+    ).causedBy(fastifyError);
     const isServerError = gte(statusCode, 500);
     const logFn = isServerError ? log.error.bind(log) : log.info.bind(log);
     const logMsg = `Fastify handles error: ${getErrorSummary(error)}`;

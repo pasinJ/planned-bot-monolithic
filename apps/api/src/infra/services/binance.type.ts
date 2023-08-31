@@ -3,17 +3,20 @@ import { z } from 'zod';
 
 import { CreateSymbolError, Symbol } from '#features/symbols/domain/symbol.entity.js';
 import { HttpError } from '#infra/http/client.type.js';
-import { ErrorBase, ExternalError } from '#shared/error.js';
+import { CustomError, ExternalError } from '#shared/error.js';
 
 export type BnbService = {
   getSpotSymbols: te.TaskEither<GetBnbSpotSymbolsError, readonly Symbol[]>;
 };
 
-export class CreateBnbServiceError extends ErrorBase<'CREATE_BNB_SERVICE_ERROR', ExternalError> {}
-export class GetBnbSpotSymbolsError extends ErrorBase<
+export class CreateBnbServiceError extends CustomError<'CREATE_BNB_SERVICE_ERROR', ExternalError>(
+  'CREATE_BNB_SERVICE_ERROR',
+  'Error happened when try to create BNB service',
+) {}
+export class GetBnbSpotSymbolsError extends CustomError<
   'GET_BNB_SPOT_SYMBOLS_ERROR',
   HttpError | CreateSymbolError
-> {}
+>('GET_BNB_SPOT_SYMBOLS_ERROR', 'Error happened when try to get BNB SPOT symbols') {}
 
 export type ExchangeInfoRespFilterSchema = z.infer<typeof exchangeInfoRespFilterSchema>;
 const exchangeInfoRespFilterSchema = z.discriminatedUnion('filterType', [

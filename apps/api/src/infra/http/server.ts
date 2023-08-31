@@ -30,17 +30,14 @@ const fastifyConfig = {
 };
 
 export function buildHttpServer(mainLogger: PinoLogger): e.Either<BuildHttpServerError, FastifyServer> {
-  return e.tryCatch(
-    () => {
-      const fastify = Fastify({ ...fastifyConfig, logger: createLogger('HttpServer', mainLogger) });
+  return e.tryCatch(() => {
+    const fastify = Fastify({ ...fastifyConfig, logger: createLogger('HttpServer', mainLogger) });
 
-      setNotFoundHandler(fastify);
-      setErrorHandler(fastify);
+    setNotFoundHandler(fastify);
+    setErrorHandler(fastify);
 
-      return fastify;
-    },
-    createErrorFromUnknown(BuildHttpServerError, 'BUILD_HTTP_SERVER_ERROR'),
-  );
+    return fastify;
+  }, createErrorFromUnknown(BuildHttpServerError));
 }
 
 export function startHttpServer(
@@ -65,12 +62,7 @@ export function startHttpServer(
 export function closeHttpServer(instance: FastifyServer): te.TaskEither<CloseHttpServerError, void> {
   return pipe(
     te.fromIO(() => instance.log.info('Fastify server start closing')),
-    te.chain(() =>
-      te.tryCatch(
-        () => instance.close(),
-        createErrorFromUnknown(CloseHttpServerError, 'CLOSE_HTTP_SERVER_ERROR'),
-      ),
-    ),
+    te.chain(() => te.tryCatch(() => instance.close(), createErrorFromUnknown(CloseHttpServerError))),
     te.chainIOK(() => () => instance.log.info('Fastify server successfully closed')),
     te.orElseFirstIOK((error) => () => instance.log.error({ error }, 'Fastify server failed to close')),
   );
