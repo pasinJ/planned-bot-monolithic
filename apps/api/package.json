@@ -76,12 +76,5 @@
     "ts-pattern": "^5.0.5",
     "zod": "^3.21.4",
     "zod-validation-error": "^1.5.0"
-  },
-  "lint-staged": {
-    "*.{json,md}": "npm run prettier:git",
-    "*.{js,jsx,cjs,mjs,ts,tsx}": [
-      "npm run lint:git",
-      "npm run prettier:git"
-    ]
   }
 }
