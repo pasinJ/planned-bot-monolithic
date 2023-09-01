@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
-import { byRole, byText } from '#test-utils/selector';
+import { byRole, byText } from '#test-utils/uiSelector';
 
 import { TakerFeeRateField } from './TakerFeeRateField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';

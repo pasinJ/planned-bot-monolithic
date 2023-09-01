@@ -1,15 +1,15 @@
 import { isBefore, isEqual } from 'date-fns';
 import { z } from 'zod';
 
-import { exchangeNameSchema } from '#features/shared/domain/exchange';
+import { exchangeNameSchema } from '#features/exchanges/domain/exchange';
 import { timeframeSchema } from '#features/shared/domain/timeframe';
-import { nonEmptyString, nonNegativeFloat, nonNegativePercentage } from '#utils/common.type';
+import { nonEmptyString, nonNegativeFloat8Digits, nonNegativePercentage8Digits } from '#utils/common.type';
 
-export type BacktestingStrategyId = z.infer<typeof idSchema>;
-const idSchema = nonEmptyString.brand('BacktestingStrategyId');
+export type BtStrategyId = z.infer<typeof idSchema>;
+const idSchema = nonEmptyString.brand('BtStrategyId');
 
-export type BacktestingStrategy = z.infer<typeof backtestingStrategySchema>;
-export const backtestingStrategySchema = z
+export type BtStrategy = z.infer<typeof btStrategySchema>;
+export const btStrategySchema = z
   .object({
     id: idSchema,
     name: nonEmptyString,
@@ -17,9 +17,9 @@ export const backtestingStrategySchema = z
     symbol: nonEmptyString,
     currency: nonEmptyString,
     timeframe: timeframeSchema,
-    initialCapital: nonNegativeFloat,
-    takerFeeRate: nonNegativePercentage,
-    makerFeeRate: nonNegativePercentage,
+    initialCapital: nonNegativeFloat8Digits,
+    takerFeeRate: nonNegativePercentage8Digits,
+    makerFeeRate: nonNegativePercentage8Digits,
     maxNumKlines: z.number().positive().int(),
     startTimestamp: z.date(),
     endTimestamp: z.date(),

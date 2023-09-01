@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
-import { arrayOf } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/mockValueObject';
-import { byLabelText, byRole, byText } from '#test-utils/selector';
+import { generateArrayOf } from '#test-utils/faker';
+import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { byLabelText, byRole, byText } from '#test-utils/uiSelector';
 
 import { CurrencyField } from './CurrencyField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
@@ -20,7 +20,7 @@ function renderCurrencyField(overrides?: Partial<AddBtStrategyFormValues>) {
   return render(<CurrencyFieldWrapper overrides={overrides} />);
 }
 
-const symbols = arrayOf(mockSymbol, 3);
+const symbols = generateArrayOf(mockSymbol, 3);
 const ui = {
   field: byLabelText(/base currency/i, { selector: 'input' }),
   dropdownButton: byRole('button', { name: /base currency/i }),

@@ -3,11 +3,11 @@ import MainLayout from 'src/layouts/MainLayout';
 
 import LazyWrapper from '#components/LazyWrapper';
 
-import { BACKTESTING_CREATE_ROUTE, BACKTESTING_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE } from './routes.constant';
+import { ADD_BT_STRATEGY_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE, BT_MAIN_ROUTE } from './routes.constant';
 
 const HomePage = () => import('#pages/HomePage');
 const DashboardPage = () => import('#pages/DashboardPage');
-const BtPage = () => import('#features/backtesting-strategies/pages/BtPage');
+const BtMainPage = () => import('#features/backtesting-strategies/pages/BtMainPage');
 const AddBtStrategyPage = () => import('#features/backtesting-strategies/pages/AddBtStrategyPage');
 
 const router = createBrowserRouter([
@@ -17,8 +17,8 @@ const router = createBrowserRouter([
     children: [
       { path: HOME_ROUTE, element: <LazyWrapper component={HomePage} /> },
       { path: DASHBOARD_ROUTE, element: <LazyWrapper component={DashboardPage} /> },
-      { path: BACKTESTING_ROUTE, element: <LazyWrapper component={BtPage} /> },
-      { path: BACKTESTING_CREATE_ROUTE, element: <LazyWrapper component={AddBtStrategyPage} /> },
+      { path: BT_MAIN_ROUTE, element: <LazyWrapper component={BtMainPage} /> },
+      { path: ADD_BT_STRATEGY_ROUTE, element: <LazyWrapper component={AddBtStrategyPage} /> },
     ],
   },
   { path: '*', element: 'empty' },

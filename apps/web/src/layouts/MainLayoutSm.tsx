@@ -13,7 +13,7 @@ import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
-import { BtPageLink } from '#routes/components/pageLinks';
+import { BtMainPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutSm({ children }: PropsWithChildren) {
   const [isDrawerOpening, setIsDrawerOpening] = useState(false);
@@ -75,7 +75,7 @@ function SideNav({
           <SideNavItemButton
             symbol="youtube_searched_for"
             text="Backtesting"
-            navLinkComponent={BtPageLink}
+            navLinkComponent={BtMainPageLink}
             toggleDrawer={toggleDrawer}
           />
         </List>

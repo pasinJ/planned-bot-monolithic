@@ -4,6 +4,7 @@ import { setupServer } from 'msw/node';
 import { zipObj } from 'ramda';
 import { z } from 'zod';
 
+import { generateArrayOf } from '#test-utils/faker';
 import { executeT } from '#utils/fp';
 
 import { createAxiosHttpClient } from './axiosHttpClient';
@@ -15,8 +16,8 @@ function randomUrl(prefix = '/echo') {
 }
 function randomObject() {
   return zipObj(
-    faker.helpers.multiple(() => faker.word.noun(), { count: 3 }),
-    faker.helpers.multiple(() => faker.word.noun(), { count: 3 }),
+    generateArrayOf(() => faker.word.noun(), 3),
+    generateArrayOf(() => faker.word.noun(), 3),
   );
 }
 function createSendRequestOptions(overrides?: Partial<Parameters<HttpClient['sendRequest']>[0]>) {

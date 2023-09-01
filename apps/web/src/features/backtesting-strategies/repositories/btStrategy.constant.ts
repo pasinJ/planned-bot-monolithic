@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 import { stringDatetimeToDate } from '#utils/common.type';
 
-import { backtestingStrategySchema } from '../domain/backtestingStrategy.entity';
+import { btStrategySchema } from '../domain/btStrategy.entity';
 
 export const API_ENDPOINTS = {
   GET_BT_STRATEGIES: {
     method: 'GET',
     url: '/v1/backtesting-strategies',
-    responseSchema: z.array(backtestingStrategySchema),
+    responseSchema: z.array(btStrategySchema),
   },
   ADD_BT_STRATEGY: {
     method: 'POST',
@@ -21,6 +21,6 @@ export const API_ENDPOINTS = {
         updatedAt: stringDatetimeToDate,
       })
       .passthrough()
-      .pipe(backtestingStrategySchema),
+      .pipe(btStrategySchema),
   },
 } as const;

@@ -6,10 +6,10 @@ import { isEmpty } from 'ramda';
 import { MouseEventHandler, useState } from 'react';
 
 import FetchingFailed from '#components/FetchingFailed';
-import useBtStrategies from '#features/backtesting-strategies/hooks/useBacktestingStrategies';
-import { AddBtPageLink } from '#routes/components/pageLinks';
+import useBtStrategies from '#features/backtesting-strategies/hooks/useBtStrategies';
+import { AddBtStrategyPageLink } from '#routes/components/pageLinks';
 
-export default function BtPage() {
+export default function BtMainPage() {
   const [autoFetching, setAutoFetching] = useState(true);
   const btStrategies = useBtStrategies(autoFetching);
 
@@ -26,7 +26,7 @@ export default function BtPage() {
       ) : isEmpty(btStrategies.data) ? (
         <>
           <Typography>You have no existing strategy.</Typography>
-          <Button variant="contained" color="primary" component={AddBtPageLink}>
+          <Button variant="contained" color="primary" component={AddBtStrategyPageLink}>
             Create
           </Button>
         </>

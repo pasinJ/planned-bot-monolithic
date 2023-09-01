@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { constVoid } from 'fp-ts/lib/function';
 import { MouseEventHandler } from 'react';
 
-import { byRole, byText } from '#test-utils/selector';
+import { byRole, byText } from '#test-utils/uiSelector';
 
 import FetchingFailed from './FetchingFailed';
 

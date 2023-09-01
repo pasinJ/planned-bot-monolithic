@@ -2,7 +2,7 @@ import { render } from '@testing-library/react';
 import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
-import { byLabelText } from '#test-utils/selector';
+import { byLabelText } from '#test-utils/uiSelector';
 
 import { StrategyBodyField } from './StrategyBodyField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';

@@ -3,7 +3,7 @@ import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { path } from 'ramda';
 
-import { byRole } from '#test-utils/selector';
+import { byRole } from '#test-utils/uiSelector';
 
 import { IntegerField } from './IntegerField';
 

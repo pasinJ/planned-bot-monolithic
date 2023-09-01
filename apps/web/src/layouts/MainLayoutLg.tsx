@@ -12,7 +12,7 @@ import { PropsWithChildren, useState } from 'react';
 import logo from '#assets/favicon-64x64.png';
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
-import { BtPageLink } from '#routes/components/pageLinks';
+import { BtMainPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutLg({ children }: PropsWithChildren) {
   return (
@@ -52,7 +52,7 @@ function SideNav() {
         isNavOpening={open}
         symbol="youtube_searched_for"
         text="Backtesting"
-        navLinkComponent={BtPageLink}
+        navLinkComponent={BtMainPageLink}
       />
     </List>
   );

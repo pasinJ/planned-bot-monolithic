@@ -5,7 +5,7 @@ import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
 import { renderWithContexts } from '#test-utils/render';
-import { byRole, byText } from '#test-utils/selector';
+import { byRole, byText } from '#test-utils/uiSelector';
 
 import { StartTimestampField } from './StartTimestampField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';

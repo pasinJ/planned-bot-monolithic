@@ -1,10 +1,9 @@
-import { faker } from '@faker-js/faker';
 import { render } from '@testing-library/react';
-import { mergeRight, values } from 'ramda';
+import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
-import { exchangeNameEnum } from '#features/shared/domain/exchange';
-import { byLabelText } from '#test-utils/selector';
+import { randomExchangeName } from '#test-utils/domain';
+import { byLabelText } from '#test-utils/uiSelector';
 
 import { ExchangeField } from './ExchangeField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
@@ -24,7 +23,7 @@ const ui = {
 
 describe('WHEN render', () => {
   it('THEN it should display the field with default value', async () => {
-    const defaultValue = faker.helpers.arrayElement(values(exchangeNameEnum));
+    const defaultValue = randomExchangeName();
     renderExchangeField();
 
     const field = await ui.field.find();

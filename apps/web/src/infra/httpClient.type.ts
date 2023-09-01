@@ -1,11 +1,12 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { ZodTypeDef, z } from 'zod';
 
-import { CustomError } from '#utils/error';
+import { CustomError, ExternalError } from '#utils/error';
+import { SchemaValidationError } from '#utils/zod';
 
 export type HttpClient = { sendRequest: SendRequest };
 
-export class HttpError extends CustomError<HttpErrorName>(
+export class HttpError extends CustomError<HttpErrorName, SchemaValidationError | ExternalError>(
   'UNHANDLED_ERROR',
   'Error happened when try to send HTTP request to external system',
 ) {}

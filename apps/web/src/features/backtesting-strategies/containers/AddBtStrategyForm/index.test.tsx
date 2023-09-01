@@ -3,15 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { format } from 'date-fns';
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { API_ENDPOINTS as BACKTEST_API_ENDPOINT } from '#features/backtesting-strategies/repositories/backtestingStrategy.constant';
+import { API_ENDPOINTS as BACKTEST_API_ENDPOINT } from '#features/backtesting-strategies/repositories/btStrategy.constant';
 import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/repositories/symbol.constant';
 import { HttpClient } from '#infra/httpClient.type';
-import { selectOption } from '#test-utils/events';
-import { arrayOf } from '#test-utils/faker';
-import { mockBacktestingStrategy } from '#test-utils/mockEntity';
-import { mockSymbol } from '#test-utils/mockValueObject';
+import { generateArrayOf } from '#test-utils/faker';
+import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderWithContexts } from '#test-utils/render';
-import { byLabelText, byRole } from '#test-utils/selector';
+import { selectOption } from '#test-utils/uiEvents';
+import { byLabelText, byRole } from '#test-utils/uiSelector';
 
 import AddBtStrategyForm from '.';
 import { timeframeOptions } from './constants';
@@ -29,7 +29,7 @@ function renderForm(overrides?: { httpClient: HttpClient }) {
   );
 }
 function renderFormSuccess() {
-  const symbols = arrayOf(mockSymbol, 4);
+  const symbols = generateArrayOf(mockSymbol, 4);
   const httpClient = { sendRequest: jest.fn().mockReturnValueOnce(te.right(symbols)) };
   renderForm({ httpClient });
 
@@ -96,7 +96,7 @@ describe('WHEN fill the form and hit submit button', () => {
     httpClient.sendRequest.mockReset();
 
     const selectedSymbol = faker.helpers.arrayElement(symbols);
-    const strategy = mockBacktestingStrategy({
+    const strategy = mockBtStrategy({
       symbol: selectedSymbol.name,
       currency: selectedSymbol.baseAsset,
     });

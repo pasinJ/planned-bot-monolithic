@@ -2,12 +2,12 @@ import * as te from 'fp-ts/lib/TaskEither';
 import { is, omit } from 'ramda';
 
 import { HttpError } from '#infra/httpClient.type';
-import { mockBacktestingStrategy } from '#test-utils/mockEntity';
+import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { executeT } from '#utils/fp';
 
-import { addBtStrategy, getBtStrategies } from './backtestingStrategy';
-import { API_ENDPOINTS } from './backtestingStrategy.constant';
-import { AddBtStrategyError, GetBtStrategiesError } from './backtestingStrategy.type';
+import { addBtStrategy, getBtStrategies } from './btStrategy';
+import { API_ENDPOINTS } from './btStrategy.constant';
+import { AddBtStrategyError, GetBtStrategiesError } from './btStrategy.type';
 
 const { GET_BT_STRATEGIES, ADD_BT_STRATEGY } = API_ENDPOINTS;
 
@@ -24,7 +24,7 @@ describe('Get backtesting strategies', () => {
   });
   describe('WHEN HTTP client return valid success response', () => {
     it('THEN it should return Right of the response', async () => {
-      const strategy = mockBacktestingStrategy();
+      const strategy = mockBtStrategy();
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([strategy])) };
 
       const result = await executeT(getBtStrategies({ httpClient }));
@@ -47,7 +47,7 @@ describe('Get backtesting strategies', () => {
 
 describe('Add backtesting strategy', () => {
   function mockData() {
-    return omit(['id', 'version', 'createdAt', 'updatedAt'], mockBacktestingStrategy());
+    return omit(['id', 'version', 'createdAt', 'updatedAt'], mockBtStrategy());
   }
 
   describe('WHEN add backtesting strategy', () => {
@@ -68,7 +68,7 @@ describe('Add backtesting strategy', () => {
   });
   describe('WHEN HTTP client return success response', () => {
     it('THEN it should return Right of the response', async () => {
-      const strategy = mockBacktestingStrategy();
+      const strategy = mockBtStrategy();
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(strategy)) };
 
       const result = await executeT(addBtStrategy(mockData(), { httpClient }));

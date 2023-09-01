@@ -4,6 +4,7 @@ import { flow, pipe } from 'fp-ts/lib/function';
 import { __, allPass, equals, gte, lt, prop } from 'ramda';
 import { match } from 'ts-pattern';
 
+import { ExternalError } from '#utils/error';
 import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { API_BASE_URL, HTTP_ERRORS } from './httpClient.constant';
@@ -43,6 +44,8 @@ function handleFailedRequest(error: AxiosError): HttpError {
   const is4xx = allPass([gte(__, 400), lt(__, 500)]);
   const is5xx = allPass([gte(__, 500), lt(__, 600)]);
 
+  const externalError = new ExternalError().causedBy(error);
+
   if (error.response) {
     const { name, message } = match(error.response.status)
       .when(equals(400), () => HTTP_ERRORS.INVALID_REQUEST)
@@ -55,8 +58,13 @@ function handleFailedRequest(error: AxiosError): HttpError {
       .when(is5xx, () => HTTP_ERRORS.SERVER_SIDE_ERROR)
       .otherwise(() => HTTP_ERRORS.UNHANDLED_ERROR);
 
-    return new HttpError(name, message).causedBy(`body: ${JSON.stringify(error.response.data)}`);
+    return new HttpError(name, message).causedBy(externalError);
   } else if (error.request)
-    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message);
-  else return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message);
+    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message).causedBy(
+      externalError,
+    );
+  else
+    return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message).causedBy(
+      externalError,
+    );
 }

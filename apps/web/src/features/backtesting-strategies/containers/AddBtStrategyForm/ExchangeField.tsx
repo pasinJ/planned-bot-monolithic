@@ -6,7 +6,7 @@ import Select from '@mui/material/Select';
 import { dissoc } from 'ramda';
 import { useController } from 'react-hook-form';
 
-import { exchangeNameEnum } from '#features/shared/domain/exchange';
+import { exchangeNameEnum } from '#features/exchanges/domain/exchange';
 
 import type { AddBtStrategyControl } from '.';
 

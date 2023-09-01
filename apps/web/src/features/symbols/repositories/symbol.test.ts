@@ -2,7 +2,7 @@ import * as te from 'fp-ts/lib/TaskEither';
 import { is } from 'ramda';
 
 import { HttpError } from '#infra/httpClient.type';
-import { mockSymbol } from '#test-utils/mockValueObject';
+import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { executeT } from '#utils/fp';
 
 import { getSymbols } from './symbol';

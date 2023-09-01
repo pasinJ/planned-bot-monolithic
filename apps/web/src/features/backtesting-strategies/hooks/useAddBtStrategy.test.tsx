@@ -1,18 +1,17 @@
 import { faker } from '@faker-js/faker';
 import { act, waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither';
-import { is, values } from 'ramda';
+import { is } from 'ramda';
 
-import { exchangeNameEnum } from '#features/shared/domain/exchange';
-import { timeframeEnum } from '#features/shared/domain/timeframe';
 import { HttpClient } from '#infra/httpClient.type';
-import { anyString } from '#test-utils/faker';
-import { mockBacktestingStrategy } from '#test-utils/mockEntity';
+import { randomExchangeName, randomTimeframe } from '#test-utils/domain';
+import { randomString } from '#test-utils/faker';
+import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { renderHookWithContexts } from '#test-utils/render';
 import { SchemaValidationError } from '#utils/zod';
 
-import { AddBtStrategyError } from '../repositories/backtestingStrategy.type';
-import useAddBtStrategy from './useAddBacktestingStrategy';
+import { AddBtStrategyError } from '../repositories/btStrategy.type';
+import useAddBtStrategy from './useAddBtStrategy';
 
 function renderUseAddBacktestingStrategy(overrides?: { httpClient: HttpClient }) {
   return renderHookWithContexts(
@@ -24,24 +23,24 @@ function renderUseAddBacktestingStrategy(overrides?: { httpClient: HttpClient })
 
 function mockData() {
   return {
-    name: anyString(),
-    exchange: faker.helpers.arrayElement(values(exchangeNameEnum)),
-    symbol: anyString(),
-    currency: anyString(),
-    timeframe: faker.helpers.arrayElement(values(timeframeEnum)),
+    name: randomString(),
+    exchange: randomExchangeName(),
+    symbol: randomString(),
+    currency: randomString(),
+    timeframe: randomTimeframe(),
     maxNumKlines: faker.number.int({ min: 1, max: 100 }).toString(),
     initialCapital: faker.number.float({ min: 1, max: 10 }).toString(),
     takerFeeRate: faker.number.float({ min: 1, max: 10 }).toString(),
     makerFeeRate: faker.number.float({ min: 1, max: 10 }).toString(),
     startTimestamp: faker.date.soon(),
     endTimestamp: faker.date.future(),
-    body: anyString(),
+    body: randomString(),
   };
 }
 
 describe('WHEN creating backtesting strategy is successful', () => {
   it('THEN it should return data property equal to backtesting strategy', async () => {
-    const strategy = mockBacktestingStrategy();
+    const strategy = mockBtStrategy();
     const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(strategy)) };
 
     const { result } = renderUseAddBacktestingStrategy({ httpClient });
@@ -54,7 +53,7 @@ describe('WHEN creating backtesting strategy is successful', () => {
 describe('WHEN try to add a backtesting strategy with invalid data', () => {
   it('THEN it should return error property', async () => {
     const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(undefined)) };
-    const invalidData = { ...mockData(), initialCapital: anyString() };
+    const invalidData = { ...mockData(), initialCapital: randomString() };
 
     const { result } = renderUseAddBacktestingStrategy({ httpClient });
     act(() => result.current.mutate(invalidData));

@@ -1,7 +1,7 @@
 import { assoc, dissoc } from 'ramda';
 
-import { anyString } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/mockValueObject';
+import { randomString } from '#test-utils/faker';
+import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 
 import { symbolSchema } from './symbol.valueObject';
 
@@ -24,7 +24,7 @@ describe('Symbol schema', () => {
       expect(() => symbolSchema.parse(dissoc('exchange', validSymbol))).toThrow();
     });
     it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('exchange', anyString(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('exchange', randomString(), validSymbol))).toThrow();
     });
   });
   describe('baseAsset property', () => {
@@ -38,7 +38,7 @@ describe('Symbol schema', () => {
       expect(() => symbolSchema.parse(assoc('baseAsset', ' ', validSymbol))).toThrow();
     });
     it('WHEN the property is not substring of name property THEN the value object should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('baseAsset', anyString(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('baseAsset', randomString(), validSymbol))).toThrow();
     });
   });
   describe('quoteAsset property', () => {
@@ -52,12 +52,12 @@ describe('Symbol schema', () => {
       expect(() => symbolSchema.parse(assoc('quoteAsset', ' ', validSymbol))).toThrow();
     });
     it('WHEN the property is not substring of name property THEN the value object should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('quoteAsset', anyString(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('quoteAsset', randomString(), validSymbol))).toThrow();
     });
   });
   describe('WHEN there is more than expected properties', () => {
     it('THEN the value object should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('unexpected', anyString(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('unexpected', randomString(), validSymbol))).toThrow();
     });
   });
   describe('WHEN every perperty is valid', () => {

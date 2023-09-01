@@ -1,13 +1,8 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 
-import { API_ENDPOINTS } from './backtestingStrategy.constant';
-import {
-  AddBtStrategy,
-  AddBtStrategyError,
-  GetBtStrategies,
-  GetBtStrategiesError,
-} from './backtestingStrategy.type';
+import { API_ENDPOINTS } from './btStrategy.constant';
+import { AddBtStrategy, AddBtStrategyError, GetBtStrategies, GetBtStrategiesError } from './btStrategy.type';
 
 const { GET_BT_STRATEGIES, ADD_BT_STRATEGY } = API_ENDPOINTS;
 

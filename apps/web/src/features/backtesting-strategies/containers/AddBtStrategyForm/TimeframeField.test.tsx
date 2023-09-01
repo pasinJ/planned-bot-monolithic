@@ -1,11 +1,11 @@
 import { faker } from '@faker-js/faker';
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { mergeRight, values } from 'ramda';
+import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
-import { timeframeEnum } from '#features/shared/domain/timeframe';
-import { byLabelText, byRole, byText } from '#test-utils/selector';
+import { randomTimeframe } from '#test-utils/domain';
+import { byLabelText, byRole, byText } from '#test-utils/uiSelector';
 
 import { TimeframeField } from './TimeframeField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
@@ -29,7 +29,7 @@ const ui = {
 
 describe('WHEN render', () => {
   it('THEN it should display the field with default value', async () => {
-    const defaultValue = faker.helpers.arrayElement(values(timeframeEnum));
+    const defaultValue = randomTimeframe();
     renderTimeframeField({ timeframe: defaultValue });
 
     const field = await ui.field.find();

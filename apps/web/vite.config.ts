@@ -6,20 +6,21 @@ import hexRgb from 'hex-rgb';
 import { concat, map, toPairs, transpose } from 'ramda';
 import replace from 'replace-in-file';
 import { defineConfig } from 'vite';
+import EnvironmentPlugin from 'vite-plugin-environment';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 import { PRIMARY, SECONDARY } from './src/styles/theme.constant';
 
-if (process.env.npm_lifecycle_event !== 'cy:open') {
+if (process.env.NODE_ENV !== 'cypress') {
   replaceColorCssVariables();
   if (process.env.NODE_ENV === 'development')
     fs.watch('./src/styles/theme.constant.ts', replaceColorCssVariables);
-}
+} else console.log('Skipped replace color tokens CSS');
 
 // https://vitejs.dev/config/
 export default defineConfig({
   envDir: 'env',
-  plugins: [react(), tsconfigPaths()],
+  plugins: [react(), tsconfigPaths(), EnvironmentPlugin('all')],
 });
 
 function replaceColorCssVariables() {

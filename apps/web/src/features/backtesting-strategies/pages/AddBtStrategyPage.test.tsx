@@ -1,10 +1,10 @@
 import * as te from 'fp-ts/lib/TaskEither';
 
 import { HttpClient } from '#infra/httpClient.type';
-import { arrayOf } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/mockValueObject';
+import { generateArrayOf } from '#test-utils/faker';
+import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderWithContexts } from '#test-utils/render';
-import { byRole } from '#test-utils/selector';
+import { byRole } from '#test-utils/uiSelector';
 
 import AddBtStrategyPage from './AddBtStrategyPage';
 
@@ -18,7 +18,7 @@ function renderAddBtStrategyPage(overrides?: { httpClient: HttpClient }) {
   );
 }
 function renderAddBtStrategyPageSuccess() {
-  const symbols = arrayOf(mockSymbol, 4);
+  const symbols = generateArrayOf(mockSymbol, 4);
   const httpClient = { sendRequest: jest.fn().mockReturnValueOnce(te.right(symbols)) };
   renderAddBtStrategyPage({ httpClient });
 

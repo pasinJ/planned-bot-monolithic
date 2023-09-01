@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import * as io from 'fp-ts/lib/IO';
 import { Control, useForm } from 'react-hook-form';
 
-import useAddBtStrategy from '#features/backtesting-strategies/hooks/useAddBacktestingStrategy';
+import useAddBtStrategy from '#features/backtesting-strategies/hooks/useAddBtStrategy';
 import useSymbols from '#features/symbols/hooks/useSymbols';
 import { getErrorSummary } from '#utils/error';
 

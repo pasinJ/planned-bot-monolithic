@@ -2,37 +2,37 @@ import userEvent from '@testing-library/user-event';
 import * as te from 'fp-ts/lib/TaskEither';
 
 import { HttpClient } from '#infra/httpClient.type';
-import { mockBacktestingStrategy } from '#test-utils/mockEntity';
+import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { renderWithContexts } from '#test-utils/render';
-import { byRole, byText } from '#test-utils/selector';
+import { byRole, byText } from '#test-utils/uiSelector';
 
-import BtPage from './BtPage';
+import BtMainPage from './BtMainPage';
 
-function renderBacktestingPage(overrides?: { httpClient: HttpClient }) {
+function renderBtMainPage(overrides?: { httpClient: HttpClient }) {
   return renderWithContexts(
-    <BtPage />,
+    <BtMainPage />,
     ['Infra', 'ServerState', 'Routes'],
     overrides
       ? { infraContext: { httpClient: overrides.httpClient } }
       : { infraContext: { httpClient: { sendRequest: jest.fn().mockReturnValue(te.right([])) } } },
   );
 }
-function renderBacktestingPageWithNoStrategy() {
+function renderBtMainPageWithNoStrategy() {
   const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([])) };
-  renderBacktestingPage({ httpClient });
+  renderBtMainPage({ httpClient });
 
   return { httpClient };
 }
-function renderBacktestingPageWithStrategy() {
-  const strategy = mockBacktestingStrategy();
+function renderBtMainPageWithStrategy() {
+  const strategy = mockBtStrategy();
   const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([strategy])) };
-  renderBacktestingPage({ httpClient });
+  renderBtMainPage({ httpClient });
 
   return { strategy, httpClient };
 }
-function renderBacktestingPageWithFetchingError() {
+function renderBtMainPageWithFetchingError() {
   const httpClient = { sendRequest: jest.fn().mockReturnValue(te.left(new Error('Mock error'))) };
-  renderBacktestingPage({ httpClient });
+  renderBtMainPage({ httpClient });
 
   return { httpClient };
 }
@@ -48,7 +48,7 @@ const ui = {
 
 describe('WHEN render', () => {
   it('THEN it should display page header', async () => {
-    renderBacktestingPageWithNoStrategy();
+    renderBtMainPageWithNoStrategy();
 
     await expect(ui.pageHeader.find()).resolves.toBeVisible();
   });
@@ -56,7 +56,7 @@ describe('WHEN render', () => {
 
 describe('WHEN backtesting strategy is loading', () => {
   it('THEN it should display snipper', async () => {
-    renderBacktestingPageWithNoStrategy();
+    renderBtMainPageWithNoStrategy();
 
     await expect(ui.snipper.find()).resolves.toBeVisible();
   });
@@ -64,7 +64,7 @@ describe('WHEN backtesting strategy is loading', () => {
 
 describe('GIVEN there is no existing backtesting strategy WHEN user visit backtesting page', () => {
   it('THEN it should display an informative message and a add strategy button', async () => {
-    renderBacktestingPageWithNoStrategy();
+    renderBtMainPageWithNoStrategy();
 
     await expect(ui.noStrategyMsg.find()).resolves.toBeVisible();
     await expect(ui.addStrategyButton.find()).resolves.toBeVisible();
@@ -73,7 +73,7 @@ describe('GIVEN there is no existing backtesting strategy WHEN user visit backte
 
 describe('GIVEN there is some existing backtesting strategies WHEN user visit backtesting page', () => {
   it('THEN it should not display the informative message as there is no strategy', () => {
-    renderBacktestingPageWithStrategy();
+    renderBtMainPageWithStrategy();
 
     expect(ui.noStrategyMsg.query()).not.toBeInTheDocument();
   });
@@ -81,14 +81,14 @@ describe('GIVEN there is some existing backtesting strategies WHEN user visit ba
 
 describe('WHEN cannot fetch data from server until max attempts', () => {
   it('THEN it should display informative message and retry button', async () => {
-    renderBacktestingPageWithFetchingError();
+    renderBtMainPageWithFetchingError();
 
     await expect(ui.fetchingFailedMsg.find()).resolves.toBeVisible();
     await expect(ui.retryFetchingButton.find()).resolves.toBeVisible();
   });
   describe('WHEN click on the retry button', () => {
     it('THEN it should start refetching again', async () => {
-      const { httpClient } = renderBacktestingPageWithFetchingError();
+      const { httpClient } = renderBtMainPageWithFetchingError();
 
       const retryButton = await ui.retryFetchingButton.find();
       expect(httpClient.sendRequest).toHaveBeenCalledTimes(3);

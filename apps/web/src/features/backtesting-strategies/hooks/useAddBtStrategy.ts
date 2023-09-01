@@ -10,12 +10,12 @@ import { executeTeToPromise } from '#utils/fp';
 import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { AddBtStrategyFormValues } from '../containers/AddBtStrategyForm/constants';
-import { BacktestingStrategy } from '../domain/backtestingStrategy.entity';
-import { addBtStrategy } from '../repositories/backtestingStrategy';
-import { AddBtStrategyData, AddBtStrategyError } from '../repositories/backtestingStrategy.type';
+import { BtStrategy } from '../domain/btStrategy.entity';
+import { addBtStrategy } from '../repositories/btStrategy';
+import { AddBtStrategyData, AddBtStrategyError } from '../repositories/btStrategy.type';
 
 export default function useAddBtStrategy(): UseMutationResult<
-  BacktestingStrategy,
+  BtStrategy,
   AddBtStrategyError | SchemaValidationError,
   AddBtStrategyFormValues
 > {

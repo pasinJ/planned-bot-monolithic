@@ -25,4 +25,5 @@ dist-ssr
 
 .eslintcache
 
-.scannerwork
+cypress/screenshots
+cypress/videos

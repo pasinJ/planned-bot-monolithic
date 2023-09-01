@@ -3,11 +3,11 @@ import * as te from 'fp-ts/lib/TaskEither';
 import { is } from 'ramda';
 
 import { HttpClient } from '#infra/httpClient.type';
-import { mockBacktestingStrategy } from '#test-utils/mockEntity';
+import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { renderHookWithContexts } from '#test-utils/render';
 
-import { GetBtStrategiesError } from '../repositories/backtestingStrategy.type';
-import useBtStrategies from './useBacktestingStrategies';
+import { GetBtStrategiesError } from '../repositories/btStrategy.type';
+import useBtStrategies from './useBtStrategies';
 
 function renderUseBacktestingStrategies(enabled: boolean, overrides?: { httpClient: HttpClient }) {
   return renderHookWithContexts(
@@ -39,7 +39,7 @@ describe('WHEN pass enabled = false to the hook', () => {
 
 describe('WHEN fetching data is successful', () => {
   it('THEN it should return data property equal to fetched data', async () => {
-    const strategies = [mockBacktestingStrategy()];
+    const strategies = [mockBtStrategy()];
     const { result } = renderUseBacktestingStrategies(true, {
       httpClient: { sendRequest: jest.fn().mockReturnValue(te.right(strategies)) },
     });

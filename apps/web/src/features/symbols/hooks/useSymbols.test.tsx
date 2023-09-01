@@ -3,7 +3,7 @@ import * as te from 'fp-ts/lib/TaskEither';
 import { is } from 'ramda';
 
 import { HttpClient } from '#infra/httpClient.type';
-import { mockSymbol } from '#test-utils/mockValueObject';
+import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderHookWithContexts } from '#test-utils/render';
 
 import { GetSymbolsError } from '../repositories/symbol.type';
