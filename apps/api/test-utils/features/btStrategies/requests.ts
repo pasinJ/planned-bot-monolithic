@@ -1,25 +1,25 @@
 import { randomExchangeName, randomTimeframe } from '#test-utils/domain.js';
 import {
-  anyString,
   randomBeforeAndAfterDate,
-  randomNonNegativeInt,
   randomPositiveFloat,
+  randomPositiveInt,
+  randomString,
 } from '#test-utils/faker.js';
 
 export function mockValidAddBtStrategyRequestBody() {
   const { before, after } = randomBeforeAndAfterDate();
   return {
-    name: anyString(),
+    name: randomString(),
     exchange: randomExchangeName(),
-    symbol: anyString(),
-    currency: anyString(),
+    symbol: randomString(),
+    currency: randomString(),
     timeframe: randomTimeframe(),
-    maxNumKlines: randomNonNegativeInt(),
+    maxNumKlines: randomPositiveInt(),
     initialCapital: randomPositiveFloat(),
     takerFeeRate: randomPositiveFloat(),
     makerFeeRate: randomPositiveFloat(),
     startTimestamp: before.toJSON(),
     endTimestamp: after.toJSON(),
-    body: anyString(),
+    body: randomString(),
   };
 }

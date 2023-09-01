@@ -2,13 +2,13 @@ import { faker } from '@faker-js/faker';
 import { assoc, dissoc, is, omit } from 'ramda';
 
 import {
-  anyString,
   invalidDate,
   random9DigitsPositiveFloatWithRoundUp,
   randomDateBefore,
   randomNegativeInt,
   randomNonNegativeFloat,
   randomPositiveFloat,
+  randomString,
 } from '#test-utils/faker.js';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
 
@@ -30,7 +30,7 @@ describe('Backtesting strategy entity', () => {
   });
   describe('WHEN there is more than expected properties', () => {
     it('THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('unexpected', anyString(), validBtStrategy))).toThrow();
+      expect(() => btStrategySchema.parse(assoc('unexpected', randomString(), validBtStrategy))).toThrow();
     });
   });
   describe('name property', () => {
@@ -49,7 +49,7 @@ describe('Backtesting strategy entity', () => {
       expect(() => btStrategySchema.parse(dissoc('exchange', validBtStrategy))).toThrow();
     });
     it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('exchange', anyString(), validBtStrategy))).toThrow();
+      expect(() => btStrategySchema.parse(assoc('exchange', randomString(), validBtStrategy))).toThrow();
     });
   });
   describe('symbol property', () => {
@@ -79,7 +79,7 @@ describe('Backtesting strategy entity', () => {
       expect(() => btStrategySchema.parse(dissoc('timeframe', validBtStrategy))).toThrow();
     });
     it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('timeframe', anyString(), validBtStrategy))).toThrow();
+      expect(() => btStrategySchema.parse(assoc('timeframe', randomString(), validBtStrategy))).toThrow();
     });
   });
   describe('maxNumKlines property', () => {

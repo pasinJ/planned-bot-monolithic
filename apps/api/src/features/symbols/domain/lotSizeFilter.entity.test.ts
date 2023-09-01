@@ -1,12 +1,12 @@
 import { assoc, omit } from 'ramda';
 
 import {
-  anyString,
-  negativeFloat,
   random9DigitsPositiveFloatWithRoundUp,
+  randomNegativeFloat,
   randomPrecisionStep,
+  randomString,
 } from '#test-utils/faker.js';
-import { mockLotSizeFilter } from '#test-utils/mockEntity.js';
+import { mockLotSizeFilter } from '#test-utils/features/symbols/entities.js';
 
 import { lotSizeFilterSchema } from './lotSizeFilter.entity.js';
 
@@ -20,7 +20,7 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(omit(['type'], validLotSizeFilter))).toThrow();
     });
     it('WHEN type property does not equal to LOT_SIZE THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('type', anyString(), validLotSizeFilter))).toThrow();
+      expect(() => lotSizeFilterSchema.parse(assoc('type', randomString(), validLotSizeFilter))).toThrow();
     });
   });
   describe('minQty property', () => {
@@ -28,7 +28,9 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(omit(['minQty'], validLotSizeFilter))).toThrow();
     });
     it('WHEN minQty property is a negative number THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('minQty', negativeFloat(), validLotSizeFilter))).toThrow();
+      expect(() =>
+        lotSizeFilterSchema.parse(assoc('minQty', randomNegativeFloat(), validLotSizeFilter)),
+      ).toThrow();
     });
     it('WHEN minQty property equals to zero THEN the filter should be valid', () => {
       expect(() => lotSizeFilterSchema.parse(assoc('minQty', 0, validLotSizeFilter))).not.toThrow();
@@ -49,7 +51,9 @@ describe('Lot size filter entity', () => {
       expect(() => lotSizeFilterSchema.parse(assoc('maxQty', 0, validLotSizeFilter))).toThrow();
     });
     it('WHEN maxQty property is a negative number THEN the filter should be invalid', () => {
-      expect(() => lotSizeFilterSchema.parse(assoc('maxQty', negativeFloat(), validLotSizeFilter))).toThrow();
+      expect(() =>
+        lotSizeFilterSchema.parse(assoc('maxQty', randomNegativeFloat(), validLotSizeFilter)),
+      ).toThrow();
     });
     it('WHEN maxQty property is less than minQty property THEN the filter should be invalid', () => {
       const lessThanMinQty = parseFloat(validLotSizeFilter.minQty.toString().slice(0, -1));
@@ -69,7 +73,7 @@ describe('Lot size filter entity', () => {
     });
     it('WHEN stepSize property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        lotSizeFilterSchema.parse(assoc('stepSize', negativeFloat(), validLotSizeFilter)),
+        lotSizeFilterSchema.parse(assoc('stepSize', randomNegativeFloat(), validLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN stepSize property equals to zero THEN the filter should be valid', () => {

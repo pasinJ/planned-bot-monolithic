@@ -61,8 +61,9 @@ function handleFailedRequest(error: AxiosError): HttpError {
       .when(is5xx, () => HTTP_ERRORS.SERVER_SIDE_ERROR)
       .otherwise(() => HTTP_ERRORS.UNHANDLED_ERROR);
 
-    return new HttpError(name, message);
+    return new HttpError(name, message).causedBy(error);
   } else if (error.request)
-    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message);
-  else return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message);
+    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message).causedBy(error);
+  else
+    return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message).causedBy(error);
 }

@@ -21,8 +21,7 @@ export function addBtStrategiesRoutes(
   deps: ApplicationDeps,
 ): ioe.IOEither<StartHttpServerError, FastifyServer> {
   return pipe(
-    () => juxt([addAddBtStrategyRoute])(instance, deps),
-    ioe.fromIO,
+    ioe.fromIO(() => juxt([addAddBtStrategyRoute])(instance, deps)),
     ioe.chain(ioe.sequenceArray),
     ioe.map(() => instance),
   );
@@ -35,9 +34,9 @@ function addAddBtStrategyRoute(
   const { method, url } = BT_STRATEGY_ENDPOINTS.ADD_BT_STRATEGY;
 
   return pipe(
-    () => pick(['btStrategyRepo', 'idService', 'dateService'], deps),
-    ioe.fromIO,
-    ioe.chainIOK((handlerDeps) => () => buildAddBtStrategyController(handlerDeps)),
+    pick(['btStrategyRepo', 'idService', 'dateService'], deps),
+    buildAddBtStrategyController,
+    ioe.of,
     ioe.chain((handler) =>
       ioe.tryCatch(
         () => instance.route({ method, url, handler, ...commonHooks }),

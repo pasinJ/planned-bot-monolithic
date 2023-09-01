@@ -4,18 +4,18 @@ import { is } from 'ramda';
 import { executeT } from '#shared/utils/fp.js';
 import { randomExchangeName, randomTimeframe } from '#test-utils/domain.js';
 import {
-  anyString,
   randomAnyDate,
   randomBeforeAndAfterDate,
-  randomNonNegativeInt,
   randomPositiveFloat,
+  randomPositiveInt,
+  randomString,
 } from '#test-utils/faker.js';
 import { mockBtStrategyRepo } from '#test-utils/features/btStrategies/repositories.js';
-import { mockDateService, mockIdService } from '#test-utils/mockService.js';
+import { mockDateService, mockIdService } from '#test-utils/services.js';
 
 import { AddBtStrategyError } from '../btStrategy.repository.type.js';
 import { CreateNewBtStrategyError } from '../domain/btStrategy.entity.js';
-import { AddBtStrategyUseCaseDeps, addBtStrategyUseCase } from './addBtStrategy.js';
+import { AddBtStrategyUseCaseData, AddBtStrategyUseCaseDeps, addBtStrategyUseCase } from './addBtStrategy.js';
 
 function mockDeps(overrides?: Partial<AddBtStrategyUseCaseDeps>): AddBtStrategyUseCaseDeps {
   return {
@@ -25,27 +25,27 @@ function mockDeps(overrides?: Partial<AddBtStrategyUseCaseDeps>): AddBtStrategyU
     ...overrides,
   };
 }
-function mockValidData() {
+function mockValidData(): AddBtStrategyUseCaseData {
   const { before, after } = randomBeforeAndAfterDate();
   return {
-    name: anyString(),
+    name: randomString(),
     exchange: randomExchangeName(),
-    symbol: anyString(),
-    currency: anyString(),
+    symbol: randomString(),
+    currency: randomString(),
     timeframe: randomTimeframe(),
-    maxNumKlines: randomNonNegativeInt(),
+    maxNumKlines: randomPositiveInt(),
     initialCapital: randomPositiveFloat(),
     takerFeeRate: randomPositiveFloat(),
     makerFeeRate: randomPositiveFloat(),
     startTimestamp: before,
     endTimestamp: after,
-    body: anyString(),
+    body: randomString(),
   };
 }
 
 describe('WHEN successfully add a backtesting strategy', () => {
   it('THEN it should call generate backtesting strategy id once', async () => {
-    const idService = mockIdService({ generateBtStrategyId: jest.fn().mockReturnValue(anyString()) });
+    const idService = mockIdService({ generateBtStrategyId: jest.fn().mockReturnValue(randomString()) });
     const deps = mockDeps({ idService });
 
     await executeT(addBtStrategyUseCase(deps, mockValidData()));
@@ -69,7 +69,7 @@ describe('WHEN successfully add a backtesting strategy', () => {
     expect(btStrategyRepo.add).toHaveBeenCalledOnce();
   });
   it('THEN it should return Right of added backtesting strategy', async () => {
-    const id = anyString();
+    const id = randomString();
     const currentDate = randomAnyDate();
     const idService = mockIdService({ generateBtStrategyId: jest.fn().mockReturnValue(id) });
     const dateService = mockDateService({ getCurrentDate: jest.fn().mockReturnValue(currentDate) });

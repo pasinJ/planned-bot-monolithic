@@ -5,7 +5,7 @@ import { all, collectBy, equals, length, map, prop } from 'ramda';
 import { z } from 'zod';
 
 import { exchangeNameEnum, exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
-import { nonEmptyString, nonNegativeInteger } from '#shared/common.type.js';
+import { nonEmptyString } from '#shared/common.type.js';
 import { CustomError } from '#shared/error.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
@@ -21,7 +21,7 @@ export type SymbolId = z.infer<typeof symbolIdSchema>;
 const symbolNameSchema = nonEmptyString.brand('SymbolName');
 
 const assetSchema = nonEmptyString.brand('Asset');
-const assetPrecisionSchema = nonNegativeInteger.brand('Precision');
+const assetPrecisionSchema = z.number().nonnegative().int().brand('Precision');
 
 const orderTypeSchema = z.enum([
   'LIMIT',
@@ -47,7 +47,7 @@ const filtersSchema = z.array(
 );
 export type SymbolFilters = z.infer<typeof filtersSchema>;
 
-const versionSchema = nonNegativeInteger.brand('SymbolVersion');
+const versionSchema = z.number().nonnegative().int().brand('SymbolVersion');
 
 const timestampSchema = z.date();
 

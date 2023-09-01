@@ -4,21 +4,16 @@ import { CustomError, ExternalError } from '#shared/error.js';
 
 import { Symbol } from './domain/symbol.entity.js';
 
-export type SymbolRepository = {
-  add: (symbols: Symbol | readonly Symbol[]) => te.TaskEither<AddSymbolsError, void>;
+export type SymbolRepo = {
+  add: <S extends Symbol | readonly Symbol[]>(symbols: S) => te.TaskEither<AddSymbolsError, S>;
   getAll: te.TaskEither<GetAllSymbolsError, readonly Symbol[]>;
   countAll: te.TaskEither<CountAllSymbolsError, number>;
 };
 
-export class CreateSymbolRepositoryError extends CustomError<
-  'CREATE_SYMBOL_REPO_ERROR' | 'CREATE_SCHEMA_ERROR' | 'CREATE_MODEL_ERROR',
+export class CreateSymbolRepoError extends CustomError<
+  'CREATE_REPO_ERROR' | 'CREATE_SCHEMA_ERROR' | 'CREATE_MODEL_ERROR',
   ExternalError
->('CREATE_SYMBOL_REPO_ERROR', 'Error happened when try to create symbol repository') {}
-
-export class GetSymbolRepositoryError extends CustomError<'NOT_INITIATED_ERROR', ExternalError>(
-  'NOT_INITIATED_ERROR',
-  'The symbol repository has not been initiated',
-) {}
+>('CREATE_REPO_ERROR', 'Error happened when try to create symbol repository') {}
 
 export class AddSymbolsError extends CustomError<'ADD_SYMBOLS_ERROR', ExternalError>(
   'ADD_SYMBOLS_ERROR',

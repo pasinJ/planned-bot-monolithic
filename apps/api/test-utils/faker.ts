@@ -1,17 +1,17 @@
 import { faker } from '@faker-js/faker';
 import { Decimal } from 'decimal.js';
 
-export const anyString = () => faker.string.alphanumeric(5);
-export const negativeFloat = () => faker.number.float({ max: -1, min: -10 });
-export const anyFloat = () => faker.number.float();
-export const randomNegativeInt = () => faker.number.int({ min: -100, max: -1 });
-export const randomPositiveInt = () => faker.number.int({ min: 1, max: 100 });
-export const randomNonNegativeInt = () => faker.number.int({ min: 0, max: 100 });
+export const randomString = () => faker.string.alphanumeric(5);
+export const randomNegativeFloat = () => faker.number.float({ max: -1, min: -10 });
+export const randomAnyFloat = () => faker.number.float();
+export const randomNegativeInt = () => faker.number.int({ min: -10, max: -1 });
+export const randomPositiveInt = () => faker.number.int({ min: 1, max: 10 });
+export const randomNonNegativeInt = () => faker.number.int({ min: 0, max: 10 });
 export const randomNonNegativeFloat = (precision = 8, between: [number, number] = [0, 10]) =>
-  randomFloat(precision, between);
+  randomPrecisionFloat(precision, between);
 export const randomPositiveFloat = (precision = 8, between: [number, number] = [1, 10]) =>
-  randomFloat(precision, between);
-export const randomFloat = (precision: number, between: [number, number]) => {
+  randomPrecisionFloat(precision, between);
+export const randomPrecisionFloat = (precision: number, between: [number, number]) => {
   const int = faker.number.int({ min: between[0], max: between[1] });
   if (precision === 0) return int;
   else {
@@ -43,4 +43,6 @@ export const randomBeforeAndAfterDate = () => {
   return { before, after };
 };
 
-export const anyBoolean = () => faker.datatype.boolean();
+export const randomBoolean = () => faker.datatype.boolean();
+
+export const generateArrayOf = <T>(fn: () => T, length = 3) => faker.helpers.multiple(fn, { count: length });

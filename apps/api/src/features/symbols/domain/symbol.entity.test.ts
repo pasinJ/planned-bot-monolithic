@@ -1,11 +1,17 @@
 import { faker } from '@faker-js/faker';
-import { append, assoc, modify, omit, pick } from 'ramda';
+import { append, assoc, is, modify, omit, pick } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
-import { anyFloat, anyString, invalidDate, randomDateBefore, randomNegativeInt } from '#test-utils/faker.js';
-import { mockSymbol } from '#test-utils/mockEntity.js';
+import {
+  invalidDate,
+  randomAnyFloat,
+  randomDateBefore,
+  randomNegativeInt,
+  randomString,
+} from '#test-utils/faker.js';
+import { mockSymbol } from '#test-utils/features/symbols/entities.js';
 
-import { createSymbol, symbolSchema } from './symbol.entity.js';
+import { CreateSymbolError, createSymbol, symbolSchema } from './symbol.entity.js';
 
 const validSymbol = mockSymbol();
 
@@ -37,7 +43,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['exchange'], validSymbol))).toThrow();
     });
     it('WHEN exchange property does not match enum list THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('exchange', anyString(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('exchange', randomString(), validSymbol))).toThrow();
     });
   });
   describe('baseAsset property', () => {
@@ -56,7 +62,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['baseAssetPrecision'], validSymbol))).toThrow();
     });
     it('WHEN baseAssetPrecision property is a float number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', anyFloat(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', randomAnyFloat(), validSymbol))).toThrow();
     });
     it('WHEN baseAssetPrecision property is a negative number THEN the symbol should be invalid', () => {
       expect(() =>
@@ -80,7 +86,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['quoteAssetPrecision'], validSymbol))).toThrow();
     });
     it('WHEN quoteAssetPrecision property is a float number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', anyFloat(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', randomAnyFloat(), validSymbol))).toThrow();
     });
     it('WHEN quoteAssetPrecision property is a negative number THEN the symbol should be invalid', () => {
       expect(() =>
@@ -93,7 +99,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['orderTypes'], validSymbol))).toThrow();
     });
     it('WHEN orderTypes property includes a element that does not match enum list THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(modify('orderTypes', append(anyString()), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(modify('orderTypes', append(randomString()), validSymbol))).toThrow();
     });
   });
   describe('filters property', () => {
@@ -116,7 +122,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(omit(['version'], validSymbol))).toThrow();
     });
     it('WHEN version property is a float number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('version', anyFloat(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('version', randomAnyFloat(), validSymbol))).toThrow();
     });
     it('WHEN version property is a negative number THEN the symbol should be invalid', () => {
       expect(() => symbolSchema.parse(assoc('version', randomNegativeInt(), validSymbol))).toThrow();
@@ -194,7 +200,7 @@ describe('Create symbol entity', () => {
       );
       const result = createSymbol({ ...input, baseAssetPrecision: -1 }, faker.date.anytime());
 
-      expect(result).toSubsetEqualLeft({ name: 'CREATE_SYMBOL_ENTITY_ERROR' });
+      expect(result).toEqualLeft(expect.toSatisfy(is(CreateSymbolError)));
     });
   });
 });

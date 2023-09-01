@@ -1,7 +1,7 @@
 import { RouteOptions } from 'fastify';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { juxt } from 'ramda';
+import { juxt, pick } from 'ramda';
 
 import { ApplicationDeps } from '#infra/common.type.js';
 import { onSendHook, preValidationHook } from '#infra/http/hooks.js';
@@ -21,8 +21,7 @@ export function addSymbolsRoutes(
   deps: ApplicationDeps,
 ): ioe.IOEither<StartHttpServerError, FastifyServer> {
   return pipe(
-    () => juxt([addGetSymbolsRoute])(instance, deps),
-    ioe.fromIO,
+    ioe.fromIO(() => juxt([addGetSymbolsRoute])(instance, deps)),
     ioe.chain(ioe.sequenceArray),
     ioe.map(() => instance),
   );
@@ -35,8 +34,9 @@ function addGetSymbolsRoute(
   const { method, url } = SYMBOLS_ENDPOINTS.GET_SYMBOLS;
 
   return pipe(
-    () => buildGetSymbolsController(deps),
-    ioe.fromIO,
+    pick(['symbolRepo'], deps),
+    buildGetSymbolsController,
+    ioe.of,
     ioe.chain((handler) =>
       ioe.tryCatch(
         () => instance.route({ method, url, handler, ...commonHooks }),

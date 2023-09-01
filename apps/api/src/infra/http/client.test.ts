@@ -5,7 +5,8 @@ import { zipObj } from 'ramda';
 import { z } from 'zod';
 
 import { executeT } from '#shared/utils/fp.js';
-import { mockLoggerIo } from '#test-utils/mockService.js';
+import { generateArrayOf } from '#test-utils/faker.js';
+import { mockLoggerIo } from '#test-utils/services.js';
 
 import { createAxiosHttpClient as createAxiosHttpClientOrg } from './client.js';
 import { HTTP_ERRORS, HttpClient, Method } from './client.type.js';
@@ -18,8 +19,8 @@ function randomUrl(prefix = '/echo') {
 }
 function randomObject() {
   return zipObj(
-    faker.helpers.multiple(() => faker.word.noun(), { count: 3 }),
-    faker.helpers.multiple(() => faker.word.noun(), { count: 3 }),
+    generateArrayOf(() => faker.word.noun(), 3),
+    generateArrayOf(() => faker.word.noun(), 3),
   );
 }
 function createSendRequestOptions(overrides?: Partial<Parameters<HttpClient['sendRequest']>[0]>) {

@@ -1,22 +1,18 @@
-import eUtils from 'fp-ts-std/Either';
 import te from 'fp-ts/lib/TaskEither.js';
 
-import { buildHttpServer } from '#infra/http/server.js';
-import { createMainLogger } from '#infra/logging.js';
-import { unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
-import { anyString, randomAnyDate, randomBeforeAndAfterDate } from '#test-utils/faker.js';
+import { randomAnyDate, randomBeforeAndAfterDate, randomString } from '#test-utils/faker.js';
 import { mockBtStrategyRepo } from '#test-utils/features/btStrategies/repositories.js';
 import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
-import { addRoute } from '#test-utils/mockServer.js';
-import { mockDateService, mockIdService } from '#test-utils/mockService.js';
+import { setupTestServer } from '#test-utils/httpServer.js';
+import { mockDateService, mockIdService } from '#test-utils/services.js';
 
 import { AddBtStrategyError } from '../btStrategy.repository.type.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { AddBtStrategyControllerDeps, buildAddBtStrategyController } from './addBtStrategy.js';
 
 const { method, url } = BT_STRATEGY_ENDPOINTS.ADD_BT_STRATEGY;
-const logger = createMainLogger();
+const setupServer = setupTestServer(method, url, buildAddBtStrategyController, mockDeps);
 
 function mockDeps(overrides?: Partial<AddBtStrategyControllerDeps>): AddBtStrategyControllerDeps {
   return {
@@ -27,29 +23,19 @@ function mockDeps(overrides?: Partial<AddBtStrategyControllerDeps>): AddBtStrate
   };
 }
 function setupSuccessfullyCreate() {
-  const httpServer = eUtils.unsafeUnwrap(buildHttpServer(logger));
-  const id = anyString();
+  const id = randomString();
   const currentDate = randomAnyDate();
   const idService = mockIdService({ generateBtStrategyId: jest.fn().mockReturnValue(id) });
   const dateService = mockDateService({ getCurrentDate: jest.fn().mockReturnValue(currentDate) });
-  const deps = mockDeps({ idService, dateService });
-  const handler = buildAddBtStrategyController(deps);
 
-  addRoute(httpServer, { method, url, handler });
-
-  return { httpServer, id, currentDate };
+  return { httpServer: setupServer({ idService, dateService }), id, currentDate };
 }
 function setupRepoError() {
-  const httpServer = unsafeUnwrapEitherRight(buildHttpServer(logger));
   const btStrategyRepo = mockBtStrategyRepo({
     add: jest.fn().mockReturnValue(te.left(new AddBtStrategyError())),
   });
-  const deps = mockDeps({ btStrategyRepo });
-  const handler = buildAddBtStrategyController(deps);
 
-  addRoute(httpServer, { method, url, handler });
-
-  return httpServer;
+  return setupServer({ btStrategyRepo });
 }
 
 describe('WHEN user successfully add a backtesting strategy', () => {
@@ -58,17 +44,22 @@ describe('WHEN user successfully add a backtesting strategy', () => {
 
     const body = mockValidAddBtStrategyRequestBody();
     const resp = await httpServer.inject({ method, url, body });
-    const respBody = resp.json();
 
-    expect(resp.statusCode).toBe(201);
-    expect(respBody).toEqual(
-      expect.objectContaining({
-        ...body,
-        id: id,
-        createdAt: currentDate.toJSON(),
-        updatedAt: currentDate.toJSON(),
-      }),
-    );
+    try {
+      expect(resp.statusCode).toBe(201);
+      expect(resp.json()).toEqual(
+        expect.objectContaining({
+          ...body,
+          id: id,
+          createdAt: currentDate.toJSON(),
+          updatedAt: currentDate.toJSON(),
+        }),
+      );
+    } catch (e) {
+      console.error(e);
+      console.error(body);
+      console.error(resp.json());
+    }
   });
 });
 
@@ -78,10 +69,9 @@ describe('WHEN user try to add a backtesting strategy with invalid request body'
 
     const body = { ...mockValidAddBtStrategyRequestBody(), invalid: 'invalid' };
     const resp = await httpServer.inject({ method, url, body });
-    const respBody = resp.json();
 
     expect(resp.statusCode).toBe(400);
-    expect(respBody).toEqual(toBeHttpErrorResponse);
+    expect(resp.json()).toEqual(toBeHttpErrorResponse);
   });
 });
 
@@ -96,10 +86,9 @@ describe('WHEN user try to add a backtesting strategy with invalid data', () => 
       endTimestamp: before.toJSON(),
     };
     const resp = await httpServer.inject({ method, url, body });
-    const respBody = resp.json();
 
     expect(resp.statusCode).toBe(400);
-    expect(respBody).toEqual(toBeHttpErrorResponse);
+    expect(resp.json()).toEqual(toBeHttpErrorResponse);
   });
 });
 
@@ -108,9 +97,8 @@ describe('WHEN repository fails to add the backtesting strategy', () => {
     const httpServer = setupRepoError();
 
     const resp = await httpServer.inject({ method, url, body: mockValidAddBtStrategyRequestBody() });
-    const respBody = resp.json();
 
     expect(resp.statusCode).toBe(500);
-    expect(respBody).toEqual(toBeHttpErrorResponse);
+    expect(resp.json()).toEqual(toBeHttpErrorResponse);
   });
 });

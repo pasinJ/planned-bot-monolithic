@@ -1,9 +1,8 @@
 import ioe from 'fp-ts/lib/IOEither.js';
-import ior from 'fp-ts/lib/IORef.js';
 import te from 'fp-ts/lib/TaskEither.js';
-import { constVoid, pipe } from 'fp-ts/lib/function.js';
+import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
-import { isNotNil, omit } from 'ramda';
+import { omit } from 'ramda';
 
 import { createErrorFromUnknown } from '#shared/error.js';
 
@@ -11,62 +10,37 @@ import { SymbolModel, createSymbolModel } from './symbol.model.js';
 import {
   AddSymbolsError,
   CountAllSymbolsError,
-  CreateSymbolRepositoryError,
+  CreateSymbolRepoError,
   GetAllSymbolsError,
-  GetSymbolRepositoryError,
-  SymbolRepository,
+  SymbolRepo,
 } from './symbol.repository.type.js';
 
-const symbolRepository = new ior.IORef<SymbolRepository | undefined>(undefined);
-
-export function createSymbolRepository(
-  client: Mongoose,
-): ioe.IOEither<CreateSymbolRepositoryError, SymbolRepository> {
+export function createSymbolRepo(client: Mongoose): ioe.IOEither<CreateSymbolRepoError, SymbolRepo> {
   return pipe(
     createSymbolModel(client),
     ioe.map((model) => ({
-      add: buildAddSymbols(model),
-      getAll: buildGetAll(model),
-      countAll: buildCountAll(model),
+      add: addSymbols(model),
+      getAll: getAll(model),
+      countAll: countAll(model),
     })),
-    ioe.chainFirstIOK((repository) => symbolRepository.write(repository)),
   );
 }
 
-export const getSymbolRepository: ioe.IOEither<GetSymbolRepositoryError, SymbolRepository> = pipe(
-  ioe.fromIO(symbolRepository.read),
-  ioe.chain(
-    ioe.fromPredicate(
-      isNotNil,
-      () => new GetSymbolRepositoryError('NOT_INITIATED_ERROR', 'Symbol repository has not been initiated'),
-    ),
-  ),
-);
-
-function buildAddSymbols(model: SymbolModel) {
-  return function addSymbols(
-    ...[symbols]: Parameters<SymbolRepository['add']>
-  ): ReturnType<SymbolRepository['add']> {
-    return pipe(
-      te.tryCatch(
-        () => model.insertMany(symbols),
-        createErrorFromUnknown(AddSymbolsError, 'ADD_SYMBOLS_ERROR'),
-      ),
-      te.map(constVoid),
+function addSymbols(model: SymbolModel): SymbolRepo['add'] {
+  return (symbols) =>
+    pipe(
+      te.tryCatch(() => model.insertMany(symbols), createErrorFromUnknown(AddSymbolsError)),
+      te.as(symbols),
     );
-  };
 }
 
-function buildGetAll(model: SymbolModel): SymbolRepository['getAll'] {
+function getAll(model: SymbolModel): SymbolRepo['getAll'] {
   return pipe(
-    te.tryCatch(() => model.find(), createErrorFromUnknown(GetAllSymbolsError, 'GET_ALL_SYMBOLS_ERROR')),
+    te.tryCatch(() => model.find(), createErrorFromUnknown(GetAllSymbolsError)),
     te.map((list) => list.map((doc) => omit(['_id', '__v'], doc.toJSON({ virtuals: true })))),
   );
 }
 
-function buildCountAll(model: SymbolModel): SymbolRepository['countAll'] {
-  return te.tryCatch(
-    () => model.count(),
-    createErrorFromUnknown(CountAllSymbolsError, 'COUNT_ALL_SYMBOLS_ERROR'),
-  );
+function countAll(model: SymbolModel): SymbolRepo['countAll'] {
+  return te.tryCatch(() => model.count(), createErrorFromUnknown(CountAllSymbolsError));
 }

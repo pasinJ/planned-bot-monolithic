@@ -17,17 +17,14 @@ export function createBtStrategyRepo(
 ): ioe.IOEither<CreateBtStrategyRepoError, BtStrategyRepo> {
   return pipe(
     createBtStrategyModel(client),
-    ioe.map((model) => ({
-      add: addBtStrategy(model),
-    })),
+    ioe.map((model) => ({ add: addBtStrategy(model) })),
   );
 }
 
-function addBtStrategy(model: BtStrategyModel) {
-  return (...[btStrategy]: Parameters<BtStrategyRepo['add']>): ReturnType<BtStrategyRepo['add']> => {
-    return pipe(
+function addBtStrategy(model: BtStrategyModel): BtStrategyRepo['add'] {
+  return (btStrategy) =>
+    pipe(
       te.tryCatch(() => model.create(btStrategy), createErrorFromUnknown(AddBtStrategyError)),
       te.as(btStrategy),
     );
-  };
 }

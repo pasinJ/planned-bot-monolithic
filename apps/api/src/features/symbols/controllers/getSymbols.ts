@@ -6,20 +6,20 @@ import { match } from 'ts-pattern';
 
 import { executeT } from '#shared/utils/fp.js';
 
-import { GetAllSymbolsError, SymbolRepository } from '../symbol.repository.type.js';
+import { GetAllSymbolsError, SymbolRepo } from '../symbol.repository.type.js';
 
-type Deps = { symbolRepository: SymbolRepository };
-export function buildGetSymbolsController(deps: Deps): RouteHandlerMethod {
+export type GetSymbolsControllerDeps = { symbolRepo: SymbolRepo };
+export function buildGetSymbolsController(deps: GetSymbolsControllerDeps): RouteHandlerMethod {
   return function getSymbolsController(_, reply): Promise<FastifyReply> {
-    const { symbolRepository } = deps;
+    const { symbolRepo } = deps;
 
     return pipe(
-      symbolRepository.getAll,
+      symbolRepo.getAll,
       te.map(map(pick(['name', 'exchange', 'baseAsset', 'quoteAsset']))),
       te.matchW(
         (error) =>
           match(error)
-            .when(is(GetAllSymbolsError), () => reply.code(500).send(error.toJSON()))
+            .when(is(GetAllSymbolsError), () => reply.code(500).send(error))
             .exhaustive(),
         (symbols) => reply.code(200).send(symbols),
       ),

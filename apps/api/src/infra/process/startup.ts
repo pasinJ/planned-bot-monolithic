@@ -4,13 +4,13 @@ import { constVoid, pipe } from 'fp-ts/lib/function.js';
 import {
   AddSymbolsError,
   CountAllSymbolsError,
-  SymbolRepository,
+  SymbolRepo,
 } from '#features/symbols/symbol.repository.type.js';
 import { LoggerIo } from '#infra/logging.js';
 import { BnbService, GetBnbSpotSymbolsError } from '#infra/services/binance.type.js';
 import { getAppConfig } from '#shared/config/app.js';
 
-type StartupProcessDeps = { bnbService: BnbService; symbolRepository: SymbolRepository; logger: LoggerIo };
+type StartupProcessDeps = { bnbService: BnbService; symbolRepo: SymbolRepo; logger: LoggerIo };
 type StartupError = CountAllSymbolsError | GetBnbSpotSymbolsError | AddSymbolsError;
 
 export function startupProcess(deps: StartupProcessDeps): te.TaskEither<StartupError, void> {
@@ -23,18 +23,18 @@ export function startupProcess(deps: StartupProcessDeps): te.TaskEither<StartupE
 }
 
 function fetchSpotSymbols(deps: StartupProcessDeps) {
-  const { bnbService, symbolRepository, logger } = deps;
+  const { bnbService, symbolRepo, logger } = deps;
   const { ENV } = getAppConfig();
 
   if (ENV.includes('test')) {
     return te.fromIO(logger.infoIo('Skip fetching SPOT symbols b/c running in test environment'));
   } else {
     return pipe(
-      symbolRepository.countAll,
+      symbolRepo.countAll,
       te.chainW((existing) =>
         existing !== 0
           ? te.rightIO(constVoid)
-          : pipe(bnbService.getSpotSymbols, te.chainW(symbolRepository.add), te.map(constVoid)),
+          : pipe(bnbService.getSpotSymbols, te.chainW(symbolRepo.add), te.map(constVoid)),
       ),
     );
   }

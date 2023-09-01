@@ -3,7 +3,7 @@ import { dissoc, is } from 'ramda';
 
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
-import { createMongoClient, deleteModel } from '#test-utils/mongodb.js';
+import { createMongoClient, deleteModel } from '#test-utils/mongoDb.js';
 
 import { BtStrategyModel, btStrategyModelName } from './btStrategy.model.js';
 import { createBtStrategyRepo } from './btStrategy.repository.js';
@@ -44,12 +44,12 @@ describe('Add backtesting strategy', () => {
   let btStrategyRepo: BtStrategyRepo;
   let btStrategyModel: BtStrategyModel;
 
-  function setupRepository() {
+  function setupRepo() {
     btStrategyRepo = unsafeUnwrapEitherRight(executeIo(createBtStrategyRepo(client)));
     btStrategyModel = client.models[btStrategyModelName];
   }
 
-  beforeAll(() => setupRepository());
+  beforeAll(() => setupRepo());
   afterEach(() => btStrategyModel.deleteMany());
   afterAll(() => deleteModel(client, btStrategyModelName));
 

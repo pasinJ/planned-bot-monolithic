@@ -1,12 +1,13 @@
+import { AxiosError } from 'axios';
 import te from 'fp-ts/lib/TaskEither.js';
 import { ZodTypeDef, z } from 'zod';
 
-import { CustomError, ExternalError } from '#shared/error.js';
+import { CustomError } from '#shared/error.js';
 import { SchemaValidationError } from '#shared/utils/zod.js';
 
 export type HttpClient = { sendRequest: SendRequest };
 
-export class HttpError extends CustomError<HttpErrorName, ExternalError | SchemaValidationError>(
+export class HttpError extends CustomError<HttpErrorName, SchemaValidationError | AxiosError>(
   'UNHANDLED_ERROR',
   'Error happened when try to send HTTP request to external system',
 ) {}
