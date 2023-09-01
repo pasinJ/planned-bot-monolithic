@@ -16,8 +16,6 @@ const moduleNameMapper = transformModuleMapper(compilerOptions.paths);
 /** @type {import('jest').Config} */
 const common = {
   // maxWorkers: 1,
-  resetMocks: true,
-  resetModules: true,
   extensionsToTreatAsEsm: ['.ts'],
   transform: { '^.+\\.[jt]s$': '@swc/jest' },
   transformIgnorePatterns: [`/node_modules/(?!(${esModules})/)`],
@@ -29,7 +27,7 @@ const common = {
     'dotenv/config',
   ],
   watchPathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/node_modules/'],
-  modulePaths: [compilerOptions.baseUrl],
+  modulePaths: ['<rootDir>/src/', '<rootDir>/e2e/'],
   moduleNameMapper: { ...moduleNameMapper, '^(\\.{1,2}/.*)\\.js$': '$1' },
 };
 
