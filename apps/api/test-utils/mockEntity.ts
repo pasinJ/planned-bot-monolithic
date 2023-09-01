@@ -2,12 +2,13 @@ import { faker } from '@faker-js/faker';
 import { values } from 'ramda';
 import { z } from 'zod';
 
+import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
 import { LotSizeFilter } from '#features/symbols/domain/lotSizeFilter.entity.js';
 import { MarketLotSizeFilter } from '#features/symbols/domain/marketLotSizeFilter.entity.js';
 import { MinNotionalFilter } from '#features/symbols/domain/minNotionalFilter.entity.js';
 import { NotionalFilter } from '#features/symbols/domain/notionalFilter.entity.js';
 import { PriceFilter } from '#features/symbols/domain/priceFilter.entity.js';
-import { Symbol, exchangeEnum, orderTypeEnum } from '#features/symbols/domain/symbol.entity.js';
+import { Symbol, orderTypeEnum } from '#features/symbols/domain/symbol.entity.js';
 
 import { anyBoolean, anyString, nonNegativeInt, randomPositiveFloat, randomPrecisionStep } from './faker.js';
 
@@ -20,7 +21,7 @@ export function mockSymbol(
   return {
     id: anyString(),
     name: anyString(),
-    exchange: faker.helpers.arrayElement(values(exchangeEnum)),
+    exchange: faker.helpers.arrayElement(values(exchangeNameEnum)),
     baseAsset: anyString(),
     baseAssetPrecision: faker.number.int({ min: 0, max: 10 }),
     quoteAsset: anyString(),

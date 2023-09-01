@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { all, collectBy, equals, length, map, prop } from 'ramda';
 import { z } from 'zod';
 
+import { exchangeNameEnum, exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
 import { nonEmptyString, nonNegativeInteger } from '#shared/common.type.js';
 import { CustomError } from '#shared/error.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
@@ -18,9 +19,6 @@ const symbolIdSchema = nonEmptyString.brand('SymbolId');
 export type SymbolId = z.infer<typeof symbolIdSchema>;
 
 const symbolNameSchema = nonEmptyString.brand('SymbolName');
-
-const exchangeSchema = z.enum(['BINANCE']);
-export const exchangeEnum = exchangeSchema.enum;
 
 const assetSchema = nonEmptyString.brand('Asset');
 const assetPrecisionSchema = nonNegativeInteger.brand('Precision');
@@ -57,7 +55,7 @@ export const symbolSchema = z
   .object({
     id: symbolIdSchema,
     name: symbolNameSchema,
-    exchange: exchangeSchema,
+    exchange: exchangeNameSchema,
     baseAsset: assetSchema,
     baseAssetPrecision: assetPrecisionSchema,
     quoteAsset: assetSchema,
@@ -96,7 +94,7 @@ export function createSymbol(data: CreateSymbolData, currentDate: Date): e.Eithe
   return pipe(
     parseWithZod(symbolSchema, 'Validating symbol entity schema failed', {
       ...data,
-      exchange: exchangeEnum.BINANCE,
+      exchange: exchangeNameEnum.BINANCE,
       version: 0,
       createdAt: currentDate,
       updatedAt: currentDate,

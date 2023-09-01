@@ -1,10 +1,11 @@
 import { faker } from '@faker-js/faker';
 import { append, assoc, modify, omit, pick } from 'ramda';
 
+import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
 import { anyFloat, anyString, invalidDate, negativeInt, randomDateBefore } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/mockEntity.js';
 
-import { createSymbol, exchangeEnum, symbolSchema } from './symbol.entity.js';
+import { createSymbol, symbolSchema } from './symbol.entity.js';
 
 const validSymbol = mockSymbol();
 
@@ -165,7 +166,7 @@ describe('Create symbol entity', () => {
 
       expect(result).toEqualRight({
         ...input,
-        exchange: exchangeEnum.BINANCE,
+        exchange: exchangeNameEnum.BINANCE,
         version: 0,
         createdAt: currentDate,
         updatedAt: currentDate,
