@@ -15,7 +15,6 @@ const moduleNameMapper = transformModuleMapper(compilerOptions.paths);
 
 /** @type {import('jest').Config} */
 const common = {
-  // maxWorkers: 1,
   extensionsToTreatAsEsm: ['.ts'],
   transform: { '^.+\\.[jt]s$': '@swc/jest' },
   transformIgnorePatterns: [`/node_modules/(?!(${esModules})/)`],
@@ -34,6 +33,7 @@ const common = {
 /** @type {import('jest').Config} */
 module.exports = {
   passWithNoTests: true,
+  maxWorkers: '50%',
   projects: [
     {
       ...common,

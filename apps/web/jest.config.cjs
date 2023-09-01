@@ -16,7 +16,6 @@ const setupFilesAfterEnv = ['jest-extended/all', '@relmify/jest-fp-ts', 'dotenv/
 
 /** @type {import('jest').Config} */
 const common = {
-  // maxWorkers: 1,
   transform: { '^.+\\.(t|j)sx?$': '@swc/jest' },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   watchPathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/node_modules/'],
@@ -27,6 +26,7 @@ const common = {
 /** @type {import('jest').Config} */
 module.exports = {
   passWithNoTests: true,
+  maxWorkers: '50%',
   projects: [
     {
       ...common,
