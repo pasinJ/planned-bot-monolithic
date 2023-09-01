@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { append, assoc, modify, omit, pick } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
-import { anyFloat, anyString, invalidDate, negativeInt, randomDateBefore } from '#test-utils/faker.js';
+import { anyFloat, anyString, invalidDate, randomDateBefore, randomNegativeInt } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/mockEntity.js';
 
 import { createSymbol, symbolSchema } from './symbol.entity.js';
@@ -59,7 +59,9 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(assoc('baseAssetPrecision', anyFloat(), validSymbol))).toThrow();
     });
     it('WHEN baseAssetPrecision property is a negative number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('baseAssetPrecision', negativeInt(), validSymbol))).toThrow();
+      expect(() =>
+        symbolSchema.parse(assoc('baseAssetPrecision', randomNegativeInt(), validSymbol)),
+      ).toThrow();
     });
   });
   describe('quoteAsset property', () => {
@@ -81,7 +83,9 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', anyFloat(), validSymbol))).toThrow();
     });
     it('WHEN quoteAssetPrecision property is a negative number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('quoteAssetPrecision', negativeInt(), validSymbol))).toThrow();
+      expect(() =>
+        symbolSchema.parse(assoc('quoteAssetPrecision', randomNegativeInt(), validSymbol)),
+      ).toThrow();
     });
   });
   describe('orderTypes property', () => {
@@ -115,7 +119,7 @@ describe('Symbol entity', () => {
       expect(() => symbolSchema.parse(assoc('version', anyFloat(), validSymbol))).toThrow();
     });
     it('WHEN version property is a negative number THEN the symbol should be invalid', () => {
-      expect(() => symbolSchema.parse(assoc('version', negativeInt(), validSymbol))).toThrow();
+      expect(() => symbolSchema.parse(assoc('version', randomNegativeInt(), validSymbol))).toThrow();
     });
   });
   describe('createdAt property', () => {

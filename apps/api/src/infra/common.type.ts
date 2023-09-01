@@ -1,3 +1,4 @@
+import { BtStrategyRepo } from '#features/backtesting-strategies/btStrategy.repository.type.js';
 import type { SymbolRepository } from '#features/symbols/symbol.repository.type.js';
 
 import type { BnbService } from './services/binance.type.js';
@@ -9,4 +10,5 @@ export type ApplicationDeps = {
   dateService: DateService;
   idService: IdService;
   symbolRepository: SymbolRepository;
+  btStrategyRepo: BtStrategyRepo;
 };

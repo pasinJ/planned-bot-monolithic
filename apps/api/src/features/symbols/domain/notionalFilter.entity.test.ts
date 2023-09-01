@@ -4,8 +4,8 @@ import {
   anyFloat,
   anyString,
   negativeFloat,
-  negativeInt,
   random9DigitsPositiveFloatWithRoundUp,
+  randomNegativeInt,
 } from '#test-utils/faker.js';
 import { mockNotionalFilter } from '#test-utils/mockEntity.js';
 
@@ -91,7 +91,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN avgPriceMins property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        notionalFilterSchema.parse(assoc('avgPriceMins', negativeInt(), validNotionalFilter)),
+        notionalFilterSchema.parse(assoc('avgPriceMins', randomNegativeInt(), validNotionalFilter)),
       ).toThrow();
     });
     it('WHEN avgPriceMins property equals to zero THEN the filter should be valid', () => {

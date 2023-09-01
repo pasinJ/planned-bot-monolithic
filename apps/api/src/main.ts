@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 import { omit } from 'ramda';
 
+import { createBtStrategyRepo } from '#features/backtesting-strategies/btStrategy.repository.js';
 import { createSymbolRepository } from '#features/symbols/symbol.repository.js';
 import { ApplicationDeps } from '#infra/common.type.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
@@ -26,6 +27,7 @@ await executeT(
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
     te.bindW('bnbService', () => createBnbServiceWithDeps()),
     te.bindW('symbolRepository', (deps) => createSymbolRepositoryWithDeps(deps)),
+    te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
     te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
     te.chainFirstW((deps) => startHttpServerWithDeps(deps)),
@@ -47,6 +49,9 @@ function createBnbServiceWithDeps() {
 }
 function createSymbolRepositoryWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createSymbolRepository(mongoDbClient));
+}
+function createBtStrategyRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(createBtStrategyRepo(mongoDbClient));
 }
 function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepository'>) {
   return startupProcess({ ...deps, logger: logger });

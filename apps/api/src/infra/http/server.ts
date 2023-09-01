@@ -7,6 +7,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { nanoid } from 'nanoid';
 import { juxt } from 'ramda';
 
+import { addBtStrategiesRoutes } from '#features/backtesting-strategies/routes.js';
 import { addSymbolsRoutes } from '#features/symbols/routes.js';
 import { ApplicationDeps } from '#infra/common.type.js';
 import { PinoLogger, createLogger } from '#infra/logging.js';
@@ -52,7 +53,7 @@ export function startHttpServer(
       () => instance.register(cors, corsConfig),
       createErrorFromUnknown(StartHttpServerError, 'ADD_PLUGIN_ERROR', 'Adding CORS plugin failed'),
     ),
-    ioe.map(() => juxt([addGeneralRoutes, addSymbolsRoutes])(instance, deps)),
+    ioe.map(() => juxt([addGeneralRoutes, addSymbolsRoutes, addBtStrategiesRoutes])(instance, deps)),
     ioe.chain(ioe.sequenceArray),
     te.fromIOEither,
     te.chainFirst(() =>

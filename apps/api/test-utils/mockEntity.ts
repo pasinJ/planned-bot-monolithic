@@ -10,7 +10,13 @@ import { NotionalFilter } from '#features/symbols/domain/notionalFilter.entity.j
 import { PriceFilter } from '#features/symbols/domain/priceFilter.entity.js';
 import { Symbol, orderTypeEnum } from '#features/symbols/domain/symbol.entity.js';
 
-import { anyBoolean, anyString, nonNegativeInt, randomPositiveFloat, randomPrecisionStep } from './faker.js';
+import {
+  anyBoolean,
+  anyString,
+  randomNonNegativeInt,
+  randomPositiveFloat,
+  randomPrecisionStep,
+} from './faker.js';
 
 export function mockSymbol(
   override?: Partial<{ [k in keyof Symbol]: Omit<Symbol[k], typeof z.BRAND> }>,
@@ -69,7 +75,7 @@ export function mockMinNotionalFilter(): MinNotionalFilter {
     type: 'MIN_NOTIONAL',
     minNotional: randomPositiveFloat(8),
     applyToMarket: anyBoolean(),
-    avgPriceMins: nonNegativeInt(),
+    avgPriceMins: randomNonNegativeInt(),
   };
 }
 
@@ -80,7 +86,7 @@ export function mockNotionalFilter(): NotionalFilter {
     applyMinToMarket: anyBoolean(),
     maxNotional: randomPositiveFloat(8),
     applyMaxToMarket: anyBoolean(),
-    avgPriceMins: nonNegativeInt(),
+    avgPriceMins: randomNonNegativeInt(),
   };
 }
 

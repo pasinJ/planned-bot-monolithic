@@ -7,12 +7,16 @@ import { BnbService } from '#infra/services/binance.type.js';
 import { DateService } from '#infra/services/date.type.js';
 import { IdService } from '#infra/services/id.type.js';
 
-export function mockDateService(): DateService {
-  return { getCurrentDate: () => faker.date.recent() };
+export function mockDateService(overrides?: Partial<DateService>): DateService {
+  return { getCurrentDate: () => faker.date.recent(), ...overrides };
 }
 
-export function mockIdService(): IdService {
-  return { generateSymbolId: () => faker.string.nanoid() } as IdService;
+export function mockIdService(overrides?: Partial<IdService>): IdService {
+  return {
+    generateSymbolId: () => faker.string.nanoid(),
+    generateBtStrategyId: () => faker.string.nanoid(),
+    ...overrides,
+  } as IdService;
 }
 
 export function mockBnbService(overrides?: Partial<BnbService>): BnbService {
