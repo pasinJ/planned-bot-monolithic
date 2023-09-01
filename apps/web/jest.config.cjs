@@ -17,12 +17,10 @@ const setupFilesAfterEnv = ['jest-extended/all', '@relmify/jest-fp-ts', 'dotenv/
 /** @type {import('jest').Config} */
 const common = {
   // maxWorkers: 1,
-  resetMocks: true,
-  resetModules: true,
   transform: { '^.+\\.(t|j)sx?$': '@swc/jest' },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   watchPathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/node_modules/'],
-  modulePaths: [compilerOptions.baseUrl],
+  modulePaths: ['<rootDir>/src/'],
   moduleNameMapper,
 };
 

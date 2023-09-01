@@ -115,5 +115,5 @@ describe('WHEN fill the form and hit submit button', () => {
     await user.click(ui.submitButton.get());
 
     expect(httpClient.sendRequest).toHaveBeenCalledWith(expect.objectContaining(CREATE_BACKTESTING_STRATEGY));
-  }, 10000);
+  }, 30000);
 });

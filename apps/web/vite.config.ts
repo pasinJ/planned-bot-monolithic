@@ -11,16 +11,12 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 import { PRIMARY, SECONDARY } from './src/styles/theme.constant';
 
-if (process.env.NODE_ENV !== 'cypress') {
-  replaceColorCssVariables();
-  if (process.env.NODE_ENV === 'development')
-    fs.watch('./src/styles/theme.constant.ts', replaceColorCssVariables);
-} else console.log('Skipped replace color tokens CSS');
-
 // https://vitejs.dev/config/
-export default defineConfig({
-  envDir: 'env',
-  plugins: [react(), tsconfigPaths(), EnvironmentPlugin('all')],
+export default defineConfig(({ mode }) => {
+  if (mode !== 'test') replaceColorCssVariables();
+  else console.log('Skipped replace color CSS variables');
+
+  return { envDir: 'env', plugins: [react(), tsconfigPaths(), EnvironmentPlugin('all')] };
 });
 
 function replaceColorCssVariables() {
@@ -53,7 +49,7 @@ function replaceColorCssVariables() {
       from: concat(lightColorTemplateMapping.from, darkColorTemplateMapping.from),
       to: concat(lightColorTemplateMapping.to, darkColorTemplateMapping.to),
     });
-    console.log(replaceResult);
+    console.log('>>>> ', replaceResult);
   });
 
   console.log('Replacing color CSS variables done');
