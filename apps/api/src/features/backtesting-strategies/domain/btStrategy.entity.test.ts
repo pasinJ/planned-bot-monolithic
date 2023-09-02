@@ -12,7 +12,12 @@ import {
 } from '#test-utils/faker.js';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
 
-import { CreateNewBtStrategyError, btStrategySchema, createNewBtStrategy } from './btStrategy.entity.js';
+import {
+  CreateNewBtStrategyError,
+  btStrategySchema,
+  createNewBtStrategy,
+  executionStatusEnum,
+} from './btStrategy.entity.js';
 
 const validBtStrategy = mockBtStrategy();
 
@@ -198,6 +203,16 @@ describe('Backtesting strategy entity', () => {
       expect(() => btStrategySchema.parse(assoc('endTimestamp', dateBefore, validBtStrategy))).toThrow();
     });
   });
+  describe('execution status property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() => btStrategySchema.parse(dissoc('executionStatus', validBtStrategy))).toThrow();
+    });
+    it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
+      expect(() =>
+        btStrategySchema.parse(assoc('executionStatus', randomString(), validBtStrategy)),
+      ).toThrow();
+    });
+  });
   describe('body property', () => {
     it('WHEN the property is missing THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(dissoc('body', validBtStrategy))).toThrow();
@@ -258,11 +273,17 @@ describe('Backtesting strategy entity', () => {
 describe('Create new backtesting strategy entity', () => {
   describe('WHEN successfully create new backtesting strategy entity', () => {
     it('THEN it should return Right of a backtesting strategy entity', () => {
-      const data = omit(['version', 'createdAt', 'updatedAt'], mockBtStrategy());
+      const data = omit(['executionStatus', 'version', 'createdAt', 'updatedAt'], mockBtStrategy());
       const currentDate = faker.date.soon();
       const entity = createNewBtStrategy(data, currentDate);
 
-      expect(entity).toEqualRight({ ...data, version: 0, createdAt: currentDate, updatedAt: currentDate });
+      expect(entity).toEqualRight({
+        ...data,
+        version: 0,
+        executionStatus: executionStatusEnum.IDLE,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+      });
     });
   });
   describe('WHEN try to create new backtesting strategy entity with invalid data', () => {

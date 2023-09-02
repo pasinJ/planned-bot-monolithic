@@ -8,7 +8,7 @@ import { timeframeEnum } from '#shared/domain/timeframe.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
 import { CreateBtStrategyRepoError } from './btStrategy.repository.type.js';
-import { BtStrategy } from './domain/btStrategy.entity.js';
+import { BtStrategy, executionStatusEnum } from './domain/btStrategy.entity.js';
 
 export const btStrategyModelName = 'BtStrategy';
 
@@ -29,6 +29,7 @@ const btStrategyModelSchema: SchemaDefinition<BtStrategyDoc> = {
   startTimestamp: { type: Date, required: true },
   endTimestamp: { type: Date, required: true },
   body: { type: String, required: true },
+  executionStatus: { type: String, required: true, enum: values(executionStatusEnum) },
   version: { type: Number, required: true },
   createdAt: { type: Date, required: true },
   updatedAt: { type: Date, required: true },

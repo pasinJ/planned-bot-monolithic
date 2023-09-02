@@ -8,6 +8,7 @@ import { setupTestServer } from '#test-utils/httpServer.js';
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
 import { AddBtStrategyError } from '../btStrategy.repository.type.js';
+import { executionStatusEnum } from '../domain/btStrategy.entity.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { AddBtStrategyControllerDeps, buildAddBtStrategyController } from './addBtStrategy.js';
 
@@ -51,6 +52,7 @@ describe('WHEN user successfully add a backtesting strategy', () => {
         expect.objectContaining({
           ...body,
           id: id,
+          executionStatus: executionStatusEnum.IDLE,
           createdAt: currentDate.toJSON(),
           updatedAt: currentDate.toJSON(),
         }),

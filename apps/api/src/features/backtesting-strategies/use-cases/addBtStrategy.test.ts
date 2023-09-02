@@ -14,7 +14,7 @@ import { mockBtStrategyRepo } from '#test-utils/features/btStrategies/repositori
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
 import { AddBtStrategyError } from '../btStrategy.repository.type.js';
-import { CreateNewBtStrategyError } from '../domain/btStrategy.entity.js';
+import { CreateNewBtStrategyError, executionStatusEnum } from '../domain/btStrategy.entity.js';
 import { AddBtStrategyUseCaseData, AddBtStrategyUseCaseDeps, addBtStrategyUseCase } from './addBtStrategy.js';
 
 function mockDeps(overrides?: Partial<AddBtStrategyUseCaseDeps>): AddBtStrategyUseCaseDeps {
@@ -81,6 +81,7 @@ describe('WHEN successfully add a backtesting strategy', () => {
       expect.objectContaining({
         ...data,
         id: id,
+        executionStatus: executionStatusEnum.IDLE,
         createdAt: currentDate,
         updatedAt: currentDate,
       }),

@@ -1,6 +1,11 @@
 import { faker } from '@faker-js/faker';
+import { values } from 'ramda';
 
-import { BtStrategy } from '#features/backtesting-strategies/domain/btStrategy.entity.js';
+import {
+  BtStrategy,
+  ExecutionStatus,
+  executionStatusEnum,
+} from '#features/backtesting-strategies/domain/btStrategy.entity.js';
 import { randomExchangeName, randomTimeframe } from '#test-utils/domain.js';
 import {
   randomNonNegativeFloat,
@@ -23,9 +28,14 @@ export function mockBtStrategy(): BtStrategy {
     maxNumKlines: randomPositiveInt(),
     startTimestamp: faker.date.soon(),
     endTimestamp: faker.date.future(),
+    executionStatus: randomExecutionStatus(),
     body: randomString(),
     version: randomNonNegativeInt(),
     createdAt: faker.date.past(),
     updatedAt: faker.date.recent(),
   } as BtStrategy;
+}
+
+export function randomExecutionStatus(): ExecutionStatus {
+  return faker.helpers.arrayElement(values(executionStatusEnum));
 }

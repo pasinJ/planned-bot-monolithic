@@ -1,3 +1,4 @@
+import { executionStatusEnum } from '#features/backtesting-strategies/domain/btStrategy.entity.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
 
@@ -16,6 +17,7 @@ describe('WHEN user successfully add a backtesting strategy', () => {
         id: expect.toBeString(),
         startTimestamp: expect.toBeDateString(),
         endTimestamp: expect.toBeDateString(),
+        executionStatus: executionStatusEnum.IDLE,
         createdAt: expect.toBeDateString(),
         updatedAt: expect.toBeDateString(),
       }),
