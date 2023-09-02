@@ -1,4 +1,3 @@
-import * as te from 'fp-ts/lib/TaskEither';
 import { setupServer } from 'msw/node';
 import { is } from 'ramda';
 
@@ -8,26 +7,39 @@ import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { addRestRoute, createApiPath } from '#test-utils/msw';
 import { executeT } from '#utils/fp';
 
-import { getSymbols } from './symbol';
+import { createSymbolRepo } from './symbol';
 import { API_ENDPOINTS } from './symbol.constant';
 import { GetSymbolsError } from './symbol.type';
 
 const { GET_SYMBOLS } = API_ENDPOINTS;
 const server = setupServer();
-const realHttpClient = createAxiosHttpClient();
+const httpClient = createAxiosHttpClient();
 
 beforeAll(() => server.listen());
 afterAll(() => server.close());
+
+describe('Create symbol repository', () => {
+  describe('WHEN create a symbol repository', () => {
+    it('THEN it should return symbol repository', () => {
+      const repository = createSymbolRepo({ httpClient });
+      expect(repository).toContainAllKeys(['getSymbols']);
+    });
+  });
+});
 
 describe('Get symbols', () => {
   describe('WHEN try to get symbols', () => {
     it('THEN it should send request to backend with configured method, path, and response schema', async () => {
       const { method, url, responseSchema } = GET_SYMBOLS;
-      const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([])) };
+      server.use(
+        addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json([]))),
+      );
+      const sendRequestSpy = jest.spyOn(httpClient, 'sendRequest');
 
-      await executeT(getSymbols({ httpClient }));
+      const repository = createSymbolRepo({ httpClient });
+      await executeT(repository.getSymbols);
 
-      expect(httpClient.sendRequest).toHaveBeenCalledExactlyOnceWith({ method, url, responseSchema });
+      expect(sendRequestSpy).toHaveBeenCalledExactlyOnceWith({ method, url, responseSchema });
     });
   });
   describe('WHEN external system return valid success response', () => {
@@ -38,7 +50,8 @@ describe('Get symbols', () => {
         addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json(symbols))),
       );
 
-      const result = await executeT(getSymbols({ httpClient: realHttpClient }));
+      const repository = createSymbolRepo({ httpClient });
+      const result = await executeT(repository.getSymbols);
 
       expect(result).toEqualRight(symbols);
     });
@@ -48,7 +61,8 @@ describe('Get symbols', () => {
       const { method, url } = GET_SYMBOLS;
       server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
 
-      const result = await executeT(getSymbols({ httpClient: realHttpClient }));
+      const repository = createSymbolRepo({ httpClient });
+      const result = await executeT(repository.getSymbols);
 
       expect(result).toEqualLeft(expect.toSatisfy(is(GetSymbolsError)));
     });

@@ -4,10 +4,11 @@ import { format } from 'date-fns';
 import * as te from 'fp-ts/lib/TaskEither';
 
 import { API_ENDPOINTS as BACKTEST_API_ENDPOINT } from '#features/backtesting-strategies/repositories/btStrategy.constant';
-import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/repositories/symbol.constant';
+import { SymbolRepo } from '#features/symbols/repositories/symbol.type';
 import { HttpClient } from '#infra/httpClient.type';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderWithContexts } from '#test-utils/render';
 import { selectOption } from '#test-utils/uiEvents';
@@ -16,24 +17,20 @@ import { byLabelText, byRole } from '#test-utils/uiSelector';
 import AddBtStrategyForm from '.';
 import { timeframeOptions } from './constants';
 
-const { GET_SYMBOLS } = SYMBOL_API_ENDPOINTS;
 const { ADD_BT_STRATEGY: CREATE_BACKTESTING_STRATEGY } = BACKTEST_API_ENDPOINT;
 
-function renderForm(overrides?: { httpClient: HttpClient }) {
-  return renderWithContexts(
-    <AddBtStrategyForm />,
-    ['Infra', 'ServerState', 'Date'],
-    overrides
-      ? { infraContext: { httpClient: overrides.httpClient } }
-      : { infraContext: { httpClient: { sendRequest: jest.fn().mockReturnValueOnce(te.right(undefined)) } } },
-  );
+function renderForm(overrides: { httpClient: HttpClient; symbolRepo: SymbolRepo }) {
+  return renderWithContexts(<AddBtStrategyForm />, ['Infra', 'ServerState', 'Date'], {
+    infraContext: overrides,
+  });
 }
 function renderFormSuccess() {
   const symbols = generateArrayOf(mockSymbol, 4);
-  const httpClient = { sendRequest: jest.fn().mockReturnValueOnce(te.right(symbols)) };
-  renderForm({ httpClient });
+  const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(undefined)) };
+  const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.right(symbols)) });
+  renderForm({ httpClient, symbolRepo });
 
-  return { httpClient, symbols };
+  return { httpClient, symbolRepo, symbols };
 }
 function formatDateForType(date: Date) {
   return format(date, 'MM/dd/yyyy HH:mm');
@@ -60,13 +57,11 @@ const ui = {
 
 describe('WHEN render', () => {
   it('THEN it should try to get symbols for symbol select input', () => {
-    const { httpClient } = renderFormSuccess();
-
-    expect(httpClient.sendRequest).toHaveBeenCalledExactlyOnceWith(GET_SYMBOLS);
+    const { symbolRepo } = renderFormSuccess();
+    expect(symbolRepo.getSymbols).toHaveBeenCalledOnce();
   });
   it('THEN it should display a add backtesting strategy form', async () => {
     renderFormSuccess();
-
     await expect(ui.form.find()).resolves.toBeVisible();
   });
   it('THEN it should display form component inside the form', async () => {
