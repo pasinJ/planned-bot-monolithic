@@ -1,8 +1,11 @@
 import * as te from 'fp-ts/lib/TaskEither';
+import { setupServer } from 'msw/node';
 import { is, omit } from 'ramda';
 
-import { HttpError } from '#infra/httpClient.type';
+import { createAxiosHttpClient } from '#infra/axiosHttpClient';
+import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { addRestRoute, createApiPath } from '#test-utils/msw';
 import { executeT } from '#utils/fp';
 
 import { addBtStrategy, getBtStrategies } from './btStrategy';
@@ -10,35 +13,45 @@ import { API_ENDPOINTS } from './btStrategy.constant';
 import { AddBtStrategyError, GetBtStrategiesError } from './btStrategy.type';
 
 const { GET_BT_STRATEGIES, ADD_BT_STRATEGY } = API_ENDPOINTS;
+const server = setupServer();
+const realHttpClient = createAxiosHttpClient();
+
+beforeAll(() => server.listen());
+afterAll(() => server.close());
 
 describe('Get backtesting strategies', () => {
   describe('WHEN get backtesting strategies', () => {
     it('THEN it should send request with configured method, path, and response schema', async () => {
       const { method, url, responseSchema } = GET_BT_STRATEGIES;
       const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([])) };
+      server.use(
+        addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json([]))),
+      );
 
       await executeT(getBtStrategies({ httpClient }));
 
       expect(httpClient.sendRequest).toHaveBeenCalledExactlyOnceWith({ method, url, responseSchema });
     });
   });
-  describe('WHEN HTTP client return valid success response', () => {
+  describe('WHEN external system return valid success response', () => {
     it('THEN it should return Right of the response', async () => {
-      const strategy = mockBtStrategy();
-      const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([strategy])) };
+      const { method, url } = GET_BT_STRATEGIES;
+      const strategies = generateArrayOf(mockBtStrategy);
+      server.use(
+        addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json(strategies))),
+      );
 
-      const result = await executeT(getBtStrategies({ httpClient }));
+      const result = await executeT(getBtStrategies({ httpClient: realHttpClient }));
 
-      expect(result).toEqualRight([strategy]);
+      expect(result).toEqualRight(strategies);
     });
   });
-  describe('WHEN HTTP client return Http error', () => {
+  describe('WHEN external system return Http error', () => {
     it('THEN it should return Left of error', async () => {
-      const httpClient = {
-        sendRequest: jest.fn().mockReturnValue(te.left(new HttpError('INTERNAL_SERVER_ERROR', 'Mock error'))),
-      };
+      const { method, url } = GET_BT_STRATEGIES;
+      server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
 
-      const result = await executeT(getBtStrategies({ httpClient }));
+      const result = await executeT(getBtStrategies({ httpClient: realHttpClient }));
 
       expect(result).toEqualLeft(expect.toSatisfy(is(GetBtStrategiesError)));
     });
@@ -66,22 +79,25 @@ describe('Add backtesting strategy', () => {
       });
     });
   });
-  describe('WHEN HTTP client return success response', () => {
+  describe('WHEN external system return success response', () => {
     it('THEN it should return Right of the response', async () => {
+      const { method, url } = ADD_BT_STRATEGY;
       const strategy = mockBtStrategy();
-      const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(strategy)) };
+      server.use(
+        addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json(strategy))),
+      );
 
-      const result = await executeT(addBtStrategy(mockData(), { httpClient }));
+      const result = await executeT(addBtStrategy(mockData(), { httpClient: realHttpClient }));
 
       expect(result).toEqualRight(strategy);
     });
   });
-  describe('WHEN HTTP client return Http error', () => {
+  describe('WHEN external system return Http error', () => {
     it('THEN it should return Left of error', async () => {
-      const error = new HttpError('INTERNAL_SERVER_ERROR', 'Mock error');
-      const httpClient = { sendRequest: jest.fn().mockReturnValue(te.left(error)) };
+      const { method, url } = ADD_BT_STRATEGY;
+      server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
 
-      const result = await executeT(addBtStrategy(mockData(), { httpClient }));
+      const result = await executeT(addBtStrategy(mockData(), { httpClient: realHttpClient }));
 
       expect(result).toEqualLeft(expect.toSatisfy(is(AddBtStrategyError)));
     });
