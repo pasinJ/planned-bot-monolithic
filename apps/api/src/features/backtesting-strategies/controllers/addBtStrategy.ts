@@ -53,7 +53,7 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
             )
             .when(is(AddBtStrategyError), (error) => reply.code(500).send(error))
             .exhaustive(),
-        (btStrategy) => reply.code(201).send(btStrategy),
+        () => reply.code(201).send(),
       ),
     );
 

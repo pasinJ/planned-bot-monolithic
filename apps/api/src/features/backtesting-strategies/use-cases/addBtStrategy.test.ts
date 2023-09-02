@@ -14,7 +14,7 @@ import { mockBtStrategyRepo } from '#test-utils/features/btStrategies/repositori
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
 import { AddBtStrategyError } from '../btStrategy.repository.type.js';
-import { CreateNewBtStrategyError, executionStatusEnum } from '../domain/btStrategy.entity.js';
+import { CreateNewBtStrategyError } from '../domain/btStrategy.entity.js';
 import { AddBtStrategyUseCaseData, AddBtStrategyUseCaseDeps, addBtStrategyUseCase } from './addBtStrategy.js';
 
 function mockDeps(overrides?: Partial<AddBtStrategyUseCaseDeps>): AddBtStrategyUseCaseDeps {
@@ -68,7 +68,7 @@ describe('WHEN successfully add a backtesting strategy', () => {
 
     expect(btStrategyRepo.add).toHaveBeenCalledOnce();
   });
-  it('THEN it should return Right of added backtesting strategy', async () => {
+  it('THEN it should return Right of undefined', async () => {
     const id = randomString();
     const currentDate = randomAnyDate();
     const idService = mockIdService({ generateBtStrategyId: jest.fn().mockReturnValue(id) });
@@ -77,15 +77,7 @@ describe('WHEN successfully add a backtesting strategy', () => {
     const data = mockValidData();
     const result = await executeT(addBtStrategyUseCase(deps, data));
 
-    expect(result).toEqualRight(
-      expect.objectContaining({
-        ...data,
-        id: id,
-        executionStatus: executionStatusEnum.IDLE,
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      }),
-    );
+    expect(result).toEqualRight(undefined);
   });
 });
 

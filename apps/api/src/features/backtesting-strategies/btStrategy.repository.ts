@@ -25,6 +25,6 @@ function addBtStrategy(model: BtStrategyModel): BtStrategyRepo['add'] {
   return (btStrategy) =>
     pipe(
       te.tryCatch(() => model.create(btStrategy), createErrorFromUnknown(AddBtStrategyError)),
-      te.as(btStrategy),
+      te.asUnit,
     );
 }

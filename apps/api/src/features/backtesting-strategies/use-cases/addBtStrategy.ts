@@ -7,7 +7,7 @@ import { IdService } from '#infra/services/id.type.js';
 import { Timeframe } from '#shared/domain/timeframe.js';
 
 import { AddBtStrategyError, BtStrategyRepo } from '../btStrategy.repository.type.js';
-import { BtStrategy, CreateNewBtStrategyError, createNewBtStrategy } from '../domain/btStrategy.entity.js';
+import { CreateNewBtStrategyError, createNewBtStrategy } from '../domain/btStrategy.entity.js';
 
 export type AddBtStrategyUseCaseDeps = {
   btStrategyRepo: BtStrategyRepo;
@@ -32,7 +32,7 @@ export type AddBtStrategyUseCaseData = {
 export function addBtStrategyUseCase(
   dep: AddBtStrategyUseCaseDeps,
   data: AddBtStrategyUseCaseData,
-): te.TaskEither<CreateNewBtStrategyError | AddBtStrategyError, BtStrategy> {
+): te.TaskEither<CreateNewBtStrategyError | AddBtStrategyError, void> {
   const { idService, dateService, btStrategyRepo } = dep;
 
   return pipe(

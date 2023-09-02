@@ -8,7 +8,6 @@ import { setupTestServer } from '#test-utils/httpServer.js';
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
 import { AddBtStrategyError } from '../btStrategy.repository.type.js';
-import { executionStatusEnum } from '../domain/btStrategy.entity.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { AddBtStrategyControllerDeps, buildAddBtStrategyController } from './addBtStrategy.js';
 
@@ -40,28 +39,14 @@ function setupRepoError() {
 }
 
 describe('WHEN user successfully add a backtesting strategy', () => {
-  it('THEN it should return HTTP201 and the added backtesting strategy', async () => {
-    const { httpServer, id, currentDate } = setupSuccessfullyCreate();
+  it('THEN it should return HTTP201', async () => {
+    const { httpServer } = setupSuccessfullyCreate();
 
     const body = mockValidAddBtStrategyRequestBody();
     const resp = await httpServer.inject({ method, url, body });
 
-    try {
-      expect(resp.statusCode).toBe(201);
-      expect(resp.json()).toEqual(
-        expect.objectContaining({
-          ...body,
-          id: id,
-          executionStatus: executionStatusEnum.IDLE,
-          createdAt: currentDate.toJSON(),
-          updatedAt: currentDate.toJSON(),
-        }),
-      );
-    } catch (e) {
-      console.error(e);
-      console.error(body);
-      console.error(resp.json());
-    }
+    expect(resp.statusCode).toBe(201);
+    expect(resp.body).toBe('');
   });
 });
 

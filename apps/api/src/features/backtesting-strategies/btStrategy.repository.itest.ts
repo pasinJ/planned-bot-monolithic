@@ -54,11 +54,10 @@ describe('Add backtesting strategy', () => {
   afterAll(() => deleteModel(client, btStrategyModelName));
 
   describe('WHEN successfully add a backtesting strategy', () => {
-    it('THEN it should return Right of the given backtesting strategy', async () => {
-      const btStrategy = mockBtStrategy();
-      const result = await executeT(btStrategyRepo.add(btStrategy));
+    it('THEN it should return Right of undefined', async () => {
+      const result = await executeT(btStrategyRepo.add(mockBtStrategy()));
 
-      expect(result).toEqualRight(btStrategy);
+      expect(result).toEqualRight(undefined);
     });
     it('THEN it should insert the backtesting strategy into database', async () => {
       const btStrategy = mockBtStrategy();

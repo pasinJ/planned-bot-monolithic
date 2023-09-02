@@ -5,7 +5,7 @@ import { CustomError, ExternalError } from '#shared/error.js';
 import { BtStrategy } from './domain/btStrategy.entity.js';
 
 export type BtStrategyRepo = {
-  add: (btStrategy: BtStrategy) => te.TaskEither<AddBtStrategyError, BtStrategy>;
+  add: (btStrategy: BtStrategy) => te.TaskEither<AddBtStrategyError, void>;
 };
 
 export class CreateBtStrategyRepoError extends CustomError<

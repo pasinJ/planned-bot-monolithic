@@ -1,4 +1,3 @@
-import { executionStatusEnum } from '#features/backtesting-strategies/domain/btStrategy.entity.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
 
@@ -11,17 +10,7 @@ describe('WHEN user successfully add a backtesting strategy', () => {
     const resp = await addBtStrategy(body);
 
     expectHttpStatus(resp, 201);
-    expect(resp.data).toEqual(
-      expect.objectContaining({
-        ...body,
-        id: expect.toBeString(),
-        startTimestamp: expect.toBeDateString(),
-        endTimestamp: expect.toBeDateString(),
-        executionStatus: executionStatusEnum.IDLE,
-        createdAt: expect.toBeDateString(),
-        updatedAt: expect.toBeDateString(),
-      }),
-    );
+    expect(resp.data).toBe('');
   });
 });
 
