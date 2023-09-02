@@ -11,7 +11,6 @@ import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { AddBtStrategyFormValues } from '../containers/AddBtStrategyForm/constants';
 import { BtStrategy } from '../domain/btStrategy.entity';
-import { addBtStrategy } from '../repositories/btStrategy';
 import { AddBtStrategyData, AddBtStrategyError } from '../repositories/btStrategy.type';
 
 export default function useAddBtStrategy(): UseMutationResult<
@@ -19,16 +18,12 @@ export default function useAddBtStrategy(): UseMutationResult<
   AddBtStrategyError | SchemaValidationError,
   AddBtStrategyFormValues
 > {
-  const { httpClient } = useContext(InfraContext);
+  const { btStrategyRepo } = useContext(InfraContext);
 
   return useMutation({
     mutationFn: (data) =>
       executeTeToPromise(
-        pipe(
-          parseMutationData(data),
-          te.fromEither,
-          te.chainW((parsedData) => addBtStrategy(parsedData, { httpClient })),
-        ),
+        pipe(parseMutationData(data), te.fromEither, te.chainW(btStrategyRepo.addBtStrategy)),
       ),
   });
 }

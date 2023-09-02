@@ -3,24 +3,21 @@ import { act, waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither';
 import { is } from 'ramda';
 
-import { HttpClient } from '#infra/httpClient.type';
 import { randomExchangeName, randomTimeframe } from '#test-utils/domain';
 import { randomString } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { renderHookWithContexts } from '#test-utils/render';
 import { SchemaValidationError } from '#utils/zod';
 
-import { AddBtStrategyError } from '../repositories/btStrategy.type';
+import { AddBtStrategyError, BtStrategyRepo } from '../repositories/btStrategy.type';
 import useAddBtStrategy from './useAddBtStrategy';
 
-function renderUseAddBacktestingStrategy(overrides?: { httpClient: HttpClient }) {
-  return renderHookWithContexts(
-    () => useAddBtStrategy(),
-    ['Infra', 'ServerState'],
-    overrides ? { infraContext: { httpClient: overrides.httpClient } } : undefined,
-  );
+function renderUseAddBacktestingStrategy(overrides: { btStrategyRepo: Partial<BtStrategyRepo> }) {
+  return renderHookWithContexts(() => useAddBtStrategy(), ['Infra', 'ServerState'], {
+    infraContext: { btStrategyRepo: mockBtStrategyRepo(overrides.btStrategyRepo) },
+  });
 }
-
 function mockData() {
   return {
     name: randomString(),
@@ -41,9 +38,9 @@ function mockData() {
 describe('WHEN creating backtesting strategy is successful', () => {
   it('THEN it should return data property equal to backtesting strategy', async () => {
     const strategy = mockBtStrategy();
-    const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(strategy)) };
+    const btStrategyRepo = { addBtStrategy: jest.fn().mockReturnValue(te.right(strategy)) };
+    const { result } = renderUseAddBacktestingStrategy({ btStrategyRepo });
 
-    const { result } = renderUseAddBacktestingStrategy({ httpClient });
     act(() => result.current.mutate(mockData()));
 
     await waitFor(() => expect(result.current.data).toEqual(strategy));
@@ -52,10 +49,10 @@ describe('WHEN creating backtesting strategy is successful', () => {
 
 describe('WHEN try to add a backtesting strategy with invalid data', () => {
   it('THEN it should return error property', async () => {
-    const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(undefined)) };
-    const invalidData = { ...mockData(), initialCapital: randomString() };
+    const btStrategyRepo = { addBtStrategy: jest.fn().mockReturnValue(te.right(mockBtStrategy())) };
+    const { result } = renderUseAddBacktestingStrategy({ btStrategyRepo });
 
-    const { result } = renderUseAddBacktestingStrategy({ httpClient });
+    const invalidData = { ...mockData(), initialCapital: randomString() };
     act(() => result.current.mutate(invalidData));
 
     await waitFor(() => expect(result.current.error).toSatisfy(is(SchemaValidationError)));
@@ -64,9 +61,9 @@ describe('WHEN try to add a backtesting strategy with invalid data', () => {
 
 describe('WHEN creating backtesting strategy fails', () => {
   it('THEN it should return error property', async () => {
-    const httpClient = { sendRequest: jest.fn().mockReturnValue(te.left(new Error('Mock errro'))) };
+    const btStrategyRepo = { addBtStrategy: jest.fn().mockReturnValue(te.left(new AddBtStrategyError())) };
+    const { result } = renderUseAddBacktestingStrategy({ btStrategyRepo });
 
-    const { result } = renderUseAddBacktestingStrategy({ httpClient });
     act(() => result.current.mutate(mockData()));
 
     await waitFor(() => expect(result.current.error).toSatisfy(is(AddBtStrategyError)));

@@ -1,40 +1,38 @@
 import userEvent from '@testing-library/user-event';
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { HttpClient } from '#infra/httpClient.type';
+import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole, byText } from '#test-utils/uiSelector';
 
+import { BtStrategyRepo, GetBtStrategiesError } from '../repositories/btStrategy.type';
 import BtMainPage from './BtMainPage';
 
-function renderBtMainPage(overrides?: { httpClient: HttpClient }) {
-  return renderWithContexts(
-    <BtMainPage />,
-    ['Infra', 'ServerState', 'Routes'],
-    overrides
-      ? { infraContext: { httpClient: overrides.httpClient } }
-      : { infraContext: { httpClient: { sendRequest: jest.fn().mockReturnValue(te.right([])) } } },
-  );
+function renderBtMainPage(overrides: { btStrategyRepo: Partial<BtStrategyRepo> }) {
+  return renderWithContexts(<BtMainPage />, ['Infra', 'ServerState', 'Routes'], {
+    infraContext: { btStrategyRepo: mockBtStrategyRepo(overrides.btStrategyRepo) },
+  });
 }
 function renderBtMainPageWithNoStrategy() {
-  const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([])) };
-  renderBtMainPage({ httpClient });
+  const btStrategyRepo = { getBtStrategies: jest.fn(te.right([])) };
+  renderBtMainPage({ btStrategyRepo });
 
-  return { httpClient };
+  return { btStrategyRepo };
 }
 function renderBtMainPageWithStrategy() {
-  const strategy = mockBtStrategy();
-  const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right([strategy])) };
-  renderBtMainPage({ httpClient });
+  const strategies = generateArrayOf(mockBtStrategy);
+  const btStrategyRepo = { getBtStrategies: jest.fn(te.right(strategies)) };
+  renderBtMainPage({ btStrategyRepo });
 
-  return { strategy, httpClient };
+  return { strategies, btStrategyRepo };
 }
 function renderBtMainPageWithFetchingError() {
-  const httpClient = { sendRequest: jest.fn().mockReturnValue(te.left(new Error('Mock error'))) };
-  renderBtMainPage({ httpClient });
+  const btStrategyRepo = { getBtStrategies: jest.fn(te.left(new GetBtStrategiesError())) };
+  renderBtMainPage({ btStrategyRepo });
 
-  return { httpClient };
+  return { btStrategyRepo };
 }
 
 const ui = {
@@ -88,15 +86,15 @@ describe('WHEN cannot fetch data from server until max attempts', () => {
   });
   describe('WHEN click on the retry button', () => {
     it('THEN it should start refetching again', async () => {
-      const { httpClient } = renderBtMainPageWithFetchingError();
+      const { btStrategyRepo } = renderBtMainPageWithFetchingError();
 
       const retryButton = await ui.retryFetchingButton.find();
-      expect(httpClient.sendRequest).toHaveBeenCalledTimes(3);
-      httpClient.sendRequest.mockClear();
+      expect(btStrategyRepo.getBtStrategies).toHaveBeenCalledTimes(3);
+      btStrategyRepo.getBtStrategies.mockClear();
 
       const user = userEvent.setup();
       await user.click(retryButton);
-      expect(httpClient.sendRequest).toHaveBeenCalled();
+      expect(btStrategyRepo.getBtStrategies).toHaveBeenCalled();
     });
   });
 });

@@ -1,14 +1,25 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 
+import { HttpClient } from '#infra/httpClient.type';
+
 import { API_ENDPOINTS } from './btStrategy.constant';
-import { AddBtStrategy, AddBtStrategyError, GetBtStrategies, GetBtStrategiesError } from './btStrategy.type';
+import { AddBtStrategyError, BtStrategyRepo, GetBtStrategiesError } from './btStrategy.type';
 
 const { GET_BT_STRATEGIES, ADD_BT_STRATEGY } = API_ENDPOINTS;
 
-export function getBtStrategies(
-  ...[{ httpClient }]: Parameters<GetBtStrategies>
-): ReturnType<GetBtStrategies> {
+export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo {
+  return {
+    getBtStrategies: getBtStrategies({ httpClient }),
+    addBtStrategy: addBtStrategy({ httpClient }),
+  };
+}
+
+export function getBtStrategies({
+  httpClient,
+}: {
+  httpClient: HttpClient;
+}): BtStrategyRepo['getBtStrategies'] {
   const { method, url, responseSchema } = GET_BT_STRATEGIES;
   return pipe(
     httpClient.sendRequest({ method, url, responseSchema }),
@@ -16,13 +27,12 @@ export function getBtStrategies(
   );
 }
 
-export function addBtStrategy(
-  ...[data, { httpClient }]: Parameters<AddBtStrategy>
-): ReturnType<AddBtStrategy> {
-  const { method, url, responseSchema } = ADD_BT_STRATEGY;
-
-  return pipe(
-    httpClient.sendRequest({ method, url, responseSchema, body: data }),
-    te.mapLeft((error) => new AddBtStrategyError().causedBy(error)),
-  );
+export function addBtStrategy({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo['addBtStrategy'] {
+  return (data) => {
+    const { method, url, responseSchema } = ADD_BT_STRATEGY;
+    return pipe(
+      httpClient.sendRequest({ method, url, responseSchema, body: data }),
+      te.mapLeft((error) => new AddBtStrategyError().causedBy(error)),
+    );
+  };
 }

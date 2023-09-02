@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { format } from 'date-fns';
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { API_ENDPOINTS as BACKTEST_API_ENDPOINT } from '#features/backtesting-strategies/repositories/btStrategy.constant';
+import { BtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy.type';
 import { SymbolRepo } from '#features/symbols/repositories/symbol.type';
-import { HttpClient } from '#infra/httpClient.type';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderWithContexts } from '#test-utils/render';
@@ -17,20 +17,21 @@ import { byLabelText, byRole } from '#test-utils/uiSelector';
 import AddBtStrategyForm from '.';
 import { timeframeOptions } from './constants';
 
-const { ADD_BT_STRATEGY: CREATE_BACKTESTING_STRATEGY } = BACKTEST_API_ENDPOINT;
-
-function renderForm(overrides: { httpClient: HttpClient; symbolRepo: SymbolRepo }) {
+function renderForm(overrides: { symbolRepo: Partial<SymbolRepo>; btStrategyRepo: Partial<BtStrategyRepo> }) {
   return renderWithContexts(<AddBtStrategyForm />, ['Infra', 'ServerState', 'Date'], {
-    infraContext: overrides,
+    infraContext: {
+      symbolRepo: mockSymbolRepo(overrides.symbolRepo),
+      btStrategyRepo: mockBtStrategyRepo(overrides.btStrategyRepo),
+    },
   });
 }
 function renderFormSuccess() {
   const symbols = generateArrayOf(mockSymbol, 4);
-  const httpClient = { sendRequest: jest.fn().mockReturnValue(te.right(undefined)) };
+  const btStrategyRepo = { addBtStrategy: jest.fn().mockReturnValue(te.right(mockBtStrategy())) };
   const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.right(symbols)) });
-  renderForm({ httpClient, symbolRepo });
+  renderForm({ btStrategyRepo, symbolRepo });
 
-  return { httpClient, symbolRepo, symbols };
+  return { btStrategyRepo, symbolRepo, symbols };
 }
 function formatDateForType(date: Date) {
   return format(date, 'MM/dd/yyyy HH:mm');
@@ -87,8 +88,7 @@ describe('WHEN render', () => {
 describe('WHEN fill the form and hit submit button', () => {
   it('THEN it should send add request with form value', async () => {
     const user = userEvent.setup();
-    const { httpClient, symbols } = renderFormSuccess();
-    httpClient.sendRequest.mockReset();
+    const { btStrategyRepo, symbols } = renderFormSuccess();
 
     const selectedSymbol = faker.helpers.arrayElement(symbols);
     const strategy = mockBtStrategy({
@@ -109,6 +109,6 @@ describe('WHEN fill the form and hit submit button', () => {
     await user.type(ui.strategyBodyField.get(), strategy.body);
     await user.click(ui.submitButton.get());
 
-    expect(httpClient.sendRequest).toHaveBeenCalledWith(expect.objectContaining(CREATE_BACKTESTING_STRATEGY));
+    expect(btStrategyRepo.addBtStrategy).toHaveBeenCalled();
   }, 30000);
 });
