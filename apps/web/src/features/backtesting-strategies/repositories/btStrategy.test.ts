@@ -77,11 +77,7 @@ describe('Add backtesting strategy', () => {
 
   describe('WHEN add backtesting strategy', () => {
     it('THEN it should send request with given data and the configured method, path, and response schema', async () => {
-      server.use(
-        addRestRoute(method, createApiPath(url), (_, res, ctx) =>
-          res(ctx.status(200), ctx.json(mockBtStrategy())),
-        ),
-      );
+      server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(201))));
 
       const sendRequestSpy = jest.spyOn(httpClient, 'sendRequest');
       const repository = createBtStrategyRepo({ httpClient });
@@ -92,16 +88,13 @@ describe('Add backtesting strategy', () => {
     });
   });
   describe('WHEN external system return success response', () => {
-    it('THEN it should return Right of the response', async () => {
-      const strategy = mockBtStrategy();
-      server.use(
-        addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json(strategy))),
-      );
+    it('THEN it should return Right of undefined', async () => {
+      server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(201))));
 
       const repository = createBtStrategyRepo({ httpClient });
       const result = await executeT(repository.addBtStrategy(mockData()));
 
-      expect(result).toEqualRight(strategy);
+      expect(result).toEqualRight(undefined);
     });
   });
   describe('WHEN external system return Http error', () => {

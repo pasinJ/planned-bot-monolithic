@@ -32,6 +32,7 @@ export function addBtStrategy({ httpClient }: { httpClient: HttpClient }): BtStr
     const { method, url, responseSchema } = ADD_BT_STRATEGY;
     return pipe(
       httpClient.sendRequest({ method, url, responseSchema, body: data }),
+      te.asUnit,
       te.mapLeft((error) => new AddBtStrategyError().causedBy(error)),
     );
   };

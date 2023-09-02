@@ -10,11 +10,10 @@ import { executeTeToPromise } from '#utils/fp';
 import { SchemaValidationError, parseWithZod } from '#utils/zod';
 
 import { AddBtStrategyFormValues } from '../containers/AddBtStrategyForm/constants';
-import { BtStrategy } from '../domain/btStrategy.entity';
 import { AddBtStrategyData, AddBtStrategyError } from '../repositories/btStrategy.type';
 
 export default function useAddBtStrategy(): UseMutationResult<
-  BtStrategy,
+  void,
   AddBtStrategyError | SchemaValidationError,
   AddBtStrategyFormValues
 > {
@@ -22,8 +21,11 @@ export default function useAddBtStrategy(): UseMutationResult<
 
   return useMutation({
     mutationFn: (data) =>
-      executeTeToPromise(
-        pipe(parseMutationData(data), te.fromEither, te.chainW(btStrategyRepo.addBtStrategy)),
+      pipe(
+        parseMutationData(data),
+        te.fromEither,
+        te.chainW(btStrategyRepo.addBtStrategy),
+        executeTeToPromise,
       ),
   });
 }

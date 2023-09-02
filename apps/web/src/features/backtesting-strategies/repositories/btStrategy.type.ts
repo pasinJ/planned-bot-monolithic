@@ -10,7 +10,7 @@ import { BtStrategy } from '../domain/btStrategy.entity';
 
 export type BtStrategyRepo = {
   getBtStrategies: te.TaskEither<GetBtStrategiesError, readonly BtStrategy[]>;
-  addBtStrategy: (data: AddBtStrategyData) => te.TaskEither<AddBtStrategyError, BtStrategy>;
+  addBtStrategy: (data: AddBtStrategyData) => te.TaskEither<AddBtStrategyError, void>;
 };
 
 export class GetBtStrategiesError extends CustomError<'GET_BT_STRATEGIES_ERROR', HttpError>(

@@ -23,6 +23,6 @@ export const API_ENDPOINTS = {
   ADD_BT_STRATEGY: {
     method: 'POST',
     url: '/v1/backtesting-strategies',
-    responseSchema: transformBtStrategy,
+    responseSchema: z.string(),
   },
 } as const;

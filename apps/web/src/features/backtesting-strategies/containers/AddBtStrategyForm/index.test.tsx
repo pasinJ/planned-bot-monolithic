@@ -27,7 +27,7 @@ function renderForm(overrides: { symbolRepo: Partial<SymbolRepo>; btStrategyRepo
 }
 function renderFormSuccess() {
   const symbols = generateArrayOf(mockSymbol, 4);
-  const btStrategyRepo = { addBtStrategy: jest.fn().mockReturnValue(te.right(mockBtStrategy())) };
+  const btStrategyRepo = { addBtStrategy: jest.fn().mockReturnValue(te.right(undefined)) };
   const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.right(symbols)) });
   renderForm({ btStrategyRepo, symbolRepo });
 
