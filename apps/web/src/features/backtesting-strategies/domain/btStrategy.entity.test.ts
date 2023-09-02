@@ -1,12 +1,12 @@
 import { assoc, dissoc } from 'ramda';
 
 import {
-  randomString,
   invalidDate,
-  randomNegativeInt,
   nonNegativeFloat,
   random9DigitsPositiveFloatWithRoundUp,
   randomDateBefore,
+  randomNegativeInt,
+  randomString,
 } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 
@@ -80,7 +80,9 @@ describe('Backtesting strategy schema', () => {
       expect(() => btStrategySchema.parse(dissoc('maxNumKlines', validBtStrategy))).toThrow();
     });
     it('WHEN the property is a negative number THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('maxNumKlines', randomNegativeInt(), validBtStrategy))).toThrow();
+      expect(() =>
+        btStrategySchema.parse(assoc('maxNumKlines', randomNegativeInt(), validBtStrategy)),
+      ).toThrow();
     });
     it('WHEN the property is NaN THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(assoc('maxNumKlines', NaN, validBtStrategy))).toThrow();
@@ -99,7 +101,9 @@ describe('Backtesting strategy schema', () => {
       expect(() => btStrategySchema.parse(dissoc('initialCapital', validBtStrategy))).toThrow();
     });
     it('WHEN the property is a negative number THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('initialCapital', randomNegativeInt(), validBtStrategy))).toThrow();
+      expect(() =>
+        btStrategySchema.parse(assoc('initialCapital', randomNegativeInt(), validBtStrategy)),
+      ).toThrow();
     });
     it('WHEN the property is NaN THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(assoc('initialCapital', NaN, validBtStrategy))).toThrow();
@@ -120,7 +124,9 @@ describe('Backtesting strategy schema', () => {
       expect(() => btStrategySchema.parse(dissoc('takerFeeRate', validBtStrategy))).toThrow();
     });
     it('WHEN the property is a negative number THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('takerFeeRate', randomNegativeInt(), validBtStrategy))).toThrow();
+      expect(() =>
+        btStrategySchema.parse(assoc('takerFeeRate', randomNegativeInt(), validBtStrategy)),
+      ).toThrow();
     });
     it('WHEN the property is more than 100 THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(assoc('takerFeeRate', 101, validBtStrategy))).toThrow();
@@ -144,7 +150,9 @@ describe('Backtesting strategy schema', () => {
       expect(() => btStrategySchema.parse(dissoc('makerFeeRate', validBtStrategy))).toThrow();
     });
     it('WHEN the property is a negative number THEN the entity should be invalid', () => {
-      expect(() => btStrategySchema.parse(assoc('makerFeeRate', randomNegativeInt(), validBtStrategy))).toThrow();
+      expect(() =>
+        btStrategySchema.parse(assoc('makerFeeRate', randomNegativeInt(), validBtStrategy)),
+      ).toThrow();
     });
     it('WHEN the property is more than 100 THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(assoc('makerFeeRate', 101, validBtStrategy))).toThrow();
@@ -192,6 +200,16 @@ describe('Backtesting strategy schema', () => {
     });
     it('WHEN the property is a string with only whitespace THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(assoc('body', ' ', validBtStrategy))).toThrow();
+    });
+  });
+  describe('execution status property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() => btStrategySchema.parse(dissoc('executionStatus', validBtStrategy))).toThrow();
+    });
+    it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
+      expect(() =>
+        btStrategySchema.parse(assoc('executionStatus', randomString(), validBtStrategy)),
+      ).toThrow();
     });
   });
   describe('version property', () => {

@@ -8,6 +8,10 @@ import { nonEmptyString, nonNegativeFloat8Digits, nonNegativePercentage8Digits }
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');
 
+export type ExecutionStatus = z.infer<typeof executionStatusSchema>;
+const executionStatusSchema = z.enum(['IDLE']);
+export const executionStatusEnum = executionStatusSchema.enum;
+
 export type BtStrategy = z.infer<typeof btStrategySchema>;
 export const btStrategySchema = z
   .object({
@@ -23,6 +27,7 @@ export const btStrategySchema = z
     maxNumKlines: z.number().positive().int(),
     startTimestamp: z.date(),
     endTimestamp: z.date(),
+    executionStatus: executionStatusSchema,
     body: nonEmptyString,
     version: z.number().nonnegative().int(),
     createdAt: z.date(),
