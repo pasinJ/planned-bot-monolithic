@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 
+import LocalizationDateProvider from '#components/LocalizationDateProvider';
 import Toaster from '#components/Toaster';
 import InfraProvider from '#infra/InfraProvider.context';
 import RoutesProvider from '#routes/RoutesProvider';
@@ -9,10 +10,11 @@ import ServerStateProvider from '#state/ServerStateProvider.context';
 import StyleProvider from '#styles/containers/StyleProvider';
 import reportAccessibility from '#utils/reportAccessibility';
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'preview') {
   const { worker } = await import('../mocks/browser');
-  await worker.start();
+  await worker.start({ onUnhandledRequest: 'bypass' });
 }
+if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
 
 const rootElement = document.getElementById('root') ?? createNewRootElementInBody();
 createRoot(rootElement).render(
@@ -21,7 +23,9 @@ createRoot(rootElement).render(
       <ClientStateProvider>
         <ServerStateProvider>
           <StyleProvider rootElem={rootElement}>
-            <RoutesProvider />
+            <LocalizationDateProvider>
+              <RoutesProvider />
+            </LocalizationDateProvider>
             <Toaster />
           </StyleProvider>
         </ServerStateProvider>
@@ -29,8 +33,6 @@ createRoot(rootElement).render(
     </InfraProvider>
   </React.StrictMode>,
 );
-
-if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
 
 function createNewRootElementInBody() {
   const rootElement = document.createElement('div');

@@ -1,12 +1,12 @@
 import { assoc, omit } from 'ramda';
 
 import {
-  anyString,
-  negativeFloat,
   random9DigitsPositiveFloatWithRoundUp,
+  randomNegativeFloat,
   randomPrecisionStep,
+  randomString,
 } from '#test-utils/faker.js';
-import { mockMarketLotSizeFilter } from '#test-utils/mockEntity.js';
+import { mockMarketLotSizeFilter } from '#test-utils/features/symbols/entities.js';
 
 import { marketLotSizeFilterSchema } from './marketLotSizeFilter.entity.js';
 
@@ -21,7 +21,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN type property does not equal to MARKET_LOT_SIZE THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('type', anyString(), validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('type', randomString(), validMarketLotSizeFilter)),
       ).toThrow();
     });
   });
@@ -31,7 +31,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN minQty property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('minQty', negativeFloat(), validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('minQty', randomNegativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN minQty property equals to zero THEN the filter should be valid', () => {
@@ -55,7 +55,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN maxQty property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('maxQty', negativeFloat(), validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('maxQty', randomNegativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN maxQty property is less than minQty property THEN the filter should be invalid', () => {
@@ -77,7 +77,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN stepSize property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        marketLotSizeFilterSchema.parse(assoc('stepSize', negativeFloat(), validMarketLotSizeFilter)),
+        marketLotSizeFilterSchema.parse(assoc('stepSize', randomNegativeFloat(), validMarketLotSizeFilter)),
       ).toThrow();
     });
     it('WHEN stepSize property equals to zero THEN the filter should be valid', () => {

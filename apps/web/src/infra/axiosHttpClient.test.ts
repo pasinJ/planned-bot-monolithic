@@ -4,10 +4,11 @@ import { setupServer } from 'msw/node';
 import { zipObj } from 'ramda';
 import { z } from 'zod';
 
-import { executeT } from '#utils/fpExecute';
+import { generateArrayOf } from '#test-utils/faker';
+import { executeT } from '#utils/fp';
 
 import { createAxiosHttpClient } from './axiosHttpClient';
-import { BASE_URL, HTTP_ERRORS } from './httpClient.constant';
+import { API_BASE_URL, HTTP_ERRORS } from './httpClient.constant';
 import { HttpClient, Method } from './httpClient.type';
 
 function randomUrl(prefix = '/echo') {
@@ -15,8 +16,8 @@ function randomUrl(prefix = '/echo') {
 }
 function randomObject() {
   return zipObj(
-    faker.helpers.multiple(() => faker.word.noun(), { count: 3 }),
-    faker.helpers.multiple(() => faker.word.noun(), { count: 3 }),
+    generateArrayOf(() => faker.word.noun(), 3),
+    generateArrayOf(() => faker.word.noun(), 3),
   );
 }
 function createSendRequestOptions(overrides?: Partial<Parameters<HttpClient['sendRequest']>[0]>) {
@@ -32,15 +33,15 @@ function createSendRequestOptions(overrides?: Partial<Parameters<HttpClient['sen
 }
 
 const server = setupServer(
-  rest.all(`${BASE_URL}/200`, (_, res, ctx) => res(ctx.status(200), ctx.json({ success: true }))),
-  rest.all(`${BASE_URL}/400`, (_, res, ctx) => res(ctx.status(400))),
-  rest.all(`${BASE_URL}/401`, (_, res, ctx) => res(ctx.status(401))),
-  rest.all(`${BASE_URL}/403`, (_, res, ctx) => res(ctx.status(403))),
-  rest.all(`${BASE_URL}/404`, (_, res, ctx) => res(ctx.status(404))),
-  rest.all(`${BASE_URL}/409`, (_, res, ctx) => res(ctx.status(409))),
-  rest.all(`${BASE_URL}/4xx`, (_, res, ctx) => res(ctx.status(410))),
-  rest.all(`${BASE_URL}/500`, (_, res, ctx) => res(ctx.status(500))),
-  rest.all(`${BASE_URL}/5xx`, (_, res, ctx) => res(ctx.status(501))),
+  rest.all(`${API_BASE_URL}/200`, (_, res, ctx) => res(ctx.status(200), ctx.json({ success: true }))),
+  rest.all(`${API_BASE_URL}/400`, (_, res, ctx) => res(ctx.status(400))),
+  rest.all(`${API_BASE_URL}/401`, (_, res, ctx) => res(ctx.status(401))),
+  rest.all(`${API_BASE_URL}/403`, (_, res, ctx) => res(ctx.status(403))),
+  rest.all(`${API_BASE_URL}/404`, (_, res, ctx) => res(ctx.status(404))),
+  rest.all(`${API_BASE_URL}/409`, (_, res, ctx) => res(ctx.status(409))),
+  rest.all(`${API_BASE_URL}/4xx`, (_, res, ctx) => res(ctx.status(410))),
+  rest.all(`${API_BASE_URL}/500`, (_, res, ctx) => res(ctx.status(500))),
+  rest.all(`${API_BASE_URL}/5xx`, (_, res, ctx) => res(ctx.status(501))),
   rest.all(/\/echo\//, async (req, res, ctx) => {
     const body = await req.text();
     return res(

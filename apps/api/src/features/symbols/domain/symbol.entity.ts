@@ -4,8 +4,9 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { all, collectBy, equals, length, map, prop } from 'ramda';
 import { z } from 'zod';
 
-import { nonEmptyString, nonNegativeInteger } from '#shared/common.type.js';
-import { ErrorBase } from '#shared/error.js';
+import { exchangeNameEnum, exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
+import { nonEmptyString } from '#shared/common.type.js';
+import { CustomError } from '#shared/error.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { LotSizeFilter, lotSizeFilterSchema } from './lotSizeFilter.entity.js';
@@ -19,11 +20,8 @@ export type SymbolId = z.infer<typeof symbolIdSchema>;
 
 const symbolNameSchema = nonEmptyString.brand('SymbolName');
 
-const exchangeSchema = z.enum(['BINANCE']);
-export const exchangeEnum = exchangeSchema.enum;
-
 const assetSchema = nonEmptyString.brand('Asset');
-const assetPrecisionSchema = nonNegativeInteger.brand('Precision');
+const assetPrecisionSchema = z.number().nonnegative().int().brand('Precision');
 
 const orderTypeSchema = z.enum([
   'LIMIT',
@@ -49,7 +47,7 @@ const filtersSchema = z.array(
 );
 export type SymbolFilters = z.infer<typeof filtersSchema>;
 
-const versionSchema = nonNegativeInteger.brand('SymbolVersion');
+const versionSchema = z.number().nonnegative().int().brand('SymbolVersion');
 
 const timestampSchema = z.date();
 
@@ -57,7 +55,7 @@ export const symbolSchema = z
   .object({
     id: symbolIdSchema,
     name: symbolNameSchema,
-    exchange: exchangeSchema,
+    exchange: exchangeNameSchema,
     baseAsset: assetSchema,
     baseAssetPrecision: assetPrecisionSchema,
     quoteAsset: assetSchema,
@@ -82,8 +80,6 @@ export const symbolSchema = z
   );
 export type Symbol = z.infer<typeof symbolSchema>;
 
-export class CreateSymbolError extends ErrorBase<'CREATE_SYMBOL_ENTITY_ERROR', SchemaValidationError> {}
-
 type CreateSymbolData = {
   id: string;
   name: string;
@@ -98,18 +94,15 @@ export function createSymbol(data: CreateSymbolData, currentDate: Date): e.Eithe
   return pipe(
     parseWithZod(symbolSchema, 'Validating symbol entity schema failed', {
       ...data,
-      exchange: exchangeEnum.BINANCE,
+      exchange: exchangeNameEnum.BINANCE,
       version: 0,
       createdAt: currentDate,
       updatedAt: currentDate,
     }),
-    e.mapLeft(
-      (error) =>
-        new CreateSymbolError(
-          'CREATE_SYMBOL_ENTITY_ERROR',
-          'Creating symbol entity failed because the given data is invalid',
-          error,
-        ),
-    ),
+    e.mapLeft((error) => new CreateSymbolError().causedBy(error)),
   );
 }
+export class CreateSymbolError extends CustomError<'CREATE_SYMBOL_ENTITY_ERROR', SchemaValidationError>(
+  'CREATE_SYMBOL_ENTITY_ERROR',
+  'Error happened when try to create a symbol entity',
+) {}

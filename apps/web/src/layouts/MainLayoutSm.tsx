@@ -12,6 +12,8 @@ import Typography from '@mui/material/Typography';
 import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 
 import MaterialSymbol from '#components/MaterialSymbol';
+import { NavLinkComponent } from '#routes/components/NavLinkBase';
+import { BtMainPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutSm({ children }: PropsWithChildren) {
   const [isDrawerOpening, setIsDrawerOpening] = useState(false);
@@ -24,8 +26,7 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
       <SideNav isDrawerOpening={isDrawerOpening} toggleDrawer={toggleDrawer} />
       <Box component="main" className="flex w-full flex-col">
         <Toolbar />
-        {children}
-        SideDrawer
+        <Box className="h-full w-full bg-gray-100 px-4 py-6">{children}</Box>
       </Box>
     </Box>
   );
@@ -33,14 +34,14 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
 
 function TopAppBar({ toggleDrawer }: { toggleDrawer: MouseEventHandler }) {
   return (
-    <AppBar component="nav" className="bg-primary/[.04] text-textColor-onPrimary">
+    <AppBar component="nav" className="bg-surface-1 text-textColor-onPrimary">
       <Toolbar className="grid grid-cols-[1fr_auto_1fr] items-center">
         <Box>
-          <IconButton color="inherit" aria-label="open drawer" onClick={toggleDrawer}>
+          <IconButton color="inherit" aria-label="open navigation drawer" onClick={toggleDrawer}>
             <MaterialSymbol symbol="menu" className="text-3xl" />
           </IconButton>
         </Box>
-        <Typography variant="h4" aria-hidden="true" color="primary">
+        <Typography variant="h4" aria-hidden="true" color="primary" className="text-center">
           Planned
         </Typography>
       </Toolbar>
@@ -70,9 +71,13 @@ function SideNav({
           </IconButton>
         </Box>
         <Divider />
-        <List className="h-full py-4">
-          <SideNavItemButton symbol="note" text="Menu 1" closeDrawer={toggleDrawer} />
-          <SideNavItemButton symbol="note" text="Menu 2" closeDrawer={toggleDrawer} />
+        <List className="h-full py-4" component="nav">
+          <SideNavItemButton
+            symbol="youtube_searched_for"
+            text="Backtesting"
+            navLinkComponent={BtMainPageLink}
+            toggleDrawer={toggleDrawer}
+          />
         </List>
       </Drawer>
     </Box>
@@ -82,14 +87,21 @@ function SideNav({
 function SideNavItemButton({
   symbol,
   text,
-  closeDrawer: toggleDrawer,
+  navLinkComponent,
+  toggleDrawer,
 }: {
   symbol: string;
   text: string;
-  closeDrawer: MouseEventHandler;
+  navLinkComponent: NavLinkComponent;
+  toggleDrawer: MouseEventHandler;
 }) {
   return (
-    <ListItemButton className="hover:text-primary-light" onClick={toggleDrawer}>
+    <ListItemButton
+      component={navLinkComponent}
+      className="hover:bg-surface-3 hover:text-primary-light"
+      activeClassName="text-primary bg-surface-2"
+      onClick={toggleDrawer}
+    >
       <ListItemIcon className="text-inherit">
         <MaterialSymbol symbol={symbol} className="px-3 pb-1 text-4xl" />
       </ListItemIcon>

@@ -1,5 +1,5 @@
-import { useMediaQuery } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import useTheme from '@mui/material/styles/useTheme';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { Outlet } from 'react-router-dom';
 
 import MainLayoutLg from './MainLayoutLg';

@@ -1,6 +1,6 @@
 import type { HttpErrorName } from './httpClient.type';
 
-export const BASE_URL = 'http://localhost';
+export const API_BASE_URL = process.env.VITE_API_BASE_URL ?? 'http://localhost';
 
 export const HTTP_ERRORS: Record<HttpErrorName, { name: HttpErrorName; message: string }> = {
   INVALID_REQUEST: {

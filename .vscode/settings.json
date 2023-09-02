@@ -26,5 +26,6 @@
   "files.exclude": {
     "**/.git": false
   },
-  "npm.packageManager": "npm"
+  "npm.packageManager": "npm",
+  "mui-snippets.importPaths": "second level"
 }

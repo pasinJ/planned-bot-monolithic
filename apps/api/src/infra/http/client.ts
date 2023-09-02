@@ -10,6 +10,8 @@ import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { HTTP_ERRORS, HttpClient, HttpError } from './client.type.js';
 
+const { INVALID_RESPONSE } = HTTP_ERRORS;
+
 export function createAxiosHttpClient(logger: LoggerIo, config?: CreateAxiosDefaults): HttpClient {
   const axiosInstance = axios.create(config);
   return { sendRequest: sendRequest(axiosInstance, logger) };
@@ -36,7 +38,7 @@ function sendRequest(axiosInstance: AxiosInstance, logger: LoggerIo): HttpClient
       te.chainEitherKW(parseWithZod(responseSchema, 'An Error occurs when try to validate HTTP response')),
       te.mapLeft((error) =>
         error instanceof SchemaValidationError
-          ? new HttpError(HTTP_ERRORS.INVALID_RESPONSE.name, HTTP_ERRORS.INVALID_RESPONSE.message, error)
+          ? new HttpError(INVALID_RESPONSE.name, INVALID_RESPONSE.message).causedBy(error)
           : error,
       ),
     );
@@ -59,8 +61,9 @@ function handleFailedRequest(error: AxiosError): HttpError {
       .when(is5xx, () => HTTP_ERRORS.SERVER_SIDE_ERROR)
       .otherwise(() => HTTP_ERRORS.UNHANDLED_ERROR);
 
-    return new HttpError(name, message);
+    return new HttpError(name, message).causedBy(error);
   } else if (error.request)
-    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message);
-  else return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message);
+    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message).causedBy(error);
+  else
+    return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message).causedBy(error);
 }

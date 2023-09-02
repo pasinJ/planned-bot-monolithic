@@ -19,8 +19,16 @@ module.exports = {
   rules: {
     '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     '@typescript-eslint/no-confusing-void-expression': 'off',
+    '@typescript-eslint/ban-types': ['error', { types: { Symbol: false }, extendDefaults: true }],
   },
   overrides: [
+    {
+      files: ['**/*.d.ts'],
+      plugins: ['@typescript-eslint'],
+      rules: {
+        '@typescript-eslint/consistent-type-definitions': 'off',
+      },
+    },
     {
       files: ['src/**/!(*.*test).ts?(x)'],
       settings: {
@@ -63,7 +71,12 @@ module.exports = {
     },
     {
       files: ['src/**/+(*.*test).tsx'],
-      extends: ['plugin:testing-library/react', 'plugin:jest-dom/recommended'],
+      extends: [
+        'plugin:jest/recommended',
+        'plugin:jest/style',
+        'plugin:testing-library/react',
+        'plugin:jest-dom/recommended',
+      ],
     },
     {
       files: ['src/**/+(*.*test).ts'],

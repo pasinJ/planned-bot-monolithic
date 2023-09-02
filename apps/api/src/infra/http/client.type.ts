@@ -1,12 +1,16 @@
+import { AxiosError } from 'axios';
 import te from 'fp-ts/lib/TaskEither.js';
-import { z } from 'zod';
+import { ZodTypeDef, z } from 'zod';
 
-import { ErrorBase, ExternalError } from '#shared/error.js';
+import { CustomError } from '#shared/error.js';
 import { SchemaValidationError } from '#shared/utils/zod.js';
 
 export type HttpClient = { sendRequest: SendRequest };
 
-export class HttpError extends ErrorBase<HttpErrorName, ExternalError | SchemaValidationError> {}
+export class HttpError extends CustomError<HttpErrorName, SchemaValidationError | AxiosError>(
+  'UNHANDLED_ERROR',
+  'Error happened when try to send HTTP request to external system',
+) {}
 export type HttpErrorName =
   | 'INVALID_REQUEST'
   | 'UNAUTHORIZED'
@@ -22,9 +26,9 @@ export type HttpErrorName =
   | 'UNHANDLED_ERROR';
 
 type SendRequest = <
-  B extends string,
+  T extends z.ZodType<Output, Def, Input>,
   Output,
-  Def extends z.ZodTypeDef = z.ZodTypeDef,
+  Def extends ZodTypeDef = ZodTypeDef,
   Input = Output,
   D = unknown,
 >(options: {
@@ -33,11 +37,8 @@ type SendRequest = <
   headers?: Headers;
   params?: Params;
   body?: D;
-  responseSchema: z.ZodType<Output, Def, Input> | z.ZodBranded<z.ZodString, B>;
-}) => te.TaskEither<
-  HttpError,
-  typeof options.responseSchema extends z.ZodType ? Output : string & z.BRAND<B>
->;
+  responseSchema: T;
+}) => te.TaskEither<HttpError, z.output<T>>;
 
 export type Method =
   | 'GET'

@@ -1,13 +1,13 @@
 import { assoc, omit } from 'ramda';
 
 import {
-  anyFloat,
-  anyString,
-  negativeFloat,
-  negativeInt,
   random9DigitsPositiveFloatWithRoundUp,
+  randomAnyFloat,
+  randomNegativeFloat,
+  randomNegativeInt,
+  randomString,
 } from '#test-utils/faker.js';
-import { mockMinNotionalFilter } from '#test-utils/mockEntity.js';
+import { mockMinNotionalFilter } from '#test-utils/features/symbols/entities.js';
 
 import { minNotionalFilterSchema } from './minNotionalFilter.entity.js';
 
@@ -20,7 +20,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN type property does not equal to MIN_NOTIONAL THEN the filter should be invalid', () => {
       expect(() =>
-        minNotionalFilterSchema.parse(assoc('type', anyString(), validMinNotionalFilter)),
+        minNotionalFilterSchema.parse(assoc('type', randomString(), validMinNotionalFilter)),
       ).toThrow();
     });
   });
@@ -33,7 +33,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN minNotional property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        minNotionalFilterSchema.parse(assoc('minNotional', negativeFloat(), validMinNotionalFilter)),
+        minNotionalFilterSchema.parse(assoc('minNotional', randomNegativeFloat(), validMinNotionalFilter)),
       ).toThrow();
     });
     it('WHEN minNotional property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
@@ -49,7 +49,7 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN applyToMarket property is not a boolean THEN the filter should be invalid', () => {
       expect(() =>
-        minNotionalFilterSchema.parse(assoc('applyToMarket', anyString(), validMinNotionalFilter)),
+        minNotionalFilterSchema.parse(assoc('applyToMarket', randomString(), validMinNotionalFilter)),
       ).toThrow();
     });
   });
@@ -59,12 +59,12 @@ describe('Market lot size filter entity', () => {
     });
     it('WHEN avgPriceMins property is a float number THEN the filter should be invalid', () => {
       expect(() =>
-        minNotionalFilterSchema.parse(assoc('avgPriceMins', anyFloat(), validMinNotionalFilter)),
+        minNotionalFilterSchema.parse(assoc('avgPriceMins', randomAnyFloat(), validMinNotionalFilter)),
       ).toThrow();
     });
     it('WHEN avgPriceMins property is a negative number THEN the filter should be invalid', () => {
       expect(() =>
-        minNotionalFilterSchema.parse(assoc('avgPriceMins', negativeInt(), validMinNotionalFilter)),
+        minNotionalFilterSchema.parse(assoc('avgPriceMins', randomNegativeInt(), validMinNotionalFilter)),
       ).toThrow();
     });
     it('WHEN avgPriceMins property equals to zero THEN the filter should be valid', () => {

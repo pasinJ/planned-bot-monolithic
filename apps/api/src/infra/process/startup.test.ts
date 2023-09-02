@@ -1,25 +1,25 @@
-import { faker } from '@faker-js/faker';
 import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid } from 'fp-ts/lib/function.js';
 import { is } from 'ramda';
 
 import { GetBnbSpotSymbolsError } from '#infra/services/binance.type.js';
 import { executeT } from '#shared/utils/fp.js';
-import { mockSymbol } from '#test-utils/mockEntity.js';
-import { resetEnvVar, setEnvVar } from '#test-utils/mockEnvVar.js';
-import { mockSymbolRepository } from '#test-utils/mockRepository.js';
-import { mockBnbService, mockLoggerIo } from '#test-utils/mockService.js';
+import { resetEnvVar, setEnvVar } from '#test-utils/envVar.js';
+import { generateArrayOf } from '#test-utils/faker.js';
+import { mockSymbol } from '#test-utils/features/symbols/entities.js';
+import { mockSymbolRepo } from '#test-utils/features/symbols/repositories.js';
+import { mockBnbService, mockLoggerIo } from '#test-utils/services.js';
 
 import { startupProcess } from './startup.js';
 
 function setupSuccessCase() {
-  const symbols = faker.helpers.multiple(() => mockSymbol({ version: 0 }), { count: 2 });
+  const symbols = generateArrayOf(() => mockSymbol({ version: 0 }));
   const bnbService = mockBnbService({ getSpotSymbols: jest.fn(te.right(symbols)) });
-  const symbolRepository = mockSymbolRepository({
+  const symbolRepo = mockSymbolRepo({
     countAll: te.right(0),
     add: jest.fn().mockReturnValue(te.rightIO(constVoid)),
   });
-  const deps = { bnbService, symbolRepository, logger: mockLoggerIo() };
+  const deps = { bnbService, symbolRepo, logger: mockLoggerIo() };
 
   return { deps, symbols };
 }
@@ -27,16 +27,14 @@ function setupGetSymbolsFailed() {
   const { deps } = setupSuccessCase();
   return {
     ...deps,
-    bnbService: mockBnbService({
-      getSpotSymbols: te.left(new GetBnbSpotSymbolsError('GET_BNB_SPOT_SYMBOLS_ERROR', 'Mock error')),
-    }),
+    bnbService: mockBnbService({ getSpotSymbols: te.left(new GetBnbSpotSymbolsError()) }),
   };
 }
 function setupAddSymbolsFailed() {
   const { deps } = setupSuccessCase();
   return {
     ...deps,
-    symbolRepository: mockSymbolRepository({
+    symbolRepo: mockSymbolRepo({
       countAll: te.right(0),
       add: jest.fn().mockReturnValue(te.left(new Error('Mock error'))),
     }),
@@ -46,7 +44,7 @@ function setupExistingSymbols() {
   const { deps } = setupSuccessCase();
   return {
     ...deps,
-    symbolRepository: mockSymbolRepository({ countAll: te.right(1) }),
+    symbolRepo: mockSymbolRepo({ countAll: te.right(1) }),
   };
 }
 
@@ -80,7 +78,7 @@ describe('GIVEN running application in other than test environment', () => {
         const { deps, symbols } = setupSuccessCase();
         await executeT(startupProcess(deps));
 
-        expect(deps.symbolRepository.add).toHaveBeenCalledExactlyOnceWith(symbols);
+        expect(deps.symbolRepo.add).toHaveBeenCalledExactlyOnceWith(symbols);
       });
     });
     describe('WHEN adding symbols into database is successful', () => {

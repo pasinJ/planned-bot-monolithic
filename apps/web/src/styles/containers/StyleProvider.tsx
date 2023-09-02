@@ -7,7 +7,7 @@ import { PropsWithChildren, useLayoutEffect } from 'react';
 import '../css/index.css';
 import useAppTheme from '../hooks/useAppTheme';
 import { LG_SCREEN, MD_SCREEN, PRIMARY, SECONDARY, SM_SCREEN } from '../theme.constant';
-import { themeEnum } from '../theme.schema';
+import { themeEnum } from '../theme.type';
 
 declare module '@mui/material/styles' {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions

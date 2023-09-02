@@ -1,4 +1,4 @@
-import { resetEnvVar, setEnvVar } from '#test-utils/mockEnvVar.js';
+import { resetEnvVar, setEnvVar } from '#test-utils/envVar.js';
 
 import { getBnbConfig } from './binance.js';
 

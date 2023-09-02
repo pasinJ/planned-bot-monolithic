@@ -9,7 +9,7 @@ function renderComponent(options?: { value?: string; onChange?: () => void; onBl
   return render(<DecimalField value="" {...options} />);
 }
 
-describe('GIVEN parent component passed onChange function to the component WHEN onChange event happen', () => {
+describe('GIVEN parent component passed onChange function to the component WHEN a change event happen', () => {
   it('THEN it should call the passed onChange function with parsed value', async () => {
     let targetValue = undefined;
     const onChangeSpy = jest.fn().mockImplementation((e) => {
@@ -22,11 +22,11 @@ describe('GIVEN parent component passed onChange function to the component WHEN 
     await user.type(screen.getByRole('textbox'), value);
 
     expect(onChangeSpy).toHaveBeenCalledOnce();
-    expect(targetValue).toEqual('');
+    expect(targetValue).toBe('');
   });
 });
 
-describe('GIVEN parent component passed onBlur function to the component WHEN onBlur event happen', () => {
+describe('GIVEN parent component passed onBlur function to the component WHEN a blur event happen', () => {
   it('THEN it should call the passed onBlur function with parsed value', async () => {
     let targetValue = undefined;
     const onBlurSpy = jest.fn().mockImplementation((e) => {
@@ -39,6 +39,6 @@ describe('GIVEN parent component passed onBlur function to the component WHEN on
     await user.click(document.body);
 
     expect(onBlurSpy).toHaveBeenCalledOnce();
-    expect(targetValue).toEqual('1.0');
+    expect(targetValue).toBe('1.0');
   });
 });

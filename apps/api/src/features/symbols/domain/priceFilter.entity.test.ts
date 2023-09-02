@@ -1,12 +1,12 @@
 import { assoc, omit } from 'ramda';
 
 import {
-  anyString,
-  negativeFloat,
   random9DigitsPositiveFloatWithRoundUp,
+  randomNegativeFloat,
   randomPrecisionStep,
+  randomString,
 } from '#test-utils/faker.js';
-import { mockPriceFilter } from '#test-utils/mockEntity.js';
+import { mockPriceFilter } from '#test-utils/features/symbols/entities.js';
 
 import { priceFilterSchema } from './priceFilter.entity.js';
 
@@ -20,7 +20,7 @@ describe('Price filter entity', () => {
       expect(() => priceFilterSchema.parse(omit(['type'], validPriceFilter))).toThrow();
     });
     it('WHEN type property does not equal to PRICE_FILTER THEN the filter should be invalid', () => {
-      expect(() => priceFilterSchema.parse(assoc('type', anyString(), validPriceFilter))).toThrow();
+      expect(() => priceFilterSchema.parse(assoc('type', randomString(), validPriceFilter))).toThrow();
     });
   });
   describe('minPrice property', () => {
@@ -31,7 +31,9 @@ describe('Price filter entity', () => {
       expect(() => priceFilterSchema.parse(assoc('minPrice', 0, validPriceFilter))).toThrow();
     });
     it('WHEN minPrice property is a negative number THEN the filter should be invalid', () => {
-      expect(() => priceFilterSchema.parse(assoc('minPrice', negativeFloat(), validPriceFilter))).toThrow();
+      expect(() =>
+        priceFilterSchema.parse(assoc('minPrice', randomNegativeFloat(), validPriceFilter)),
+      ).toThrow();
     });
     it('WHEN minPrice property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const { float9Digits, float8Digits } = random9DigitsPositiveFloatWithRoundUp(minPriceRange);
@@ -49,7 +51,9 @@ describe('Price filter entity', () => {
       expect(() => priceFilterSchema.parse(assoc('maxPrice', 0, validPriceFilter))).toThrow();
     });
     it('WHEN maxPrice property is a negative number THEN the filter should be invalid', () => {
-      expect(() => priceFilterSchema.parse(assoc('maxPrice', negativeFloat(), validPriceFilter))).toThrow();
+      expect(() =>
+        priceFilterSchema.parse(assoc('maxPrice', randomNegativeFloat(), validPriceFilter)),
+      ).toThrow();
     });
     it('WHEN maxPrice property is less than minPrice property THEN the filter should be invalid', () => {
       const lessThanMinPrice = parseFloat(validPriceFilter.minPrice.toString().slice(0, -1));
@@ -71,7 +75,9 @@ describe('Price filter entity', () => {
       expect(() => priceFilterSchema.parse(assoc('tickSize', 0, validPriceFilter))).toThrow();
     });
     it('WHEN tickSize property is a negative number THEN the filter should be invalid', () => {
-      expect(() => priceFilterSchema.parse(assoc('tickSize', negativeFloat(), validPriceFilter))).toThrow();
+      expect(() =>
+        priceFilterSchema.parse(assoc('tickSize', randomNegativeFloat(), validPriceFilter)),
+      ).toThrow();
     });
     it('WHEN tickSize property has more than 8 digits THEN it should be rounded up to the closest number with 8 digits', () => {
       const precision9Digits = randomPrecisionStep([9, 9]);

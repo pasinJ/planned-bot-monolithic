@@ -4,7 +4,7 @@ import { execute as executeIO } from 'fp-ts-std/IO';
 import MatchMediaMock from 'jest-matchmedia-mock';
 import { values } from 'ramda';
 
-import { Theme, themeEnum } from '#styles/theme.schema';
+import { Theme, themeEnum } from '#styles/theme.type';
 import { createMockLocalStorage } from '#test-utils/localStorage';
 import { renderHookWithContexts } from '#test-utils/render';
 

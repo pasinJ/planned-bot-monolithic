@@ -12,7 +12,7 @@ import { PinoLogger, createLoggerIo } from '#infra/logging.js';
 import { getBnbConfig } from '#shared/config/binance.js';
 import { createErrorFromUnknown } from '#shared/error.js';
 
-import { BNB_PATHS } from './binance.constant.js';
+import { BNB_API_PATHS } from './binance.constant.js';
 import {
   BnbService,
   CreateBnbServiceError,
@@ -50,13 +50,13 @@ export function createBnbService(
         ),
       ),
     ),
-    te.map(({ deps }) => ({ getSpotSymbols: buildGetSpotSymbols(deps) })),
+    te.map(({ deps }) => ({ getSpotSymbols: getSpotSymbols(deps) })),
     te.chainFirstIOK(() => logger.infoIo('Binance service created')),
   );
 }
 
 type GetSpotSymbolsDeps = { httpClient: HttpClient; dateService: DateService; idService: IdService };
-function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbols'] {
+function getSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbols'] {
   const {
     httpClient,
     dateService: { getCurrentDate },
@@ -92,7 +92,7 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
   return pipe(
     httpClient.sendRequest({
       method: 'GET',
-      url: BNB_PATHS.exchangeInfo,
+      url: BNB_API_PATHS.exchangeInfo,
       params: { permissions: 'SPOT' },
       responseSchema: exchangeInfoRespSchema,
     }),
@@ -120,13 +120,6 @@ function buildGetSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbo
         symbols.map((symbol) => createSymbol({ ...symbol, id: generateSymbolId() }, getCurrentDate())),
       ),
     ),
-    te.mapLeft(
-      (error) =>
-        new GetBnbSpotSymbolsError(
-          'GET_BNB_SPOT_SYMBOLS_ERROR',
-          'Getting SPOT symbols from Binance server failed',
-          error,
-        ),
-    ),
+    te.mapLeft((error) => new GetBnbSpotSymbolsError().causedBy(error)),
   );
 }

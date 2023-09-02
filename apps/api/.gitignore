@@ -3,6 +3,3 @@ dist
 logs
 
 .eslintcache
-
-.env/*
-!.env/.env.template

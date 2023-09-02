@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import e from 'fp-ts/lib/Either.js';
 import ioe from 'fp-ts/lib/IOEither.js';
@@ -6,6 +7,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { nanoid } from 'nanoid';
 import { juxt } from 'ramda';
 
+import { addBtStrategiesRoutes } from '#features/backtesting-strategies/routes.js';
 import { addSymbolsRoutes } from '#features/symbols/routes.js';
 import { ApplicationDeps } from '#infra/common.type.js';
 import { PinoLogger, createLogger } from '#infra/logging.js';
@@ -28,19 +30,17 @@ const fastifyConfig = {
   trustProxy: true,
   genReqId: () => nanoid(),
 };
+const corsConfig: cors.FastifyCorsOptions = { origin: [/^http:\/\/localhost/] };
 
 export function buildHttpServer(mainLogger: PinoLogger): e.Either<BuildHttpServerError, FastifyServer> {
-  return e.tryCatch(
-    () => {
-      const fastify = Fastify({ ...fastifyConfig, logger: createLogger('HttpServer', mainLogger) });
+  return e.tryCatch(() => {
+    const fastify = Fastify({ ...fastifyConfig, logger: createLogger('HttpServer', mainLogger) });
 
-      setNotFoundHandler(fastify);
-      setErrorHandler(fastify);
+    setNotFoundHandler(fastify);
+    setErrorHandler(fastify);
 
-      return fastify;
-    },
-    createErrorFromUnknown(BuildHttpServerError, 'BUILD_HTTP_SERVER_ERROR'),
-  );
+    return fastify;
+  }, createErrorFromUnknown(BuildHttpServerError));
 }
 
 export function startHttpServer(
@@ -49,8 +49,12 @@ export function startHttpServer(
 ): te.TaskEither<StartHttpServerError, FastifyServer> {
   const { PORT_NUMBER } = getHttpConfig();
   return pipe(
-    juxt([addGeneralRoutes, addSymbolsRoutes])(instance, deps),
-    ioe.sequenceArray,
+    ioe.tryCatch(
+      () => instance.register(cors, corsConfig),
+      createErrorFromUnknown(StartHttpServerError, 'ADD_PLUGIN_ERROR', 'Adding CORS plugin failed'),
+    ),
+    ioe.map(() => juxt([addGeneralRoutes, addSymbolsRoutes, addBtStrategiesRoutes])(instance, deps)),
+    ioe.chain(ioe.sequenceArray),
     te.fromIOEither,
     te.chainFirst(() =>
       te.tryCatch(
@@ -65,12 +69,7 @@ export function startHttpServer(
 export function closeHttpServer(instance: FastifyServer): te.TaskEither<CloseHttpServerError, void> {
   return pipe(
     te.fromIO(() => instance.log.info('Fastify server start closing')),
-    te.chain(() =>
-      te.tryCatch(
-        () => instance.close(),
-        createErrorFromUnknown(CloseHttpServerError, 'CLOSE_HTTP_SERVER_ERROR'),
-      ),
-    ),
+    te.chain(() => te.tryCatch(() => instance.close(), createErrorFromUnknown(CloseHttpServerError))),
     te.chainIOK(() => () => instance.log.info('Fastify server successfully closed')),
     te.orElseFirstIOK((error) => () => instance.log.error({ error }, 'Fastify server failed to close')),
   );

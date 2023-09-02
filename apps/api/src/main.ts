@@ -3,7 +3,8 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 import { omit } from 'ramda';
 
-import { createSymbolRepository } from '#features/symbols/symbol.repository.js';
+import { createBtStrategyRepo } from '#features/backtesting-strategies/btStrategy.repository.js';
+import { createSymbolRepo } from '#features/symbols/symbol.repository.js';
 import { ApplicationDeps } from '#infra/common.type.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
@@ -25,7 +26,8 @@ await executeT(
     te.Do,
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
     te.bindW('bnbService', () => createBnbServiceWithDeps()),
-    te.bindW('symbolRepository', (deps) => createSymbolRepositoryWithDeps(deps)),
+    te.bindW('symbolRepo', (deps) => createSymbolRepoWithDeps(deps)),
+    te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
     te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
     te.chainFirstW((deps) => startHttpServerWithDeps(deps)),
@@ -45,10 +47,13 @@ type Deps = Omit<ApplicationDeps, 'dateService' | 'idService'> & {
 function createBnbServiceWithDeps() {
   return createBnbService({ dateService, idService, mainLogger });
 }
-function createSymbolRepositoryWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(createSymbolRepository(mongoDbClient));
+function createSymbolRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(createSymbolRepo(mongoDbClient));
 }
-function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepository'>) {
+function createBtStrategyRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(createBtStrategyRepo(mongoDbClient));
+}
+function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepo'>) {
   return startupProcess({ ...deps, logger: logger });
 }
 function startHttpServerWithDeps(deps: Deps) {

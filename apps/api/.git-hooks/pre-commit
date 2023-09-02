@@ -11,9 +11,8 @@ if [ $changeNum != 0 ]; then
     CURRENT_DIR=$(dirname "$0")
     cd $CURRENT_DIR/../
 
-    npm run lint
-    npm run prettier
-    npm run test:u
+    npx lint-staged
+    npm run test:u -- --onlyChanged
     
     echo "[INFO] Pre-commit hook of API project done"
 else

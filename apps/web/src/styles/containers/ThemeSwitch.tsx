@@ -1,7 +1,7 @@
 import Switch from '@mui/material/Switch';
 
 import useAppTheme from '#styles/hooks/useAppTheme';
-import { themeEnum } from '#styles/theme.schema';
+import { themeEnum } from '#styles/theme.type';
 
 export default function ThemeSwitch() {
   const { appTheme, setTheme } = useAppTheme();

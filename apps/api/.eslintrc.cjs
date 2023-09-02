@@ -20,7 +20,6 @@ module.exports = {
   rules: {
     '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     '@typescript-eslint/no-confusing-void-expression': 'off',
-
     '@typescript-eslint/ban-types': ['error', { types: { Symbol: false }, extendDefaults: true }],
   },
   overrides: [
@@ -35,6 +34,7 @@ module.exports = {
         'plugin:import/typescript',
         'plugin:fp-ts/recommended',
         'plugin:fp-ts/recommended-requiring-type-checking',
+        'plugin:security/recommended',
       ],
       plugins: ['import'],
       rules: {

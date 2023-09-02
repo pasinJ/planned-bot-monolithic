@@ -1,4 +1,4 @@
-import { useMediaQuery } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { execute as executeIO } from 'fp-ts-std/IO';
 import * as io from 'fp-ts/lib/IO';
 import * as o from 'fp-ts/lib/Option';
@@ -7,7 +7,7 @@ import { equals } from 'ramda';
 import { useCallback, useSyncExternalStore } from 'react';
 
 import useLocalStorage from '#hooks/useLocalStorage';
-import { Theme, themeEnum } from '#styles/theme.schema';
+import { Theme, themeEnum } from '#styles/theme.type';
 
 type UseAppThemeResult = { appTheme: Theme; setTheme: (val: Theme) => io.IO<void>; removeTheme: io.IO<void> };
 

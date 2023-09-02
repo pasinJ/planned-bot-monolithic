@@ -1,0 +1,12 @@
+import mongoose, { Mongoose } from 'mongoose';
+import { isNotNil } from 'ramda';
+
+import { getMongoDbConfig } from '#shared/config/mongoDb.js';
+
+export function createMongoClient(): Promise<Mongoose> {
+  return mongoose.connect(getMongoDbConfig().URI);
+}
+
+export function deleteModel(client: Mongoose, modelName: string) {
+  if (isNotNil(client.models[modelName])) client.deleteModel(modelName);
+}

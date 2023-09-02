@@ -8,7 +8,7 @@ import {
   pino,
 } from 'pino';
 import pretty, { PrettyOptions } from 'pino-pretty';
-import { mergeDeepWith, pick } from 'ramda';
+import { mergeDeepWith, pick, prop } from 'ramda';
 
 import { AppConfig, LogFilePath, getAppConfig } from '#config/app.js';
 import { mergeConcatArray } from '#utils/general.js';
@@ -40,7 +40,7 @@ export type LoggerIo = {
   fatalIo: LogFnIo;
 };
 
-const mixinHook: PinoLoggerOptions['mixin'] = (_, level) => ({ levelLabel: levels.labels[level] });
+const mixinHook: PinoLoggerOptions['mixin'] = (_, level) => ({ levelLabel: prop(level, levels.labels) });
 const mixinStrategy: PinoLoggerOptions['mixinMergeStrategy'] = mergeDeepWith(mergeConcatArray);
 
 const baseLogOptions: PinoLoggerOptions = {

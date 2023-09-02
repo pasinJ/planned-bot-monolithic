@@ -11,26 +11,17 @@ import { PropsWithChildren, useState } from 'react';
 
 import logo from '#assets/favicon-64x64.png';
 import MaterialSymbol from '#components/MaterialSymbol';
+import { NavLinkComponent } from '#routes/components/NavLinkBase';
+import { BtMainPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutLg({ children }: PropsWithChildren) {
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       <SideNav />
-      <Box component="main" className="w-full">
-        <TopBar />
-        {children}
+      <Box component="main" className="h-full w-full">
+        <Box className="h-full w-full bg-gray-100 px-10 py-6">{children}</Box>
       </Box>
     </div>
-  );
-}
-
-function TopBar() {
-  return (
-    <Box className="h-20 w-full bg-gray-50 shadow-2 shadow-gray-100 dark:bg-gray-900 dark:shadow-gray-800">
-      <Typography variant="h6" component="div" sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}>
-        Top Bar
-      </Typography>
-    </Box>
   );
 }
 
@@ -56,9 +47,13 @@ function SideNav() {
     </Box>
   );
   const DrawerBody = (
-    <List className="h-full">
-      <SideNavItemButton isNavOpening={open} symbol="note" text="Menu 1" />
-      <SideNavItemButton isNavOpening={open} symbol="note" text="Menu 2" />
+    <List className="h-full" component="nav">
+      <SideNavItemButton
+        isNavOpening={open}
+        symbol="youtube_searched_for"
+        text="Backtesting"
+        navLinkComponent={BtMainPageLink}
+      />
     </List>
   );
   const DrawerFooter = (
@@ -84,7 +79,6 @@ function SideNav() {
   return (
     <Drawer
       variant="permanent"
-      component="nav"
       className={drawerClosedClassName}
       onMouseEnter={handleDrawerOpen}
       onMouseLeave={handleDrawerClose}
@@ -100,17 +94,20 @@ function SideNav() {
   );
 }
 
-function SideNavItemButton({
-  isNavOpening,
-  symbol,
-  text,
-}: {
+function SideNavItemButton(props: {
   isNavOpening: boolean;
+  navLinkComponent: NavLinkComponent;
   symbol: string;
   text: string;
 }) {
+  const { isNavOpening, symbol, text, navLinkComponent } = props;
+
   return (
-    <ListItemButton className="hover:text-primary-light hover:bg-surface-2">
+    <ListItemButton
+      component={navLinkComponent}
+      className="hover:bg-surface-3 hover:text-primary-light"
+      activeClassName="text-primary bg-surface-2"
+    >
       <ListItemIcon className="text-inherit">
         <MaterialSymbol symbol={symbol} className="pb-1 pl-1.5 text-4xl" />
       </ListItemIcon>

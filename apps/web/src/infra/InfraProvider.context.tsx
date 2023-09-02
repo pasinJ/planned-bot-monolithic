@@ -1,11 +1,16 @@
 import { PropsWithChildren, createContext } from 'react';
 
+import { createBtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy';
+import { createSymbolRepo } from '#features/symbols/repositories/symbol';
+
 import { createAxiosHttpClient } from './axiosHttpClient';
 
+const httpClient = createAxiosHttpClient();
 const defaultContext = {
   localStorage: window.localStorage,
   eventEmitter: new EventTarget(),
-  httpClient: createAxiosHttpClient(),
+  symbolRepo: createSymbolRepo({ httpClient }),
+  btStrategyRepo: createBtStrategyRepo({ httpClient }),
 };
 
 export type InfraContextValue = typeof defaultContext;

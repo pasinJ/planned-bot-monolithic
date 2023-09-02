@@ -1,20 +1,29 @@
 import { append, is } from 'ramda';
-import { CustomError } from 'ts-custom-error';
+import { CustomError as CustomErrorBase } from 'ts-custom-error';
 
-type Cause = Error | string;
+export type GeneralCause = Error | string;
 type Constructor<T> = new (...args: never[]) => T;
 type ArrayType<T extends unknown[]> = T extends (infer U)[] ? U : never;
 
-export class ErrorBase<N extends string = string> extends CustomError {
-  name: N;
+export class ErrorBase<
+  Name extends string = 'ERROR_BASE',
+  Cause extends GeneralCause = GeneralCause,
+> extends CustomErrorBase {
+  name: Name = 'ERROR_BASE' as Name;
+  message = 'This is error base message';
 
-  constructor(name: N, message: string, cause?: Cause) {
-    super(message, cause ? { cause } : {});
-    this.name = name;
+  constructor(defaultVal: { name: Name; message: string }, nameOrMsg?: Name | string, msg?: string) {
+    super();
+
+    const name = msg ? (nameOrMsg as Name) : defaultVal.name;
+    if (name) this.name = name;
+
+    const message = msg ? msg : nameOrMsg ? nameOrMsg : defaultVal.message;
+    if (message) this.message = message;
   }
 
   public causedBy(cause: Cause): this {
-    this.cause = cause;
+    super.cause = cause;
     return this;
   }
 
@@ -48,15 +57,43 @@ export class ErrorBase<N extends string = string> extends CustomError {
   }
 }
 
-export function createErrorFromUnknown<E extends ErrorBase<Names>, Name extends Names, Names extends string>(
-  constructor: new (name: Name, message: string, cause?: Cause) => E,
-  name: Name,
-  message?: string,
+export function CustomError<Name extends string, Cause extends GeneralCause = GeneralCause>(
+  defaultName: Name,
+  defaultMessage: string,
 ) {
-  return (unknown: unknown): E => {
+  return class extends ErrorBase<Name, Cause> {
+    constructor(message?: string);
+    constructor(name: Name, message: string);
+    constructor(nameOrMsg?: Name | string, msg?: string) {
+      super({ name: defaultName, message: defaultMessage }, nameOrMsg, msg);
+    }
+  };
+}
+
+type ExternalErrorName = 'EXTERNAL_ERROR';
+export class ExternalError extends CustomError<ExternalErrorName>(
+  'EXTERNAL_ERROR',
+  'Error happened when try to use thrid-party library',
+) {}
+
+type IfIncludeExternalError<Cause extends GeneralCause, T> = ExternalError extends Cause ? T : never;
+
+export function createErrorFromUnknown<
+  E extends ErrorBase<Names, Cause>,
+  Names extends string,
+  Name extends Names,
+  Cause extends ExternalError | GeneralCause,
+>(
+  constructor: new (nameOrMsg?: Name, msg?: string) => E,
+  name?: IfIncludeExternalError<Cause, Name>,
+  message?: IfIncludeExternalError<Cause, string>,
+) {
+  return (unknown: IfIncludeExternalError<Cause, unknown>): E => {
     if (is(String, unknown)) return new constructor(name, unknown);
     else if (unknown instanceof Error)
-      return new constructor(name, message ?? getErrorSummary(unknown), unknown);
+      return new constructor(name, message ?? getErrorSummary(unknown)).causedBy(
+        new ExternalError().causedBy(unknown) as Cause,
+      );
     else return new constructor(name, message ?? 'Undefined message (created from unknown)');
   };
 }
@@ -68,4 +105,8 @@ export function matchError<T extends Constructor<Error>[]>(...types: T) {
 
 export function getErrorSummary(error: Error): string {
   return `[${error.name}] ${error.message}`;
+}
+
+export function getErrorSummaryDeep(error: Error): string {
+  return error instanceof ErrorBase ? error.getCausesList().join(' => ') : getErrorSummary(error);
 }

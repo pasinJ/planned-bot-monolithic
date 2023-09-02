@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["cypress", "@testing-library/cypress"]
   },
-  "include": ["../cypress.config.ts", "e2e", "support", "../test-utils"]
+  "include": ["../cypress.config.ts", "e2e", "support", "../src/styles/theme.constant.ts", "../test-utils"]
 }
