@@ -9,7 +9,6 @@ const httpClient = createAxiosHttpClient();
 const defaultContext = {
   localStorage: window.localStorage,
   eventEmitter: new EventTarget(),
-  httpClient,
   symbolRepo: createSymbolRepo({ httpClient }),
   btStrategyRepo: createBtStrategyRepo({ httpClient }),
 };
