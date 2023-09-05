@@ -23,13 +23,12 @@
       "#assets/*": ["src/assets/*"],
       "#components/*": ["src/components/*"],
       "#features/*": ["src/features/*"],
-      "#hooks/*": ["src/hooks/*"],
       "#infra/*": ["src/infra/*"],
       "#pages/*": ["src/pages/*"],
       "#routes/*": ["src/routes/*"],
       "#state/*": ["src/state/*"],
       "#styles/*": ["src/styles/*"],
-      "#utils/*": ["src/utils/*"],
+      "#shared/*": ["src/shared/*"],
       "#test-utils/*": ["test-utils/*"]
     }
   },

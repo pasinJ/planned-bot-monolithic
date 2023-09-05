@@ -82,7 +82,7 @@ function ContextWrapper(
 }
 
 function InfraWrapper(infraContext?: Partial<InfraContextValue>) {
-  return (ui: ReactNode) => <InfraProvider init={infraContext}>{ui}</InfraProvider>;
+  return (ui: ReactNode) => <InfraProvider overrides={infraContext}>{ui}</InfraProvider>;
 }
 function ClientStateWrapper(state?: PreloadedState<RootState>) {
   return (ui: ReactNode) => <Provider store={setupStore(state)}>{ui}</Provider>;

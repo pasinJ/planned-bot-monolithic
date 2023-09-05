@@ -1,13 +1,15 @@
 import userEvent from '@testing-library/user-event';
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { generateArrayOf } from '#test-utils/faker';
+import { mockHttpError } from '#test-utils/error';
+import { generateArrayOf, randomString } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { BtStrategyRepo, GetBtStrategiesError } from '../repositories/btStrategy.type';
+import { createBtStrategyRepoError } from '../repositories/btStrategy.error';
+import { BtStrategyRepo } from '../repositories/btStrategy.type';
 import BtMainPage from './BtMainPage';
 
 function renderBtMainPage(overrides: { btStrategyRepo: Partial<BtStrategyRepo> }) {
@@ -29,7 +31,8 @@ function renderBtMainPageWithStrategy() {
   return { strategies, btStrategyRepo };
 }
 function renderBtMainPageWithFetchingError() {
-  const btStrategyRepo = { getBtStrategies: jest.fn(te.left(new GetBtStrategiesError())) };
+  const error = createBtStrategyRepoError('GetStrategiesError', randomString(), mockHttpError());
+  const btStrategyRepo = { getBtStrategies: jest.fn(te.left(error)) };
   renderBtMainPage({ btStrategyRepo });
 
   return { btStrategyRepo };

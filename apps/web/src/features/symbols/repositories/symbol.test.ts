@@ -1,15 +1,14 @@
 import { setupServer } from 'msw/node';
-import { is } from 'ramda';
 
 import { createAxiosHttpClient } from '#infra/axiosHttpClient';
+import { executeT } from '#shared/utils/fp';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { addRestRoute, createApiPath } from '#test-utils/msw';
-import { executeT } from '#utils/fp';
 
 import { createSymbolRepo } from './symbol';
 import { API_ENDPOINTS } from './symbol.constant';
-import { GetSymbolsError } from './symbol.type';
+import { isSymbolRepoError } from './symbol.error';
 
 const { GET_SYMBOLS } = API_ENDPOINTS;
 const server = setupServer();
@@ -57,14 +56,14 @@ describe('Get symbols', () => {
     });
   });
   describe('WHEN external system return Http error', () => {
-    it('THEN it should return Left of error', async () => {
+    it('THEN it should return Left of symbol repository error', async () => {
       const { method, url } = GET_SYMBOLS;
       server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
 
       const repository = createSymbolRepo({ httpClient });
       const result = await executeT(repository.getSymbols);
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(GetSymbolsError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolRepoError));
     });
   });
 });

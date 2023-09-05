@@ -1,5 +1,5 @@
 import { ExchangeName, exchangeNameEnum } from '#features/exchanges/domain/exchange';
-import { Timeframe } from '#features/shared/domain/timeframe';
+import { Timeframe } from '#shared/domain/timeframe';
 
 export type AddBtStrategyFormValues = {
   name: string;

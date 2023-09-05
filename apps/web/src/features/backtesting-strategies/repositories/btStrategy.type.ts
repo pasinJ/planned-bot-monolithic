@@ -1,22 +1,15 @@
 import * as te from 'fp-ts/lib/TaskEither';
 
 import { ExchangeName } from '#features/exchanges/domain/exchange';
-import { Timeframe } from '#features/shared/domain/timeframe';
-import { HttpError } from '#infra/httpClient.type';
-import { CustomError } from '#utils/error';
-import { SchemaValidationError } from '#utils/zod';
+import { Timeframe } from '#shared/domain/timeframe';
 
 import { BtStrategy } from '../domain/btStrategy.entity';
+import { BtStrategyRepoError } from './btStrategy.error';
 
 export type BtStrategyRepo = {
-  getBtStrategies: te.TaskEither<GetBtStrategiesError, readonly BtStrategy[]>;
-  addBtStrategy: (data: AddBtStrategyData) => te.TaskEither<AddBtStrategyError, void>;
+  getBtStrategies: te.TaskEither<BtStrategyRepoError<'GetStrategiesError'>, readonly BtStrategy[]>;
+  addBtStrategy: (data: AddBtStrategyData) => te.TaskEither<BtStrategyRepoError<'AddBtStrategyError'>, void>;
 };
-
-export class GetBtStrategiesError extends CustomError<'GET_BT_STRATEGIES_ERROR', HttpError>(
-  'GET_BT_STRATEGIES_ERROR',
-  'Error happened when try to get backtesting strategies',
-) {}
 
 export type AddBtStrategyData = {
   name: string;
@@ -32,8 +25,3 @@ export type AddBtStrategyData = {
   endTimestamp: Date;
   body: string;
 };
-export class AddBtStrategyError extends CustomError<'ADD_BT_STRATEGY_ERROR', AddBtStrategyErrorCause>(
-  'ADD_BT_STRATEGY_ERROR',
-  'Error happened when try to add a backtesting strategy',
-) {}
-type AddBtStrategyErrorCause = HttpError | SchemaValidationError;

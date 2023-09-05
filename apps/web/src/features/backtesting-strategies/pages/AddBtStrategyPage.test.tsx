@@ -1,28 +1,26 @@
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { HttpClient } from '#infra/httpClient.type';
+import { SymbolRepo } from '#features/symbols/repositories/symbol.type';
 import { generateArrayOf } from '#test-utils/faker';
+import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole } from '#test-utils/uiSelector';
 
 import AddBtStrategyPage from './AddBtStrategyPage';
 
-function renderAddBtStrategyPage(overrides?: { httpClient: HttpClient }) {
-  return renderWithContexts(
-    <AddBtStrategyPage />,
-    ['Infra', 'ServerState', 'Date'],
-    overrides
-      ? { infraContext: { httpClient: overrides.httpClient } }
-      : { infraContext: { httpClient: { sendRequest: jest.fn().mockReturnValueOnce(te.right(undefined)) } } },
-  );
+function renderAddBtStrategyPage(overrides: { symbolRepo: SymbolRepo }) {
+  return renderWithContexts(<AddBtStrategyPage />, ['Infra', 'ServerState', 'Date'], {
+    infraContext: overrides,
+  });
 }
 function renderAddBtStrategyPageSuccess() {
   const symbols = generateArrayOf(mockSymbol, 4);
-  const httpClient = { sendRequest: jest.fn().mockReturnValueOnce(te.right(symbols)) };
-  renderAddBtStrategyPage({ httpClient });
+  const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.right(symbols)) });
 
-  return { httpClient, symbols };
+  renderAddBtStrategyPage({ symbolRepo });
+
+  return { symbolRepo, symbols };
 }
 
 const ui = {

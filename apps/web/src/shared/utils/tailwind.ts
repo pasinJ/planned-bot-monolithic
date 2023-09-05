@@ -2,7 +2,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { map, range, toString } from 'ramda';
 import { extendTailwindMerge } from 'tailwind-merge';
 
-export default extendTailwindMerge({
+export const mergeClassName = extendTailwindMerge({
   theme: {
     screen: ['sm', 'md', 'lg'],
     colors: [

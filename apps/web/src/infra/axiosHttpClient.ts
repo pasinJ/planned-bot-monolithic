@@ -1,19 +1,20 @@
 import axios, { AxiosError, AxiosInstance, CreateAxiosDefaults } from 'axios';
+import * as ioe from 'fp-ts/lib/IOEither';
 import * as te from 'fp-ts/lib/TaskEither';
-import { flow, pipe } from 'fp-ts/lib/function';
+import { pipe } from 'fp-ts/lib/function';
 import { __, allPass, equals, gte, lt, prop } from 'ramda';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
-import { ExternalError } from '#utils/error';
-import { SchemaValidationError, parseWithZod } from '#utils/zod';
+import { createExternalError } from '#shared/errors/externalError';
+import { parseWithZod } from '#shared/utils/zod';
 
-import { API_BASE_URL, HTTP_ERRORS } from './httpClient.constant';
-import { HttpClient, HttpError } from './httpClient.type';
-
-const { INVALID_RESPONSE } = HTTP_ERRORS;
+import { HTTP_ERRORS } from './httpClient.constant';
+import { HttpError, createHttpError } from './httpClient.error';
+import { HttpClient } from './httpClient.type';
 
 export function createAxiosHttpClient(config?: CreateAxiosDefaults): HttpClient {
-  const axiosInstance = axios.create({ baseURL: API_BASE_URL, ...config });
+  const axiosInstance = axios.create(config);
   return { sendRequest: sendRequest(axiosInstance) };
 }
 
@@ -25,46 +26,49 @@ function sendRequest(axiosInstance: AxiosInstance): HttpClient['sendRequest'] {
         () => axiosInstance.request({ ...rest, data: body }),
         (error) => handleFailedRequest(error as AxiosError),
       ),
-      te.chainEitherKW(
-        flow(
-          prop('data'),
-          parseWithZod(responseSchema, 'An Error occurs when try to validate HTTP response'),
-        ),
-      ),
-      te.mapLeft((error) =>
-        error instanceof SchemaValidationError
-          ? new HttpError(INVALID_RESPONSE.name, INVALID_RESPONSE.message).causedBy(error)
-          : error,
-      ),
+      te.map(prop('data')),
+      te.chainIOEitherKW(validResponseBody(responseSchema)),
     );
   };
 }
 
-function handleFailedRequest(error: AxiosError): HttpError {
+function validResponseBody<ResponseSchema extends z.ZodTypeAny>(responseSchema: ResponseSchema) {
+  const { type, message } = HTTP_ERRORS.InvalidResponse;
+  return (body: unknown): ioe.IOEither<HttpError, z.output<ResponseSchema>> =>
+    pipe(
+      parseWithZod(responseSchema, 'The received response body is invalid', body),
+      ioe.fromEither,
+      ioe.mapLeft((error) => createHttpError(type, message, error)),
+    );
+}
+
+function handleFailedRequest(axiosError: AxiosError): HttpError {
   const is4xx = allPass([gte(__, 400), lt(__, 500)]);
   const is5xx = allPass([gte(__, 500), lt(__, 600)]);
 
-  const externalError = new ExternalError().causedBy(error);
+  const externalError = createExternalError({
+    message: 'Axios error happen when sending request to external system',
+    cause: axiosError,
+  });
 
-  if (error.response) {
-    const { name, message } = match(error.response.status)
-      .when(equals(400), () => HTTP_ERRORS.INVALID_REQUEST)
-      .when(equals(401), () => HTTP_ERRORS.UNAUTHORIZED)
-      .when(equals(403), () => HTTP_ERRORS.FORBIDDED)
-      .when(equals(404), () => HTTP_ERRORS.NOT_FOUND)
-      .when(equals(409), () => HTTP_ERRORS.BUSINESS_ERROR)
-      .when(is4xx, () => HTTP_ERRORS.CLIENT_SIDE_ERROR)
-      .when(equals(500), () => HTTP_ERRORS.INTERNAL_SERVER_ERROR)
-      .when(is5xx, () => HTTP_ERRORS.SERVER_SIDE_ERROR)
-      .otherwise(() => HTTP_ERRORS.UNHANDLED_ERROR);
+  if (axiosError.response) {
+    const { type, message } = match(axiosError.response.status)
+      .when(equals(400), () => HTTP_ERRORS.InvalidRequest)
+      .when(equals(401), () => HTTP_ERRORS.Unauthorized)
+      .when(equals(403), () => HTTP_ERRORS.Forbidded)
+      .when(equals(404), () => HTTP_ERRORS.NotFound)
+      .when(equals(409), () => HTTP_ERRORS.BussinessError)
+      .when(is4xx, () => HTTP_ERRORS.ClientSideError)
+      .when(equals(500), () => HTTP_ERRORS.InternalServerError)
+      .when(is5xx, () => HTTP_ERRORS.ServerSideError)
+      .otherwise(() => HTTP_ERRORS.UnhandledError);
 
-    return new HttpError(name, message).causedBy(externalError);
-  } else if (error.request)
-    return new HttpError(HTTP_ERRORS.NO_RESPONSE.name, HTTP_ERRORS.NO_RESPONSE.message).causedBy(
-      externalError,
-    );
-  else
-    return new HttpError(HTTP_ERRORS.SENDING_FAILED.name, HTTP_ERRORS.SENDING_FAILED.message).causedBy(
-      externalError,
-    );
+    return createHttpError(type, message, externalError);
+  } else if (axiosError.request) {
+    const { type, message } = HTTP_ERRORS.NoResponse;
+    return createHttpError(type, message, externalError);
+  } else {
+    const { type, message } = HTTP_ERRORS.SendingFailed;
+    return createHttpError(type, message, externalError);
+  }
 }

@@ -1,13 +1,14 @@
 import { waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither';
-import { is } from 'ramda';
 
-import { generateArrayOf } from '#test-utils/faker';
+import { mockHttpError } from '#test-utils/error';
+import { generateArrayOf, randomString } from '#test-utils/faker';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderHookWithContexts } from '#test-utils/render';
 
-import { GetSymbolsError, SymbolRepo } from '../repositories/symbol.type';
+import { createSymbolRepoError, isSymbolRepoError } from '../repositories/symbol.error';
+import { SymbolRepo } from '../repositories/symbol.type';
 import useSymbols from './useSymbols';
 
 function renderUseSymbols(enabled: boolean, overrides: { symbolRepo: SymbolRepo }) {
@@ -48,9 +49,10 @@ describe('WHEN fetching data is successful', () => {
 
 describe('WHEN fetching data fails', () => {
   it('THEN it should return error property', async () => {
-    const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.left(new GetSymbolsError())) });
+    const error = createSymbolRepoError('GetSymbolsError', randomString(), mockHttpError());
+    const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.left(error)) });
     const { result } = renderUseSymbols(true, { symbolRepo });
 
-    await waitFor(() => expect(result.current.error).toSatisfy(is(GetSymbolsError)));
+    await waitFor(() => expect(result.current.error).toSatisfy(isSymbolRepoError));
   });
 });

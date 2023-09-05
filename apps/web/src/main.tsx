@@ -8,13 +8,14 @@ import RoutesProvider from '#routes/RoutesProvider';
 import ClientStateProvider from '#state/ClientStateProvider.context';
 import ServerStateProvider from '#state/ServerStateProvider.context';
 import StyleProvider from '#styles/containers/StyleProvider';
-import reportAccessibility from '#utils/reportAccessibility';
 
-if (process.env.NODE_ENV === 'preview') {
+import reportAccessibility from './accessibility';
+
+if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
+if (process.env.MODE === 'standalone') {
   const { worker } = await import('../mocks/browser');
   await worker.start({ onUnhandledRequest: 'bypass' });
 }
-if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
 
 const rootElement = document.getElementById('root') ?? createNewRootElementInBody();
 createRoot(rootElement).render(
