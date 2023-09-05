@@ -1,14 +1,15 @@
 import { Schema } from 'mongoose';
-import { is, prop } from 'ramda';
+import { prop } from 'ramda';
 
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { generateArrayOf } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/features/symbols/entities.js';
 import { createMongoClient, deleteModel } from '#test-utils/mongoDb.js';
 
+import { isSymbolRepoError } from './symbol.error.js';
+import { createSymbolRepo } from './symbol.js';
 import { SymbolModel, symbolModelName } from './symbol.model.js';
-import { createSymbolRepo } from './symbol.repository.js';
-import { AddSymbolsError, CreateSymbolRepoError, SymbolRepo } from './symbol.repository.type.js';
+import { SymbolRepo } from './symbol.type.js';
 
 const client = await createMongoClient();
 
@@ -24,10 +25,10 @@ describe('Create symbol repository', () => {
     });
   });
   describe('WHEN unsuccessfully create symbol repository (duplicated model)', () => {
-    it('THEN it should return Left of error', () => {
+    it('THEN it should return Left of symbol repository error', () => {
       client.model(symbolModelName, new Schema({}));
       const repository = executeIo(createSymbolRepo(client));
-      expect(repository).toEqualLeft(expect.toSatisfy(is(CreateSymbolRepoError)));
+      expect(repository).toEqualLeft(expect.toSatisfy(isSymbolRepoError));
     });
   });
 });
@@ -76,13 +77,13 @@ describe('Add new symbols', () => {
     });
   });
   describe('WHEN add a new symbol with existed id', () => {
-    it('THEN it should return Left of ADD_SYMBOLS_ERROR', async () => {
+    it('THEN it should return Left of symbol repository error', async () => {
       const symbol = mockSymbol();
       await symbolModel.create(symbol);
       const symbol2 = mockSymbol();
       const result = await executeT(symbolRepo.add({ ...symbol2, id: symbol.id }));
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(AddSymbolsError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolRepoError));
     });
     it('THEN it should not add the symbol with duplicated id to database', async () => {
       const symbol = mockSymbol();
@@ -94,7 +95,7 @@ describe('Add new symbols', () => {
     });
   });
   describe('WHEN add a new symbol with existed combination of symbol name and exchange', () => {
-    it('THEN it should return Left of ADD_SYMBOLS_ERROR', async () => {
+    it('THEN it should return Left of symbol repository error', async () => {
       const symbol = mockSymbol();
       await symbolModel.create(symbol);
       const symbol2 = mockSymbol();
@@ -102,7 +103,7 @@ describe('Add new symbols', () => {
         symbolRepo.add({ ...symbol2, name: symbol.name, exchange: symbol.exchange }),
       );
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(AddSymbolsError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolRepoError));
     });
     it('THEN it should not add the symbol with duplicated id to database', async () => {
       const symbol = mockSymbol();

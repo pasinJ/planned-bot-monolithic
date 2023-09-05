@@ -1,7 +1,6 @@
 import { FastifyReply, RouteHandlerMethod } from 'fastify';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { anyPass, is } from 'ramda';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -11,10 +10,9 @@ import { IdService } from '#infra/services/id.type.js';
 import { nonEmptyString, nonNegativeFloat8Digits, stringDatetimeToDate } from '#shared/common.type.js';
 import { timeframeSchema } from '#shared/domain/timeframe.js';
 import { executeT } from '#shared/utils/fp.js';
-import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
+import { parseWithZod } from '#shared/utils/zod.js';
 
-import { AddBtStrategyError, BtStrategyRepo } from '../btStrategy.repository.type.js';
-import { CreateNewBtStrategyError } from '../domain/btStrategy.entity.js';
+import { BtStrategyRepo } from '../repositories/btStrategy.type.js';
 import { addBtStrategyUseCase } from '../use-cases/addBtStrategy.js';
 
 const requestBodySchema = z
@@ -48,10 +46,10 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
         (error) =>
           match(error)
             .returnType<FastifyReply>()
-            .when(anyPass([is(SchemaValidationError), is(CreateNewBtStrategyError)]), (error) =>
+            .with({ name: 'SchemaValidationError' }, { type: 'CreateBtStrategyError' }, (error) =>
               reply.code(400).send(error),
             )
-            .when(is(AddBtStrategyError), (error) => reply.code(500).send(error))
+            .with({ type: 'AddBtStrategyError' }, (error) => reply.code(500).send(error))
             .exhaustive(),
         () => reply.code(201).send(),
       ),

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { positiveFloat8Digits } from '#shared/common.type.js';
 
+export type PriceFilter = z.infer<typeof priceFilterSchema>;
 export const priceFilterSchema = z
   .object({
     type: z.literal('PRICE_FILTER'),
@@ -17,4 +18,3 @@ export const priceFilterSchema = z
       path: ['maxPrice'],
     }),
   );
-export type PriceFilter = z.infer<typeof priceFilterSchema>;

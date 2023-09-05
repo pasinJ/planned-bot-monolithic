@@ -1,14 +1,15 @@
 import { FastifyReply, RouteHandlerMethod } from 'fastify';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { is, map, pick } from 'ramda';
+import { map, pick } from 'ramda';
 import { match } from 'ts-pattern';
 
 import { executeT } from '#shared/utils/fp.js';
 
-import { GetAllSymbolsError, SymbolRepo } from '../symbol.repository.type.js';
+import { SymbolRepo } from '../repositories/symbol.type.js';
 
 export type GetSymbolsControllerDeps = { symbolRepo: SymbolRepo };
+
 export function buildGetSymbolsController(deps: GetSymbolsControllerDeps): RouteHandlerMethod {
   return function getSymbolsController(_, reply): Promise<FastifyReply> {
     const { symbolRepo } = deps;
@@ -19,7 +20,8 @@ export function buildGetSymbolsController(deps: GetSymbolsControllerDeps): Route
       te.matchW(
         (error) =>
           match(error)
-            .when(is(GetAllSymbolsError), () => reply.code(500).send(error))
+            .returnType<FastifyReply>()
+            .with({ type: 'GetAllSymbolsError' }, (error) => reply.code(500).send(error))
             .exhaustive(),
         (symbols) => reply.code(200).send(symbols),
       ),

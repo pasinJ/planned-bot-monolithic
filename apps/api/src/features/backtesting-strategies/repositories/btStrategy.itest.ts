@@ -1,17 +1,14 @@
 import { Schema } from 'mongoose';
-import { dissoc, is } from 'ramda';
+import { dissoc } from 'ramda';
 
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
 import { createMongoClient, deleteModel } from '#test-utils/mongoDb.js';
 
+import { isBtStrategyRepoError } from './btStrategy.error.js';
+import { createBtStrategyRepo } from './btStrategy.js';
 import { BtStrategyModel, btStrategyModelName } from './btStrategy.model.js';
-import { createBtStrategyRepo } from './btStrategy.repository.js';
-import {
-  AddBtStrategyError,
-  BtStrategyRepo,
-  CreateBtStrategyRepoError,
-} from './btStrategy.repository.type.js';
+import { BtStrategyRepo } from './btStrategy.type.js';
 
 const client = await createMongoClient();
 
@@ -35,7 +32,7 @@ describe('Create backtesting strategy repository', () => {
     it('THEN it should return Left of error', () => {
       client.model(btStrategyModelName, new Schema({}));
       const repository = executeIo(createBtStrategyRepo(client));
-      expect(repository).toEqualLeft(expect.toSatisfy(is(CreateBtStrategyRepoError)));
+      expect(repository).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
     });
   });
 });
@@ -76,7 +73,7 @@ describe('Add backtesting strategy', () => {
       const btStrategy2 = mockBtStrategy();
       const result = await executeT(btStrategyRepo.add({ ...btStrategy2, id: btStrategy1.id }));
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(AddBtStrategyError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
     });
   });
 });

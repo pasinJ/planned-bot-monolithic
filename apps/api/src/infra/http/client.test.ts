@@ -8,8 +8,9 @@ import { executeT } from '#shared/utils/fp.js';
 import { generateArrayOf } from '#test-utils/faker.js';
 import { mockLoggerIo } from '#test-utils/services.js';
 
+import { HTTP_ERRORS } from './client.constant.js';
 import { createAxiosHttpClient as createAxiosHttpClientOrg } from './client.js';
-import { HTTP_ERRORS, HttpClient, Method } from './client.type.js';
+import { HttpClient, HttpMethod } from './client.type.js';
 
 function createAxiosHttpClient(config?: Parameters<typeof createAxiosHttpClientOrg>[1]) {
   return createAxiosHttpClientOrg(mockLoggerIo(), config);
@@ -80,7 +81,7 @@ describe('Axios HTTP client send request', () => {
     expect(resp).toHaveProperty('right.url', expect.stringContaining(url));
   });
 
-  it.each<{ method: Method }>([
+  it.each<{ method: HttpMethod }>([
     { method: 'GET' },
     { method: 'POST' },
     { method: 'PUT' },
@@ -147,18 +148,18 @@ describe('Axios HTTP client send request', () => {
         createSendRequestOptions({ url: '/200', responseSchema: z.object({ success: z.string() }) }),
       ),
     );
-    expect(resp).toEqualLeft(expect.objectContaining({ name: 'INVALID_RESPONSE' }));
+    expect(resp).toEqualLeft(expect.objectContaining(HTTP_ERRORS.InvalidResponse));
   });
 
   it.each([
-    { statusCode: '400', error: HTTP_ERRORS.INVALID_REQUEST },
-    { statusCode: '401', error: HTTP_ERRORS.UNAUTHORIZED },
-    { statusCode: '403', error: HTTP_ERRORS.FORBIDDED },
-    { statusCode: '404', error: HTTP_ERRORS.NOT_FOUND },
-    { statusCode: '409', error: HTTP_ERRORS.BUSINESS_ERROR },
-    { statusCode: '4xx', error: HTTP_ERRORS.CLIENT_SIDE_ERROR },
-    { statusCode: '500', error: HTTP_ERRORS.INTERNAL_SERVER_ERROR },
-    { statusCode: '5xx', error: HTTP_ERRORS.SERVER_SIDE_ERROR },
+    { statusCode: '400', error: HTTP_ERRORS.InvalidRequest },
+    { statusCode: '401', error: HTTP_ERRORS.Unauthorized },
+    { statusCode: '403', error: HTTP_ERRORS.Forbidded },
+    { statusCode: '404', error: HTTP_ERRORS.NotFound },
+    { statusCode: '409', error: HTTP_ERRORS.BussinessError },
+    { statusCode: '4xx', error: HTTP_ERRORS.ClientSideError },
+    { statusCode: '500', error: HTTP_ERRORS.InternalServerError },
+    { statusCode: '5xx', error: HTTP_ERRORS.ServerSideError },
   ])(
     'WHEN server return HTTP status code $statusCode THEN it should return Left of correct Error',
     async ({ statusCode, error }) => {
@@ -175,7 +176,7 @@ describe('Axios HTTP client send request', () => {
     const httpClient = createAxiosHttpClient();
 
     const resp = await executeT(httpClient.sendRequest(createSendRequestOptions({ url: '/noResponse' })));
-    expect(resp).toEqualLeft(expect.objectContaining(HTTP_ERRORS.NO_RESPONSE));
+    expect(resp).toEqualLeft(expect.objectContaining(HTTP_ERRORS.NoResponse));
   });
 
   it('WHEN error happened before the request has been sent THEN it should return Left of correct Error', async () => {
@@ -186,6 +187,6 @@ describe('Axios HTTP client send request', () => {
     });
 
     const resp = await executeT(httpClient.sendRequest(createSendRequestOptions()));
-    expect(resp).toEqualLeft(expect.objectContaining(HTTP_ERRORS.SENDING_FAILED));
+    expect(resp).toEqualLeft(expect.objectContaining(HTTP_ERRORS.SendingFailed));
   });
 });

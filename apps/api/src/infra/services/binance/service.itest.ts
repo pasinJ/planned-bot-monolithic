@@ -2,7 +2,6 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
-import { is } from 'ramda';
 
 import { createMainLogger } from '#infra/logging.js';
 import { getBnbConfig } from '#shared/config/binance.js';
@@ -10,12 +9,12 @@ import { executeT } from '#shared/utils/fp.js';
 import exchangeInfoResp from '#test-utils/exchangeInfo.resp.json';
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
-import { BNB_API_PATHS } from './binance.constant.js';
-import { createBnbService as createBnbServiceOrg } from './binance.js';
-import { CreateBnbServiceError, GetBnbSpotSymbolsError } from './binance.type.js';
+import { BNB_ENDPOINT_PATHS } from './constants.js';
+import { isBnbServiceError } from './error.js';
+import { createBnbService as createBnbServiceOrg } from './service.js';
 
 const { HTTP_BASE_URL } = getBnbConfig();
-const { ping, exchangeInfo } = BNB_API_PATHS;
+const { ping, exchangeInfo } = BNB_ENDPOINT_PATHS;
 const pingPath = `${HTTP_BASE_URL}${ping}`;
 
 const msw = setupServer(rest.get(pingPath, (_, res, ctx) => res(ctx.status(200), ctx.json({}))));
@@ -41,11 +40,11 @@ describe('Create Binance service', () => {
     });
   });
   describe('WHEN unsuccessfully create Binance service (test connection failed)', () => {
-    it('THEN it should return Left of CREATE_BNB_SERVICE_ERROR', async () => {
+    it('THEN it should return Left of Binance service error', async () => {
       msw.use(rest.get(pingPath, (_, res, ctx) => res(ctx.status(500))));
 
       const result = await executeT(createBnbService());
-      expect(result).toEqualLeft(expect.toSatisfy(is(CreateBnbServiceError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
     });
   });
 });
@@ -63,7 +62,7 @@ describe('Get SPOT symbols', () => {
         executeT,
       );
 
-      const expected = [
+      expect(result).toEqualRight([
         {
           id: expect.any(String),
           name: 'ETHBTC',
@@ -97,12 +96,11 @@ describe('Get SPOT symbols', () => {
           createdAt: expect.any(Date),
           updatedAt: expect.any(Date),
         },
-      ];
-      expect(result).toEqualRight(expected);
+      ]);
     });
   });
   describe('WHEN unsuccessfully get SPOT symbols (error response)', () => {
-    it('THEN it should return Left of GET_BNB_SPOT_SYMBOLS_ERROR', async () => {
+    it('THEN it should return Left of Binance service error', async () => {
       msw.use(rest.get(exchangeInfoPath, (_, res, ctx) => res(ctx.status(500))));
 
       const result = await pipe(
@@ -110,7 +108,7 @@ describe('Get SPOT symbols', () => {
         te.chainW((service) => service.getSpotSymbols),
         executeT,
       );
-      expect(result).toEqualLeft(expect.toSatisfy(is(GetBnbSpotSymbolsError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
     });
   });
 });

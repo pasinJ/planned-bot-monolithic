@@ -9,12 +9,11 @@ import { FastifyServer } from '#infra/http/server.type.js';
 import { LoggerIo } from '#infra/logging.js';
 import { disconnectMongoDbClient } from '#infra/mongoDb/client.js';
 import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.js';
-import { getErrorSummary } from '#shared/error.js';
 import { executeT } from '#shared/utils/fp.js';
 
-type Deps = { httpServer: FastifyServer; mongoDbClient: Mongoose };
+type ShutdownDeps = { httpServer: FastifyServer; mongoDbClient: Mongoose };
 
-export function addGracefulShutdown(deps: Deps, logger: LoggerIo): io.IO<void> {
+export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO<void> {
   return () => {
     ['SIGTERM', 'SIGINT'].forEach((signal) => {
       process.on(signal, () => {
@@ -44,7 +43,7 @@ export function addGracefulShutdown(deps: Deps, logger: LoggerIo): io.IO<void> {
   };
 }
 
-function startGracefulShutdown(deps: Deps, logger: LoggerIo): t.Task<never> {
+function startGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): t.Task<never> {
   const { httpServer, mongoDbClient } = deps;
   const { GRACEFUL_PERIOD_MS } = getAppConfig();
 
@@ -53,21 +52,21 @@ function startGracefulShutdown(deps: Deps, logger: LoggerIo): t.Task<never> {
     te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
     te.chainFirstW(() => te.sequenceArray([closeHttpServer(httpServer)])),
     te.chainFirstW(() => te.sequenceArray([disconnectMongoDbClient(mongoDbClient, logger)])),
-    te.chainIOK((timer) =>
-      pipe(
-        () => clearTimeout(timer),
-        io.chain(() => logger.infoIo('Graceful shutdown done')),
-        io.map(() => process.exit(0)),
-      ),
+    te.matchE(
+      (error) =>
+        pipe(
+          logger.errorIo({ error }, `Graceful shutdown failed: %s`, error.toString()),
+          io.map(() => process.exit(1)),
+          t.fromIO,
+        ),
+      (timer) =>
+        pipe(
+          () => clearTimeout(timer),
+          io.chain(() => logger.infoIo('Graceful shutdown done')),
+          io.map(() => process.exit(0)),
+          t.fromIO,
+        ),
     ),
-    te.orLeft((error) =>
-      pipe(
-        logger.errorIo({ error }, `Graceful shutdown failed: ${getErrorSummary(error)}`),
-        io.map(() => process.exit(1)),
-        t.fromIO,
-      ),
-    ),
-    te.toUnion,
   );
 }
 

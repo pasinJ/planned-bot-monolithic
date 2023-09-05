@@ -3,7 +3,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid } from 'fp-ts/lib/function.js';
 
 import { LoggerIo } from '#infra/logging.js';
-import { BnbService } from '#infra/services/binance.type.js';
+import { BnbService } from '#infra/services/binance/service.type.js';
 import { DateService } from '#infra/services/date.type.js';
 import { IdService } from '#infra/services/id.type.js';
 

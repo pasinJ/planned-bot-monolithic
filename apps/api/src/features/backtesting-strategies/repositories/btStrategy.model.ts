@@ -5,10 +5,10 @@ import { values } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
 import { timeframeEnum } from '#shared/domain/timeframe.js';
-import { createErrorFromUnknown } from '#shared/error.js';
+import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { CreateBtStrategyRepoError } from './btStrategy.repository.type.js';
-import { BtStrategy, executionStatusEnum } from './domain/btStrategy.entity.js';
+import { BtStrategy, executionStatusEnum } from '../domain/btStrategy.entity.js';
+import { BtStrategyRepoError, createBtStrategyRepoError } from './btStrategy.error.js';
 
 export const btStrategyModelName = 'BtStrategy';
 
@@ -37,16 +37,26 @@ const btStrategyModelSchema: SchemaDefinition<BtStrategyDoc> = {
 
 export function createBtStrategyModel(
   client: Mongoose,
-): ioe.IOEither<CreateBtStrategyRepoError, BtStrategyModel> {
+): ioe.IOEither<BtStrategyRepoError<'CreateBtStrategyRepoError'>, BtStrategyModel> {
   return pipe(
     ioe.tryCatch(
       () => new client.Schema<BtStrategyDoc>(btStrategyModelSchema),
-      createErrorFromUnknown(CreateBtStrategyRepoError, 'CREATE_SCHEMA_ERROR'),
+      createErrorFromUnknown(
+        createBtStrategyRepoError(
+          'CreateBtStrategyRepoError',
+          'Creating a model schema for backtesting strategy by Mongoose failed',
+        ),
+      ),
     ),
     ioe.chain((schema) =>
       ioe.tryCatch(
         () => client.model<BtStrategyDoc>(btStrategyModelName, schema),
-        createErrorFromUnknown(CreateBtStrategyRepoError, 'CREATE_MODEL_ERROR'),
+        createErrorFromUnknown(
+          createBtStrategyRepoError(
+            'CreateBtStrategyRepoError',
+            'Creating a model for backtesting strategy by Mongoose failed',
+          ),
+        ),
       ),
     ),
   );

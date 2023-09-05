@@ -4,10 +4,10 @@ import { IndexDefinition, Model, Mongoose, SchemaDefinition } from 'mongoose';
 import { values } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
-import { createErrorFromUnknown } from '#shared/error.js';
+import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { Symbol } from './domain/symbol.entity.js';
-import { CreateSymbolRepoError } from './symbol.repository.type.js';
+import { Symbol } from '../domain/symbol.entity.js';
+import { SymbolRepoError, createSymbolRepoError } from './symbol.error.js';
 
 export const symbolModelName = 'Symbol';
 
@@ -30,16 +30,25 @@ const symbolModelSchema: SchemaDefinition<SymbolDoc> = {
 };
 const index: IndexDefinition = { name: 1, exchange: 1 };
 
-export function createSymbolModel(client: Mongoose): ioe.IOEither<CreateSymbolRepoError, SymbolModel> {
+export function createSymbolModel(
+  client: Mongoose,
+): ioe.IOEither<SymbolRepoError<'CreateSymbolRepoError'>, SymbolModel> {
   return pipe(
     ioe.tryCatch(
       () => new client.Schema<SymbolDoc>(symbolModelSchema).index(index, { unique: true }),
-      createErrorFromUnknown(CreateSymbolRepoError, 'CREATE_SCHEMA_ERROR'),
+      createErrorFromUnknown(
+        createSymbolRepoError(
+          'CreateSymbolRepoError',
+          'Creating a model schema for symbol by Mongoose failed',
+        ),
+      ),
     ),
     ioe.chain((schema) =>
       ioe.tryCatch(
         () => client.model<SymbolDoc>(symbolModelName, schema),
-        createErrorFromUnknown(CreateSymbolRepoError, 'CREATE_MODEL_ERROR'),
+        createErrorFromUnknown(
+          createSymbolRepoError('CreateSymbolRepoError', 'Creating a model for symbol by Mongoose failed'),
+        ),
       ),
     ),
   );

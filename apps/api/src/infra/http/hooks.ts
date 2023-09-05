@@ -1,9 +1,15 @@
-import { onSendHookHandler, preValidationHookHandler } from 'fastify';
+import { RouteOptions, onSendHookHandler, preValidationHookHandler } from 'fastify';
 import { gte, isNil } from 'ramda';
 
-import { getErrorSummary } from '#shared/error.js';
+import { isAppError } from '#shared/errors/appError.js';
+import { createExternalError } from '#shared/errors/externalError.js';
 
-import { FastifyServer, InternalHttpServerError } from './server.type.js';
+import { FastifyServer } from './server.type.js';
+
+export const commonHooksForAppRoutes: Pick<RouteOptions, 'preValidation' | 'onSend'> = {
+  preValidation: preValidationHook,
+  onSend: onSendHook,
+};
 
 export const setNotFoundHandler = (fastify: FastifyServer) => {
   return fastify.setNotFoundHandler((req, reply) => {
@@ -12,27 +18,27 @@ export const setNotFoundHandler = (fastify: FastifyServer) => {
     const message = `Route ${method} [${url}] not found`;
     log.info({ request: { headers, body } }, message);
 
-    void reply.code(404).send({ error: { name: 'Route not found', message } });
+    void reply.code(404).send({ error: { name: 'AppError', type: 'RouteNotFound', message } });
   });
 };
 
 export const setErrorHandler = (fastify: FastifyServer): void => {
-  fastify.setErrorHandler((fastifyError, _, reply) => {
+  fastify.setErrorHandler((error, _, reply) => {
     const { statusCode, log } = reply;
-
-    if (isNil(statusCode) || statusCode === 200) void reply.code(fastifyError.statusCode ?? 500);
-
-    const error = new InternalHttpServerError(
-      'INTERNAL_HTTP_SERVER_ERROR',
-      `Unhandled error happened in HTTP server: ${getErrorSummary(fastifyError)}`,
-    ).causedBy(fastifyError);
     const isServerError = gte(statusCode, 500);
     const logFn = isServerError ? log.error.bind(log) : log.info.bind(log);
-    const logMsg = `Fastify handles error: ${getErrorSummary(error)}`;
 
-    logFn({ error }, logMsg);
+    if (isAppError(error)) {
+      logFn({ error }, error.toString());
+      return reply.send({ error });
+    } else {
+      const externalError = createExternalError({ message: 'Fastify error happened', cause: error });
+      logFn({ error: externalError }, `Fastify got error (${error.name}${error.message})`);
 
-    return reply.send({ error });
+      if (isNil(statusCode) || statusCode === 200) void reply.code(error.statusCode ?? 500);
+
+      return reply.send({ error: externalError });
+    }
   });
 };
 

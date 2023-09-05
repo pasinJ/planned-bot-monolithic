@@ -2,7 +2,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid } from 'fp-ts/lib/function.js';
 import { is } from 'ramda';
 
-import { GetBnbSpotSymbolsError } from '#infra/services/binance.type.js';
+import { createBnbServiceError } from '#infra/services/binance/error.js';
 import { executeT } from '#shared/utils/fp.js';
 import { resetEnvVar, setEnvVar } from '#test-utils/envVar.js';
 import { generateArrayOf } from '#test-utils/faker.js';
@@ -27,7 +27,9 @@ function setupGetSymbolsFailed() {
   const { deps } = setupSuccessCase();
   return {
     ...deps,
-    bnbService: mockBnbService({ getSpotSymbols: te.left(new GetBnbSpotSymbolsError()) }),
+    bnbService: mockBnbService({
+      getSpotSymbols: te.left(createBnbServiceError('GetBnbSpotSymbolsError', 'Mock')),
+    }),
   };
 }
 function setupAddSymbolsFailed() {

@@ -7,7 +7,7 @@ import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrate
 import { setupTestServer } from '#test-utils/httpServer.js';
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
-import { AddBtStrategyError } from '../btStrategy.repository.type.js';
+import { createBtStrategyRepoError } from '../repositories/btStrategy.error.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { AddBtStrategyControllerDeps, buildAddBtStrategyController } from './addBtStrategy.js';
 
@@ -31,9 +31,8 @@ function setupSuccessfullyCreate() {
   return { httpServer: setupServer({ idService, dateService }), id, currentDate };
 }
 function setupRepoError() {
-  const btStrategyRepo = mockBtStrategyRepo({
-    add: jest.fn().mockReturnValue(te.left(new AddBtStrategyError())),
-  });
+  const error = createBtStrategyRepoError('AddBtStrategyError', 'Mock');
+  const btStrategyRepo = mockBtStrategyRepo({ add: jest.fn().mockReturnValue(te.left(error)) });
 
   return setupServer({ btStrategyRepo });
 }

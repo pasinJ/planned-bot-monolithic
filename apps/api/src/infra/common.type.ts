@@ -1,7 +1,7 @@
-import { BtStrategyRepo } from '#features/backtesting-strategies/btStrategy.repository.type.js';
-import type { SymbolRepo } from '#features/symbols/symbol.repository.type.js';
+import type { BtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy.type.js';
+import type { SymbolRepo } from '#features/symbols/repositories/symbol.type.js';
 
-import type { BnbService } from './services/binance.type.js';
+import type { BnbService } from './services/binance/service.type.js';
 import type { DateService } from './services/date.type.js';
 import type { IdService } from './services/id.type.js';
 

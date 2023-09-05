@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { assoc, dissoc, is, omit } from 'ramda';
+import { assoc, dissoc, omit } from 'ramda';
 
 import {
   invalidDate,
@@ -12,12 +12,8 @@ import {
 } from '#test-utils/faker.js';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
 
-import {
-  CreateNewBtStrategyError,
-  btStrategySchema,
-  createNewBtStrategy,
-  executionStatusEnum,
-} from './btStrategy.entity.js';
+import { btStrategySchema, createNewBtStrategy, executionStatusEnum } from './btStrategy.entity.js';
+import { isBtStrategyDomainError } from './btStrategy.error.js';
 
 const validBtStrategy = mockBtStrategy();
 
@@ -292,7 +288,7 @@ describe('Create new backtesting strategy entity', () => {
       const currentDate = new Date('invalid');
       const entity = createNewBtStrategy(data, currentDate);
 
-      expect(entity).toEqualLeft(expect.toSatisfy(is(CreateNewBtStrategyError)));
+      expect(entity).toEqualLeft(expect.toSatisfy(isBtStrategyDomainError));
     });
   });
 });

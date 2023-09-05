@@ -1,17 +1,17 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid, pipe } from 'fp-ts/lib/function.js';
 
-import {
-  AddSymbolsError,
-  CountAllSymbolsError,
-  SymbolRepo,
-} from '#features/symbols/symbol.repository.type.js';
+import { SymbolRepoError } from '#features/symbols/repositories/symbol.error.js';
+import { SymbolRepo } from '#features/symbols/repositories/symbol.type.js';
 import { LoggerIo } from '#infra/logging.js';
-import { BnbService, GetBnbSpotSymbolsError } from '#infra/services/binance.type.js';
+import { BnbServiceError } from '#infra/services/binance/error.js';
+import { BnbService } from '#infra/services/binance/service.type.js';
 import { getAppConfig } from '#shared/config/app.js';
 
 type StartupProcessDeps = { bnbService: BnbService; symbolRepo: SymbolRepo; logger: LoggerIo };
-type StartupError = CountAllSymbolsError | GetBnbSpotSymbolsError | AddSymbolsError;
+type StartupError =
+  | SymbolRepoError<'CountAllSymbolsError' | 'AddSymbolError'>
+  | BnbServiceError<'GetBnbSpotSymbolsError'>;
 
 export function startupProcess(deps: StartupProcessDeps): te.TaskEither<StartupError, void> {
   const { logger } = deps;

@@ -1,22 +1,4 @@
-import te from 'fp-ts/lib/TaskEither.js';
 import { z } from 'zod';
-
-import { CreateSymbolError, Symbol } from '#features/symbols/domain/symbol.entity.js';
-import { HttpError } from '#infra/http/client.type.js';
-import { CustomError, ExternalError } from '#shared/error.js';
-
-export type BnbService = {
-  getSpotSymbols: te.TaskEither<GetBnbSpotSymbolsError, readonly Symbol[]>;
-};
-
-export class CreateBnbServiceError extends CustomError<'CREATE_BNB_SERVICE_ERROR', ExternalError>(
-  'CREATE_BNB_SERVICE_ERROR',
-  'Error happened when try to create BNB service',
-) {}
-export class GetBnbSpotSymbolsError extends CustomError<
-  'GET_BNB_SPOT_SYMBOLS_ERROR',
-  HttpError | CreateSymbolError
->('GET_BNB_SPOT_SYMBOLS_ERROR', 'Error happened when try to get BNB SPOT symbols') {}
 
 export type ExchangeInfoRespFilterSchema = z.infer<typeof exchangeInfoRespFilterSchema>;
 const exchangeInfoRespFilterSchema = z.discriminatedUnion('filterType', [
@@ -61,6 +43,7 @@ const exchangeInfoRespFilterSchema = z.discriminatedUnion('filterType', [
   z.object({ filterType: z.literal('MAX_POSITION') }),
   z.object({ filterType: z.literal('TRAILING_DELTA') }),
 ]);
+export type ExchangeInfoResp = z.infer<typeof exchangeInfoRespSchema>;
 export const exchangeInfoRespSchema = z.object({
   timezone: z.string(),
   serverTime: z.number(),

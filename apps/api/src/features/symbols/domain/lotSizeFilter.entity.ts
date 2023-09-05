@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { nonNegativeFloat8Digits, positiveFloat8Digits } from '#shared/common.type.js';
 
+export type LotSizeFilter = z.infer<typeof lotSizeFilterSchema>;
 export const lotSizeFilterSchema = z
   .object({
     type: z.literal('LOT_SIZE'),
@@ -16,4 +17,3 @@ export const lotSizeFilterSchema = z
       path: ['maxQty'],
     }),
   );
-export type LotSizeFilter = z.infer<typeof lotSizeFilterSchema>;
