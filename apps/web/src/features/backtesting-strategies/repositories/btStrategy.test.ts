@@ -1,15 +1,15 @@
 import { setupServer } from 'msw/node';
-import { is, omit } from 'ramda';
+import { omit } from 'ramda';
 
 import { createAxiosHttpClient } from '#infra/axiosHttpClient';
+import { executeT } from '#shared/utils/fp';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { addRestRoute, createApiPath } from '#test-utils/msw';
-import { executeT } from '#utils/fp';
 
 import { createBtStrategyRepo } from './btStrategy';
 import { API_ENDPOINTS } from './btStrategy.constant';
-import { AddBtStrategyError, GetBtStrategiesError } from './btStrategy.type';
+import { isBtStrategyRepoError } from './btStrategy.error';
 
 const { GET_BT_STRATEGIES, ADD_BT_STRATEGY } = API_ENDPOINTS;
 const server = setupServer();
@@ -58,13 +58,13 @@ describe('Get backtesting strategies', () => {
     });
   });
   describe('WHEN external system return Http error', () => {
-    it('THEN it should return Left of error', async () => {
+    it('THEN it should return Left of backtesting strategy error', async () => {
       server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
 
       const repository = createBtStrategyRepo({ httpClient });
       const result = await executeT(repository.getBtStrategies);
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(GetBtStrategiesError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
     });
   });
 });
@@ -98,13 +98,13 @@ describe('Add backtesting strategy', () => {
     });
   });
   describe('WHEN external system return Http error', () => {
-    it('THEN it should return Left of error', async () => {
+    it('THEN it should return Left of backtesting strategy error', async () => {
       server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
 
       const repository = createBtStrategyRepo({ httpClient });
       const result = await executeT(repository.addBtStrategy(mockData()));
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(AddBtStrategyError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
     });
   });
 });

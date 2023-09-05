@@ -1,7 +1,7 @@
 import { pick } from 'ramda';
 
-import { SymbolModel, symbolModelName } from '#features/symbols/symbol.model.js';
-import { createSymbolRepo } from '#features/symbols/symbol.repository.js';
+import { createSymbolRepo } from '#features/symbols/repositories/symbol.js';
+import { SymbolModel, symbolModelName } from '#features/symbols/repositories/symbol.model.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { generateArrayOf } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/features/symbols/entities.js';

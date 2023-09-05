@@ -4,7 +4,8 @@ import { pipe } from 'fp-ts/lib/function';
 import { HttpClient } from '#infra/httpClient.type';
 
 import { API_ENDPOINTS } from './symbol.constant';
-import { GetSymbolsError, SymbolRepo } from './symbol.type';
+import { createSymbolRepoError } from './symbol.error';
+import { SymbolRepo } from './symbol.type';
 
 const { GET_SYMBOLS } = API_ENDPOINTS;
 
@@ -16,6 +17,8 @@ function getSymbols({ httpClient }: { httpClient: HttpClient }): SymbolRepo['get
   const { method, url, responseSchema } = GET_SYMBOLS;
   return pipe(
     httpClient.sendRequest({ method, url, responseSchema }),
-    te.mapLeft((error) => new GetSymbolsError().causedBy(error)),
+    te.mapLeft((error) =>
+      createSymbolRepoError('GetSymbolsError', 'Getting symbols from backend failed', error),
+    ),
   );
 }

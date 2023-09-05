@@ -1,12 +1,15 @@
 import ioe from 'fp-ts/lib/IOEither.js';
 
-import { createErrorFromUnknown } from '#shared/error.js';
+import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { FastifyServer, StartHttpServerError } from './server.type.js';
+import { HttpServerError, createAddHttpRouteError } from './server.error.js';
+import { FastifyServer } from './server.type.js';
 
-export function addGeneralRoutes(instance: FastifyServer): ioe.IOEither<StartHttpServerError, FastifyServer> {
+export function addGeneralRoutes(
+  instance: FastifyServer,
+): ioe.IOEither<HttpServerError<'AddRouteError'>, FastifyServer> {
   return ioe.tryCatch(
     () => instance.head('/', (_, reply) => reply.code(200).send()),
-    createErrorFromUnknown(StartHttpServerError, 'ADD_ROUTE_ERROR'),
+    createErrorFromUnknown(createAddHttpRouteError('HEAD', '/')),
   );
 }

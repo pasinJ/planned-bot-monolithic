@@ -4,8 +4,9 @@ import { createBtStrategyRepo } from '#features/backtesting-strategies/repositor
 import { createSymbolRepo } from '#features/symbols/repositories/symbol';
 
 import { createAxiosHttpClient } from './axiosHttpClient';
+import { API_BASE_URL } from './httpClient.constant';
 
-const httpClient = createAxiosHttpClient();
+const httpClient = createAxiosHttpClient({ baseURL: API_BASE_URL });
 const defaultContext = {
   localStorage: window.localStorage,
   eventEmitter: new EventTarget(),
@@ -18,7 +19,9 @@ export const InfraContext = createContext(defaultContext);
 
 export default function InfraProvider({
   children,
-  init = {},
-}: PropsWithChildren<{ init?: Partial<InfraContextValue> }>) {
-  return <InfraContext.Provider value={{ ...defaultContext, ...init }}>{children}</InfraContext.Provider>;
+  overrides = {},
+}: PropsWithChildren<{ overrides?: Partial<InfraContextValue> }>) {
+  return (
+    <InfraContext.Provider value={{ ...defaultContext, ...overrides }}>{children}</InfraContext.Provider>
+  );
 }

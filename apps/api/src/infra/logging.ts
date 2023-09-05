@@ -56,6 +56,47 @@ const redactConf: PinoLoggerOptions['redact'] = {
   censor: '** REDACTED **',
 };
 
+export function createMainLogger(): PinoLogger {
+  const appConfig = getAppConfig();
+  return appConfig.ENV === 'test'
+    ? createTestLogger()
+    : appConfig.ENV === 'production'
+    ? createProdLogger(appConfig)
+    : createDevLogger(appConfig);
+}
+
+export function createLogger(loggerName: string, mainLogger: PinoLogger): PinoLogger {
+  return mainLogger.child({ name: loggerName });
+}
+
+export function createLoggerIo(loggerName: string, mainLogger: PinoLogger): LoggerIo {
+  return wrapLogger(createLogger(loggerName, mainLogger));
+}
+
+export function wrapLogger(logger: PinoLogger): LoggerIo {
+  return {
+    ...pick(['trace', 'debug', 'info', 'warn', 'error', 'fatal'], logger),
+    traceIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.trace(...args)) as LogFnIo,
+    debugIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.debug(...args)) as LogFnIo,
+    infoIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.info(...args)) as LogFnIo,
+    warnIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.warn(...args)) as LogFnIo,
+    errorIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.error(...args)) as LogFnIo,
+    fatalIo: ((...args: [msg: string, ...args: unknown[]]) =>
+      () =>
+        logger.fatal(...args)) as LogFnIo,
+  };
+}
+
 function createTestLogger(): PinoLogger {
   return pino({ enabled: false });
 }
@@ -100,45 +141,4 @@ function createOutputStreams(enableLogFile: boolean, logFilePath: LogFilePath) {
         { level: 'trace', stream: destination({ dest: logFilePath, mkdir: true }) },
       ])
     : multistream(stdStreams, { dedupe: true });
-}
-
-export function createMainLogger(): PinoLogger {
-  const appConfig = getAppConfig();
-  return appConfig.ENV === 'test'
-    ? createTestLogger()
-    : appConfig.ENV === 'production'
-    ? createProdLogger(appConfig)
-    : createDevLogger(appConfig);
-}
-
-export function createLogger(loggerName: string, mainLogger: PinoLogger): PinoLogger {
-  return mainLogger.child({ name: loggerName });
-}
-
-export function createLoggerIo(loggerName: string, mainLogger: PinoLogger): LoggerIo {
-  return wrapLogger(createLogger(loggerName, mainLogger));
-}
-
-export function wrapLogger(logger: PinoLogger): LoggerIo {
-  return {
-    ...pick(['trace', 'debug', 'info', 'warn', 'error', 'fatal'], logger),
-    traceIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.trace(...args)) as LogFnIo,
-    debugIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.debug(...args)) as LogFnIo,
-    infoIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.info(...args)) as LogFnIo,
-    warnIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.warn(...args)) as LogFnIo,
-    errorIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.error(...args)) as LogFnIo,
-    fatalIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.fatal(...args)) as LogFnIo,
-  };
 }

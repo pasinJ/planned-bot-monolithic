@@ -2,15 +2,19 @@ import { UseQueryResult, useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 
 import { InfraContext } from '#infra/InfraProvider.context';
-import { executeTeToPromise } from '#utils/fp';
+import { executeTeToPromise } from '#shared/utils/fp';
 
 import { Symbol } from '../domain/symbol.valueObject';
-import { GetSymbolsError } from '../repositories/symbol.type';
+import { SymbolRepoError } from '../repositories/symbol.error';
 
-export default function useSymbols(enabled: boolean): UseQueryResult<readonly Symbol[], GetSymbolsError> {
+export default function useSymbols(
+  enabled: boolean,
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+): UseQueryResult<readonly Symbol[], SymbolRepoError<'GetSymbolsError'>> {
   const { symbolRepo } = useContext(InfraContext);
 
-  return useQuery<readonly Symbol[], GetSymbolsError>({
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+  return useQuery<readonly Symbol[], SymbolRepoError<'GetSymbolsError'>>({
     queryKey: ['symbols'],
     queryFn: () => executeTeToPromise(symbolRepo.getSymbols),
     staleTime: 5 * 60000,

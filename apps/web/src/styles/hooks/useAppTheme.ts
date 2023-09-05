@@ -6,12 +6,14 @@ import { pipe } from 'fp-ts/lib/function';
 import { equals } from 'ramda';
 import { useCallback, useSyncExternalStore } from 'react';
 
-import useLocalStorage from '#hooks/useLocalStorage';
+import useLocalStorage from '#state/hooks/useLocalStorage';
 import { Theme, themeEnum } from '#styles/theme.type';
 
-type UseAppThemeResult = { appTheme: Theme; setTheme: (val: Theme) => io.IO<void>; removeTheme: io.IO<void> };
-
-export default function useAppTheme(): UseAppThemeResult {
+export default function useAppTheme(): {
+  appTheme: Theme;
+  setTheme: (val: Theme) => io.IO<void>;
+  removeTheme: io.IO<void>;
+} {
   const preferDark = useMediaQuery('(prefers-color-scheme: dark)');
   const themeLocalStorage = useLocalStorage<Theme>({ key: 'theme' });
 

@@ -7,8 +7,8 @@ import { mockSymbol } from '#test-utils/features/symbols/entities.js';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
+import { createSymbolRepoError } from '../repositories/symbol.error.js';
 import { SYMBOLS_ENDPOINTS } from '../routes.constant.js';
-import { GetAllSymbolsError } from '../symbol.repository.type.js';
 import { GetSymbolsControllerDeps, buildGetSymbolsController } from './getSymbols.js';
 
 const { method, url } = SYMBOLS_ENDPOINTS.GET_SYMBOLS;
@@ -28,7 +28,8 @@ function setupExistingSymbols() {
   return { httpServer: setupServer({ symbolRepo }), symbols };
 }
 function setupRepoError() {
-  const symbolRepo = mockSymbolRepo({ getAll: jest.fn(te.left(new GetAllSymbolsError())) });
+  const error = createSymbolRepoError('GetAllSymbolsError', 'Mock');
+  const symbolRepo = mockSymbolRepo({ getAll: jest.fn(te.left(error)) });
   return setupServer({ symbolRepo });
 }
 

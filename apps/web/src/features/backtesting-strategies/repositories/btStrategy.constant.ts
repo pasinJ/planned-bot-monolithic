@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { stringDatetimeToDate } from '#utils/common.type';
+import { stringDatetimeToDate } from '#shared/common.type';
 
 import { btStrategySchema } from '../domain/btStrategy.entity';
 

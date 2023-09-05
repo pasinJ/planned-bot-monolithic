@@ -7,7 +7,6 @@ import { Control, useForm } from 'react-hook-form';
 
 import useAddBtStrategy from '#features/backtesting-strategies/hooks/useAddBtStrategy';
 import useSymbols from '#features/symbols/hooks/useSymbols';
-import { getErrorSummary } from '#utils/error';
 
 import { CurrencyField } from './CurrencyField';
 import { EndTimestampField } from './EndTimestampField';
@@ -74,11 +73,7 @@ export default function AddBtStrategyForm() {
           <StrategyBodyField control={control} />
         </Box>
       </Box>
-      {addBtStrategy.isSuccess
-        ? 'Success'
-        : addBtStrategy.isError
-        ? getErrorSummary(addBtStrategy.error)
-        : null}
+      {addBtStrategy.isSuccess ? 'Success' : addBtStrategy.isError ? addBtStrategy.error.toString() : null}
       <Box>
         <LoadingButton
           aria-label="submit add backtesting strategy"

@@ -1,36 +1,27 @@
-import { RouteOptions } from 'fastify';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { juxt, pick } from 'ramda';
+import { pick } from 'ramda';
 
 import { ApplicationDeps } from '#infra/common.type.js';
-import { onSendHook, preValidationHook } from '#infra/http/hooks.js';
-import { FastifyServer, StartHttpServerError } from '#infra/http/server.type.js';
-import { createErrorFromUnknown } from '#shared/error.js';
+import { commonHooksForAppRoutes } from '#infra/http/hooks.js';
+import { HttpServerError, createAddHttpRouteError } from '#infra/http/server.error.js';
+import { FastifyServer } from '#infra/http/server.type.js';
+import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
 import { buildAddBtStrategyController } from './controllers/addBtStrategy.js';
 import { BT_STRATEGY_ENDPOINTS } from './routes.constant.js';
 
-const commonHooks: Pick<RouteOptions, 'preValidation' | 'onSend'> = {
-  preValidation: preValidationHook,
-  onSend: onSendHook,
-};
-
 export function addBtStrategiesRoutes(
   instance: FastifyServer,
   deps: ApplicationDeps,
-): ioe.IOEither<StartHttpServerError, FastifyServer> {
-  return pipe(
-    ioe.fromIO(() => juxt([addAddBtStrategyRoute])(instance, deps)),
-    ioe.chain(ioe.sequenceArray),
-    ioe.map(() => instance),
-  );
+): ioe.IOEither<HttpServerError<'AddRouteError'>, FastifyServer> {
+  return pipe(ioe.sequenceArray([addAddBtStrategyRoute(instance, deps)]), ioe.as(instance));
 }
 
 function addAddBtStrategyRoute(
   instance: FastifyServer,
   deps: ApplicationDeps,
-): ioe.IOEither<StartHttpServerError, FastifyServer> {
+): ioe.IOEither<HttpServerError<'AddRouteError'>, FastifyServer> {
   const { method, url } = BT_STRATEGY_ENDPOINTS.ADD_BT_STRATEGY;
 
   return pipe(
@@ -39,8 +30,8 @@ function addAddBtStrategyRoute(
     ioe.of,
     ioe.chain((handler) =>
       ioe.tryCatch(
-        () => instance.route({ method, url, handler, ...commonHooks }),
-        createErrorFromUnknown(StartHttpServerError, 'ADD_ROUTE_ERROR'),
+        () => instance.route({ method, url, handler, ...commonHooksForAppRoutes }),
+        createErrorFromUnknown(createAddHttpRouteError(method, url)),
       ),
     ),
   );

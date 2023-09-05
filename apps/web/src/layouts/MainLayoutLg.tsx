@@ -7,7 +7,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import { PropsWithChildren, useState } from 'react';
+import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 
 import logo from '#assets/favicon-64x64.png';
 import MaterialSymbol from '#components/MaterialSymbol';
@@ -26,47 +26,72 @@ export default function MainLayoutLg({ children }: PropsWithChildren) {
 }
 
 function SideNav() {
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleDrawerToggle = () => setOpen((prevState) => !prevState);
-  const handleDrawerOpen = () => setOpen(true);
-  const handleDrawerClose = () => setOpen(false);
+  const toggleDrawer = () => setIsOpen((prevState) => !prevState);
+  const openDrawer = () => setIsOpen(true);
+  const closeDrawer = () => setIsOpen(false);
 
   const drawerCommonClassName = `bg-surface-1 flex overflow-x-hidden transition-width text-textColor-onPrimary`;
   const drawerClosedClassName = 'w-20 whitespace-nowrap';
-  const paperClassName = open
+  const paperClassName = isOpen
     ? `w-60 shadow-8 duration-muiEnter ease-sharp ${drawerCommonClassName}`
     : `shadow-4 duration-muiLeave ease-sharp ${drawerCommonClassName} ${drawerClosedClassName}`;
 
-  const DrawerHeader = (
+  return (
+    <Drawer
+      variant="permanent"
+      className={drawerClosedClassName}
+      onMouseEnter={openDrawer}
+      onMouseLeave={closeDrawer}
+      PaperProps={{ className: paperClassName }}
+    >
+      <Box className="flex h-full flex-col">
+        <DrawerHeader isOpen={isOpen} />
+        <Divider />
+        <DrawerBody isOpen={isOpen} />
+        <DrawerFooter isOpen={isOpen} toggleDrawer={toggleDrawer} />
+      </Box>
+    </Drawer>
+  );
+}
+
+function DrawerHeader({ isOpen }: { isOpen: boolean }) {
+  return (
     <Box className="flex items-center space-x-5 py-4 pl-4">
       <img src={logo} alt="service logo" className="w-12" />
-      <Typography variant="h4" className={open ? 'opacity-100' : 'opacity-0'}>
+      <Typography variant="h4" className={isOpen ? 'opacity-100' : 'opacity-0'}>
         Planned
       </Typography>
     </Box>
   );
-  const DrawerBody = (
+}
+
+function DrawerBody({ isOpen }: { isOpen: boolean }) {
+  return (
     <List className="h-full" component="nav">
       <SideNavItemButton
-        isNavOpening={open}
+        isOpen={isOpen}
         symbol="youtube_searched_for"
         text="Backtesting"
         navLinkComponent={BtMainPageLink}
       />
     </List>
   );
-  const DrawerFooter = (
+}
+
+function DrawerFooter({ isOpen, toggleDrawer }: { isOpen: boolean; toggleDrawer: MouseEventHandler }) {
+  return (
     <Box className="flex flex-col">
       <Divider />
-      <Box className={`flex px-3 py-1 ${open ? 'justify-end' : 'justify-center'}`}>
+      <Box className={`flex px-3 py-1 ${isOpen ? 'justify-end' : 'justify-center'}`}>
         <IconButton
           aria-label="toggle drawer"
           className="hoverable:hidden"
           color="inherit"
-          onClick={handleDrawerToggle}
+          onClick={toggleDrawer}
         >
-          {open ? (
+          {isOpen ? (
             <MaterialSymbol symbol="chevron_left" className="text-3xl" />
           ) : (
             <MaterialSymbol symbol="chevron_right" className="text-3xl" />
@@ -75,32 +100,17 @@ function SideNav() {
       </Box>
     </Box>
   );
-
-  return (
-    <Drawer
-      variant="permanent"
-      className={drawerClosedClassName}
-      onMouseEnter={handleDrawerOpen}
-      onMouseLeave={handleDrawerClose}
-      PaperProps={{ className: paperClassName }}
-    >
-      <Box className="flex h-full flex-col">
-        {DrawerHeader}
-        <Divider />
-        {DrawerBody}
-        {DrawerFooter}
-      </Box>
-    </Drawer>
-  );
 }
 
 function SideNavItemButton(props: {
-  isNavOpening: boolean;
+  isOpen: boolean;
   navLinkComponent: NavLinkComponent;
   symbol: string;
   text: string;
 }) {
-  const { isNavOpening, symbol, text, navLinkComponent } = props;
+  const { isOpen, symbol, text, navLinkComponent } = props;
+
+  console.log(isOpen);
 
   return (
     <ListItemButton
@@ -111,7 +121,7 @@ function SideNavItemButton(props: {
       <ListItemIcon className="text-inherit">
         <MaterialSymbol symbol={symbol} className="pb-1 pl-1.5 text-4xl" />
       </ListItemIcon>
-      <ListItemText className={`${isNavOpening ? 'opacity-100' : 'opacity-0'}`}>{text}</ListItemText>
+      <ListItemText className={`${isOpen ? 'opacity-100' : 'opacity-0'}`}>{text}</ListItemText>
     </ListItemButton>
   );
 }

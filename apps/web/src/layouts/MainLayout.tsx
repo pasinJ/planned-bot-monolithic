@@ -9,16 +9,11 @@ export default function MainLayout() {
   const theme = useTheme();
   const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
 
-  if (isLargeScreen)
-    return (
-      <MainLayoutLg>
-        <Outlet />
-      </MainLayoutLg>
-    );
-  else
-    return (
-      <MainLayoutSm>
-        <Outlet />
-      </MainLayoutSm>
-    );
+  const Layout = isLargeScreen ? MainLayoutLg : MainLayoutSm;
+
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
 }

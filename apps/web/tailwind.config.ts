@@ -13,9 +13,9 @@ export default {
   corePlugins: { preflight: false },
   theme: {
     screens: {
-      sm: breakpoints.SM_SCREEN + 'px',
-      md: breakpoints.MD_SCREEN + 'px',
-      lg: breakpoints.LG_SCREEN + 'px',
+      sm: breakpoints.SM_SCREEN_BP + 'px',
+      md: breakpoints.MD_SCREEN_BP + 'px',
+      lg: breakpoints.LG_SCREEN_BP + 'px',
       hoverable: { raw: '(hover: hover)' },
     },
     colors: ({ colors }) => ({

@@ -1,8 +1,8 @@
-import { LG_SCREEN, MD_SCREEN } from '#styles/theme.constant';
+import { LG_SCREEN_BP, MD_SCREEN_BP } from '#styles/theme.constant';
 
 describe('GIVEN user is using large screen device', () => {
   beforeEach(() => {
-    cy.viewport(LG_SCREEN, LG_SCREEN * 1.2);
+    cy.viewport(LG_SCREEN_BP, LG_SCREEN_BP * 1.2);
     cy.visit('/');
   });
 
@@ -19,7 +19,7 @@ describe('GIVEN user is using large screen device', () => {
 
 describe('GIVEN user is using other than large screen device', () => {
   beforeEach(() => {
-    cy.viewport(MD_SCREEN, MD_SCREEN * 1.2);
+    cy.viewport(MD_SCREEN_BP, MD_SCREEN_BP * 1.2);
     cy.visit('/');
   });
 

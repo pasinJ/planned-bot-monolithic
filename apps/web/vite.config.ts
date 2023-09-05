@@ -9,7 +9,7 @@ import { defineConfig } from 'vite';
 import EnvironmentPlugin from 'vite-plugin-environment';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-import { PRIMARY, SECONDARY } from './src/styles/theme.constant';
+import { PRIMARY_COLOR, SECONDARY_COLOR } from './src/styles/theme.constant';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -32,7 +32,7 @@ function replaceColorCssVariables() {
   ];
   const lightThemePrefix = 'LT_';
   const darkThemePrefix = 'DT_';
-  const paletteOptions = { primary: { main: PRIMARY }, secondary: { main: SECONDARY } };
+  const paletteOptions = { primary: { main: PRIMARY_COLOR }, secondary: { main: SECONDARY_COLOR } };
 
   console.log('Replacing color CSS variables start');
 

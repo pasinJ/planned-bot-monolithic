@@ -6,15 +6,16 @@ import { useContext } from 'react';
 import { z } from 'zod';
 
 import { InfraContext } from '#infra/InfraProvider.context';
-import { executeTeToPromise } from '#utils/fp';
-import { SchemaValidationError, parseWithZod } from '#utils/zod';
+import { executeTeToPromise } from '#shared/utils/fp';
+import { SchemaValidationError, parseWithZod } from '#shared/utils/zod';
 
 import { AddBtStrategyFormValues } from '../containers/AddBtStrategyForm/constants';
-import { AddBtStrategyData, AddBtStrategyError } from '../repositories/btStrategy.type';
+import { BtStrategyRepoError } from '../repositories/btStrategy.error';
+import { AddBtStrategyData } from '../repositories/btStrategy.type';
 
 export default function useAddBtStrategy(): UseMutationResult<
   void,
-  AddBtStrategyError | SchemaValidationError,
+  BtStrategyRepoError<'AddBtStrategyError'> | SchemaValidationError,
   AddBtStrategyFormValues
 > {
   const { btStrategyRepo } = useContext(InfraContext);

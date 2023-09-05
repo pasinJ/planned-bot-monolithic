@@ -1,5 +1,4 @@
 import te from 'fp-ts/lib/TaskEither.js';
-import { is } from 'ramda';
 
 import { executeT } from '#shared/utils/fp.js';
 import { randomExchangeName, randomTimeframe } from '#test-utils/domain.js';
@@ -13,8 +12,8 @@ import {
 import { mockBtStrategyRepo } from '#test-utils/features/btStrategies/repositories.js';
 import { mockDateService, mockIdService } from '#test-utils/services.js';
 
-import { AddBtStrategyError } from '../btStrategy.repository.type.js';
-import { CreateNewBtStrategyError } from '../domain/btStrategy.entity.js';
+import { isBtStrategyDomainError } from '../domain/btStrategy.error.js';
+import { createBtStrategyRepoError, isBtStrategyRepoError } from '../repositories/btStrategy.error.js';
 import { AddBtStrategyUseCaseData, AddBtStrategyUseCaseDeps, addBtStrategyUseCase } from './addBtStrategy.js';
 
 function mockDeps(overrides?: Partial<AddBtStrategyUseCaseDeps>): AddBtStrategyUseCaseDeps {
@@ -86,18 +85,17 @@ describe('WHEN try to add a backtesting strategy with invalid data', () => {
     const data = { ...mockValidData(), startTimestamp: new Date('invalid') };
     const result = await executeT(addBtStrategyUseCase(mockDeps(), data));
 
-    expect(result).toEqualLeft(expect.toSatisfy(is(CreateNewBtStrategyError)));
+    expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyDomainError));
   });
 });
 
 describe('WHEN adding a backtesting strategy using repository fails', () => {
   it('THEN it should return Left of error', async () => {
-    const btStrategyRepo = mockBtStrategyRepo({
-      add: jest.fn().mockReturnValue(te.left(new AddBtStrategyError())),
-    });
+    const error = createBtStrategyRepoError('AddBtStrategyError', 'Mock');
+    const btStrategyRepo = mockBtStrategyRepo({ add: jest.fn().mockReturnValue(te.left(error)) });
     const deps = mockDeps({ btStrategyRepo });
     const result = await executeT(addBtStrategyUseCase(deps, mockValidData()));
 
-    expect(result).toEqualLeft(expect.toSatisfy(is(AddBtStrategyError)));
+    expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
   });
 });

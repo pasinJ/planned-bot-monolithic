@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { positiveFloat8Digits } from '#shared/common.type.js';
 
+export type NotionalFilter = z.infer<typeof notionalFilterSchema>;
 export const notionalFilterSchema = z
   .object({
     type: z.literal('NOTIONAL'),
@@ -12,4 +13,3 @@ export const notionalFilterSchema = z
     avgPriceMins: z.number().int().nonnegative(),
   })
   .strict();
-export type NotionalFilter = z.infer<typeof notionalFilterSchema>;

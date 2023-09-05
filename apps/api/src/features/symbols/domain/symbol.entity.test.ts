@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { append, assoc, is, modify, omit, pick } from 'ramda';
+import { append, assoc, modify, omit, pick } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
 import {
@@ -11,7 +11,8 @@ import {
 } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/features/symbols/entities.js';
 
-import { CreateSymbolError, createSymbol, symbolSchema } from './symbol.entity.js';
+import { createSymbol, symbolSchema } from './symbol.entity.js';
+import { isSymbolDomainError } from './symbol.error.js';
 
 const validSymbol = mockSymbol();
 
@@ -184,7 +185,7 @@ describe('Create symbol entity', () => {
     });
   });
   describe('WHEN creating symbol entity failed', () => {
-    it('THEN it should return Left of CREATE_SYMBOL_ENTITY_ERROR', () => {
+    it('THEN it should return Left of symbol domain error', () => {
       const input = pick(
         [
           'id',
@@ -200,7 +201,7 @@ describe('Create symbol entity', () => {
       );
       const result = createSymbol({ ...input, baseAssetPrecision: -1 }, faker.date.anytime());
 
-      expect(result).toEqualLeft(expect.toSatisfy(is(CreateSymbolError)));
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolDomainError));
     });
   });
 });

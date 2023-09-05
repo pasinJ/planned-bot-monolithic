@@ -6,8 +6,10 @@ import { DateService } from '#infra/services/date.type.js';
 import { IdService } from '#infra/services/id.type.js';
 import { Timeframe } from '#shared/domain/timeframe.js';
 
-import { AddBtStrategyError, BtStrategyRepo } from '../btStrategy.repository.type.js';
-import { CreateNewBtStrategyError, createNewBtStrategy } from '../domain/btStrategy.entity.js';
+import { createNewBtStrategy } from '../domain/btStrategy.entity.js';
+import { BtStrategyDomainError } from '../domain/btStrategy.error.js';
+import { BtStrategyRepoError } from '../repositories/btStrategy.error.js';
+import { BtStrategyRepo } from '../repositories/btStrategy.type.js';
 
 export type AddBtStrategyUseCaseDeps = {
   btStrategyRepo: BtStrategyRepo;
@@ -32,13 +34,17 @@ export type AddBtStrategyUseCaseData = {
 export function addBtStrategyUseCase(
   dep: AddBtStrategyUseCaseDeps,
   data: AddBtStrategyUseCaseData,
-): te.TaskEither<CreateNewBtStrategyError | AddBtStrategyError, void> {
+): te.TaskEither<
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+  BtStrategyDomainError<'CreateBtStrategyError'> | BtStrategyRepoError<'AddBtStrategyError'>,
+  void
+> {
   const { idService, dateService, btStrategyRepo } = dep;
 
   return pipe(
     te.Do,
-    te.bindW('id', () => te.fromIO(idService.generateBtStrategyId)),
-    te.bindW('currentDate', () => te.fromIO(dateService.getCurrentDate)),
+    te.let('id', () => idService.generateBtStrategyId()),
+    te.let('currentDate', () => dateService.getCurrentDate()),
     te.bindW('btStrategy', ({ id, currentDate }) =>
       te.fromEither(createNewBtStrategy({ ...data, id }, currentDate)),
     ),

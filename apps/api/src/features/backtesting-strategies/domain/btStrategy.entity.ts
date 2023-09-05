@@ -10,8 +10,9 @@ import {
   nonNegativePercentage8Digits,
 } from '#shared/common.type.js';
 import { Timeframe, timeframeSchema } from '#shared/domain/timeframe.js';
-import { CustomError } from '#shared/error.js';
-import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
+import { parseWithZod } from '#shared/utils/zod.js';
+
+import { BtStrategyDomainError, createBtStrategyDomainError } from './btStrategy.error.js';
 
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');
@@ -73,22 +74,27 @@ type CreateNewBtStrategyData = {
   endTimestamp: Date;
   body: string;
 };
-export class CreateNewBtStrategyError extends CustomError<'CREATE_BT_STRATEGY_ERROR', SchemaValidationError>(
-  'CREATE_BT_STRATEGY_ERROR',
-  'Creating a new backtesting strategy entity failed because the given data is invalid',
-) {}
 export function createNewBtStrategy(
   data: CreateNewBtStrategyData,
   currentDate: Date,
-): e.Either<CreateNewBtStrategyError, BtStrategy> {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+): e.Either<BtStrategyDomainError<'CreateBtStrategyError'>, BtStrategy> {
+  const btStrategyEntity = {
+    ...data,
+    executionStatus: executionStatusEnum.IDLE,
+    version: 0,
+    createdAt: currentDate,
+    updatedAt: currentDate,
+  };
+
   return pipe(
-    parseWithZod(btStrategySchema, 'Validating backtesting strategy entity schema failed', {
-      ...data,
-      executionStatus: executionStatusEnum.IDLE,
-      version: 0,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-    }),
-    e.mapLeft((error) => new CreateNewBtStrategyError().causedBy(error)),
+    parseWithZod(btStrategySchema, 'Validating backtesting strategy entity schema failed', btStrategyEntity),
+    e.mapLeft((error) =>
+      createBtStrategyDomainError(
+        'CreateBtStrategyError',
+        'Creating a new backtesting strategy entity failed because the given data is invalid',
+        error,
+      ),
+    ),
   );
 }

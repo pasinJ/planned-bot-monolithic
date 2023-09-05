@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { exchangeNameSchema } from '#features/exchanges/domain/exchange';
-import { nonEmptyString } from '#utils/common.type';
+import { nonEmptyString } from '#shared/common.type';
 
 export const symbolSchema = z
   .object({

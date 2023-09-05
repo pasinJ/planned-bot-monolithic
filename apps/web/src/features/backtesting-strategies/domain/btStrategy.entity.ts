@@ -2,8 +2,8 @@ import { isBefore, isEqual } from 'date-fns';
 import { z } from 'zod';
 
 import { exchangeNameSchema } from '#features/exchanges/domain/exchange';
-import { timeframeSchema } from '#features/shared/domain/timeframe';
-import { nonEmptyString, nonNegativeFloat8Digits, nonNegativePercentage8Digits } from '#utils/common.type';
+import { nonEmptyString, nonNegativeFloat8Digits, nonNegativePercentage8Digits } from '#shared/common.type';
+import { timeframeSchema } from '#shared/domain/timeframe';
 
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');

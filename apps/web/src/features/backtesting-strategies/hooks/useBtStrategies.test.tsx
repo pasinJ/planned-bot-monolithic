@@ -1,13 +1,14 @@
 import { waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither';
-import { is } from 'ramda';
 
-import { generateArrayOf } from '#test-utils/faker';
+import { mockHttpError } from '#test-utils/error';
+import { generateArrayOf, randomString } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
 import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { renderHookWithContexts } from '#test-utils/render';
 
-import { BtStrategyRepo, GetBtStrategiesError } from '../repositories/btStrategy.type';
+import { createBtStrategyRepoError, isBtStrategyRepoError } from '../repositories/btStrategy.error';
+import { BtStrategyRepo } from '../repositories/btStrategy.type';
 import useBtStrategies from './useBtStrategies';
 
 function renderUseBacktestingStrategies(
@@ -51,9 +52,10 @@ describe('WHEN fetching data is successful', () => {
 
 describe('WHEN fetching data fails', () => {
   it('THEN it should return error property', async () => {
-    const btStrategyRepo = { getBtStrategies: jest.fn(te.left(new GetBtStrategiesError())) };
+    const error = createBtStrategyRepoError('GetStrategiesError', randomString(), mockHttpError());
+    const btStrategyRepo = { getBtStrategies: jest.fn(te.left(error)) };
     const { result } = renderUseBacktestingStrategies(true, { btStrategyRepo });
 
-    await waitFor(() => expect(result.current.error).toSatisfy(is(GetBtStrategiesError)));
+    await waitFor(() => expect(result.current.error).toSatisfy(isBtStrategyRepoError));
   });
 });

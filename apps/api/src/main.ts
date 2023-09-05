@@ -3,8 +3,8 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 import { omit } from 'ramda';
 
-import { createBtStrategyRepo } from '#features/backtesting-strategies/btStrategy.repository.js';
-import { createSymbolRepo } from '#features/symbols/symbol.repository.js';
+import { createBtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy.js';
+import { createSymbolRepo } from '#features/symbols/repositories/symbol.js';
 import { ApplicationDeps } from '#infra/common.type.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
@@ -12,10 +12,9 @@ import { createLoggerIo, createMainLogger } from '#infra/logging.js';
 import { createMongoDbClient } from '#infra/mongoDb/client.js';
 import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { startupProcess } from '#infra/process/startup.js';
-import { createBnbService } from '#infra/services/binance.js';
+import { createBnbService } from '#infra/services/binance/service.js';
 import { dateService } from '#infra/services/date.js';
 import { idService } from '#infra/services/id.js';
-import { getErrorSummary } from '#shared/error.js';
 import { executeT } from '#utils/fp.js';
 
 const mainLogger = createMainLogger();
@@ -29,12 +28,11 @@ await executeT(
     te.bindW('symbolRepo', (deps) => createSymbolRepoWithDeps(deps)),
     te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
     te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
+    te.mapLeft((x) => x),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
     te.chainFirstW((deps) => startHttpServerWithDeps(deps)),
     te.chainFirstIOK((deps) => addGracefulShutdown(deps, logger)),
-    te.orElseFirstIOK((error) =>
-      logger.errorIo({ error }, 'Starting process failed: %s', getErrorSummary(error)),
-    ),
+    te.orElseFirstIOK((error) => logger.errorIo({ error }, 'Starting process failed: %s', error.toString())),
     te.orElseFirstIOK(() => process.exit(1)),
   ),
 );
@@ -57,6 +55,9 @@ function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepo'>) {
   return startupProcess({ ...deps, logger: logger });
 }
 function startHttpServerWithDeps(deps: Deps) {
-  const { httpServer } = deps;
-  return startHttpServer(httpServer, { ...omit(['mongoDbClient', 'server'], deps), dateService, idService });
+  return startHttpServer(deps.httpServer, {
+    ...omit(['mongoDbClient', 'server'], deps),
+    dateService,
+    idService,
+  });
 }

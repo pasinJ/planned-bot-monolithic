@@ -6,23 +6,24 @@ import { z } from 'zod';
 
 import { exchangeNameEnum, exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
 import { nonEmptyString } from '#shared/common.type.js';
-import { CustomError } from '#shared/error.js';
-import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
+import { parseWithZod } from '#shared/utils/zod.js';
 
 import { LotSizeFilter, lotSizeFilterSchema } from './lotSizeFilter.entity.js';
 import { MarketLotSizeFilter, marketLotSizeFilterSchema } from './marketLotSizeFilter.entity.js';
 import { MinNotionalFilter, minNotionalFilterSchema } from './minNotionalFilter.entity.js';
 import { NotionalFilter, notionalFilterSchema } from './notionalFilter.entity.js';
 import { PriceFilter, priceFilterSchema } from './priceFilter.entity.js';
+import { SymbolDomainError, createSymbolDomainError } from './symbol.error.js';
 
-const symbolIdSchema = nonEmptyString.brand('SymbolId');
 export type SymbolId = z.infer<typeof symbolIdSchema>;
+const symbolIdSchema = nonEmptyString.brand('SymbolId');
 
 const symbolNameSchema = nonEmptyString.brand('SymbolName');
 
 const assetSchema = nonEmptyString.brand('Asset');
 const assetPrecisionSchema = z.number().nonnegative().int().brand('Precision');
 
+export type OrderType = z.infer<typeof orderTypeSchema>;
 const orderTypeSchema = z.enum([
   'LIMIT',
   'MARKET',
@@ -32,10 +33,10 @@ const orderTypeSchema = z.enum([
   'TAKE_PROFIT_LIMIT',
   'LIMIT_MAKER',
 ]);
-export type OrderType = z.infer<typeof orderTypeSchema>;
-const orderTypesSchema = z.array(orderTypeSchema);
 export const orderTypeEnum = orderTypeSchema.enum;
+const orderTypesSchema = z.array(orderTypeSchema);
 
+export type SymbolFilters = z.infer<typeof filtersSchema>;
 const filtersSchema = z.array(
   z.discriminatedUnion('type', [
     lotSizeFilterSchema.innerType(),
@@ -45,12 +46,12 @@ const filtersSchema = z.array(
     priceFilterSchema.innerType(),
   ]),
 );
-export type SymbolFilters = z.infer<typeof filtersSchema>;
 
 const versionSchema = z.number().nonnegative().int().brand('SymbolVersion');
 
 const timestampSchema = z.date();
 
+export type Symbol = z.infer<typeof symbolSchema>;
 export const symbolSchema = z
   .object({
     id: symbolIdSchema,
@@ -78,7 +79,6 @@ export const symbolSchema = z
       path: ['updatedAt'],
     }),
   );
-export type Symbol = z.infer<typeof symbolSchema>;
 
 type CreateSymbolData = {
   id: string;
@@ -90,19 +90,27 @@ type CreateSymbolData = {
   orderTypes: string[];
   filters: (LotSizeFilter | MarketLotSizeFilter | MinNotionalFilter | NotionalFilter | PriceFilter)[];
 };
-export function createSymbol(data: CreateSymbolData, currentDate: Date): e.Either<CreateSymbolError, Symbol> {
+export function createSymbol(
+  data: CreateSymbolData,
+  currentDate: Date,
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+): e.Either<SymbolDomainError<'CreateSymbolError'>, Symbol> {
+  const symbolEntity = {
+    ...data,
+    exchange: exchangeNameEnum.BINANCE,
+    version: 0,
+    createdAt: currentDate,
+    updatedAt: currentDate,
+  };
+
   return pipe(
-    parseWithZod(symbolSchema, 'Validating symbol entity schema failed', {
-      ...data,
-      exchange: exchangeNameEnum.BINANCE,
-      version: 0,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-    }),
-    e.mapLeft((error) => new CreateSymbolError().causedBy(error)),
+    parseWithZod(symbolSchema, 'Validating symbol entity schema failed', symbolEntity),
+    e.mapLeft((error) =>
+      createSymbolDomainError(
+        'CreateSymbolError',
+        'Creating a new symbol entity failed because the given data is invalid',
+        error,
+      ),
+    ),
   );
 }
-export class CreateSymbolError extends CustomError<'CREATE_SYMBOL_ENTITY_ERROR', SchemaValidationError>(
-  'CREATE_SYMBOL_ENTITY_ERROR',
-  'Error happened when try to create a symbol entity',
-) {}

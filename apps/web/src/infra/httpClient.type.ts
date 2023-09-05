@@ -1,45 +1,23 @@
 import * as te from 'fp-ts/lib/TaskEither';
-import { ZodTypeDef, z } from 'zod';
+import { z } from 'zod';
 
-import { CustomError, ExternalError } from '#utils/error';
-import { SchemaValidationError } from '#utils/zod';
+import { HttpError } from './httpClient.error';
 
 export type HttpClient = { sendRequest: SendRequest };
 
-export class HttpError extends CustomError<HttpErrorName, SchemaValidationError | ExternalError>(
-  'UNHANDLED_ERROR',
-  'Error happened when try to send HTTP request to external system',
-) {}
-export type HttpErrorName =
-  | 'INVALID_REQUEST'
-  | 'UNAUTHORIZED'
-  | 'FORBIDDED'
-  | 'NOT_FOUND'
-  | 'BUSINESS_ERROR'
-  | 'CLIENT_SIDE_ERROR'
-  | 'INTERNAL_SERVER_ERROR'
-  | 'SERVER_SIDE_ERROR'
-  | 'SENDING_FAILED'
-  | 'NO_RESPONSE'
-  | 'INVALID_RESPONSE'
-  | 'UNHANDLED_ERROR';
-
-type SendRequest = <
-  T extends z.ZodType<Output, Def, Input>,
-  Output,
-  Def extends ZodTypeDef = ZodTypeDef,
-  Input = Output,
-  D = unknown,
->(options: {
-  method: Method;
+type SendRequest = <ResponseSchema extends z.ZodTypeAny, Data = unknown>(
+  options: SendRequestOptions<ResponseSchema, Data>,
+) => te.TaskEither<HttpError, z.output<ResponseSchema>>;
+type SendRequestOptions<ResponseSchema extends z.ZodTypeAny, Data = unknown> = {
+  method: HttpMethod;
   url: string;
   headers?: Headers;
   params?: Params;
-  body?: D;
-  responseSchema: T;
-}) => te.TaskEither<HttpError, z.output<T>>;
+  body?: Data;
+  responseSchema: ResponseSchema;
+};
 
-export type Method =
+export type HttpMethod =
   | 'GET'
   | 'POST'
   | 'PUT'

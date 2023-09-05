@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { nonNegativeFloat8Digits, positiveFloat8Digits } from '#shared/common.type.js';
 
+export type MarketLotSizeFilter = z.infer<typeof marketLotSizeFilterSchema>;
 export const marketLotSizeFilterSchema = z
   .object({
     type: z.literal('MARKET_LOT_SIZE'),
@@ -16,4 +17,3 @@ export const marketLotSizeFilterSchema = z
       path: ['maxQty'],
     }),
   );
-export type MarketLotSizeFilter = z.infer<typeof marketLotSizeFilterSchema>;
