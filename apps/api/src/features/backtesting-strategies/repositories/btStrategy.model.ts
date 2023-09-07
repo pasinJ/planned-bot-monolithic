@@ -4,6 +4,7 @@ import { Model, Mongoose, SchemaDefinition } from 'mongoose';
 import { values } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
+import { languageEnum } from '#shared/domain/language.js';
 import { timeframeEnum } from '#shared/domain/timeframe.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
@@ -28,6 +29,7 @@ const btStrategyModelSchema: SchemaDefinition<BtStrategyDoc> = {
   maxNumKlines: { type: Number, required: true },
   startTimestamp: { type: Date, required: true },
   endTimestamp: { type: Date, required: true },
+  language: { type: String, required: true, enum: values(languageEnum) },
   body: { type: String, required: true },
   executionStatus: { type: String, required: true, enum: values(executionStatusEnum) },
   version: { type: Number, required: true },

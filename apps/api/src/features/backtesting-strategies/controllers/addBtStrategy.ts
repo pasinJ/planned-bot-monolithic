@@ -8,6 +8,7 @@ import { exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
 import { DateService } from '#infra/services/date.type.js';
 import { IdService } from '#infra/services/id.type.js';
 import { nonEmptyString, nonNegativeFloat8Digits, stringDatetimeToDate } from '#shared/common.type.js';
+import { languageSchema } from '#shared/domain/language.js';
 import { timeframeSchema } from '#shared/domain/timeframe.js';
 import { executeT } from '#shared/utils/fp.js';
 import { parseWithZod } from '#shared/utils/zod.js';
@@ -28,6 +29,7 @@ const requestBodySchema = z
     makerFeeRate: nonNegativeFloat8Digits,
     startTimestamp: stringDatetimeToDate,
     endTimestamp: stringDatetimeToDate,
+    language: languageSchema,
     body: nonEmptyString,
   })
   .strict();

@@ -1,4 +1,4 @@
-import { randomExchangeName, randomTimeframe } from '#test-utils/domain.js';
+import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain.js';
 import {
   randomBeforeAndAfterDate,
   randomPositiveFloat,
@@ -20,6 +20,7 @@ export function mockValidAddBtStrategyRequestBody() {
     makerFeeRate: randomPositiveFloat(),
     startTimestamp: before.toJSON(),
     endTimestamp: after.toJSON(),
+    language: randomLanguage(),
     body: randomString(),
   };
 }

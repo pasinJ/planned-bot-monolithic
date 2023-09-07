@@ -1,7 +1,7 @@
 import te from 'fp-ts/lib/TaskEither.js';
 
 import { executeT } from '#shared/utils/fp.js';
-import { randomExchangeName, randomTimeframe } from '#test-utils/domain.js';
+import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain.js';
 import {
   randomAnyDate,
   randomBeforeAndAfterDate,
@@ -38,6 +38,7 @@ function mockValidData(): AddBtStrategyUseCaseData {
     makerFeeRate: randomPositiveFloat(),
     startTimestamp: before,
     endTimestamp: after,
+    language: randomLanguage(),
     body: randomString(),
   };
 }

@@ -9,6 +9,7 @@ import {
   nonNegativeFloat8Digits,
   nonNegativePercentage8Digits,
 } from '#shared/common.type.js';
+import { Language, languageSchema } from '#shared/domain/language.js';
 import { Timeframe, timeframeSchema } from '#shared/domain/timeframe.js';
 import { parseWithZod } from '#shared/utils/zod.js';
 
@@ -37,6 +38,7 @@ export const btStrategySchema = z
     startTimestamp: z.date(),
     endTimestamp: z.date(),
     executionStatus: executionStatusSchema,
+    language: languageSchema,
     body: nonEmptyString,
     version: z.number().nonnegative().int(),
     createdAt: z.date(),
@@ -72,6 +74,7 @@ type CreateNewBtStrategyData = {
   maxNumKlines: number;
   startTimestamp: Date;
   endTimestamp: Date;
+  language: Language;
   body: string;
 };
 export function createNewBtStrategy(

@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { ExchangeName } from '#features/exchanges/domain/exchange.js';
 import { DateService } from '#infra/services/date.type.js';
 import { IdService } from '#infra/services/id.type.js';
+import { Language } from '#shared/domain/language.js';
 import { Timeframe } from '#shared/domain/timeframe.js';
 
 import { createNewBtStrategy } from '../domain/btStrategy.entity.js';
@@ -28,6 +29,7 @@ export type AddBtStrategyUseCaseData = {
   makerFeeRate: number;
   startTimestamp: Date;
   endTimestamp: Date;
+  language: Language;
   body: string;
 };
 
