@@ -1,27 +1,49 @@
-import Editor from '@monaco-editor/react';
+import Editor, { OnValidate } from '@monaco-editor/react';
+import Box from '@mui/material/Box';
 import FormControl from '@mui/material/FormControl';
-import Typography from '@mui/material/Typography';
-import { omit } from 'ramda';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
+import { MarkerSeverity } from 'monaco-editor';
 import { useController } from 'react-hook-form';
 
 import type { AddBtStrategyControl } from '.';
 
 export function StrategyBodyField({ control }: { control: AddBtStrategyControl }) {
-  const { field } = useController({ name: 'body', control });
+  const { field, fieldState } = useController({
+    name: 'body',
+    control,
+    rules: { required: 'Strategy body is required' },
+  });
+
+  const labelId = 'strategy-body-label';
+
+  const handleEditorMarker: OnValidate = (markers) => {
+    // Monaco Marker Severity: Hint = 1, Info = 2, Warning = 4, Error = 8
+    const errorMarker = markers.find((marker) => marker.severity === (8 as MarkerSeverity));
+    if (errorMarker) control.setError('body', { type: 'value', message: 'Invalid syntax' });
+  };
 
   return (
-    <FormControl>
-      <Typography component="label" variant="body2" id="strategy-body-label" className="mb-2 text-gray-600">
-        Strategy body
-      </Typography>
+    <FormControl error={fieldState.invalid}>
+      <Box className="mb-2 flex">
+        <InputLabel id={labelId} required className="relative transform-none">
+          Strategy body
+        </InputLabel>
+        <FormHelperText>{fieldState.invalid ? `(${fieldState.error?.message})` : ' '}</FormHelperText>
+      </Box>
       <Editor
         height="50vh"
         defaultLanguage="typescript"
         defaultValue=""
         theme="vs-dark"
-        wrapperProps={{ 'aria-labelledby': 'strategy-body-label' }}
-        options={{ ariaLabel: 'strategy body editor', padding: { top: 16, bottom: 16 } }}
-        {...omit(['ref', 'onBlur'], field)}
+        wrapperProps={{ 'aria-labelledby': labelId }}
+        options={{
+          ariaLabel: 'strategy body editor',
+          padding: { top: 16, bottom: 16 },
+        }}
+        onValidate={handleEditorMarker}
+        onChange={field.onChange}
+        value={field.value}
       />
     </FormControl>
   );

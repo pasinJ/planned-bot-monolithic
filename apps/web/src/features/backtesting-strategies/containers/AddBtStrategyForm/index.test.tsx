@@ -1,4 +1,8 @@
+/**
+ * @jest-environment-options { "resources": "usable" }
+ */
 import { faker } from '@faker-js/faker';
+import { waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { format } from 'date-fns';
 import * as te from 'fp-ts/lib/TaskEither';
@@ -10,6 +14,7 @@ import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/enti
 import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { mockForMonaco, monitorWarning, revertMockForMonaco } from '#test-utils/monaco';
 import { renderWithContexts } from '#test-utils/render';
 import { selectOption } from '#test-utils/uiEvents';
 import { byLabelText, byRole } from '#test-utils/uiSelector';
@@ -52,9 +57,12 @@ const ui = {
   makerFeeRateField: byRole('textbox', { name: /maker fee rate/i }),
   startTimestampField: byRole('textbox', { name: /start timestamp/i }),
   endTimestampField: byRole('textbox', { name: /end timestamp/i }),
-  strategyBodyField: byLabelText(/strategy body/i),
+  strategyBodyField: byLabelText(/strategy body editor/i, { selector: 'textarea' }),
   submitButton: byRole('button', { name: /submit add backtesting strategy/i }),
 };
+
+beforeAll(() => mockForMonaco());
+afterEach(() => revertMockForMonaco());
 
 describe('WHEN render', () => {
   it('THEN it should try to get symbols for symbol select input', () => {
@@ -66,7 +74,11 @@ describe('WHEN render', () => {
     await expect(ui.form.find()).resolves.toBeVisible();
   });
   it('THEN it should display form component inside the form', async () => {
+    const hasLoaded = monitorWarning();
+
     renderFormSuccess();
+
+    await waitFor(() => expect(hasLoaded()).toBeTrue(), { timeout: 3000, interval: 100 });
 
     const form = await ui.form.find();
     expect(ui.strategyNameField.get(form)).toBeInTheDocument();
@@ -80,34 +92,39 @@ describe('WHEN render', () => {
     expect(ui.makerFeeRateField.get(form)).toBeInTheDocument();
     expect(ui.startTimestampField.get(form)).toBeInTheDocument();
     expect(ui.endTimestampField.get(form)).toBeInTheDocument();
-    expect(ui.strategyBodyField.get(form)).toBeInTheDocument();
+    await expect(ui.strategyBodyField.find(form)).resolves.toBeInTheDocument();
     expect(ui.submitButton.get(form)).toBeInTheDocument();
-  });
+  }, 20000);
 });
 
 describe('WHEN fill the form and hit submit button', () => {
   it('THEN it should send add request with form value', async () => {
-    const user = userEvent.setup();
+    const hasLoaded = monitorWarning();
     const { btStrategyRepo, symbols } = renderFormSuccess();
+
+    await waitFor(() => expect(hasLoaded()).toBeTrue(), { timeout: 3000, interval: 100 });
 
     const selectedSymbol = faker.helpers.arrayElement(symbols);
     const strategy = mockBtStrategy({
       symbol: selectedSymbol.name,
       currency: selectedSymbol.baseAsset,
     });
-    await user.type(ui.strategyNameField.get(), strategy.name);
-    await user.type(ui.symbolField.get(), strategy.symbol);
+    const form = await ui.form.find();
+    const user = userEvent.setup();
+    await user.type(ui.strategyNameField.get(form), strategy.name);
+    await user.type(ui.symbolField.get(form), strategy.symbol);
     await user.keyboard('{arrowDown}{enter}');
     await selectOption(currencyLabel, strategy.currency, user);
     await selectOption(timeframeLabel, timeframeOptions[strategy.timeframe], user);
-    await user.type(ui.maxNumKlinesField.get(), strategy.maxNumKlines.toString());
-    await user.type(ui.initialCapitalField.get(), strategy.initialCapital.toString());
-    await user.type(ui.takerFeeRateField.get(), strategy.takerFeeRate.toString());
-    await user.type(ui.makerFeeRateField.get(), strategy.makerFeeRate.toString());
-    await user.type(ui.startTimestampField.get(), formatDateForType(strategy.startTimestamp));
-    await user.type(ui.endTimestampField.get(), formatDateForType(strategy.endTimestamp));
-    await user.type(ui.strategyBodyField.get(), strategy.body);
-    await user.click(ui.submitButton.get());
+    await user.type(ui.maxNumKlinesField.get(form), strategy.maxNumKlines.toString());
+    await user.type(ui.initialCapitalField.get(form), strategy.initialCapital.toString());
+    await user.type(ui.takerFeeRateField.get(form), strategy.takerFeeRate.toString());
+    await user.type(ui.makerFeeRateField.get(form), strategy.makerFeeRate.toString());
+    await user.type(ui.startTimestampField.get(form), formatDateForType(strategy.startTimestamp));
+    await user.type(ui.endTimestampField.get(form), formatDateForType(strategy.endTimestamp));
+    const bodyField = await ui.strategyBodyField.find(form);
+    await user.type(bodyField, strategy.body);
+    await user.click(ui.submitButton.get(form));
 
     expect(btStrategyRepo.addBtStrategy).toHaveBeenCalled();
   }, 30000);
