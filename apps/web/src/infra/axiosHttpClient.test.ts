@@ -60,6 +60,7 @@ beforeAll(() =>
   server.listen({
     onUnhandledRequest: ({ method, url }) => {
       if (!url.pathname.startsWith('/noResponse'))
+        // eslint-disable-next-line no-console
         console.warn('Found an unhandled %s request to %s', method, url.href);
     },
   }),
