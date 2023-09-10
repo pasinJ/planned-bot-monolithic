@@ -51,5 +51,9 @@ module.exports = {
       plugins: ['@typescript-eslint'],
       rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
     },
+    {
+      files: ['src/**/*.ts?(x)', 'e2e/**/*.ts?(x)', 'test-utils/**/*.ts?(x)'],
+      rules: { 'no-console': 'warn' },
+    },
   ],
 };
