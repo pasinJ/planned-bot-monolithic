@@ -14,7 +14,7 @@ import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/enti
 import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
-import { mockForMonaco, monitorWarning, revertMockForMonaco } from '#test-utils/monaco';
+import { createScriptsObserver, mockForMonaco, revertMockForMonaco } from '#test-utils/monaco';
 import { renderWithContexts } from '#test-utils/render';
 import { selectOption } from '#test-utils/uiEvents';
 import { byLabelText, byRole } from '#test-utils/uiSelector';
@@ -61,8 +61,12 @@ const ui = {
   submitButton: byRole('button', { name: /submit add backtesting strategy/i }),
 };
 
+const { getScriptStatus, disconnect } = createScriptsObserver();
 beforeAll(() => mockForMonaco());
-afterEach(() => revertMockForMonaco());
+afterAll(() => {
+  revertMockForMonaco();
+  disconnect();
+});
 
 describe('WHEN render', () => {
   it('THEN it should try to get symbols for symbol select input', () => {
@@ -74,11 +78,12 @@ describe('WHEN render', () => {
     await expect(ui.form.find()).resolves.toBeVisible();
   });
   it('THEN it should display form component inside the form', async () => {
-    const hasLoaded = monitorWarning();
-
     renderFormSuccess();
 
-    await waitFor(() => expect(hasLoaded()).toBeTrue(), { timeout: 3000, interval: 100 });
+    await waitFor(() => expect(getScriptStatus()).not.toContainValue(false), {
+      timeout: 3000,
+      interval: 100,
+    });
 
     const form = await ui.form.find();
     expect(ui.strategyNameField.get(form)).toBeInTheDocument();
@@ -99,10 +104,12 @@ describe('WHEN render', () => {
 
 describe('WHEN fill the form and hit submit button', () => {
   it('THEN it should send add request with form value', async () => {
-    const hasLoaded = monitorWarning();
     const { btStrategyRepo, symbols } = renderFormSuccess();
 
-    await waitFor(() => expect(hasLoaded()).toBeTrue(), { timeout: 3000, interval: 100 });
+    await waitFor(() => expect(getScriptStatus()).not.toContainValue(false), {
+      timeout: 3000,
+      interval: 100,
+    });
 
     const selectedSymbol = faker.helpers.arrayElement(symbols);
     const strategy = mockBtStrategy({

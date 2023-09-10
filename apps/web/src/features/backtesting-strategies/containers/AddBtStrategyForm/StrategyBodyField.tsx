@@ -4,9 +4,10 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import { MarkerSeverity } from 'monaco-editor';
-import { useController } from 'react-hook-form';
+import { useController, useWatch } from 'react-hook-form';
 
 import type { AddBtStrategyControl } from '.';
+import StrategyLanguageField from './StrategyLanguageField';
 
 export function StrategyBodyField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
@@ -14,6 +15,7 @@ export function StrategyBodyField({ control }: { control: AddBtStrategyControl }
     control,
     rules: { required: 'Strategy body is required' },
   });
+  const selectedLanguageValue = useWatch({ name: 'language', control });
 
   const labelId = 'strategy-body-label';
 
@@ -25,17 +27,22 @@ export function StrategyBodyField({ control }: { control: AddBtStrategyControl }
 
   return (
     <FormControl error={fieldState.invalid}>
-      <Box className="mb-2 flex">
-        <InputLabel id={labelId} required className="relative transform-none">
-          Strategy body
-        </InputLabel>
-        <FormHelperText>{fieldState.invalid ? `(${fieldState.error?.message})` : ' '}</FormHelperText>
+      <Box className="flex flex-wrap justify-between gap-4">
+        <Box className="flex min-w-[10rem] sm:flex-col">
+          <InputLabel id={labelId} required className="relative mb-1 transform-none">
+            Strategy body
+          </InputLabel>
+          <FormHelperText>{fieldState.invalid ? `(${fieldState.error?.message})` : ' '}</FormHelperText>
+        </Box>
+        <StrategyLanguageField control={control} />
       </Box>
       <Editor
-        height="50vh"
-        defaultLanguage="typescript"
-        defaultValue=""
         theme="vs-dark"
+        height="50vh"
+        defaultLanguage="javascript"
+        language={selectedLanguageValue}
+        defaultValue=""
+        value={field.value}
         wrapperProps={{ 'aria-labelledby': labelId }}
         options={{
           ariaLabel: 'strategy body editor',
@@ -43,7 +50,6 @@ export function StrategyBodyField({ control }: { control: AddBtStrategyControl }
         }}
         onValidate={handleEditorMarker}
         onChange={field.onChange}
-        value={field.value}
       />
     </FormControl>
   );

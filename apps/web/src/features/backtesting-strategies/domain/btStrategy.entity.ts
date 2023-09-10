@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { exchangeNameSchema } from '#features/exchanges/domain/exchange';
 import { nonEmptyString, nonNegativeFloat8Digits, nonNegativePercentage8Digits } from '#shared/common.type';
+import { languageSchema } from '#shared/domain/language';
 import { timeframeSchema } from '#shared/domain/timeframe';
 
 export type BtStrategyId = z.infer<typeof idSchema>;
@@ -28,6 +29,7 @@ export const btStrategySchema = z
     startTimestamp: z.date(),
     endTimestamp: z.date(),
     executionStatus: executionStatusSchema,
+    language: languageSchema,
     body: nonEmptyString,
     version: z.number().nonnegative().int(),
     createdAt: z.date(),

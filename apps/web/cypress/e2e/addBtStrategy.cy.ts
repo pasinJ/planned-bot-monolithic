@@ -58,6 +58,8 @@ describe('GIVEN there is no existing backtesting strategy WHEN user visit backte
     cy.findByRole('textbox', { name: /end timestamp/i }).type(
       `${format(strategy.endTimestamp, 'MM/dd/yyyy HH:mm')}`,
     );
+    cy.findByRole('button', { name: /language/i }).click();
+    cy.get(`ul > li[data-value="${strategy.language}"]`).click();
     cy.findByRole('code').click();
     // eslint-disable-next-line cypress/unsafe-to-chain-command
     cy.focused().type(strategy.body);

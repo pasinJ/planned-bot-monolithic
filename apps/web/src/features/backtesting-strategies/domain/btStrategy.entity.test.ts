@@ -191,6 +191,14 @@ describe('Backtesting strategy schema', () => {
       expect(() => btStrategySchema.parse(assoc('endTimestamp', dateBefore, validBtStrategy))).toThrow();
     });
   });
+  describe('language property', () => {
+    it('WHEN the property is missing THEN the entity should be invalid', () => {
+      expect(() => btStrategySchema.parse(dissoc('language', validBtStrategy))).toThrow();
+    });
+    it('WHEN the property is not in the enum list THEN the entity should be invalid', () => {
+      expect(() => btStrategySchema.parse(assoc('language', randomString(), validBtStrategy))).toThrow();
+    });
+  });
   describe('body property', () => {
     it('WHEN the property is missing THEN the entity should be invalid', () => {
       expect(() => btStrategySchema.parse(dissoc('body', validBtStrategy))).toThrow();

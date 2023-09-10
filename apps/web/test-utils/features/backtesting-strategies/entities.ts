@@ -7,7 +7,7 @@ import {
   ExecutionStatus,
   executionStatusEnum,
 } from '#features/backtesting-strategies/domain/btStrategy.entity';
-import { randomExchangeName, randomTimeframe } from '#test-utils/domain';
+import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain';
 
 import {
   nonNegativeFloat,
@@ -34,6 +34,7 @@ export function mockBtStrategy(overrides?: Partial<BtStrategy>): BtStrategy {
     startTimestamp,
     endTimestamp,
     executionStatus: randomExecutionStatus(),
+    language: randomLanguage(),
     body: randomJsCode(),
     version: randomNonNegativeInt(),
     createdAt: faker.date.past(),

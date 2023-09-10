@@ -1,6 +1,7 @@
 import { loader } from '@monaco-editor/react';
 import path from 'path';
 import { performance } from 'perf_hooks';
+import { assoc, isEmpty } from 'ramda';
 import { TextDecoder } from 'util';
 
 const originalConsole: Console = global.console;
@@ -38,20 +39,42 @@ export function mockForMonaco() {
   });
   Object.defineProperty(window, 'TextDecoder', { writable: true, value: TextDecoder });
   Object.defineProperty(window, 'performance', { writable: true, value: performance });
+  global.console = {
+    ...originalConsole,
+    warn: () => {},
+  };
   loader.config({ paths: { vs: uriFromPath(path.resolve(appPath, 'node_modules/monaco-editor/min/vs')) } });
 }
 
-export function monitorWarning() {
-  let loaded = false;
+export function createScriptsObserver() {
+  let scripts: Record<string, boolean> = {};
 
-  global.console = {
-    ...originalConsole,
-    warn: (message: string) => {
-      if (message.includes('URL.createObjectURL is not a function')) loaded = true;
+  const observer = new window.MutationObserver((mutationRecords) => {
+    const addedScripts = mutationRecords.filter(
+      (record) =>
+        !isEmpty(Array.from(record.addedNodes.values()).filter((node) => node.nodeName === 'SCRIPT')),
+    );
+    addedScripts.map((addedScript) =>
+      Array.from(addedScript.addedNodes.values()).map((node) => {
+        const src = (node as Element).getAttribute('src');
+        if (src) {
+          scripts = assoc(src, false, scripts);
+          node.addEventListener('load', () => {
+            scripts = assoc(src, true, scripts);
+          });
+        }
+      }),
+    );
+  });
+  observer.observe(window.document.body, { childList: true }); // loader.js
+  observer.observe(window.document.head, { childList: true }); // others
+
+  return {
+    disconnect: () => {
+      observer.disconnect();
     },
+    getScriptStatus: () => scripts,
   };
-
-  return () => loaded;
 }
 
 export function revertMockForMonaco() {

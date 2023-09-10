@@ -4,7 +4,7 @@ import { SymbolRepo } from '#features/symbols/repositories/symbol.type';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
-import { mockForMonaco, monitorWarning, revertMockForMonaco } from '#test-utils/monaco';
+import { mockForMonaco, revertMockForMonaco } from '#test-utils/monaco';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole } from '#test-utils/uiSelector';
 
@@ -28,10 +28,7 @@ const ui = {
   form: byRole('form', { name: /add backtesting strategy/i }),
 };
 
-beforeAll(() => {
-  mockForMonaco();
-  monitorWarning();
-});
+beforeAll(() => mockForMonaco());
 afterEach(() => revertMockForMonaco());
 
 describe('WHEN render', () => {
