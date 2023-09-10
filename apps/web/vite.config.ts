@@ -16,7 +16,11 @@ export default defineConfig(({ mode }) => {
   if (mode !== 'test') replaceColorCssVariables();
   else console.log('Skipped replace color CSS variables');
 
-  return { envDir: 'env', plugins: [react(), tsconfigPaths(), EnvironmentPlugin('all')] };
+  return {
+    envDir: 'env',
+    server: { watch: { ignored: ['**/src/**/*.{itest,test}.ts?(x)'] } },
+    plugins: [react(), tsconfigPaths(), EnvironmentPlugin('all')],
+  };
 });
 
 function replaceColorCssVariables() {
