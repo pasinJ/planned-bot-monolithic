@@ -25,7 +25,7 @@ function addAddBtStrategyRoute(
   const { method, url } = BT_STRATEGY_ENDPOINTS.ADD_BT_STRATEGY;
 
   return pipe(
-    pick(['btStrategyRepo', 'idService', 'dateService'], deps),
+    pick(['btStrategyRepo', 'dateService'], deps),
     buildAddBtStrategyController,
     ioe.of,
     ioe.chain((handler) =>

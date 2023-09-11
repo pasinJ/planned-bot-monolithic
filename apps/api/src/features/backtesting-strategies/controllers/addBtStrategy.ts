@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 import { exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
 import { DateService } from '#infra/services/date.type.js';
-import { IdService } from '#infra/services/id.type.js';
 import { nonEmptyString, nonNegativeFloat8Digits, stringDatetimeToDate } from '#shared/common.type.js';
 import { languageSchema } from '#shared/domain/language.js';
 import { timeframeSchema } from '#shared/domain/timeframe.js';
@@ -14,7 +13,9 @@ import { executeT } from '#shared/utils/fp.js';
 import { parseWithZod } from '#shared/utils/zod.js';
 
 import { BtStrategyRepo } from '../repositories/btStrategy.type.js';
-import { addBtStrategyUseCase } from '../use-cases/addBtStrategy.js';
+import { addBtStrategyCommand } from '../use-cases/addBtStrategyCommand.js';
+
+export type AddBtStrategyControllerDeps = { btStrategyRepo: BtStrategyRepo; dateService: DateService };
 
 const requestBodySchema = z
   .object({
@@ -34,16 +35,11 @@ const requestBodySchema = z
   })
   .strict();
 
-export type AddBtStrategyControllerDeps = {
-  btStrategyRepo: BtStrategyRepo;
-  dateService: DateService;
-  idService: IdService;
-};
 export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps): RouteHandlerMethod {
   return function addBtStrategyController({ body }, reply): Promise<FastifyReply> {
     const pipeline = pipe(
       te.fromEither(parseWithZod(requestBodySchema, 'Request body is invalid', body)),
-      te.chainW((parsedBody) => addBtStrategyUseCase(deps, parsedBody)),
+      te.chainW((parsedBody) => addBtStrategyCommand(deps, parsedBody)),
       te.match(
         (error) =>
           match(error)
@@ -53,7 +49,7 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
             )
             .with({ type: 'AddBtStrategyError' }, (error) => reply.code(500).send(error))
             .exhaustive(),
-        () => reply.code(201).send(),
+        (result) => reply.code(201).send(result),
       ),
     );
 

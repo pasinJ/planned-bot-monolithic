@@ -5,7 +5,7 @@ import { randomAnyDate, randomBeforeAndAfterDate, randomString } from '#test-uti
 import { mockBtStrategyRepo } from '#test-utils/features/btStrategies/repositories.js';
 import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
-import { mockDateService, mockIdService } from '#test-utils/services.js';
+import { mockDateService } from '#test-utils/services.js';
 
 import { createBtStrategyRepoError } from '../repositories/btStrategy.error.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
@@ -15,20 +15,15 @@ const { method, url } = BT_STRATEGY_ENDPOINTS.ADD_BT_STRATEGY;
 const setupServer = setupTestServer(method, url, buildAddBtStrategyController, mockDeps);
 
 function mockDeps(overrides?: Partial<AddBtStrategyControllerDeps>): AddBtStrategyControllerDeps {
-  return {
-    btStrategyRepo: mockBtStrategyRepo(),
-    dateService: mockDateService(),
-    idService: mockIdService(),
-    ...overrides,
-  };
+  return { btStrategyRepo: mockBtStrategyRepo(), dateService: mockDateService(), ...overrides };
 }
 function setupSuccessfullyCreate() {
   const id = randomString();
+  const btStrategyRepo = mockBtStrategyRepo({ generateId: jest.fn().mockReturnValue(id) });
   const currentDate = randomAnyDate();
-  const idService = mockIdService({ generateBtStrategyId: jest.fn().mockReturnValue(id) });
   const dateService = mockDateService({ getCurrentDate: jest.fn().mockReturnValue(currentDate) });
 
-  return { httpServer: setupServer({ idService, dateService }), id, currentDate };
+  return { httpServer: setupServer({ dateService, btStrategyRepo }), id, currentDate };
 }
 function setupRepoError() {
   const error = createBtStrategyRepoError('AddBtStrategyError', 'Mock');
@@ -38,14 +33,14 @@ function setupRepoError() {
 }
 
 describe('WHEN user successfully add a backtesting strategy', () => {
-  it('THEN it should return HTTP201', async () => {
-    const { httpServer } = setupSuccessfullyCreate();
+  it('THEN it should return HTTP201 and the created backtesting strategy ID and timestamp', async () => {
+    const { httpServer, id, currentDate } = setupSuccessfullyCreate();
 
     const body = mockValidAddBtStrategyRequestBody();
     const resp = await httpServer.inject({ method, url, body });
 
     expect(resp.statusCode).toBe(201);
-    expect(resp.body).toBe('');
+    expect(resp.json()).toEqual({ id, createdAt: currentDate.toJSON() });
   });
 });
 

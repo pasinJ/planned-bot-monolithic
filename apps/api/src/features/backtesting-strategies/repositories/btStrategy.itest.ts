@@ -25,7 +25,7 @@ describe('Create backtesting strategy repository', () => {
     });
     it('THEN it should return Right of backtesting strategy repository', () => {
       const repository = executeIo(createBtStrategyRepo(client));
-      expect(repository).toEqualRight(expect.toContainAllKeys(['add']));
+      expect(repository).toEqualRight(expect.toContainAllKeys(['generateId', 'add']));
     });
   });
   describe('WHEN unsuccessfully create a backtesting strategy repository (duplicated model)', () => {
@@ -34,6 +34,18 @@ describe('Create backtesting strategy repository', () => {
       const repository = executeIo(createBtStrategyRepo(client));
       expect(repository).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
     });
+  });
+});
+
+describe('Generate ID', () => {
+  afterAll(() => deleteModel(client, btStrategyModelName));
+
+  it('WHEN generate ID THEN it should return a string with length more than 0', () => {
+    const btStrategyRepo = unsafeUnwrapEitherRight(executeIo(createBtStrategyRepo(client)));
+
+    const id = btStrategyRepo.generateId();
+    expect(id).toBeString();
+    expect(id.length).toBeGreaterThan(0);
   });
 });
 
