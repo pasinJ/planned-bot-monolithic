@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { InitialCapitalField } from './InitialCapitalField';
+import InitialCapitalField from './InitialCapitalField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function InitialCapitalFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

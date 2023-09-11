@@ -9,7 +9,7 @@ import { useController, useWatch } from 'react-hook-form';
 import type { AddBtStrategyControl } from '.';
 import StrategyLanguageField from './StrategyLanguageField';
 
-export function StrategyBodyField({ control }: { control: AddBtStrategyControl }) {
+export default function StrategyBodyField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
     name: 'body',
     control,

@@ -1,10 +1,10 @@
 import { useController } from 'react-hook-form';
 
-import { DecimalField } from '#components/DecimalField';
+import DecimalField from '#components/DecimalField';
 
 import type { AddBtStrategyControl } from '.';
 
-export function MakerFeeRateField({ control }: { control: AddBtStrategyControl }) {
+export default function MakerFeeRateField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
     name: 'makerFeeRate',
     control,

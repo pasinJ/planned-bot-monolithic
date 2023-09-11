@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { randomTimeframe } from '#test-utils/domain';
 import { byLabelText, byRole, byText } from '#test-utils/uiSelector';
 
-import { TimeframeField } from './TimeframeField';
+import TimeframeField from './TimeframeField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function TimeframeFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

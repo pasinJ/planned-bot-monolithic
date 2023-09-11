@@ -7,7 +7,7 @@ import { Symbol } from '#features/symbols/domain/symbol.valueObject';
 
 import type { AddBtStrategyControl } from '.';
 
-export function SymbolField({
+export default function SymbolField({
   control,
   symbols,
 }: {

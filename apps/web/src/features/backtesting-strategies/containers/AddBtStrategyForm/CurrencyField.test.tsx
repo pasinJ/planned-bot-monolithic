@@ -8,7 +8,7 @@ import { generateArrayOf } from '#test-utils/faker';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { byLabelText, byRole, byText } from '#test-utils/uiSelector';
 
-import { CurrencyField } from './CurrencyField';
+import CurrencyField from './CurrencyField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function CurrencyFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

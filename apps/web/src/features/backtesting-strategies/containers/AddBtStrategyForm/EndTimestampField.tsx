@@ -5,7 +5,7 @@ import { useController } from 'react-hook-form';
 
 import type { AddBtStrategyControl } from '.';
 
-export function EndTimestampField({ control }: { control: AddBtStrategyControl }) {
+export default function EndTimestampField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
     name: 'endTimestamp',
     control,

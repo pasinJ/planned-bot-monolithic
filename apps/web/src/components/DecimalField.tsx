@@ -3,7 +3,7 @@ import { ChangeEventHandler, FocusEventHandler } from 'react';
 
 import { decimalStringLoose, formatDecimalString } from './DecimalField.util';
 
-export function DecimalField(props: Omit<TextFieldProps, 'value'> & { value: string }) {
+export default function DecimalField(props: Omit<TextFieldProps, 'value'> & { value: string }) {
   const { value, onChange, onBlur, ...restProps } = props;
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {

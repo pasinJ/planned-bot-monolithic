@@ -4,7 +4,7 @@ import { useController } from 'react-hook-form';
 
 import type { AddBtStrategyControl } from '.';
 
-export function StrategyNameField({ control }: { control: AddBtStrategyControl }) {
+export default function StrategyNameField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
     name: 'name',
     control,

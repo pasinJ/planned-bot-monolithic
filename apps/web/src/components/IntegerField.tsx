@@ -3,7 +3,7 @@ import { ChangeEventHandler, FocusEventHandler } from 'react';
 
 import { formatIntegerString, integerStringLoose, nonNegativeIntegerStringLoose } from './IntegerField.util';
 
-export function IntegerField(
+export default function IntegerField(
   props: Omit<TextFieldProps, 'value'> & { value: string; allowNegative?: boolean },
 ) {
   const { value, onChange, onBlur, allowNegative, ...restProps } = props;

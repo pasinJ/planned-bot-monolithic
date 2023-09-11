@@ -12,7 +12,7 @@ import { randomString } from '#test-utils/faker';
 import { createScriptsObserver, mockForMonaco, revertMockForMonaco } from '#test-utils/monaco';
 import { byDisplayValue, byLabelText, byRole, byText } from '#test-utils/uiSelector';
 
-import { StrategyBodyField } from './StrategyBodyField';
+import StrategyBodyField from './StrategyBodyField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function StrategyBodyFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

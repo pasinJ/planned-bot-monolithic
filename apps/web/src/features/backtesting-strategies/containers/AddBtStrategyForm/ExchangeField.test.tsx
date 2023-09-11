@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { randomExchangeName } from '#test-utils/domain';
 import { byLabelText } from '#test-utils/uiSelector';
 
-import { ExchangeField } from './ExchangeField';
+import ExchangeField from './ExchangeField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function ExchangeFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

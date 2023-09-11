@@ -10,7 +10,7 @@ import { Symbol } from '#features/symbols/domain/symbol.valueObject';
 
 import type { AddBtStrategyControl } from '.';
 
-export function CurrencyField({
+export default function CurrencyField({
   control,
   symbols,
 }: {

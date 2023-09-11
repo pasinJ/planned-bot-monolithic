@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { EndTimestampField } from './EndTimestampField';
+import EndTimestampField from './EndTimestampField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function EndTimestampFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

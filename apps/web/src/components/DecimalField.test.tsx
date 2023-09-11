@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { path } from 'ramda';
 
-import { DecimalField } from './DecimalField';
+import DecimalField from './DecimalField';
 
 function renderComponent(options?: { value?: string; onChange?: () => void; onBlur?: () => void }) {
   return render(<DecimalField value="" {...options} />);

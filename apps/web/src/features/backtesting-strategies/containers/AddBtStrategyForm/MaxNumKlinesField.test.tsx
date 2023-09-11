@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { MaxNumKlinesField } from './MaxNumKlinesField';
+import MaxNumKlinesField from './MaxNumKlinesField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function MaxNumKlinesFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {
