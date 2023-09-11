@@ -14,7 +14,6 @@ import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { startupProcess } from '#infra/process/startup.js';
 import { createBnbService } from '#infra/services/binance/service.js';
 import { dateService } from '#infra/services/date.js';
-import { idService } from '#infra/services/id.js';
 import { executeT } from '#utils/fp.js';
 
 const mainLogger = createMainLogger();
@@ -24,9 +23,9 @@ await executeT(
   pipe(
     te.Do,
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
-    te.bindW('bnbService', () => createBnbServiceWithDeps()),
     te.bindW('symbolRepo', (deps) => createSymbolRepoWithDeps(deps)),
     te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
+    te.bindW('bnbService', (deps) => createBnbServiceWithDeps(deps)),
     te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
     te.mapLeft((x) => x),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
@@ -37,13 +36,10 @@ await executeT(
   ),
 );
 
-type Deps = Omit<ApplicationDeps, 'dateService' | 'idService'> & {
-  mongoDbClient: Mongoose;
-  httpServer: FastifyServer;
-};
+type Deps = Omit<ApplicationDeps, 'dateService'> & { mongoDbClient: Mongoose; httpServer: FastifyServer };
 
-function createBnbServiceWithDeps() {
-  return createBnbService({ dateService, idService, mainLogger });
+function createBnbServiceWithDeps(deps: Pick<Deps, 'symbolRepo'>) {
+  return createBnbService({ dateService, symbolRepo: deps.symbolRepo, mainLogger });
 }
 function createSymbolRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createSymbolRepo(mongoDbClient));
@@ -55,9 +51,5 @@ function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepo'>) {
   return startupProcess({ ...deps, logger: logger });
 }
 function startHttpServerWithDeps(deps: Deps) {
-  return startHttpServer(deps.httpServer, {
-    ...omit(['mongoDbClient', 'server'], deps),
-    dateService,
-    idService,
-  });
+  return startHttpServer(deps.httpServer, { ...omit(['mongoDbClient', 'server'], deps), dateService });
 }

@@ -21,7 +21,7 @@ describe('Create symbol repository', () => {
   describe('WHEN successfully create symbol repository', () => {
     it('THEN it should return Right of symbol repository', () => {
       const repository = executeIo(createSymbolRepo(client));
-      expect(repository).toEqualRight(expect.toContainAllKeys(['add', 'countAll', 'getAll']));
+      expect(repository).toEqualRight(expect.toContainAllKeys(['generateId', 'add', 'countAll', 'getAll']));
     });
   });
   describe('WHEN unsuccessfully create symbol repository (duplicated model)', () => {
@@ -30,6 +30,18 @@ describe('Create symbol repository', () => {
       const repository = executeIo(createSymbolRepo(client));
       expect(repository).toEqualLeft(expect.toSatisfy(isSymbolRepoError));
     });
+  });
+});
+
+describe('Generate ID', () => {
+  afterAll(() => deleteModel(client, symbolModelName));
+
+  it('WHEN generate ID THEN it should return a string with length more than 0', () => {
+    const repository = unsafeUnwrapEitherRight(executeIo(createSymbolRepo(client)));
+
+    const id = repository.generateId();
+    expect(id).toBeString();
+    expect(id.length).toBeGreaterThan(0);
   });
 });
 

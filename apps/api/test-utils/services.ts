@@ -5,18 +5,9 @@ import { constVoid } from 'fp-ts/lib/function.js';
 import { LoggerIo } from '#infra/logging.js';
 import { BnbService } from '#infra/services/binance/service.type.js';
 import { DateService } from '#infra/services/date.type.js';
-import { IdService } from '#infra/services/id.type.js';
 
 export function mockDateService(overrides?: Partial<DateService>): DateService {
   return { getCurrentDate: () => faker.date.recent(), ...overrides };
-}
-
-export function mockIdService(overrides?: Partial<IdService>): IdService {
-  return {
-    generateSymbolId: () => faker.string.nanoid(),
-    generateBtStrategyId: () => faker.string.nanoid(),
-    ...overrides,
-  } as IdService;
 }
 
 export function mockBnbService(overrides?: Partial<BnbService>): BnbService {

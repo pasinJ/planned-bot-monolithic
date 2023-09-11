@@ -2,10 +2,12 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
+import { nanoid } from 'nanoid';
 import { omit } from 'ramda';
 
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
+import { SymbolId } from '../domain/symbol.entity.js';
 import { SymbolRepoError, createSymbolRepoError } from './symbol.error.js';
 import { SymbolModel, createSymbolModel } from './symbol.model.js';
 import { SymbolRepo } from './symbol.type.js';
@@ -15,7 +17,12 @@ export function createSymbolRepo(
 ): ioe.IOEither<SymbolRepoError<'CreateSymbolRepoError'>, SymbolRepo> {
   return pipe(
     createSymbolModel(client),
-    ioe.map((model) => ({ add: addSymbols(model), getAll: getAll(model), countAll: countAll(model) })),
+    ioe.map((model) => ({
+      generateId: () => nanoid() as SymbolId,
+      add: addSymbols(model),
+      getAll: getAll(model),
+      countAll: countAll(model),
+    })),
   );
 }
 

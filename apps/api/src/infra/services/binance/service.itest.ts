@@ -7,7 +7,8 @@ import { createMainLogger } from '#infra/logging.js';
 import { getBnbConfig } from '#shared/config/binance.js';
 import { executeT } from '#shared/utils/fp.js';
 import exchangeInfoResp from '#test-utils/exchangeInfo.resp.json';
-import { mockDateService, mockIdService } from '#test-utils/services.js';
+import { mockSymbolRepo } from '#test-utils/features/symbols/repositories.js';
+import { mockDateService } from '#test-utils/services.js';
 
 import { BNB_ENDPOINT_PATHS } from './constants.js';
 import { isBnbServiceError } from './error.js';
@@ -22,7 +23,7 @@ const msw = setupServer(rest.get(pingPath, (_, res, ctx) => res(ctx.status(200),
 function createBnbService() {
   const createServiceDeps = {
     dateService: mockDateService(),
-    idService: mockIdService(),
+    symbolRepo: mockSymbolRepo(),
     mainLogger: createMainLogger(),
   };
   return createBnbServiceOrg(createServiceDeps);
@@ -64,7 +65,7 @@ describe('Get SPOT symbols', () => {
 
       expect(result).toEqualRight([
         {
-          id: expect.any(String),
+          id: expect.toBeString(),
           name: 'ETHBTC',
           exchange: 'BINANCE',
           baseAsset: 'ETH',

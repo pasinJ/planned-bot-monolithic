@@ -5,18 +5,18 @@ import { __, dissoc, filter, includes, map, pick, prop, propEq, propSatisfies } 
 
 import { Symbol, createSymbol } from '#features/symbols/domain/symbol.entity.js';
 import { SymbolDomainError } from '#features/symbols/domain/symbol.error.js';
+import { SymbolRepo } from '#features/symbols/repositories/symbol.type.js';
 import { HttpClient } from '#infra/http/client.type.js';
 import { DateService } from '#infra/services/date.type.js';
-import { IdService } from '#infra/services/id.type.js';
 
 import { ExchangeInfoResp, exchangeInfoRespSchema } from '../api.type.js';
 import { BNB_ENDPOINT_PATHS } from '../constants.js';
 import { createBnbServiceError } from '../error.js';
 import { BnbService } from '../service.type.js';
 
-type GetSpotSymbolsDeps = { httpClient: HttpClient; dateService: DateService; idService: IdService };
+type GetSpotSymbolsDeps = { httpClient: HttpClient; dateService: DateService; symbolRepo: SymbolRepo };
 export function getSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbols'] {
-  const { httpClient, dateService, idService } = deps;
+  const { httpClient, dateService, symbolRepo } = deps;
 
   return pipe(
     httpClient.sendRequest({
@@ -25,7 +25,7 @@ export function getSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSym
       params: { permissions: 'SPOT' },
       responseSchema: exchangeInfoRespSchema,
     }),
-    te.chainIOEitherKW(transformExchangeInfoToSymbols(dateService, idService)),
+    te.chainIOEitherKW(transformExchangeInfoToSymbols(dateService, symbolRepo)),
     te.mapLeft((error) =>
       createBnbServiceError(
         'GetBnbSpotSymbolsError',
@@ -36,7 +36,7 @@ export function getSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSym
   );
 }
 
-function transformExchangeInfoToSymbols(dateService: DateService, idService: IdService) {
+function transformExchangeInfoToSymbols(dateService: DateService, symbolRepo: SymbolRepo) {
   return (
     exchangeInfo: ExchangeInfoResp,
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
@@ -58,7 +58,7 @@ function transformExchangeInfoToSymbols(dateService: DateService, idService: IdS
           symbols.map((symbol) =>
             pipe(
               ioe.Do,
-              ioe.let('id', () => idService.generateSymbolId()),
+              ioe.let('id', () => symbolRepo.generateId()),
               ioe.let('currentDate', () => dateService.getCurrentDate()),
               ioe.chainEitherK(({ id, currentDate }) => createSymbol({ ...symbol, id }, currentDate)),
             ),
