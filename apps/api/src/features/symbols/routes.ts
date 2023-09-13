@@ -2,7 +2,7 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { pick } from 'ramda';
 
-import { ApplicationDeps } from '#infra/common.type.js';
+import { ApplicationDeps } from '#infra/applicationDeps.type.js';
 import { commonHooksForAppRoutes } from '#infra/http/hooks.js';
 import { HttpServerError, createAddHttpRouteError } from '#infra/http/server.error.js';
 import { FastifyServer } from '#infra/http/server.type.js';

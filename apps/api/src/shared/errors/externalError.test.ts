@@ -16,7 +16,7 @@ function createCustomError(): CustomError {
 
 describe('Validate external error', () => {
   describe('WHEN validate an error that is an external error', () => {
-    it('THEN it should return false', () => {
+    it('THEN it should return true', () => {
       const error = createExternalError({ message: randomString(), cause: new Error('Mock') });
       expect(isExternalError(error)).toBeTrue();
     });

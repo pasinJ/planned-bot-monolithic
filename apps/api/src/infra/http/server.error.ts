@@ -40,10 +40,14 @@ export function createAddHookError(hookName: string): HttpServerError<'AddHookEr
     createAddHookError,
   );
 }
-export function createAddHttpRouteError(method: string, url: string): HttpServerError<'AddRouteError'> {
-  return createHttpServerError('AddRouteError', `Adding ${method} ${url} route failed`).setFactoryContext(
-    createAddHttpRouteError,
-  );
+export function createAddHttpRouteError(
+  method: string | string[],
+  url: string,
+): HttpServerError<'AddRouteError'> {
+  return createHttpServerError(
+    'AddRouteError',
+    `Adding ${method.toString()} ${url} route failed`,
+  ).setFactoryContext(createAddHttpRouteError);
 }
 
 export function isHttpServerError(input: unknown): input is HttpServerError {

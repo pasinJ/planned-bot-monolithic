@@ -5,7 +5,7 @@ import { createHttpError, isHttpError } from './client.error.js';
 
 describe('Validate HTTP error', () => {
   describe('WHEN validate an error that is a HTTP error', () => {
-    it('THEN it should return false', () => {
+    it('THEN it should return true', () => {
       const externalError = createExternalError({ cause: new Error('Mock') });
       const error = createHttpError('InvalidRequest', randomString(), externalError);
 

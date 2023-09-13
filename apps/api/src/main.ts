@@ -3,9 +3,10 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 import { omit } from 'ramda';
 
+import { createBtStrategyModelDao } from '#features/backtesting-strategies/data-models/btStrategy.dao.js';
 import { createBtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy.js';
 import { createSymbolRepo } from '#features/symbols/repositories/symbol.js';
-import { ApplicationDeps } from '#infra/common.type.js';
+import { ApplicationDeps } from '#infra/applicationDeps.type.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
 import { createLoggerIo, createMainLogger } from '#infra/logging.js';
@@ -14,6 +15,7 @@ import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { startupProcess } from '#infra/process/startup.js';
 import { createBnbService } from '#infra/services/binance/service.js';
 import { dateService } from '#infra/services/date.js';
+import { createJobScheduler } from '#infra/services/jobScheduler/service.js';
 import { executeT } from '#utils/fp.js';
 
 const mainLogger = createMainLogger();
@@ -25,7 +27,9 @@ await executeT(
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
     te.bindW('symbolRepo', (deps) => createSymbolRepoWithDeps(deps)),
     te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
+    te.bindW('btStrategyModelDao', (deps) => createBtStrategyModelDaoWithDeps(deps)),
     te.bindW('bnbService', (deps) => createBnbServiceWithDeps(deps)),
+    te.bindW('jobScheduler', () => createJobScheduler()),
     te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
     te.mapLeft((x) => x),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
@@ -46,6 +50,9 @@ function createSymbolRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>
 }
 function createBtStrategyRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createBtStrategyRepo(mongoDbClient));
+}
+function createBtStrategyModelDaoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(createBtStrategyModelDao(mongoDbClient));
 }
 function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepo'>) {
   return startupProcess({ ...deps, logger: logger });

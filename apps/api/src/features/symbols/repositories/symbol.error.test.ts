@@ -5,7 +5,7 @@ import { createSymbolRepoError, isSymbolRepoError } from './symbol.error.js';
 
 describe('Validate symbol repository error', () => {
   describe('WHEN validate an error that is a symbol repository error', () => {
-    it('THEN it should return false', () => {
+    it('THEN it should return true', () => {
       const externalError = createExternalError({ cause: new Error('Mock') });
       const error = createSymbolRepoError('CreateSymbolRepoError', randomString(), externalError);
 

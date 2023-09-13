@@ -5,7 +5,7 @@ import { createBtStrategyDomainError, isBtStrategyDomainError } from './btStrate
 
 describe('Validate backtesting strategy domain error', () => {
   describe('WHEN validate an error that is a backtesting strategy domain error', () => {
-    it('THEN it should return false', () => {
+    it('THEN it should return true', () => {
       const validationError = createSchemaValidationError(
         'ValidationFailed',
         randomString(),

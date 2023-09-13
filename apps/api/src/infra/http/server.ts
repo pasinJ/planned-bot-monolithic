@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid';
 
 import { addBtStrategiesRoutes } from '#features/backtesting-strategies/routes.js';
 import { addSymbolsRoutes } from '#features/symbols/routes.js';
-import { ApplicationDeps } from '#infra/common.type.js';
+import { ApplicationDeps } from '#infra/applicationDeps.type.js';
 import { PinoLogger, createLogger } from '#infra/logging.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 

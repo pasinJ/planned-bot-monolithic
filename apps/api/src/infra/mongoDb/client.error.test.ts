@@ -5,7 +5,7 @@ import { createMongoDbClientError, isMongoDbClientError } from './client.error.j
 
 describe('Validate MongoDb client error', () => {
   describe('WHEN validate an error that is a MongoDb client error', () => {
-    it('THEN it should return false', () => {
+    it('THEN it should return true', () => {
       const externalError = createExternalError({ cause: new Error('Mock') });
       const error = createMongoDbClientError('CreateMongoDbClientError', randomString(), externalError);
 

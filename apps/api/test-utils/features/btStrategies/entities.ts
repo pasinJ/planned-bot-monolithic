@@ -13,8 +13,9 @@ import {
   randomPositiveInt,
   randomString,
 } from '#test-utils/faker.js';
+import { RemoveBrand } from '#test-utils/types.js';
 
-export function mockBtStrategy(): BtStrategy {
+export function mockBtStrategy(overrides?: Partial<RemoveBrand<BtStrategy>>): BtStrategy {
   return {
     id: randomString(),
     name: randomString(),
@@ -34,6 +35,7 @@ export function mockBtStrategy(): BtStrategy {
     version: randomNonNegativeInt(),
     createdAt: faker.date.past(),
     updatedAt: faker.date.recent(),
+    ...overrides,
   } as BtStrategy;
 }
 
