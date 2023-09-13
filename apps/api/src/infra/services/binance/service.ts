@@ -3,13 +3,13 @@ import Binance from 'binance-api-node';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 
-import { SymbolRepo } from '#features/symbols/repositories/symbol.type.js';
+import { SymbolModelDao } from '#features/symbols/data-models/symbol.dao.type.js';
 import { createAxiosHttpClient } from '#infra/http/client.js';
 import { PinoLogger, createLoggerIo } from '#infra/logging.js';
-import { getBnbConfig } from '#shared/config/binance.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { DateService } from '../date.type.js';
+import { DateService } from '../date/service.type.js';
+import { getBnbConfig } from './config.js';
 import { BnbServiceError, createBnbServiceError } from './error.js';
 import { getSpotSymbols } from './features/getSpotSymbols.js';
 import { BnbService } from './service.type.js';
@@ -19,10 +19,14 @@ const createBnbClient = Binance.default as unknown as typeof Binance;
 type BnbClient = ReturnType<typeof createBnbClient>;
 type BnbClientOptions = Parameters<typeof createBnbClient>[0];
 
-type CreateBnbServiceDeps = { dateService: DateService; symbolRepo: SymbolRepo; mainLogger: PinoLogger };
+export type BnbServiceDeps = {
+  dateService: Pick<DateService, 'getCurrentDate'>;
+  symbolModelDao: Pick<SymbolModelDao, 'generateId'>;
+  mainLogger: PinoLogger;
+};
 export function createBnbService(
-  deps: CreateBnbServiceDeps,
-): te.TaskEither<BnbServiceError<'CreateBnbServiceError'>, BnbService> {
+  deps: BnbServiceDeps,
+): te.TaskEither<BnbServiceError<'CreateServiceFailed'>, BnbService> {
   const { HTTP_BASE_URL } = getBnbConfig();
   const httpClientOptions: CreateAxiosDefaults = { baseURL: HTTP_BASE_URL };
   const bnbClientOptions: BnbClientOptions = { httpBase: HTTP_BASE_URL };
@@ -41,12 +45,12 @@ export function createBnbService(
 
 function testBnbClientConnectivity(
   bnbClient: BnbClient,
-): te.TaskEither<BnbServiceError<'CreateBnbServiceError'>, void> {
+): te.TaskEither<BnbServiceError<'CreateServiceFailed'>, void> {
   return pipe(
     te.tryCatch(
       () => bnbClient.ping(),
       createErrorFromUnknown(
-        createBnbServiceError('CreateBnbServiceError', 'Testing connectivity to Binance server failed'),
+        createBnbServiceError('CreateServiceFailed', 'Testing connectivity to Binance server failed'),
       ),
     ),
     te.asUnit,

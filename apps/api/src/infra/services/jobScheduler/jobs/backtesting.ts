@@ -10,7 +10,7 @@ import {
   btExecutionStatusEnum,
   generateBtExecutionId,
 } from '#features/backtesting-strategies/data-models/btExecution.model.js';
-import { BtStrategyId } from '#features/backtesting-strategies/domain/btStrategy.entity.js';
+import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
 import { createJobSchedulerError } from '../service.error.js';

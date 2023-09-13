@@ -10,7 +10,7 @@ import {
   randomPositiveFloat,
   randomString,
 } from '#test-utils/faker.js';
-import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
+import { mockBtStrategy } from '#test-utils/features/btStrategies/models.js';
 
 import { createBtStrategyModel } from './btStrategy.model.js';
 

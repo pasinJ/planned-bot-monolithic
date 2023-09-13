@@ -13,7 +13,7 @@ export type MongoDbClientError<Type extends MongoDbClientErrorType = MongoDbClie
 type MongoDbClientErrorName = typeof mongoDbClientErrorName;
 const mongoDbClientErrorName = 'MongoDbClientError' as const;
 type MongoDbClientErrorType = (typeof mongoDbClientErrorType)[number];
-const mongoDbClientErrorType = ['CreateMongoDbClientError', 'DisconnectMongoDbClientError'] as const;
+const mongoDbClientErrorType = ['CreateClientFailed', 'DisconnectFailed'] as const;
 
 export function createMongoDbClientError<Type extends MongoDbClientError['type']>(
   type: Type,

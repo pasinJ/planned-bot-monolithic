@@ -6,18 +6,17 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { nanoid } from 'nanoid';
 
-import { addSymbolsRoutes } from '#features/symbols/routes.js';
-import { ApplicationDeps } from '#infra/applicationDeps.type.js';
 import { PinoLogger, createLogger } from '#infra/logging.js';
+import { AppDeps } from '#shared/appDeps.type.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { getHttpConfig } from '../../shared/config/http.js';
 import { setErrorHandler, setNotFoundHandler } from './hooks.js';
 import { addRoutes } from './routes.js';
+import { getHttpConfig } from './server.config.js';
 import {
   HttpServerError,
-  createAddHookError,
-  createAddPluginError,
+  createAddHookFailed,
+  createAddPluginFailed,
   createHttpServerError,
 } from './server.error.js';
 import { FastifyServer } from './server.type.js';
@@ -33,41 +32,44 @@ const corsConfig: cors.FastifyCorsOptions = { origin: [/^http:\/\/localhost/] };
 
 export function buildHttpServer(
   mainLogger: PinoLogger,
-): e.Either<HttpServerError<'InitiateServerError' | 'AddHookError'>, FastifyServer> {
+): e.Either<HttpServerError<'InitiateServerFailed' | 'AddHookFailed'>, FastifyServer> {
   return pipe(
     e.tryCatch(
       () => Fastify({ ...fastifyConfig, logger: createLogger('HttpServer', mainLogger) }),
-      createErrorFromUnknown(createHttpServerError('InitiateServerError', 'Initate Fastify server failed')),
+      createErrorFromUnknown(createHttpServerError('InitiateServerFailed', 'Initate Fastify server failed')),
     ),
     e.chainFirstW((fastify) =>
       e.tryCatch(
         () => setNotFoundHandler(fastify),
-        createErrorFromUnknown(createAddHookError('Not found handler')),
+        createErrorFromUnknown(createAddHookFailed('Not found handler')),
       ),
     ),
     e.chainFirstW((fastify) =>
-      e.tryCatch(() => setErrorHandler(fastify), createErrorFromUnknown(createAddHookError('Error handler'))),
+      e.tryCatch(
+        () => setErrorHandler(fastify),
+        createErrorFromUnknown(createAddHookFailed('Error handler')),
+      ),
     ),
   );
 }
 
 export function startHttpServer(
   fastify: FastifyServer,
-  deps: ApplicationDeps,
-): te.TaskEither<HttpServerError<'AddPluginError' | 'AddRouteError' | 'StartServerError'>, FastifyServer> {
+  deps: AppDeps,
+): te.TaskEither<HttpServerError<'AddPluginFailed' | 'AddRouteFailed' | 'StartServerFailed'>, FastifyServer> {
   const { PORT_NUMBER } = getHttpConfig();
 
   return pipe(
     ioe.tryCatch(
       () => fastify.register(cors, corsConfig),
-      createErrorFromUnknown(createAddPluginError('CORS')),
+      createErrorFromUnknown(createAddPluginFailed('CORS')),
     ),
-    ioe.chainW(() => ioe.sequenceArray([addRoutes(fastify, deps), addSymbolsRoutes(fastify, deps)])),
+    ioe.chainW(() => addRoutes(fastify, deps)),
     te.fromIOEither,
     te.chainFirst(() =>
       te.tryCatch(
         () => fastify.listen({ host: '0.0.0.0', port: PORT_NUMBER }),
-        createErrorFromUnknown(createHttpServerError('StartServerError', 'Starting Fastify server failed')),
+        createErrorFromUnknown(createHttpServerError('StartServerFailed', 'Starting Fastify server failed')),
       ),
     ),
     te.as(fastify),
@@ -76,13 +78,13 @@ export function startHttpServer(
 
 export function closeHttpServer(
   instance: FastifyServer,
-): te.TaskEither<HttpServerError<'CloseServerError'>, void> {
+): te.TaskEither<HttpServerError<'CloseServerFailed'>, void> {
   return pipe(
     te.fromIO(() => instance.log.info('Fastify server start closing')),
     te.chain(() =>
       te.tryCatch(
         () => instance.close(),
-        createErrorFromUnknown(createHttpServerError('CloseServerError', 'Closing Fastify server failed')),
+        createErrorFromUnknown(createHttpServerError('CloseServerFailed', 'Closing Fastify server failed')),
       ),
     ),
     te.chainIOK(() => () => instance.log.info('Fastify server successfully closed')),

@@ -3,14 +3,14 @@ import { pipe } from 'fp-ts/lib/function.js';
 import mongoose, { Mongoose } from 'mongoose';
 
 import { LoggerIo } from '#infra/logging.js';
-import { getMongoDbConfig } from '#shared/config/mongoDb.js';
+import { getMongoDbConfig } from '#infra/mongoDb/config.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
 import { MongoDbClientError, createMongoDbClientError } from './client.error.js';
 
 export function createMongoDbClient(
   logger: LoggerIo,
-): te.TaskEither<MongoDbClientError<'CreateMongoDbClientError'>, Mongoose> {
+): te.TaskEither<MongoDbClientError<'CreateClientFailed'>, Mongoose> {
   const { URI } = getMongoDbConfig();
   return pipe(
     te.fromIO(logger.infoIo('MongoDB client start connecting to MongoDB')),
@@ -18,7 +18,7 @@ export function createMongoDbClient(
       te.tryCatch(
         () => mongoose.connect(URI),
         createErrorFromUnknown(
-          createMongoDbClientError('CreateMongoDbClientError', 'Creating MongoDb client failed'),
+          createMongoDbClientError('CreateClientFailed', 'Creating MongoDb client failed'),
         ),
       ),
     ),
@@ -29,14 +29,14 @@ export function createMongoDbClient(
 export function disconnectMongoDbClient(
   client: Mongoose,
   logger: LoggerIo,
-): te.TaskEither<MongoDbClientError<'DisconnectMongoDbClientError'>, void> {
+): te.TaskEither<MongoDbClientError<'DisconnectFailed'>, void> {
   return pipe(
     te.fromIO(logger.infoIo('MongoDB client start disconnecting from MongoDB')),
     te.chain(() =>
       te.tryCatch(
         () => client.disconnect(),
         createErrorFromUnknown(
-          createMongoDbClientError('DisconnectMongoDbClientError', 'Disconnecting MongoDb client failed'),
+          createMongoDbClientError('DisconnectFailed', 'Disconnecting MongoDb client failed'),
         ),
       ),
     ),

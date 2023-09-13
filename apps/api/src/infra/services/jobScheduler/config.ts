@@ -1,7 +1,7 @@
 import io from 'fp-ts/lib/IO.js';
 import { z } from 'zod';
 
-import { nonEmptyString } from '#shared/common.type.js';
+import { nonEmptyString } from '#shared/utils/zod.schema.js';
 
 export type JobSchedulerConfig = { URI: MongoDbUri; COLLECTION_NAME: string };
 

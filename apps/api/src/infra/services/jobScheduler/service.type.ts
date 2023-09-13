@@ -1,7 +1,7 @@
 import te from 'fp-ts/lib/TaskEither.js';
 
 import { BtExecutionId } from '#features/backtesting-strategies/data-models/btExecution.model.js';
-import { BtStrategyId } from '#features/backtesting-strategies/domain/btStrategy.entity.js';
+import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
 
 import { JobSchedulerError } from './service.error.js';
 

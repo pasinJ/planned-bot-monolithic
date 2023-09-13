@@ -10,7 +10,7 @@ import {
 import pretty, { PrettyOptions } from 'pino-pretty';
 import { mergeDeepWith, pick, prop } from 'ramda';
 
-import { AppConfig, LogFilePath, getAppConfig } from '#config/app.js';
+import { AppConfig, LogFilePath, getAppConfig } from '#shared/app.config.js';
 import { mergeConcatArray } from '#utils/general.js';
 
 type LogFn = {

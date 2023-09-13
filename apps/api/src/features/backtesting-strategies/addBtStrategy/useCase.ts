@@ -1,7 +1,7 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 
-import { DateService } from '#infra/services/date.type.js';
+import { DateService } from '#infra/services/date/service.type.js';
 import { GeneralError } from '#shared/errors/generalError.js';
 import { SchemaValidationError } from '#shared/utils/zod.js';
 

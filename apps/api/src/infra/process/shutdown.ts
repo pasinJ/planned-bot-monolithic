@@ -4,22 +4,35 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 
+import { HttpServerError } from '#infra/http/server.error.js';
 import { closeHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
 import { LoggerIo } from '#infra/logging.js';
+import { MongoDbClientError } from '#infra/mongoDb/client.error.js';
 import { disconnectMongoDbClient } from '#infra/mongoDb/client.js';
-import { GracefulPeriodMs, getAppConfig } from '#shared/config/app.js';
+import { JobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
+import { JobScheduler } from '#infra/services/jobScheduler/service.type.js';
+import { GracefulPeriodMs, getAppConfig } from '#shared/app.config.js';
 import { executeT } from '#shared/utils/fp.js';
 
-type ShutdownDeps = { httpServer: FastifyServer; mongoDbClient: Mongoose };
+type ShutdownDeps = { httpServer: FastifyServer; mongoDbClient: Mongoose; jobScheduler: JobScheduler };
 
 export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO<void> {
+  let shutdownProcessStarted = false;
+
   return () => {
     ['SIGTERM', 'SIGINT'].forEach((signal) => {
       process.on(signal, () => {
         void pipe(
           t.fromIO(logger.infoIo(`Got ${signal} signal`)),
-          t.chain(() => startGracefulShutdown(deps, logger)),
+          t.chain(() => {
+            if (!shutdownProcessStarted) {
+              shutdownProcessStarted = true;
+              return startGracefulShutdown(deps, logger);
+            } else {
+              return te.of(undefined);
+            }
+          }),
           executeT,
         );
       });
@@ -28,7 +41,14 @@ export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO
     process.on('uncaughtException', (error, origin) => {
       void pipe(
         t.fromIO(logger.errorIo({ error, origin }, 'Got uncaughtException event')),
-        t.chain(() => startGracefulShutdown(deps, logger)),
+        t.chain(() => {
+          if (!shutdownProcessStarted) {
+            shutdownProcessStarted = true;
+            return startGracefulShutdown(deps, logger);
+          } else {
+            return te.of(undefined);
+          }
+        }),
         executeT,
       );
     });
@@ -36,7 +56,14 @@ export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO
     process.on('unhandledRejection', (reason) => {
       void pipe(
         t.fromIO(logger.errorIo({ reason }, 'Got unhandledRejection event')),
-        t.chain(() => startGracefulShutdown(deps, logger)),
+        t.chain(() => {
+          if (!shutdownProcessStarted) {
+            shutdownProcessStarted = true;
+            return startGracefulShutdown(deps, logger);
+          } else {
+            return te.of(undefined);
+          }
+        }),
         executeT,
       );
     });
@@ -44,14 +71,25 @@ export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO
 }
 
 function startGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): t.Task<never> {
-  const { httpServer, mongoDbClient } = deps;
+  const { httpServer, mongoDbClient, jobScheduler } = deps;
   const { GRACEFUL_PERIOD_MS } = getAppConfig();
 
   return pipe(
     te.fromIO(logger.infoIo('Graceful shutdown start')),
     te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
-    te.chainFirstW(() => te.sequenceArray([closeHttpServer(httpServer)])),
-    te.chainFirstW(() => te.sequenceArray([disconnectMongoDbClient(mongoDbClient, logger)])),
+    te.chainFirstW(() =>
+      // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+      te.sequenceArray<void, HttpServerError<'CloseServerFailed'> | JobSchedulerError<'StopServiceFailed'>>([
+        closeHttpServer(httpServer),
+        jobScheduler.stop,
+      ]),
+    ),
+    te.chainFirstW(() =>
+      // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+      te.sequenceArray<void, MongoDbClientError<'DisconnectFailed'>>([
+        disconnectMongoDbClient(mongoDbClient, logger),
+      ]),
+    ),
     te.matchE(
       (error) =>
         pipe(

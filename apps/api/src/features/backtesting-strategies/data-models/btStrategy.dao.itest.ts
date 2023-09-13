@@ -3,7 +3,7 @@ import { dissoc } from 'ramda';
 
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { randomString } from '#test-utils/faker.js';
-import { mockBtStrategy } from '#test-utils/features/btStrategies/entities.js';
+import { mockBtStrategy } from '#test-utils/features/btStrategies/models.js';
 import { createMongoClient, deleteModel } from '#test-utils/mongoDb.js';
 
 import { isBtStrategyModelDaoError } from './btStrategy.dao.error.js';
@@ -41,12 +41,10 @@ describe('Backtesting strategy model Dao', () => {
   let btStrategyModelDao: BtStrategyModelDao;
   let btStrategyModel: BtStrategyMongooseModel;
 
-  function setupRepo() {
+  beforeAll(() => {
     btStrategyModelDao = unsafeUnwrapEitherRight(executeIo(createBtStrategyModelDao(client)));
     btStrategyModel = client.models[btStrategyModelName];
-  }
-
-  beforeAll(() => setupRepo());
+  });
   afterEach(() => btStrategyModel.deleteMany());
   afterEach(() => deleteModel(client, btStrategyModelName));
 

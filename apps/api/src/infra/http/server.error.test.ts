@@ -7,7 +7,7 @@ describe('Validate HTTP server error', () => {
   describe('WHEN validate an error that is a HTTP server error', () => {
     it('THEN it should return true', () => {
       const externalError = createExternalError({ cause: new Error('Mock') });
-      const error = createHttpServerError('UnhandledError', randomString(), externalError);
+      const error = createHttpServerError('Unhandled', randomString(), externalError);
 
       expect(isHttpServerError(error)).toBeTrue();
     });

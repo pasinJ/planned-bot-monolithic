@@ -4,15 +4,15 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
 
 import { exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
-import {
-  nonEmptyString,
-  nonNegativeFloat8Digits,
-  nonNegativePercentage8Digits,
-} from '#shared/common.type.js';
 import { languageSchema } from '#shared/domain/language.js';
 import { timeframeSchema } from '#shared/domain/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
+import {
+  nonEmptyString,
+  nonNegativeFloat8Digits,
+  nonNegativePercentage8Digits,
+} from '#shared/utils/zod.schema.js';
 
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');

@@ -14,13 +14,13 @@ type HttpServerErrorName = typeof httpServerErrorName;
 const httpServerErrorName = 'HttpServerError' as const;
 type HttpServerErrorType = (typeof httpServerErrorType)[number];
 const httpServerErrorType = [
-  'InitiateServerError',
-  'AddPluginError',
-  'AddRouteError',
-  'AddHookError',
-  'StartServerError',
-  'CloseServerError',
-  'UnhandledError',
+  'InitiateServerFailed',
+  'AddPluginFailed',
+  'AddRouteFailed',
+  'AddHookFailed',
+  'StartServerFailed',
+  'CloseServerFailed',
+  'Unhandled',
 ] as const;
 
 export function createHttpServerError<Type extends HttpServerError['type']>(
@@ -30,22 +30,22 @@ export function createHttpServerError<Type extends HttpServerError['type']>(
 ): HttpServerError<Type> {
   return createAppError({ name: httpServerErrorName, type, message, cause }, createHttpServerError);
 }
-export function createAddPluginError(pluginName: string): HttpServerError<'AddPluginError'> {
-  return createHttpServerError('AddPluginError', `Adding ${pluginName} plugin failed`).setFactoryContext(
-    createAddPluginError,
+export function createAddPluginFailed(pluginName: string): HttpServerError<'AddPluginFailed'> {
+  return createHttpServerError('AddPluginFailed', `Adding ${pluginName} plugin failed`).setFactoryContext(
+    createAddPluginFailed,
   );
 }
-export function createAddHookError(hookName: string): HttpServerError<'AddHookError'> {
-  return createHttpServerError('AddHookError', `Adding ${hookName} hook failed`).setFactoryContext(
-    createAddHookError,
+export function createAddHookFailed(hookName: string): HttpServerError<'AddHookFailed'> {
+  return createHttpServerError('AddHookFailed', `Adding ${hookName} hook failed`).setFactoryContext(
+    createAddHookFailed,
   );
 }
 export function createAddHttpRouteError(
   method: string | string[],
   url: string,
-): HttpServerError<'AddRouteError'> {
+): HttpServerError<'AddRouteFailed'> {
   return createHttpServerError(
-    'AddRouteError',
+    'AddRouteFailed',
     `Adding ${method.toString()} ${url} route failed`,
   ).setFactoryContext(createAddHttpRouteError);
 }

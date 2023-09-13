@@ -1,4 +1,4 @@
-import { BtStrategyId } from '#features/backtesting-strategies/domain/btStrategy.entity.js';
+import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { randomString } from '#test-utils/faker.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';

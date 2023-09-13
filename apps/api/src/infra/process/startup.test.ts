@@ -1,122 +1,106 @@
 import te from 'fp-ts/lib/TaskEither.js';
-import { constVoid } from 'fp-ts/lib/function.js';
-import { is } from 'ramda';
+import { mergeDeepRight } from 'ramda';
 
-import { createBnbServiceError } from '#infra/services/binance/error.js';
+import {
+  createSymbolModelDaoError,
+  isSymbolModelDaoError,
+} from '#features/symbols/data-models/symbol.dao.error.js';
+import { createBnbServiceError, isBnbServiceError } from '#infra/services/binance/error.js';
+import { DeepPartial } from '#shared/common.type.js';
 import { executeT } from '#shared/utils/fp.js';
 import { resetEnvVar, setEnvVar } from '#test-utils/envVar.js';
 import { generateArrayOf } from '#test-utils/faker.js';
-import { mockSymbol } from '#test-utils/features/symbols/entities.js';
-import { mockSymbolRepo } from '#test-utils/features/symbols/repositories.js';
-import { mockBnbService, mockLoggerIo } from '#test-utils/services.js';
+import { mockSymbol } from '#test-utils/features/symbols/models.js';
+import { mockLoggerIo } from '#test-utils/services.js';
 
-import { startupProcess } from './startup.js';
+import { StartupProcessDeps, startupProcess } from './startup.js';
 
-function setupSuccessCase() {
-  const symbols = generateArrayOf(() => mockSymbol({ version: 0 }));
-  const bnbService = mockBnbService({ getSpotSymbols: jest.fn(te.right(symbols)) });
-  const symbolRepo = mockSymbolRepo({
-    countAll: te.right(0),
-    add: jest.fn().mockReturnValue(te.rightIO(constVoid)),
-  });
-  const deps = { bnbService, symbolRepo, logger: mockLoggerIo() };
-
-  return { deps, symbols };
-}
-function setupGetSymbolsFailed() {
-  const { deps } = setupSuccessCase();
-  return {
-    ...deps,
-    bnbService: mockBnbService({
-      getSpotSymbols: te.left(createBnbServiceError('GetBnbSpotSymbolsError', 'Mock')),
-    }),
-  };
-}
-function setupAddSymbolsFailed() {
-  const { deps } = setupSuccessCase();
-  return {
-    ...deps,
-    symbolRepo: mockSymbolRepo({
-      countAll: te.right(0),
-      add: jest.fn().mockReturnValue(te.left(new Error('Mock error'))),
-    }),
-  };
-}
-function setupExistingSymbols() {
-  const { deps } = setupSuccessCase();
-  return {
-    ...deps,
-    symbolRepo: mockSymbolRepo({ countAll: te.right(1) }),
-  };
+function mockDeps(overrides?: DeepPartial<StartupProcessDeps>): StartupProcessDeps {
+  return mergeDeepRight(
+    {
+      symbolModelDao: {
+        existByExchange: jest.fn().mockReturnValue(te.right(false)),
+        add: jest.fn().mockReturnValue(te.right(undefined)),
+      },
+      bnbService: { getSpotSymbols: jest.fn(te.right(generateArrayOf(mockSymbol))) },
+      logger: mockLoggerIo(),
+    },
+    overrides ?? {},
+  ) as StartupProcessDeps;
 }
 
 const originalEnv = process.env;
 
-afterAll(resetEnvVar(originalEnv));
+afterEach(resetEnvVar(originalEnv));
 
-describe('GIVEN running application in test environment WHEN execute startup process', () => {
+describe('GIVEN application is running in test environment WHEN execute startup process', () => {
   it('THEN it should skip getting SPOT symbols', async () => {
     setEnvVar('NODE_ENV', 'test');
 
-    const { deps } = setupSuccessCase();
+    const deps = mockDeps();
     await executeT(startupProcess(deps));
 
     expect(deps.bnbService.getSpotSymbols).not.toHaveBeenCalled();
   });
 });
 
-describe('GIVEN running application in other than test environment', () => {
-  beforeAll(setEnvVar('NODE_ENV', 'development'));
+describe('GIVEN application is running in environment other than test environment', () => {
+  beforeEach(setEnvVar('NODE_ENV', 'development'));
 
-  describe('GIVEN there is no symbol in database WHEN execute startup process', () => {
+  describe('GIVEN there is existing symbols in database WHEN execute startup process', () => {
+    it('THEN it should not try to get SPOT symbols from Binance server', async () => {
+      const deps = mockDeps({ symbolModelDao: { existByExchange: () => te.right(true) } });
+      await executeT(startupProcess(deps));
+
+      expect(deps.bnbService.getSpotSymbols).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GIVEN there is no binance symbol in database WHEN execute startup process', () => {
     it('THEN it should get SPOT symbols from Binance server', async () => {
-      const { deps } = setupSuccessCase();
+      const deps = mockDeps();
       await executeT(startupProcess(deps));
 
       expect(deps.bnbService.getSpotSymbols).toHaveBeenCalledOnce();
     });
-    describe('WHEN getting SPOT symbols from Binance server is successful', () => {
-      it('THEN it should add symbols using symbol repository', async () => {
-        const { deps, symbols } = setupSuccessCase();
-        await executeT(startupProcess(deps));
-
-        expect(deps.symbolRepo.add).toHaveBeenCalledExactlyOnceWith(symbols);
-      });
-    });
-    describe('WHEN adding symbols into database is successful', () => {
-      it('THEN it should return Right', async () => {
-        const { deps } = setupSuccessCase();
-        const result = await executeT(startupProcess(deps));
-
-        expect(result).toBeRight();
-      });
-    });
 
     describe('WHEN getting SPOT symbols from Binance server fails', () => {
-      it('THEN it should return Left of GET_BNB_SPOT_SYMBOLS_ERROR', async () => {
-        const deps = setupGetSymbolsFailed();
+      it('THEN it should return Left of error', async () => {
+        const error = createBnbServiceError('GetSpotSymbolsFailed', 'Mock');
+        const deps = mockDeps({ bnbService: { getSpotSymbols: te.left(error) } });
         const result = await executeT(startupProcess(deps));
 
-        expect(result).toEqualLeft(expect.toSatisfy(is(Error)));
+        expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
+      });
+    });
+
+    describe('WHEN getting SPOT symbols from Binance server is successful', () => {
+      it('THEN it should add symbols using symbol model DAO', async () => {
+        const symbols = generateArrayOf(mockSymbol);
+        const deps = mockDeps({ bnbService: { getSpotSymbols: te.right(symbols) } });
+        await executeT(startupProcess(deps));
+
+        expect(deps.symbolModelDao.add).toHaveBeenCalledExactlyOnceWith(symbols);
       });
     });
 
     describe('WHEN adding symbols into database fails', () => {
       it('THEN it should return Left of error', async () => {
-        const deps = setupAddSymbolsFailed();
+        const error = createSymbolModelDaoError('AddFailed', 'Mock');
+        const deps = mockDeps({ symbolModelDao: { add: () => te.left(error) } });
         const result = await executeT(startupProcess(deps));
 
-        expect(result).toEqualLeft(expect.toSatisfy(is(Error)));
+        expect(result).toEqualLeft(expect.toSatisfy(isSymbolModelDaoError));
       });
     });
-  });
 
-  describe('GIVEN there is existing symbols in database WHEN execute startup process', () => {
-    it('THEN it should not try to get SPOT symbols from Binance server', async () => {
-      const deps = setupExistingSymbols();
-      await executeT(startupProcess(deps));
+    describe('WHEN adding symbols into database is successful', () => {
+      it('THEN it should return Right of undefined', async () => {
+        const deps = mockDeps();
+        const result = await executeT(startupProcess(deps));
 
-      expect(deps.bnbService.getSpotSymbols).not.toHaveBeenCalled();
+        expect(result).toEqualRight(undefined);
+      });
     });
   });
 });

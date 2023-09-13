@@ -4,9 +4,7 @@ import { Mongoose } from 'mongoose';
 import { omit } from 'ramda';
 
 import { createBtStrategyModelDao } from '#features/backtesting-strategies/data-models/btStrategy.dao.js';
-import { createBtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy.js';
-import { createSymbolRepo } from '#features/symbols/repositories/symbol.js';
-import { ApplicationDeps } from '#infra/applicationDeps.type.js';
+import { createSymbolModelDao } from '#features/symbols/data-models/symbol.dao.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
 import { createLoggerIo, createMainLogger } from '#infra/logging.js';
@@ -14,8 +12,9 @@ import { createMongoDbClient } from '#infra/mongoDb/client.js';
 import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { startupProcess } from '#infra/process/startup.js';
 import { createBnbService } from '#infra/services/binance/service.js';
-import { dateService } from '#infra/services/date.js';
+import { dateService } from '#infra/services/date/service.js';
 import { createJobScheduler } from '#infra/services/jobScheduler/service.js';
+import { AppDeps } from '#shared/appDeps.type.js';
 import { executeT } from '#utils/fp.js';
 
 const mainLogger = createMainLogger();
@@ -25,8 +24,7 @@ await executeT(
   pipe(
     te.Do,
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
-    te.bindW('symbolRepo', (deps) => createSymbolRepoWithDeps(deps)),
-    te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
+    te.bindW('symbolModelDao', (deps) => createSymbolModelDaoWithDeps(deps)),
     te.bindW('btStrategyModelDao', (deps) => createBtStrategyModelDaoWithDeps(deps)),
     te.bindW('bnbService', (deps) => createBnbServiceWithDeps(deps)),
     te.bindW('jobScheduler', () => createJobScheduler()),
@@ -40,21 +38,18 @@ await executeT(
   ),
 );
 
-type Deps = Omit<ApplicationDeps, 'dateService'> & { mongoDbClient: Mongoose; httpServer: FastifyServer };
+type Deps = Omit<AppDeps, 'dateService'> & { mongoDbClient: Mongoose; httpServer: FastifyServer };
 
-function createBnbServiceWithDeps(deps: Pick<Deps, 'symbolRepo'>) {
-  return createBnbService({ dateService, symbolRepo: deps.symbolRepo, mainLogger });
+function createBnbServiceWithDeps(deps: Pick<Deps, 'symbolModelDao'>) {
+  return createBnbService({ dateService, symbolModelDao: deps.symbolModelDao, mainLogger });
 }
-function createSymbolRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(createSymbolRepo(mongoDbClient));
-}
-function createBtStrategyRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(createBtStrategyRepo(mongoDbClient));
+function createSymbolModelDaoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(createSymbolModelDao(mongoDbClient));
 }
 function createBtStrategyModelDaoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createBtStrategyModelDao(mongoDbClient));
 }
-function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepo'>) {
+function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolModelDao'>) {
   return startupProcess({ ...deps, logger: logger });
 }
 function startHttpServerWithDeps(deps: Deps) {
