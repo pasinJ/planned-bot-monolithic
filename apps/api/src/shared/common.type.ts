@@ -18,3 +18,9 @@ export const nonNegativePercentage8Digits = z
   .transform((val) => new Decimal(val).toDecimalPlaces(8, Decimal.ROUND_UP).toNumber());
 
 export const stringDatetimeToDate = z.string().datetime().pipe(z.coerce.date());
+
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;

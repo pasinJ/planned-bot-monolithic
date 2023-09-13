@@ -1,7 +1,9 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { mergeDeepRight } from 'ramda';
 
 import { createJobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
+import { DeepPartial } from '#shared/common.type.js';
 import { isBusinessError } from '#shared/errors/businessError.js';
 import { executeT } from '#shared/utils/fp.js';
 import { randomAnyDate, randomString } from '#test-utils/faker.js';
@@ -9,16 +11,18 @@ import { randomAnyDate, randomString } from '#test-utils/faker.js';
 import { createBtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js';
 import { ExecuteBtStrategyDeps, ExecuteBtStrategyRequest, executeBtStrategy } from './useCase.js';
 
-function mockDeps(overrides?: Partial<ExecuteBtStrategyDeps>): ExecuteBtStrategyDeps {
-  return {
-    btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.right(true)) },
-    jobScheduler: {
-      addBtJob: jest
-        .fn()
-        .mockReturnValue(te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() })),
+function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyDeps>): ExecuteBtStrategyDeps {
+  return mergeDeepRight(
+    {
+      btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.right(true)) },
+      jobScheduler: {
+        addBtJob: jest
+          .fn()
+          .mockReturnValue(te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() })),
+      },
     },
-    ...overrides,
-  };
+    overrides ?? {},
+  ) as ExecuteBtStrategyDeps;
 }
 function mockRequest(): ExecuteBtStrategyRequest {
   return { btStrategyId: randomString() };
@@ -36,7 +40,7 @@ describe('WHEN user requests to execute a backtesting strategy', () => {
 
 describe('WHEN the backtesting strategy ID does not exist', () => {
   it('THEN it should return Left of error', async () => {
-    const deps = mockDeps({ btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.right(false)) } });
+    const deps = mockDeps({ btStrategyModelDao: { existById: () => te.right(false) } });
     const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
     expect(result).toEqualLeft(expect.toSatisfy(isBusinessError));
@@ -46,7 +50,7 @@ describe('WHEN the backtesting strategy ID does not exist', () => {
 describe('WHEN checking existence of the strategy fails', () => {
   it('THEN it should return Left of error', async () => {
     const error = createBtStrategyModelDaoError('ExistByIdFailed', 'Mock');
-    const deps = mockDeps({ btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.left(error)) } });
+    const deps = mockDeps({ btStrategyModelDao: { existById: () => te.left(error) } });
     const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
     expect(result).toEqualLeft(error);
@@ -65,9 +69,7 @@ describe('WHEN checking existence of the strategy succeeds', () => {
   describe('WHEN adding a backtesting job fails', () => {
     it('THEN it should return Left of error', async () => {
       const error = createJobSchedulerError('AddBtJobFailed', 'Mock');
-      const deps = mockDeps({
-        jobScheduler: { addBtJob: jest.fn().mockReturnValue(te.left(error)) },
-      });
+      const deps = mockDeps({ jobScheduler: { addBtJob: () => te.left(error) } });
       const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
       expect(result).toEqualLeft(error);
@@ -78,9 +80,7 @@ describe('WHEN checking existence of the strategy succeeds', () => {
     it('THEN it should return Right of execution ID, created timestamp, progressPath, and resultPath', async () => {
       const executionId = randomString();
       const createdAt = randomAnyDate();
-      const deps = mockDeps({
-        jobScheduler: { addBtJob: jest.fn().mockReturnValue(te.right({ id: executionId, createdAt })) },
-      });
+      const deps = mockDeps({ jobScheduler: { addBtJob: () => te.right({ id: executionId, createdAt }) } });
       const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
       expect(result).toEqualRight({

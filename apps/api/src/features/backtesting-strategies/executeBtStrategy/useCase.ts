@@ -9,7 +9,7 @@ import { BusinessError, createBusinessError } from '#shared/errors/businessError
 import { BtExecutionId } from '../data-models/btExecution.model.js';
 import { BtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js';
 import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
-import { BtStrategyId } from '../domain/btStrategy.entity.js';
+import { BtStrategyId } from '../data-models/btStrategy.model.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 
 export type ExecuteBtStrategyDeps = {

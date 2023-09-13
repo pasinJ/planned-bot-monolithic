@@ -3,27 +3,22 @@ import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
 
-import { ExchangeName, exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
+import { exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
 import {
   nonEmptyString,
   nonNegativeFloat8Digits,
   nonNegativePercentage8Digits,
 } from '#shared/common.type.js';
-import { Language, languageSchema } from '#shared/domain/language.js';
-import { Timeframe, timeframeSchema } from '#shared/domain/timeframe.js';
-import { parseWithZod } from '#shared/utils/zod.js';
-
-import { BtStrategyDomainError, createBtStrategyDomainError } from './btStrategy.error.js';
+import { languageSchema } from '#shared/domain/language.js';
+import { timeframeSchema } from '#shared/domain/timeframe.js';
+import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
+import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');
 
-export type ExecutionStatus = z.infer<typeof executionStatusSchema>;
-const executionStatusSchema = z.enum(['IDLE']);
-export const executionStatusEnum = executionStatusSchema.enum;
-
-export type BtStrategy = z.infer<typeof btStrategySchema>;
-export const btStrategySchema = z
+export type BtStrategyModel = z.infer<typeof btStrategyModelSchema>;
+const btStrategyModelSchema = z
   .object({
     id: idSchema,
     name: nonEmptyString,
@@ -37,7 +32,6 @@ export const btStrategySchema = z
     maxNumKlines: z.number().positive().int(),
     startTimestamp: z.date(),
     endTimestamp: z.date(),
-    executionStatus: executionStatusSchema,
     language: languageSchema,
     body: nonEmptyString,
     version: z.number().nonnegative().int(),
@@ -61,43 +55,38 @@ export const btStrategySchema = z
     }),
   );
 
-type CreateNewBtStrategyData = {
-  id: string;
-  name: string;
-  exchange: ExchangeName;
-  symbol: string;
-  currency: string;
-  timeframe: Timeframe;
-  initialCapital: number;
-  takerFeeRate: number;
-  makerFeeRate: number;
-  maxNumKlines: number;
-  startTimestamp: Date;
-  endTimestamp: Date;
-  language: Language;
-  body: string;
-};
-export function createNewBtStrategy(
-  data: CreateNewBtStrategyData,
+export function createBtStrategyModel(
+  data: {
+    id: string;
+    name: string;
+    exchange: string;
+    symbol: string;
+    currency: string;
+    timeframe: string;
+    initialCapital: number;
+    takerFeeRate: number;
+    makerFeeRate: number;
+    maxNumKlines: number;
+    startTimestamp: Date;
+    endTimestamp: Date;
+    language: string;
+    body: string;
+  },
   currentDate: Date,
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
-): e.Either<BtStrategyDomainError<'CreateBtStrategyError'>, BtStrategy> {
-  const btStrategyEntity = {
-    ...data,
-    executionStatus: executionStatusEnum.IDLE,
-    version: 0,
-    createdAt: currentDate,
-    updatedAt: currentDate,
-  };
-
+): e.Either<GeneralError<'CreateBtStrategyError', SchemaValidationError>, BtStrategyModel> {
   return pipe(
-    parseWithZod(btStrategySchema, 'Validating backtesting strategy entity schema failed', btStrategyEntity),
+    parseWithZod(btStrategyModelSchema, 'Validating backtesting strategy schema failed', {
+      ...data,
+      version: 0,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+    }),
     e.mapLeft((error) =>
-      createBtStrategyDomainError(
-        'CreateBtStrategyError',
-        'Creating a new backtesting strategy entity failed because the given data is invalid',
-        error,
-      ),
+      createGeneralError({
+        type: 'CreateBtStrategyError',
+        message: 'Creating a new backtesting strategy model failed because the given data is invalid',
+        cause: error,
+      }),
     ),
   );
 }

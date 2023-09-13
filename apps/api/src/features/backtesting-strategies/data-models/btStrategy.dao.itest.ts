@@ -1,4 +1,5 @@
 import { Schema } from 'mongoose';
+import { dissoc } from 'ramda';
 
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { randomString } from '#test-utils/faker.js';
@@ -24,7 +25,7 @@ describe('Create backtesting strategy model DAO', () => {
     });
     it('THEN it should return Right of backtesting strategy model DAO', () => {
       const repository = executeIo(createBtStrategyModelDao(client));
-      expect(repository).toEqualRight(expect.toContainAllKeys(['existById']));
+      expect(repository).toEqualRight(expect.toContainAllKeys(['generateId', 'add', 'existById']));
     });
   });
   describe('WHEN unsuccessfully create a backtesting strategy model DAO (duplicated model)', () => {
@@ -48,6 +49,44 @@ describe('Backtesting strategy model Dao', () => {
   beforeAll(() => setupRepo());
   afterEach(() => btStrategyModel.deleteMany());
   afterEach(() => deleteModel(client, btStrategyModelName));
+
+  describe('Generate ID', () => {
+    it('WHEN generate ID THEN it should return a string with length more than 0', () => {
+      const id = btStrategyModelDao.generateId();
+
+      expect(id).toBeString();
+      expect(id.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Add backtesting strategy', () => {
+    describe('WHEN successfully add a backtesting strategy', () => {
+      it('THEN it should return Right of undefined', async () => {
+        const result = await executeT(btStrategyModelDao.add(mockBtStrategy()));
+
+        expect(result).toEqualRight(undefined);
+      });
+      it('THEN it should insert the backtesting strategy into database', async () => {
+        const btStrategy = mockBtStrategy();
+        await executeT(btStrategyModelDao.add(btStrategy));
+
+        const findResult = await btStrategyModel.findById(btStrategy.id);
+        expect(findResult).not.toBeNull();
+        expect(findResult?.toJSON()).toEqual({ ...dissoc('id', btStrategy), _id: btStrategy.id, __v: 0 });
+      });
+    });
+    describe('WHEN try to add a backtesting strategy with existing ID', () => {
+      it('THEN it should return Left of error', async () => {
+        const btStrategy1 = mockBtStrategy();
+        await executeT(btStrategyModelDao.add(btStrategy1));
+
+        const btStrategy2 = mockBtStrategy();
+        const result = await executeT(btStrategyModelDao.add({ ...btStrategy2, id: btStrategy1.id }));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyModelDaoError));
+      });
+    });
+  });
 
   describe('Check existence by ID', () => {
     describe('GIVEN the ID already exists WHEN check existence by ID', () => {

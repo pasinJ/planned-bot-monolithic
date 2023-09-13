@@ -14,7 +14,7 @@ type FactoryContext = ((...args: any[]) => any) | Function;
 export type Error = { message: string; cause?: unknown; stack?: string };
 export type GeneralCause = Error | string | undefined;
 export type AppError<
-  Name extends string = 'AppError',
+  Name extends string,
   Type extends string | undefined = string | undefined,
   Cause extends GeneralCause = GeneralCause,
 > = Error & {
@@ -29,7 +29,7 @@ export type AppError<
 } & (undefined extends Type ? { type?: Type } : { type: Type }) &
   (undefined extends Cause ? { cause?: Cause } : { cause: Cause });
 
-export const appErrorSchema = implementZodSchema<AppError>().with(
+export const appErrorSchema = implementZodSchema<AppError<string>>().with(
   z.object({
     name: z.string(),
     message: z.string(),
@@ -117,6 +117,6 @@ function getCausesListLoopFromAppError<Cause extends GeneralCause>(
   else return causeList;
 }
 
-export function isAppError(input: unknown): input is AppError {
+export function isAppError(input: unknown): input is AppError<string> {
   return appErrorSchema.safeParse(input).success;
 }

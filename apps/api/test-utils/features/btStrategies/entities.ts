@@ -1,11 +1,6 @@
 import { faker } from '@faker-js/faker';
-import { values } from 'ramda';
 
-import {
-  BtStrategy,
-  ExecutionStatus,
-  executionStatusEnum,
-} from '#features/backtesting-strategies/domain/btStrategy.entity.js';
+import { BtStrategyModel } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
 import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain.js';
 import {
   randomNonNegativeFloat,
@@ -15,7 +10,7 @@ import {
 } from '#test-utils/faker.js';
 import { RemoveBrand } from '#test-utils/types.js';
 
-export function mockBtStrategy(overrides?: Partial<RemoveBrand<BtStrategy>>): BtStrategy {
+export function mockBtStrategy(overrides?: Partial<RemoveBrand<BtStrategyModel>>): BtStrategyModel {
   return {
     id: randomString(),
     name: randomString(),
@@ -29,16 +24,11 @@ export function mockBtStrategy(overrides?: Partial<RemoveBrand<BtStrategy>>): Bt
     maxNumKlines: randomPositiveInt(),
     startTimestamp: faker.date.soon(),
     endTimestamp: faker.date.future(),
-    executionStatus: randomExecutionStatus(),
     language: randomLanguage(),
     body: randomString(),
     version: randomNonNegativeInt(),
     createdAt: faker.date.past(),
     updatedAt: faker.date.recent(),
     ...overrides,
-  } as BtStrategy;
-}
-
-export function randomExecutionStatus(): ExecutionStatus {
-  return faker.helpers.arrayElement(values(executionStatusEnum));
+  } as BtStrategyModel;
 }

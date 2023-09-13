@@ -12,10 +12,13 @@ import { timeframeSchema } from '#shared/domain/timeframe.js';
 import { executeT } from '#shared/utils/fp.js';
 import { parseWithZod } from '#shared/utils/zod.js';
 
-import { BtStrategyRepo } from '../repositories/btStrategy.type.js';
-import { addBtStrategyCommand } from '../use-cases/addBtStrategyCommand.js';
+import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
+import { addBtStrategy } from './useCase.js';
 
-export type AddBtStrategyControllerDeps = { btStrategyRepo: BtStrategyRepo; dateService: DateService };
+export type AddBtStrategyControllerDeps = {
+  btStrategyModelDao: Pick<BtStrategyModelDao, 'generateId' | 'add'>;
+  dateService: Pick<DateService, 'getCurrentDate'>;
+};
 
 const requestBodySchema = z
   .object({
@@ -39,7 +42,7 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
   return function addBtStrategyController({ body }, reply): Promise<FastifyReply> {
     const pipeline = pipe(
       te.fromEither(parseWithZod(requestBodySchema, 'Request body is invalid', body)),
-      te.chainW((parsedBody) => addBtStrategyCommand(deps, parsedBody)),
+      te.chainW((parsedBody) => addBtStrategy(deps, parsedBody)),
       te.match(
         (error) =>
           match(error)
@@ -47,7 +50,7 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
             .with({ name: 'SchemaValidationError' }, { type: 'CreateBtStrategyError' }, (error) =>
               reply.code(400).send(error),
             )
-            .with({ type: 'AddBtStrategyError' }, (error) => reply.code(500).send(error))
+            .with({ type: 'AddFailed' }, (error) => reply.code(500).send(error))
             .exhaustive(),
         (result) => reply.code(201).send(result),
       ),

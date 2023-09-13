@@ -2,6 +2,7 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Model, Mongoose, SchemaDefinition } from 'mongoose';
+import { nanoid } from 'nanoid';
 import { isNotNil, values } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
@@ -9,24 +10,24 @@ import { languageEnum } from '#shared/domain/language.js';
 import { timeframeEnum } from '#shared/domain/timeframe.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { BtStrategy, executionStatusEnum } from '../domain/btStrategy.entity.js';
 import { BtStrategyModelDaoError, createBtStrategyModelDaoError } from './btStrategy.dao.error.js';
 import { BtStrategyModelDao } from './btStrategy.dao.type.js';
+import { BtStrategyId, BtStrategyModel } from './btStrategy.model.js';
 
 export function createBtStrategyModelDao(
   client: Mongoose,
 ): ioe.IOEither<BtStrategyModelDaoError<'CreateDaoFailed'>, BtStrategyModelDao> {
   return pipe(
-    createBtStrategyMongooseModel(client),
-    ioe.map((model) => ({ existById: existById(model) })),
+    createMongooseModel(client),
+    ioe.map((model) => ({ generateId: generateId(), add: add(model), existById: existById(model) })),
   );
 }
 
-type BtStrategyDocument = BtStrategy & { _id: string; __v: number };
+type BtStrategyDocument = BtStrategyModel & { _id: string; __v: number };
 export type BtStrategyMongooseModel = Model<BtStrategyDocument>;
-export const btStrategyModelName = 'BtStrategyModel';
+export const btStrategyModelName = 'BtStrategy';
 
-function createBtStrategyMongooseModel(
+function createMongooseModel(
   client: Mongoose,
 ): ioe.IOEither<BtStrategyModelDaoError<'CreateDaoFailed'>, BtStrategyMongooseModel> {
   const mongooseSchema: SchemaDefinition<BtStrategyDocument> = {
@@ -44,7 +45,6 @@ function createBtStrategyMongooseModel(
     endTimestamp: { type: Date, required: true },
     language: { type: String, required: true, enum: values(languageEnum) },
     body: { type: String, required: true },
-    executionStatus: { type: String, required: true, enum: values(executionStatusEnum) },
     version: { type: Number, required: true },
     createdAt: { type: Date, required: true },
     updatedAt: { type: Date, required: true },
@@ -52,7 +52,7 @@ function createBtStrategyMongooseModel(
 
   return pipe(
     ioe.tryCatch(
-      () => new client.Schema<BtStrategyDocument>(mongooseSchema, { collection: 'btstrategies' }),
+      () => new client.Schema<BtStrategyDocument>(mongooseSchema),
       createErrorFromUnknown(
         createBtStrategyModelDaoError(
           'CreateDaoFailed',
@@ -72,6 +72,23 @@ function createBtStrategyMongooseModel(
       ),
     ),
   );
+}
+
+function generateId(): BtStrategyModelDao['generateId'] {
+  return () => nanoid() as BtStrategyId;
+}
+
+function add(model: BtStrategyMongooseModel): BtStrategyModelDao['add'] {
+  return (btStrategy) =>
+    pipe(
+      te.tryCatch(
+        () => model.create(btStrategy),
+        createErrorFromUnknown(
+          createBtStrategyModelDaoError('AddFailed', 'Adding a backtesting strategy failed'),
+        ),
+      ),
+      te.asUnit,
+    );
 }
 
 function existById(model: BtStrategyMongooseModel): BtStrategyModelDao['existById'] {

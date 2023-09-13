@@ -1,6 +1,8 @@
 import te from 'fp-ts/lib/TaskEither.js';
+import { mergeDeepRight } from 'ramda';
 
 import { createJobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
+import { DeepPartial } from '#shared/common.type.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { randomAnyDate, randomString } from '#test-utils/faker.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
@@ -9,46 +11,16 @@ import { createBtStrategyModelDaoError } from '../data-models/btStrategy.dao.err
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { ExecuteBtStrategyControllerDeps, buildExecuteBtStrategyController } from './controller.js';
 
-function mockDeps(overrides?: Partial<ExecuteBtStrategyControllerDeps>): ExecuteBtStrategyControllerDeps {
-  return {
-    btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.right(true)) },
-    jobScheduler: {
-      addBtJob: jest
-        .fn()
-        .mockReturnValue(te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() })),
+function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyControllerDeps>): ExecuteBtStrategyControllerDeps {
+  return mergeDeepRight(
+    {
+      btStrategyModelDao: { existById: () => te.right(true) },
+      jobScheduler: {
+        addBtJob: () => te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() }),
+      },
     },
-    ...overrides,
-  };
-}
-function setupNotExist() {
-  const btStrategyModelDao = { existById: jest.fn().mockReturnValue(te.right(false)) };
-  return setupServer({ btStrategyModelDao });
-}
-function setupCheckBtStrategyFailed() {
-  const error = createBtStrategyModelDaoError('ExistByIdFailed', 'Mock');
-  const btStrategyModelDao = { existById: jest.fn().mockReturnValue(te.left(error)) };
-  return setupServer({ btStrategyModelDao });
-}
-function setupPendingOrRunningExist() {
-  const error = createJobSchedulerError('ExceedJobMaxLimit', 'Mock');
-  const jobScheduler = { addBtJob: jest.fn().mockReturnValue(te.left(error)) };
-  return setupServer({ jobScheduler });
-}
-function setupAddBtJobFailed() {
-  const error = createJobSchedulerError('AddBtJobFailed', 'Mock');
-  const jobScheduler = { addBtJob: jest.fn().mockReturnValue(te.left(error)) };
-  return setupServer({ jobScheduler });
-}
-function setupSuccess() {
-  const executionId = randomString();
-  const createdAt = randomAnyDate();
-  return {
-    httpServer: setupServer({
-      jobScheduler: { addBtJob: jest.fn().mockReturnValue(te.right({ id: executionId, createdAt })) },
-    }),
-    executionId,
-    createdAt,
-  };
+    overrides ?? {},
+  ) as ExecuteBtStrategyControllerDeps;
 }
 
 const { method, url } = BT_STRATEGY_ENDPOINTS.EXECUTE_BT_STRATEGY;
@@ -57,7 +29,11 @@ const setupServer = setupTestServer(method, url, buildExecuteBtStrategyControlle
 describe('GIVEN the backtesting strategy already exists', () => {
   describe('WHEN user successfully requests to execute the strategy', () => {
     it('THEN it should return HTTP202 and response body with created ID, timestamp, progress path, and result path', async () => {
-      const { httpServer, executionId, createdAt } = setupSuccess();
+      const executionId = randomString();
+      const createdAt = randomAnyDate();
+      const httpServer = setupServer({
+        jobScheduler: { addBtJob: () => te.right({ id: executionId, createdAt }) },
+      });
 
       const resp = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -74,7 +50,7 @@ describe('GIVEN the backtesting strategy already exists', () => {
 
 describe('WHEN user sends request with backtesting strategy ID equal to empty string', () => {
   it('THEN it should return HTTP400 and error response body', async () => {
-    const { httpServer } = setupSuccess();
+    const httpServer = setupServer();
 
     const resp = await httpServer.inject({ method, url: url.replace(':id', '') });
 
@@ -85,7 +61,7 @@ describe('WHEN user sends request with backtesting strategy ID equal to empty st
 
 describe('WHEN the backtesting strategy does not exist', () => {
   it('THEN it should return HTTP404 and error response body', async () => {
-    const httpServer = setupNotExist();
+    const httpServer = setupServer({ btStrategyModelDao: { existById: () => te.right(false) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -96,7 +72,8 @@ describe('WHEN the backtesting strategy does not exist', () => {
 
 describe('WHEN checking existence of the strategy fails', () => {
   it('THEN it should return HTTP500 and error response body', async () => {
-    const httpServer = setupCheckBtStrategyFailed();
+    const error = createBtStrategyModelDaoError('ExistByIdFailed', 'Mock');
+    const httpServer = setupServer({ btStrategyModelDao: { existById: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -107,7 +84,8 @@ describe('WHEN checking existence of the strategy fails', () => {
 
 describe('WHEN some pending or running execution already exists', () => {
   it('THEN it should return HTTP409 and error response body', async () => {
-    const httpServer = setupPendingOrRunningExist();
+    const error = createJobSchedulerError('ExceedJobMaxLimit', 'Mock');
+    const httpServer = setupServer({ jobScheduler: { addBtJob: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -118,7 +96,8 @@ describe('WHEN some pending or running execution already exists', () => {
 
 describe('WHEN adding backtesting job fails', () => {
   it('THEN it should return HTTP500 and error response body', async () => {
-    const httpServer = setupAddBtJobFailed();
+    const error = createJobSchedulerError('AddBtJobFailed', 'Mock');
+    const httpServer = setupServer({ jobScheduler: { addBtJob: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 

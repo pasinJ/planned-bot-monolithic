@@ -9,7 +9,7 @@ export type BtStrategyModelDaoError<Type extends BtStrategyModelDaoErrorType = B
 type BtStrategyModelDaoErrorName = typeof btStrategyModelDaoErrorName;
 export const btStrategyModelDaoErrorName = 'BtStrategyModelDaoError';
 type BtStrategyModelDaoErrorType = (typeof btStrategyModelDaoErrorType)[number];
-export const btStrategyModelDaoErrorType = ['CreateDaoFailed', 'ExistByIdFailed'] as const;
+export const btStrategyModelDaoErrorType = ['CreateDaoFailed', 'ExistByIdFailed', 'AddFailed'] as const;
 type BtStrategyModelDaoErrorCause = ExternalError | undefined;
 
 export function createBtStrategyModelDaoError<Type extends BtStrategyModelDaoError['type']>(

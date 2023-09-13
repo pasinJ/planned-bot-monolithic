@@ -35,7 +35,7 @@ export const randomPrecisionStep = (precisionBetween = [0, 8]) =>
 
 export const invalidDate = new Date('invalid');
 export const randomAnyDate = () => faker.date.anytime();
-export const randomDateBefore = (date: Date) => faker.date.recent({ refDate: date });
+export const randomDateBefore = (date: Date) => faker.date.past({ refDate: date });
 export const randomBeforeAndAfterDate = () => {
   const before = faker.date.soon();
   const after = faker.date.future({ refDate: before });

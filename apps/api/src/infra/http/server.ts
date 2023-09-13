@@ -6,7 +6,6 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { nanoid } from 'nanoid';
 
-import { addBtStrategiesRoutes } from '#features/backtesting-strategies/routes.js';
 import { addSymbolsRoutes } from '#features/symbols/routes.js';
 import { ApplicationDeps } from '#infra/applicationDeps.type.js';
 import { PinoLogger, createLogger } from '#infra/logging.js';
@@ -14,7 +13,7 @@ import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
 import { getHttpConfig } from '../../shared/config/http.js';
 import { setErrorHandler, setNotFoundHandler } from './hooks.js';
-import { addGeneralRoutes } from './routes.js';
+import { addRoutes } from './routes.js';
 import {
   HttpServerError,
   createAddHookError,
@@ -63,13 +62,7 @@ export function startHttpServer(
       () => fastify.register(cors, corsConfig),
       createErrorFromUnknown(createAddPluginError('CORS')),
     ),
-    ioe.chain(() =>
-      ioe.sequenceArray([
-        addGeneralRoutes(fastify),
-        addSymbolsRoutes(fastify, deps),
-        addBtStrategiesRoutes(fastify, deps),
-      ]),
-    ),
+    ioe.chainW(() => ioe.sequenceArray([addRoutes(fastify, deps), addSymbolsRoutes(fastify, deps)])),
     te.fromIOEither,
     te.chainFirst(() =>
       te.tryCatch(
