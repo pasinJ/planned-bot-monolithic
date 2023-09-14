@@ -15,6 +15,7 @@ type JobSchedulerErrorType = (typeof jobSchedulerErrorType)[number];
 export const jobSchedulerErrorType = [
   'CreateServiceFailed',
   'StopServiceFailed',
+  'DefineJobFailed',
   'AddBtJobFailed',
   'ExceedJobMaxLimit',
 ] as const;

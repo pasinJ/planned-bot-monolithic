@@ -73,8 +73,9 @@ export function createLoggerIo(loggerName: string, mainLogger: PinoLogger): Logg
   return wrapLogger(createLogger(loggerName, mainLogger));
 }
 
-export function wrapLogger(logger: PinoLogger): LoggerIo {
+export function wrapLogger(logger: PinoLogger | Console): LoggerIo {
   return {
+    fatal: logger.error, // in case of Console
     ...pick(['trace', 'debug', 'info', 'warn', 'error', 'fatal'], logger),
     traceIo: ((...args: [msg: string, ...args: unknown[]]) =>
       () =>
@@ -92,8 +93,13 @@ export function wrapLogger(logger: PinoLogger): LoggerIo {
       () =>
         logger.error(...args)) as LogFnIo,
     fatalIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () =>
-        logger.fatal(...args)) as LogFnIo,
+      () => {
+        if ('fatal' in logger) {
+          return logger.fatal(...args);
+        } else {
+          return logger.error(...args);
+        }
+      }) as LogFnIo,
   };
 }
 

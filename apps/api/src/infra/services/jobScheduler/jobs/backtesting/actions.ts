@@ -5,23 +5,14 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { equals, propSatisfies } from 'ramda';
 
 import {
-  BtExecutionId,
-  BtExecutionStatus,
   btExecutionStatusEnum,
   generateBtExecutionId,
 } from '#features/backtesting-strategies/data-models/btExecution.model.js';
-import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
-import { createJobSchedulerError } from '../service.error.js';
-import { JobRecord, JobScheduler } from '../service.type.js';
-
-export type BtJobRecord = JobRecord<BtJobName, BtJobData>;
-
-type BtJobName = typeof btJobName;
-const btJobName = 'backtesting';
-
-type BtJobData = { id: BtExecutionId; btStrategyId: BtStrategyId; status: BtExecutionStatus };
+import { createJobSchedulerError } from '../../service.error.js';
+import { JobScheduler } from '../../service.type.js';
+import { btJobName } from './type.js';
 
 export function addBtJob(agenda: Agenda): JobScheduler['addBtJob'] {
   const { pending, running } = btExecutionStatusEnum;

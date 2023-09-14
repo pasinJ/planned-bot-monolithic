@@ -1,14 +1,25 @@
+import EventEmitter from 'events';
+import { pino } from 'pino';
+import { mergeDeepRight } from 'ramda';
+
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 
-import { createJobScheduler } from './service.js';
+import { JobSchedulerDeps, createJobScheduler } from './service.js';
 import { JobScheduler } from './service.type.js';
+
+function mockDeps(overrides?: Partial<JobSchedulerDeps>): JobSchedulerDeps {
+  return mergeDeepRight(
+    { mainLogger: pino({ enabled: false }), fork: jest.fn().mockReturnValue(new EventEmitter()) },
+    overrides ?? {},
+  );
+}
 
 describe('Create job scheduler', () => {
   describe('WHEN successfully create a job scheduler', () => {
     let jobScheduler: JobScheduler;
 
     beforeAll(async () => {
-      jobScheduler = unsafeUnwrapEitherRight(await executeT(createJobScheduler()));
+      jobScheduler = unsafeUnwrapEitherRight(await executeT(createJobScheduler(mockDeps())));
     });
     afterAll(() => jobScheduler.stop());
 

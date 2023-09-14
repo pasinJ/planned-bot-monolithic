@@ -1,15 +1,26 @@
+import EventEmitter from 'events';
+import { pino } from 'pino';
+import { mergeDeepRight } from 'ramda';
+
 import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { randomString } from '#test-utils/faker.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
-import { getJobSchedulerConfig } from '../config.js';
-import { isJobSchedulerError } from '../service.error.js';
-import { createJobScheduler } from '../service.js';
-import { JobScheduler } from '../service.type.js';
+import { getJobSchedulerConfig } from '../../config.js';
+import { isJobSchedulerError } from '../../service.error.js';
+import { JobSchedulerDeps, createJobScheduler } from '../../service.js';
+import { JobScheduler } from '../../service.type.js';
 
-const { COLLECTION_NAME } = getJobSchedulerConfig();
+function mockDeps(overrides?: Partial<JobSchedulerDeps>): JobSchedulerDeps {
+  return mergeDeepRight(
+    { mainLogger: pino({ enabled: false }), fork: jest.fn().mockReturnValue(new EventEmitter()) },
+    overrides ?? {},
+  );
+}
+
 const client = await createMongoClient();
+const { COLLECTION_NAME } = getJobSchedulerConfig();
 const jobCollection = client.connection.collection(COLLECTION_NAME);
 
 afterAll(() => client.disconnect());
@@ -18,7 +29,7 @@ describe('Add backtesting job', () => {
   let jobScheduler: JobScheduler;
 
   beforeAll(async () => {
-    jobScheduler = unsafeUnwrapEitherRight(await executeT(createJobScheduler()));
+    jobScheduler = unsafeUnwrapEitherRight(await executeT(createJobScheduler(mockDeps())));
   });
   afterEach(() => jobCollection.deleteMany());
   afterAll(() => jobScheduler.stop());
@@ -41,7 +52,6 @@ describe('Add backtesting job', () => {
       expect(records.at(0)).toHaveProperty('data.status', 'pending');
     });
   });
-
   describe('GIVEN there is a pending backtesting job WHEN add a new backtesting job', () => {
     it('THEN it should return Left of error', async () => {
       const id = randomString() as BtStrategyId;

@@ -1,16 +1,22 @@
 import { Agenda } from 'agenda';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { Logger } from 'pino';
 
 import { createErrorFromUnknown } from '#shared/errors/externalError.js';
 
 import { getJobSchedulerConfig } from './config.js';
-import { addBtJob } from './jobs/backtesting.js';
+import { addBtJob } from './jobs/backtesting/actions.js';
+import { BtJobDeps, defineBtJob } from './jobs/backtesting/processor.js';
 import { JobSchedulerError, createJobSchedulerError } from './service.error.js';
 import { JobScheduler } from './service.type.js';
 
-export function createJobScheduler(): te.TaskEither<JobSchedulerError<'CreateServiceFailed'>, JobScheduler> {
+export type JobSchedulerDeps = { mainLogger: Logger } & BtJobDeps;
+export function createJobScheduler(
+  deps: JobSchedulerDeps,
+): te.TaskEither<JobSchedulerError<'CreateServiceFailed' | 'DefineJobFailed'>, JobScheduler> {
   const { URI, COLLECTION_NAME } = getJobSchedulerConfig();
+  const { fork } = deps;
 
   return pipe(
     te.tryCatch(
@@ -23,6 +29,7 @@ export function createJobScheduler(): te.TaskEither<JobSchedulerError<'CreateSer
         createJobSchedulerError('CreateServiceFailed', 'Creating job scheduler service failed'),
       ),
     ),
+    te.chainFirstEitherKW((agenda) => defineBtJob(agenda, { fork })),
     te.map((agenda) => ({ stop: stopSerive(agenda), addBtJob: addBtJob(agenda) })),
   );
 }
