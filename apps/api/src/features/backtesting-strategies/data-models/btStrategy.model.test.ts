@@ -5,7 +5,7 @@ import {
   invalidDate,
   random9DigitsPositiveFloatWithRoundUp,
   randomAnyDate,
-  randomDateBefore,
+  randomBeforeAndAfterDate,
   randomNegativeInt,
   randomPositiveFloat,
   randomString,
@@ -21,6 +21,17 @@ function mockValidData() {
 const currentDate = randomAnyDate();
 
 describe('Create backtesting strategy model', () => {
+  describe('WHEN all perperties is valid', () => {
+    it('THEN it should return Right of backtesting strategy', () => {
+      const validData = mockValidData();
+      expect(createBtStrategyModel(validData, currentDate)).toEqualRight({
+        ...validData,
+        version: 0,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+      });
+    });
+  });
   describe('id property', () => {
     const propertyName = 'id';
 
@@ -188,9 +199,9 @@ describe('Create backtesting strategy model', () => {
       expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
     });
     it('WHEN the property is a date before start timestamp THEN it should return Left of error', () => {
+      const { before, after } = randomBeforeAndAfterDate();
       const validData = mockValidData();
-      const dateBefore = randomDateBefore(validData.startTimestamp);
-      const data = assoc(propertyName, dateBefore, mockValidData());
+      const data = { ...validData, startTimestamp: after, [propertyName]: before };
       const result = createBtStrategyModel(data, currentDate);
       expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
     });
@@ -214,17 +225,6 @@ describe('Create backtesting strategy model', () => {
       const data = assoc(propertyName, value, mockValidData());
       const result = createBtStrategyModel(data, currentDate);
       expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-  });
-  describe('WHEN every perperty is valid', () => {
-    it('THEN it should return Right of backtesting strategy', () => {
-      const validData = mockValidData();
-      expect(createBtStrategyModel(validData, currentDate)).toEqualRight({
-        ...validData,
-        version: 0,
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      });
     });
   });
 });
