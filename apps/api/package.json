@@ -17,7 +17,7 @@
     "test:iw": "npm run test:ic -- --watch",
     "test:e": "npm run test -- --selectProjects E2E --testPathPattern",
     "test:ec": "npm run test:e -- --onlyChanged",
-    "test:w": "concurrently -P npm:test:uw npm:test:iw",
+    "test:w": "concurrently -c 'auto' -P npm:test:uw npm:test:iw",
     "start": "node --experimental-specifier-resolution=node --no-warnings dist/main.js",
     "build": "tsc -p tsconfig.prod.json && tsc-alias",
     "build:clean": "rimraf dist && npm run build",
