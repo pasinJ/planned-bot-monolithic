@@ -1,9 +1,10 @@
+import e from 'fp-ts/lib/Either.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Model, Mongoose, SchemaDefinition } from 'mongoose';
 import { nanoid } from 'nanoid';
-import { isNotNil, values } from 'ramda';
+import { isNotNil, omit, values } from 'ramda';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
 import { languageEnum } from '#shared/domain/language.js';
@@ -19,7 +20,12 @@ export function createBtStrategyModelDao(
 ): ioe.IOEither<BtStrategyModelDaoError<'CreateDaoFailed'>, BtStrategyModelDao> {
   return pipe(
     createMongooseModel(client),
-    ioe.map((model) => ({ generateId: generateId(), add: add(model), existById: existById(model) })),
+    ioe.map((model) => ({
+      generateId: generateId(),
+      add: add(model),
+      existById: existById(model),
+      getById: getById(model),
+    })),
   );
 }
 
@@ -104,5 +110,29 @@ function existById(model: BtStrategyMongooseModel): BtStrategyModelDao['existByI
         ),
       ),
       te.map(isNotNil),
+    );
+}
+
+function getById(model: BtStrategyMongooseModel): BtStrategyModelDao['getById'] {
+  return (id) =>
+    pipe(
+      te.tryCatch(
+        () => model.findById(id),
+        createErrorFromUnknown(
+          createBtStrategyModelDaoError('GetByIdFailed', 'Getting backtesting strategy by ID failed'),
+        ),
+      ),
+      te.chainEitherKW(
+        e.fromPredicate(isNotNil, () =>
+          createBtStrategyModelDaoError('NotExist', `Backtesting strategy with ID ${id} does not exist`),
+        ),
+      ),
+      te.map((btStrategyModel) =>
+        btStrategyModel.toObject({
+          virtuals: true,
+          aliases: true,
+          transform: (_, record) => omit(['_id', '__v'], record),
+        }),
+      ),
     );
 }

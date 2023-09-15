@@ -25,7 +25,7 @@ describe('Create backtesting strategy model DAO', () => {
     });
     it('THEN it should return Right of backtesting strategy model DAO', () => {
       const repository = executeIo(createBtStrategyModelDao(client));
-      expect(repository).toEqualRight(expect.toContainAllKeys(['generateId', 'add', 'existById']));
+      expect(repository).toEqualRight(expect.toContainAllKeys(['generateId', 'add', 'existById', 'getById']));
     });
   });
   describe('WHEN unsuccessfully create a backtesting strategy model DAO (duplicated model)', () => {
@@ -103,6 +103,26 @@ describe('Backtesting strategy model Dao', () => {
         const result = await executeT(btStrategyModelDao.existById(randomString()));
 
         expect(result).toEqualRight(false);
+      });
+    });
+  });
+
+  describe('Get by ID', () => {
+    describe('GIVEN backtesting strategy with that ID exists WHEN get by ID', () => {
+      it('THEN it should return Right of Model', async () => {
+        const btStrategy = mockBtStrategy({ version: 0 });
+        await btStrategyModel.create(btStrategy);
+
+        const result = await executeT(btStrategyModelDao.getById(btStrategy.id));
+
+        expect(result).toEqualRight(btStrategy);
+      });
+    });
+    describe('GIVEN backtesting strategy with that ID does not exist WHEN get by ID', () => {
+      it('THEN it should return Left of error', async () => {
+        const result = await executeT(btStrategyModelDao.getById(randomString()));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyModelDaoError));
       });
     });
   });

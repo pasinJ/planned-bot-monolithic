@@ -8,4 +8,7 @@ export type BtStrategyModelDao = {
   generateId: io.IO<BtStrategyId>;
   add: (btStrategy: BtStrategyModel) => te.TaskEither<BtStrategyModelDaoError<'AddFailed'>, void>;
   existById: (id: string) => te.TaskEither<BtStrategyModelDaoError<'ExistByIdFailed'>, boolean>;
+  getById: (
+    id: string,
+  ) => te.TaskEither<BtStrategyModelDaoError<'GetByIdFailed' | 'NotExist'>, BtStrategyModel>;
 };
