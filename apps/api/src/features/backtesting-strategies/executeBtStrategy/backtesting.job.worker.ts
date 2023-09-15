@@ -7,10 +7,10 @@ import { Stream } from 'stream';
 
 import { btExecutionStatusEnum } from '#features/backtesting-strategies/data-models/btExecution.model.js';
 import { wrapLogger } from '#infra/logging.js';
+import { getJobSchedulerConfig } from '#infra/services/jobScheduler/config.js';
 import { executeT } from '#shared/utils/fp.js';
 
-import { getJobSchedulerConfig } from '../../config.js';
-import { BtJobData, btJobName } from './type.js';
+import { BtJobData, btJobName } from './backtesting.job.type.js';
 
 // eslint-disable-next-line no-console
 const logger = new console.Console(new Stream.Writable());

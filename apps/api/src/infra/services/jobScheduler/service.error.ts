@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { btJobErrorName } from '#features/backtesting-strategies/executeBtStrategy/backtesting.job.type.js';
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError.js';
 import { ExternalError, isExternalError } from '#shared/errors/externalError.js';
 import { defineCauseSchema, implementZodSchema } from '#shared/errors/utils.js';
@@ -16,8 +17,8 @@ export const jobSchedulerErrorType = [
   'CreateServiceFailed',
   'StopServiceFailed',
   'DefineJobFailed',
-  'AddBtJobFailed',
   'ExceedJobMaxLimit',
+  ...btJobErrorName,
 ] as const;
 type JobSchedulerErrorCause = ExternalError | undefined;
 

@@ -15,8 +15,8 @@ function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyDeps>): ExecuteBtStra
   return mergeDeepRight(
     {
       btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.right(true)) },
-      jobScheduler: {
-        addBtJob: jest
+      btJobScheduler: {
+        scheduleBtJob: jest
           .fn()
           .mockReturnValue(te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() })),
       },
@@ -63,13 +63,13 @@ describe('WHEN checking existence of the strategy succeeds', () => {
     const request = mockRequest();
     await pipe(executeBtStrategy(deps, request), executeT);
 
-    expect(deps.jobScheduler.addBtJob).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
+    expect(deps.btJobScheduler.scheduleBtJob).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
   });
 
   describe('WHEN adding a backtesting job fails', () => {
     it('THEN it should return Left of error', async () => {
-      const error = createJobSchedulerError('AddBtJobFailed', 'Mock');
-      const deps = mockDeps({ jobScheduler: { addBtJob: () => te.left(error) } });
+      const error = createJobSchedulerError('ScheduleBtJobFailed', 'Mock');
+      const deps = mockDeps({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
       const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
       expect(result).toEqualLeft(error);
@@ -80,7 +80,9 @@ describe('WHEN checking existence of the strategy succeeds', () => {
     it('THEN it should return Right of execution ID, created timestamp, progressPath, and resultPath', async () => {
       const executionId = randomString();
       const createdAt = randomAnyDate();
-      const deps = mockDeps({ jobScheduler: { addBtJob: () => te.right({ id: executionId, createdAt }) } });
+      const deps = mockDeps({
+        btJobScheduler: { scheduleBtJob: () => te.right({ id: executionId, createdAt }) },
+      });
       const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
       expect(result).toEqualRight({

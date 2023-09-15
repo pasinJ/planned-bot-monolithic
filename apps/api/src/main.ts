@@ -1,9 +1,10 @@
+import { fork } from 'child_process';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
-import { omit } from 'ramda';
 
 import { createBtStrategyModelDao } from '#features/backtesting-strategies/data-models/btStrategy.dao.js';
+import { defineBtJob } from '#features/backtesting-strategies/executeBtStrategy/backtesting.job.js';
 import { createSymbolModelDao } from '#features/symbols/data-models/symbol.dao.js';
 import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
 import { FastifyServer } from '#infra/http/server.type.js';
@@ -24,12 +25,11 @@ await executeT(
   pipe(
     te.Do,
     te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
-    te.bindW('symbolModelDao', (deps) => createSymbolModelDaoWithDeps(deps)),
-    te.bindW('btStrategyModelDao', (deps) => createBtStrategyModelDaoWithDeps(deps)),
-    te.bindW('bnbService', (deps) => createBnbServiceWithDeps(deps)),
-    te.bindW('jobScheduler', () => createJobScheduler()),
+    te.bindW('symbolModelDao', (deps) => setupSymbolModelDao(deps)),
+    te.bindW('btStrategyModelDao', (deps) => setupBtStrategyModelDao(deps)),
+    te.bindW('bnbService', (deps) => setupBnbService(deps)),
+    te.bindW('jobScheduler', () => setupJobScheduler()),
     te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
-    te.mapLeft((x) => x),
     te.chainFirstW((deps) => startupProcessWithDeps(deps)),
     te.chainFirstW((deps) => startHttpServerWithDeps(deps)),
     te.chainFirstIOK((deps) => addGracefulShutdown(deps, logger)),
@@ -40,18 +40,30 @@ await executeT(
 
 type Deps = Omit<AppDeps, 'dateService'> & { mongoDbClient: Mongoose; httpServer: FastifyServer };
 
-function createBnbServiceWithDeps(deps: Pick<Deps, 'symbolModelDao'>) {
-  return createBnbService({ dateService, symbolModelDao: deps.symbolModelDao, mainLogger });
-}
-function createSymbolModelDaoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+function setupSymbolModelDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createSymbolModelDao(mongoDbClient));
 }
-function createBtStrategyModelDaoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+function setupBtStrategyModelDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(createBtStrategyModelDao(mongoDbClient));
+}
+function setupBnbService(deps: Pick<Deps, 'symbolModelDao'>) {
+  return createBnbService({ dateService, symbolModelDao: deps.symbolModelDao, mainLogger });
+}
+function setupJobScheduler() {
+  return pipe(
+    createJobScheduler({ mainLogger }),
+    te.chainFirstW(({ agenda, loggerIo }) => te.fromIOEither(defineBtJob(agenda, loggerIo, { fork }))),
+  );
 }
 function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolModelDao'>) {
   return startupProcess({ ...deps, logger: logger });
 }
 function startHttpServerWithDeps(deps: Deps) {
-  return startHttpServer(deps.httpServer, { ...omit(['mongoDbClient', 'server'], deps), dateService });
+  return startHttpServer(deps.httpServer, {
+    dateService,
+    bnbService: deps.bnbService,
+    btStrategyModelDao: deps.btStrategyModelDao,
+    jobScheduler: deps.jobScheduler,
+    symbolModelDao: deps.symbolModelDao,
+  });
 }

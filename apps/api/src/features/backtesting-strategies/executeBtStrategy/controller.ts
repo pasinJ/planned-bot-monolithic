@@ -5,16 +5,16 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { JobScheduler } from '#infra/services/jobScheduler/service.type.js';
 import { executeT } from '#shared/utils/fp.js';
 import { SchemaValidationError, parseWithZod } from '#shared/utils/zod.js';
 
 import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
+import { BtJobScheduler } from '../services/jobScheduler.js';
 import { executeBtStrategy } from './useCase.js';
 
 export type ExecuteBtStrategyControllerDeps = {
   btStrategyModelDao: Pick<BtStrategyModelDao, 'existById'>;
-  jobScheduler: Pick<JobScheduler, 'addBtJob'>;
+  btJobScheduler: Pick<BtJobScheduler, 'scheduleBtJob'>;
 };
 
 export function buildExecuteBtStrategyController(deps: ExecuteBtStrategyControllerDeps): RouteHandlerMethod {
@@ -31,7 +31,7 @@ export function buildExecuteBtStrategyController(deps: ExecuteBtStrategyControll
             .with({ name: 'BusinessError' }, { type: 'ExceedJobMaxLimit' }, (error) =>
               reply.code(409).send(error),
             )
-            .with({ type: 'ExistByIdFailed' }, { type: 'AddBtJobFailed' }, (error) =>
+            .with({ type: 'ExistByIdFailed' }, { type: 'ScheduleBtJobFailed' }, (error) =>
               reply.code(500).send(error),
             )
             .exhaustive(),

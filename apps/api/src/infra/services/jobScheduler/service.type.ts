@@ -1,18 +1,14 @@
+import { Agenda } from 'agenda';
 import te from 'fp-ts/lib/TaskEither.js';
 
-import { BtExecutionId } from '#features/backtesting-strategies/data-models/btExecution.model.js';
-import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
+import { LoggerIo } from '#infra/logging.js';
 
 import { JobSchedulerError } from './service.error.js';
 
 export type JobScheduler = {
+  agenda: Agenda;
+  loggerIo: LoggerIo;
   stop: te.TaskEither<JobSchedulerError<'StopServiceFailed'>, void>;
-  addBtJob: (
-    btStrategyId: BtStrategyId,
-  ) => te.TaskEither<
-    JobSchedulerError<'AddBtJobFailed' | 'ExceedJobMaxLimit'>,
-    { id: BtExecutionId; createdAt: Date }
-  >;
 };
 
 export type JobRecord<

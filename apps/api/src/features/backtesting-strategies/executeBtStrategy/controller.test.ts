@@ -15,8 +15,8 @@ function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyControllerDeps>): Exe
   return mergeDeepRight(
     {
       btStrategyModelDao: { existById: () => te.right(true) },
-      jobScheduler: {
-        addBtJob: () => te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() }),
+      btJobScheduler: {
+        scheduleBtJob: () => te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() }),
       },
     },
     overrides ?? {},
@@ -32,7 +32,7 @@ describe('GIVEN the backtesting strategy already exists', () => {
       const executionId = randomString();
       const createdAt = randomAnyDate();
       const httpServer = setupServer({
-        jobScheduler: { addBtJob: () => te.right({ id: executionId, createdAt }) },
+        btJobScheduler: { scheduleBtJob: () => te.right({ id: executionId, createdAt }) },
       });
 
       const resp = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
@@ -85,7 +85,7 @@ describe('WHEN checking existence of the strategy fails', () => {
 describe('WHEN some pending or running execution already exists', () => {
   it('THEN it should return HTTP409 and error response body', async () => {
     const error = createJobSchedulerError('ExceedJobMaxLimit', 'Mock');
-    const httpServer = setupServer({ jobScheduler: { addBtJob: () => te.left(error) } });
+    const httpServer = setupServer({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -96,8 +96,8 @@ describe('WHEN some pending or running execution already exists', () => {
 
 describe('WHEN adding backtesting job fails', () => {
   it('THEN it should return HTTP500 and error response body', async () => {
-    const error = createJobSchedulerError('AddBtJobFailed', 'Mock');
-    const httpServer = setupServer({ jobScheduler: { addBtJob: () => te.left(error) } });
+    const error = createJobSchedulerError('ScheduleBtJobFailed', 'Mock');
+    const httpServer = setupServer({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 

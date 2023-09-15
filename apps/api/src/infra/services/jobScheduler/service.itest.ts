@@ -1,4 +1,3 @@
-import EventEmitter from 'events';
 import { pino } from 'pino';
 import { mergeDeepRight } from 'ramda';
 
@@ -8,10 +7,7 @@ import { JobSchedulerDeps, createJobScheduler } from './service.js';
 import { JobScheduler } from './service.type.js';
 
 function mockDeps(overrides?: Partial<JobSchedulerDeps>): JobSchedulerDeps {
-  return mergeDeepRight(
-    { mainLogger: pino({ enabled: false }), fork: jest.fn().mockReturnValue(new EventEmitter()) },
-    overrides ?? {},
-  );
+  return mergeDeepRight({ mainLogger: pino({ enabled: false }) }, overrides ?? {});
 }
 
 describe('Create job scheduler', () => {
@@ -24,7 +20,7 @@ describe('Create job scheduler', () => {
     afterAll(() => jobScheduler.stop());
 
     it('THEN it should return Right of job scheduler', () => {
-      expect(jobScheduler).toEqual(expect.toContainAllKeys(['stop', 'addBtJob']));
+      expect(jobScheduler).toEqual(expect.toContainAllKeys(['agenda', 'loggerIo', 'stop']));
     });
   });
 });

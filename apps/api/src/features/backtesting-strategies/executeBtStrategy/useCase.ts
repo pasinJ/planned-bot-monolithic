@@ -3,7 +3,6 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { equals } from 'ramda';
 
 import { JobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
-import { JobScheduler } from '#infra/services/jobScheduler/service.type.js';
 import { BusinessError, createBusinessError } from '#shared/errors/businessError.js';
 
 import { BtExecutionId } from '../data-models/btExecution.model.js';
@@ -11,10 +10,11 @@ import { BtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js'
 import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
 import { BtStrategyId } from '../data-models/btStrategy.model.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
+import { BtJobScheduler } from '../services/jobScheduler.js';
 
 export type ExecuteBtStrategyDeps = {
   btStrategyModelDao: Pick<BtStrategyModelDao, 'existById'>;
-  jobScheduler: Pick<JobScheduler, 'addBtJob'>;
+  btJobScheduler: Pick<BtJobScheduler, 'scheduleBtJob'>;
 };
 export type ExecuteBtStrategyRequest = { btStrategyId: string };
 
@@ -24,10 +24,10 @@ export function executeBtStrategy(
 ): te.TaskEither<
   | BtStrategyModelDaoError<'ExistByIdFailed'>
   | BusinessError<'StrategyNotExist' | 'AlreadyScheduled'>
-  | JobSchedulerError<'AddBtJobFailed' | 'ExceedJobMaxLimit'>,
+  | JobSchedulerError<'ScheduleBtJobFailed' | 'ExceedJobMaxLimit'>,
   { id: BtExecutionId; createdAt: Date; progressPath: string; resultPath: string }
 > {
-  const { btStrategyModelDao, jobScheduler } = deps;
+  const { btStrategyModelDao, btJobScheduler } = deps;
   const { btStrategyId } = request;
   const { GET_BT_PROGRESS, GET_BT_RESULT } = BT_STRATEGY_ENDPOINTS;
 
@@ -38,7 +38,7 @@ export function executeBtStrategy(
         createBusinessError('StrategyNotExist', `The backtesting strategy (${btStrategyId}) does not exist`),
       ),
     ),
-    te.chainW(() => jobScheduler.addBtJob(btStrategyId as BtStrategyId)),
+    te.chainW(() => btJobScheduler.scheduleBtJob(btStrategyId as BtStrategyId)),
     te.map(({ id, createdAt }) => ({
       id,
       createdAt,
