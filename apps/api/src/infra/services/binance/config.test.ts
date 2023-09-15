@@ -20,3 +20,32 @@ describe('HTTP_BASE_URL property', () => {
     });
   });
 });
+
+describe('PUBLIC_DATA_BASE_URL property', () => {
+  describe.each([
+    { env: 'http://localhost', expected: 'http://localhost' },
+    { env: 'localhost', expected: 'https://data.binance.vision' },
+    { env: ' ', expected: 'https://data.binance.vision' },
+    { env: undefined, expected: 'https://data.binance.vision' },
+  ])('WHEN process.env.BNB_PUBLIC_DATA_BASE_URL = "$env"', ({ env, expected }) => {
+    beforeEach(setEnvVar('BNB_PUBLIC_DATA_BASE_URL', env));
+
+    it(`THEN PUBLIC_DATA_BASE_URL property should equal to "${expected}"`, () => {
+      expect(getBnbConfig()).toHaveProperty('PUBLIC_DATA_BASE_URL', expected);
+    });
+  });
+});
+
+describe('DOWNLOAD_OUTPUT_PATH property', () => {
+  describe.each([
+    { env: './temp', expected: './temp' },
+    { env: ' ', expected: './downloads' },
+    { env: undefined, expected: './downloads' },
+  ])('WHEN process.env.DOWNLOAD_OUTPUT_PATH = "$env"', ({ env, expected }) => {
+    beforeEach(setEnvVar('DOWNLOAD_OUTPUT_PATH', env));
+
+    it(`THEN DOWNLOAD_OUTPUT_PATH property should equal to "${expected}"`, () => {
+      expect(getBnbConfig()).toHaveProperty('DOWNLOAD_OUTPUT_PATH', expected);
+    });
+  });
+});

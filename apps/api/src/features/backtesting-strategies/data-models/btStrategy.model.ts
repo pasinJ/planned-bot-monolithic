@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
 
 import { exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
+import { symbolNameSchema } from '#features/symbols/data-models/symbol-model/index.js';
 import { languageSchema } from '#shared/domain/language.js';
 import { timeframeSchema } from '#shared/domain/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
@@ -23,7 +24,7 @@ const btStrategyModelSchema = z
     id: idSchema,
     name: nonEmptyString,
     exchange: exchangeNameSchema,
-    symbol: nonEmptyString,
+    symbol: symbolNameSchema,
     currency: nonEmptyString,
     timeframe: timeframeSchema,
     initialCapital: nonNegativeFloat8Digits,

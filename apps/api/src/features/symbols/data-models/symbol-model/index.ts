@@ -19,6 +19,9 @@ import {
 
 export type SymbolId = SymbolModel['id'];
 
+export type SymbolName = SymbolModel['name'];
+export const symbolNameSchema = nonEmptyString.brand('SymbolName');
+
 const assetSchema = nonEmptyString.brand('Asset');
 const assetPrecisionSchema = z.number().nonnegative().int().brand('Precision');
 
@@ -54,7 +57,7 @@ export type SymbolModel = z.infer<typeof symbolModelSchema>;
 const symbolModelSchema = z
   .object({
     id: nonEmptyString.brand('SymbolId'),
-    name: nonEmptyString.brand('SymbolName'),
+    name: symbolNameSchema,
     exchange: exchangeNameSchema,
     baseAsset: assetSchema,
     baseAssetPrecision: assetPrecisionSchema,
