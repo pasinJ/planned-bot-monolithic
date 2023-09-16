@@ -6,7 +6,7 @@ const originalEnv = process.env;
 
 afterEach(resetEnvVar(originalEnv));
 
-describe('BT_JOB_CONCURRENCY property', () => {
+describe('JOB_CONCURRENCY property', () => {
   describe.each([
     { env: '10', expected: 10 },
     { env: '0', expected: 1 },
@@ -18,12 +18,12 @@ describe('BT_JOB_CONCURRENCY property', () => {
     beforeEach(setEnvVar('BT_JOB_CONCURRENCY', env));
 
     it(`THEN URI property should equal to "${expected}"`, () => {
-      expect(getBtJobConfig()).toHaveProperty('BT_JOB_CONCURRENCY', expected);
+      expect(getBtJobConfig()).toHaveProperty('JOB_CONCURRENCY', expected);
     });
   });
 });
 
-describe('BT_JOB_TIMEOUT_MS property', () => {
+describe('JOB_TIMEOUT_MS property', () => {
   describe.each([
     { env: '30000', expected: 30000 },
     { env: '0', expected: 10000 },
@@ -35,7 +35,22 @@ describe('BT_JOB_TIMEOUT_MS property', () => {
     beforeEach(setEnvVar('BT_JOB_TIMEOUT_MS', env));
 
     it(`THEN URI property should equal to "${expected}"`, () => {
-      expect(getBtJobConfig()).toHaveProperty('BT_JOB_TIMEOUT_MS', expected);
+      expect(getBtJobConfig()).toHaveProperty('JOB_TIMEOUT_MS', expected);
+    });
+  });
+});
+
+describe('JOB_WORKER_PATH property', () => {
+  describe.each([
+    { env: './test/file', expected: './test/file' },
+    { env: '', expected: './worker.ts' },
+    { env: ' ', expected: './worker.ts' },
+    { env: undefined, expected: './worker.ts' },
+  ])('WHEN process.env.BT_JOB_WORKER_PATH = "$env"', ({ env, expected }) => {
+    beforeEach(setEnvVar('BT_JOB_WORKER_PATH', env));
+
+    it(`THEN URI property should equal to "${expected}"`, () => {
+      expect(getBtJobConfig()).toHaveProperty('JOB_WORKER_PATH', expected);
     });
   });
 });

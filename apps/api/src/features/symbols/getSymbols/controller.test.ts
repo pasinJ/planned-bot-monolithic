@@ -1,21 +1,19 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight, pick } from 'ramda';
 
-import { DeepPartial } from '#shared/common.type.js';
+import { DeepPartial } from '#shared/helpers.type.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { generateArrayOf } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
-import { createSymbolModelDaoError } from '../data-models/symbol.dao.error.js';
+import { createSymbolDaoError } from '../DAOs/symbol.error.js';
 import { SYMBOLS_ENDPOINTS } from '../routes.constant.js';
 import { GetSymbolsControllerDeps, buildGetSymbolsController } from './controller.js';
 
 function mockDeps(overrides?: DeepPartial<GetSymbolsControllerDeps>): GetSymbolsControllerDeps {
   return mergeDeepRight(
-    {
-      symbolModelDao: { getAll: te.right(generateArrayOf(mockSymbol)) },
-    },
+    { symbolDao: { getAll: te.right(generateArrayOf(mockSymbol)) } },
     overrides ?? {},
   ) as GetSymbolsControllerDeps;
 }
@@ -25,7 +23,7 @@ const setupServer = setupTestServer(method, url, buildGetSymbolsController, mock
 
 describe('GIVEN there is no existing symbol WHEN get symbols', () => {
   it('THEN it should return HTTP200 and empty array', async () => {
-    const httpServer = setupServer({ symbolModelDao: { getAll: te.right([]) } });
+    const httpServer = setupServer({ symbolDao: { getAll: te.right([]) } });
 
     const resp = await httpServer.inject({ method, url });
 
@@ -37,7 +35,7 @@ describe('GIVEN there is no existing symbol WHEN get symbols', () => {
 describe('GIVEN there is an existing symbol WHEN get symbols', () => {
   it('THEN it should return HTTP200 and an array of the existing symbols', async () => {
     const symbols = generateArrayOf(mockSymbol);
-    const httpServer = setupServer({ symbolModelDao: { getAll: te.right(symbols) } });
+    const httpServer = setupServer({ symbolDao: { getAll: te.right(symbols) } });
 
     const resp = await httpServer.inject({ method, url });
 
@@ -50,8 +48,8 @@ describe('GIVEN there is an existing symbol WHEN get symbols', () => {
 
 describe('WHEN getting symbols fails', () => {
   it('THEN it should return HTTP500 with error response', async () => {
-    const error = createSymbolModelDaoError('GetAllFailed', 'Mock');
-    const httpServer = setupServer({ symbolModelDao: { getAll: te.left(error) } });
+    const error = createSymbolDaoError('GetAllFailed', 'Mock');
+    const httpServer = setupServer({ symbolDao: { getAll: te.left(error) } });
 
     const resp = await httpServer.inject({ method, url });
 

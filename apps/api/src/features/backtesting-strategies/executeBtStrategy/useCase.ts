@@ -2,19 +2,26 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { equals } from 'ramda';
 
-import { JobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
-import { BusinessError, createBusinessError } from '#shared/errors/businessError.js';
+import { JobSchedulerError } from '#infra/services/jobScheduler/error.js';
+import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 
-import { BtExecutionId } from '../data-models/btExecution.model.js';
-import { BtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js';
-import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
-import { BtStrategyId } from '../data-models/btStrategy.model.js';
+import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
+import { BtExecutionId } from '../data-models/btExecution.js';
+import { BtStrategyId } from '../data-models/btStrategy.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
-import { BtJobScheduler } from '../services/jobScheduler.js';
 
 export type ExecuteBtStrategyDeps = {
-  btStrategyModelDao: Pick<BtStrategyModelDao, 'existById'>;
-  btJobScheduler: Pick<BtJobScheduler, 'scheduleBtJob'>;
+  btStrategyDao: {
+    existById: (id: string) => te.TaskEither<BtStrategyDaoError<'ExistByIdFailed'>, boolean>;
+  };
+  btJobScheduler: {
+    scheduleBtJob: (
+      btStrategyId: BtStrategyId,
+    ) => te.TaskEither<
+      JobSchedulerError<'ScheduleJobFailed' | 'ExceedJobMaxSchedulingLimit'>,
+      { id: BtExecutionId; createdAt: Date }
+    >;
+  };
 };
 export type ExecuteBtStrategyRequest = { btStrategyId: string };
 
@@ -22,12 +29,12 @@ export function executeBtStrategy(
   deps: ExecuteBtStrategyDeps,
   request: ExecuteBtStrategyRequest,
 ): te.TaskEither<
-  | BtStrategyModelDaoError<'ExistByIdFailed'>
-  | BusinessError<'StrategyNotExist' | 'AlreadyScheduled'>
-  | JobSchedulerError<'ScheduleBtJobFailed' | 'ExceedJobMaxLimit'>,
+  | BtStrategyDaoError<'ExistByIdFailed'>
+  | GeneralError<'StrategyNotExist'>
+  | JobSchedulerError<'ScheduleJobFailed' | 'ExceedJobMaxSchedulingLimit'>,
   { id: BtExecutionId; createdAt: Date; progressPath: string; resultPath: string }
 > {
-  const { btStrategyModelDao, btJobScheduler } = deps;
+  const { btStrategyDao: btStrategyModelDao, btJobScheduler } = deps;
   const { btStrategyId } = request;
   const { GET_BT_PROGRESS, GET_BT_RESULT } = BT_STRATEGY_ENDPOINTS;
 
@@ -35,7 +42,7 @@ export function executeBtStrategy(
     btStrategyModelDao.existById(btStrategyId),
     te.chainW(
       te.fromPredicate(equals(true), () =>
-        createBusinessError('StrategyNotExist', `The backtesting strategy (${btStrategyId}) does not exist`),
+        createGeneralError('StrategyNotExist', `The backtesting strategy (${btStrategyId}) does not exist`),
       ),
     ),
     te.chainW(() => btJobScheduler.scheduleBtJob(btStrategyId as BtStrategyId)),

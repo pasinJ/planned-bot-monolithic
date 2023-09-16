@@ -1,13 +1,13 @@
-import { BtStrategyModelDao } from '#features/backtesting-strategies/data-models/btStrategy.dao.type.js';
-import { SymbolModelDao } from '#features/symbols/data-models/symbol.dao.type.js';
-import { BnbService } from '#infra/services/binance/service.type.js';
-import { DateService } from '#infra/services/date/service.type.js';
-import { JobScheduler } from '#infra/services/jobScheduler/service.type.js';
+import { BtStrategyDao } from '#features/backtesting-strategies/DAOs/btStrategy.js';
+import { SymbolDao } from '#features/symbols/DAOs/symbol.js';
+import { BnbService } from '#infra/services/binance/service.js';
+import { DateService } from '#infra/services/date/service.js';
+import { JobScheduler } from '#infra/services/jobScheduler/service.js';
 
 export type AppDeps = {
-  bnbService: BnbService;
   dateService: DateService;
-  symbolModelDao: SymbolModelDao;
-  btStrategyModelDao: BtStrategyModelDao;
+  bnbService: BnbService;
   jobScheduler: JobScheduler;
+  symbolDao: SymbolDao;
+  btStrategyDao: BtStrategyDao;
 };

@@ -4,58 +4,61 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { exchangeNameSchema } from '#features/exchanges/domain/exchange.js';
-import { DateService } from '#infra/services/date/service.type.js';
-import { languageSchema } from '#shared/domain/language.js';
-import { timeframeSchema } from '#shared/domain/timeframe.js';
+import { exchangeNameSchema } from '#features/shared/domain/exchangeName.js';
+import { languageSchema } from '#features/shared/domain/language.js';
+import { timeframeSchema } from '#features/shared/domain/timeframe.js';
 import { executeT } from '#shared/utils/fp.js';
-import { parseWithZod } from '#shared/utils/zod.js';
-import { nonEmptyString, nonNegativeFloat8Digits, stringDatetimeToDate } from '#shared/utils/zod.schema.js';
+import { validateWithZod } from '#shared/utils/zod.js';
+import { dateFromStringDate, nonEmptyString, nonNegativeFloat8Digits } from '#shared/utils/zod.schema.js';
 
-import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
-import { addBtStrategy } from './useCase.js';
+import { AddBtStrategyDeps, addBtStrategy } from './useCase.js';
 
-export type AddBtStrategyControllerDeps = {
-  btStrategyModelDao: Pick<BtStrategyModelDao, 'generateId' | 'add'>;
-  dateService: Pick<DateService, 'getCurrentDate'>;
-};
-
-const requestBodySchema = z
-  .object({
-    name: nonEmptyString,
-    exchange: exchangeNameSchema,
-    symbol: nonEmptyString,
-    currency: nonEmptyString,
-    timeframe: timeframeSchema,
-    maxNumKlines: z.number().positive().int(),
-    initialCapital: nonNegativeFloat8Digits,
-    takerFeeRate: nonNegativeFloat8Digits,
-    makerFeeRate: nonNegativeFloat8Digits,
-    startTimestamp: stringDatetimeToDate,
-    endTimestamp: stringDatetimeToDate,
-    language: languageSchema,
-    body: nonEmptyString,
-  })
-  .strict();
+export type AddBtStrategyControllerDeps = AddBtStrategyDeps;
 
 export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps): RouteHandlerMethod {
   return function addBtStrategyController({ body }, reply): Promise<FastifyReply> {
-    const pipeline = pipe(
-      te.fromEither(parseWithZod(requestBodySchema, 'Request body is invalid', body)),
+    return pipe(
+      te.fromEither(validateRequestBody(body)),
       te.chainW((parsedBody) => addBtStrategy(deps, parsedBody)),
       te.match(
         (error) =>
           match(error)
             .returnType<FastifyReply>()
-            .with({ name: 'SchemaValidationError' }, { type: 'CreateBtStrategyError' }, (error) =>
-              reply.code(400).send(error),
+            .with(
+              { name: 'SchemaValidationError' },
+              { type: 'SymbolNotExist' },
+              { type: 'CreateBtStrategyModelError' },
+              (error) => reply.code(400).send({ error }),
             )
-            .with({ type: 'AddFailed' }, (error) => reply.code(500).send(error))
+            .with({ type: 'ExistByNameAndExchangeFailed' }, { type: 'AddFailed' }, (error) =>
+              reply.code(500).send({ error }),
+            )
             .exhaustive(),
         (result) => reply.code(201).send(result),
       ),
+      executeT,
     );
-
-    return executeT(pipeline);
   };
+}
+
+function validateRequestBody(body: unknown) {
+  const requestBodySchema = z
+    .object({
+      name: nonEmptyString,
+      exchange: exchangeNameSchema,
+      symbol: nonEmptyString,
+      currency: nonEmptyString,
+      timeframe: timeframeSchema,
+      maxNumKlines: z.number().positive().int(),
+      initialCapital: nonNegativeFloat8Digits,
+      takerFeeRate: nonNegativeFloat8Digits,
+      makerFeeRate: nonNegativeFloat8Digits,
+      startTimestamp: dateFromStringDate,
+      endTimestamp: dateFromStringDate,
+      language: languageSchema,
+      body: nonEmptyString,
+    })
+    .strict();
+
+  return validateWithZod(requestBodySchema, 'Request body is invalid', body);
 }

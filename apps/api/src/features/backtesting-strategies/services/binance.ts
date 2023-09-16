@@ -3,19 +3,18 @@ import e from 'fp-ts/lib/Either.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { createReadStream, createWriteStream } from 'fs';
-import { writeFile } from 'fs/promises';
 import unzipper from 'unzipper';
 import { z } from 'zod';
 
-import { SymbolName } from '#features/symbols/data-models/symbol-model/index.js';
+import { SymbolName } from '#features/shared/domain/symbolName.js';
+import { Timeframe } from '#features/shared/domain/timeframe.js';
 import { HttpError } from '#infra/http/client.error.js';
 import { HttpClient } from '#infra/http/client.type.js';
 import { BnbServiceError, createBnbServiceError } from '#infra/services/binance/error.js';
-import { Timeframe } from '#shared/domain/timeframe.js';
-import { createErrorFromUnknown } from '#shared/errors/externalError.js';
+import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 
-import { KlineModel } from '../data-models/kline.model.js';
+import { KlineModel } from '../data-models/kline.js';
 
 export type BnbService = {
   getKlinesHistory: (request: {
@@ -77,7 +76,7 @@ export function getListOfDays(range: DateRange): { year: Year; month: Month; day
 
 type MonthlyKlineRequest = { symbol: SymbolName; timeframe: Timeframe; year: Year; month: Month };
 export function downloadMonthlyKlinesZipFile(
-  deps: { httpClient: HttpClient },
+  deps: { httpClient: Pick<HttpClient, 'downloadFile'> },
   request: MonthlyKlineRequest,
 ): te.TaskEither<
   GeneralError<'DownloadFileFailed' | 'WriteFileFailed' | 'ExtractFileFailed'>,
@@ -97,9 +96,8 @@ export function downloadMonthlyKlinesZipFile(
   const csvFilePath = zipFilePath.replace('.zip', '.csv');
 
   return pipe(
-    httpClient.sendRequest({ method: 'GET', url: basePath + '/' + zipFileName, responseSchema: z.any() }),
+    httpClient.downloadFile({ method: 'GET', url: basePath + '/' + zipFileName, outputPath: zipFilePath }),
     te.mapLeft(separateFileNotFoundErrorForRetry(zipFileName)),
-    te.chainW(writeZipFile(zipFilePath)),
     te.chainW(() => extractZipFile(zipFilePath, csvFilePath)),
     te.map(() => ({ zipFilePath, csvFilePath })),
     te.orElseW(swapFileNotFoundErrorToRight(request)),
@@ -108,26 +106,13 @@ export function downloadMonthlyKlinesZipFile(
 
 function separateFileNotFoundErrorForRetry(
   fileName: string,
-): (error: HttpError) => GeneralError<'DownloadFileFailed' | 'FileNotFound'> {
+): (
+  error: HttpError | GeneralError<'WriteFileFailed'>,
+) => GeneralError<'DownloadFileFailed' | 'FileNotFound' | 'WriteFileFailed'> {
   return (error) =>
-    (error.type === 'NotFound'
-      ? createGeneralError({ type: 'FileNotFound', message: `File ${fileName} not found` })
-      : createGeneralError({
-          type: 'DownloadFileFailed',
-          message: `Downloading file ${fileName} failed`,
-          cause: error,
-        })) as GeneralError<'DownloadFileFailed' | 'FileNotFound'>;
-}
-
-function writeZipFile(
-  zipFilePath: string,
-): (data: Buffer) => te.TaskEither<GeneralError<'WriteFileFailed'>, void> {
-  return (data) =>
-    te.tryCatch(
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      () => writeFile(zipFilePath, data),
-      createErrorFromUnknown(createGeneralError({ type: 'WriteFileFailed', message: '' })),
-    );
+    error.type === 'NotFound'
+      ? createGeneralError('FileNotFound', `File ${fileName} not found`)
+      : createGeneralError('DownloadFileFailed', `Downloading file ${fileName} failed`, error);
 }
 
 function extractZipFile(
@@ -146,7 +131,9 @@ function extractZipFile(
             .on('error', (error) => reject(error)),
         /* eslint-enable security/detect-non-literal-fs-filename */
       ),
-    createErrorFromUnknown(createGeneralError({ type: 'ExtractFileFailed', message: '' })),
+    createErrorFromUnknown(
+      createGeneralError('ExtractFileFailed', `Extracting zip file ${zipFilePath} failed`),
+    ),
   );
 }
 

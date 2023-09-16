@@ -1,35 +1,23 @@
 import { z } from 'zod';
 
-import { AppError, appErrorSchema, createAppError, isAppError } from './appError.js';
-import { defineCauseSchema, implementZodSchema } from './utils.js';
+import { AppError, appErrorSchema, createAppError } from './appError.js';
+import { implementZodSchema } from './utils.js';
 
-export type BusinessError<
-  Type extends string = string,
-  Cause extends AppError | undefined = undefined,
-> = AppError<BusinessErrorName, Type, Cause>;
+export type BusinessError<Type extends string = string> = AppError<BusinessErrorName, Type>;
 
 type BusinessErrorName = typeof businessErrorName;
 const businessErrorName = 'BusinessError';
 
-export function createBusinessError<Type extends BusinessError['type'], Cause extends BusinessError['cause']>(
+export function createBusinessError<Type extends BusinessError['type']>(
   type: Type,
   message: string,
-  cause?: Cause,
-): BusinessError<Type, Cause> {
-  return createAppError(
-    { name: businessErrorName, type, message, cause },
-    createBusinessError,
-  ) as BusinessError<Type, Cause>;
+  cause?: BusinessError['cause'],
+): BusinessError<Type> {
+  return createAppError({ name: businessErrorName, type, message, cause }, createBusinessError);
 }
 
 export function isBusinessError(input: unknown): input is BusinessError {
   return implementZodSchema<BusinessError>()
-    .with(
-      appErrorSchema.extend({
-        name: z.literal(businessErrorName),
-        type: z.string(),
-        cause: defineCauseSchema([isAppError]).optional(),
-      }),
-    )
+    .with(appErrorSchema.extend({ name: z.literal(businessErrorName), type: z.string() }))
     .safeParse(input).success;
 }

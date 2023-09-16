@@ -1,20 +1,20 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight } from 'ramda';
 
-import { createJobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
-import { DeepPartial } from '#shared/common.type.js';
+import { createJobSchedulerError } from '#infra/services/jobScheduler/error.js';
+import { DeepPartial } from '#shared/helpers.type.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { randomAnyDate, randomString } from '#test-utils/faker.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
-import { createBtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js';
+import { createBtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { ExecuteBtStrategyControllerDeps, buildExecuteBtStrategyController } from './controller.js';
 
 function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyControllerDeps>): ExecuteBtStrategyControllerDeps {
   return mergeDeepRight(
     {
-      btStrategyModelDao: { existById: () => te.right(true) },
+      btStrategyDao: { existById: () => te.right(true) },
       btJobScheduler: {
         scheduleBtJob: () => te.right({ btExecutionId: randomString(), createdAt: randomAnyDate() }),
       },
@@ -61,7 +61,7 @@ describe('WHEN user sends request with backtesting strategy ID equal to empty st
 
 describe('WHEN the backtesting strategy does not exist', () => {
   it('THEN it should return HTTP404 and error response body', async () => {
-    const httpServer = setupServer({ btStrategyModelDao: { existById: () => te.right(false) } });
+    const httpServer = setupServer({ btStrategyDao: { existById: () => te.right(false) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -72,8 +72,8 @@ describe('WHEN the backtesting strategy does not exist', () => {
 
 describe('WHEN checking existence of the strategy fails', () => {
   it('THEN it should return HTTP500 and error response body', async () => {
-    const error = createBtStrategyModelDaoError('ExistByIdFailed', 'Mock');
-    const httpServer = setupServer({ btStrategyModelDao: { existById: () => te.left(error) } });
+    const error = createBtStrategyDaoError('ExistByIdFailed', 'Mock');
+    const httpServer = setupServer({ btStrategyDao: { existById: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
 
@@ -84,7 +84,7 @@ describe('WHEN checking existence of the strategy fails', () => {
 
 describe('WHEN some pending or running execution already exists', () => {
   it('THEN it should return HTTP409 and error response body', async () => {
-    const error = createJobSchedulerError('ExceedJobMaxLimit', 'Mock');
+    const error = createJobSchedulerError('ExceedJobMaxSchedulingLimit', 'Mock');
     const httpServer = setupServer({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });
@@ -96,7 +96,7 @@ describe('WHEN some pending or running execution already exists', () => {
 
 describe('WHEN adding backtesting job fails', () => {
   it('THEN it should return HTTP500 and error response body', async () => {
-    const error = createJobSchedulerError('ScheduleBtJobFailed', 'Mock');
+    const error = createJobSchedulerError('ScheduleJobFailed', 'Mock');
     const httpServer = setupServer({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
 
     const response = await httpServer.inject({ method, url: url.replace(':id', randomString()) });

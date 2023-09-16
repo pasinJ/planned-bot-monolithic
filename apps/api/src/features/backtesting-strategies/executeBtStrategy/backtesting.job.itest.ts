@@ -1,28 +1,44 @@
 import EventEmitter from 'events';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { pino } from 'pino';
-import { isNotNil, mergeDeepRight, path } from 'ramda';
+import { isNotNil, mergeDeepRight } from 'ramda';
 import waitForExpect from 'wait-for-expect';
 
-import { btExecutionStatusEnum } from '#features/backtesting-strategies/data-models/btExecution.model.js';
-import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
+import {
+  BtExecutionId,
+  btExecutionStatusEnum,
+} from '#features/backtesting-strategies/data-models/btExecution.js';
+import { BtStrategyId } from '#features/backtesting-strategies/data-models/btStrategy.js';
 import { getJobSchedulerConfig } from '#infra/services/jobScheduler/config.js';
-import { isJobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
-import { createJobScheduler } from '#infra/services/jobScheduler/service.js';
-import { JobScheduler } from '#infra/services/jobScheduler/service.type.js';
+import { isJobSchedulerError } from '#infra/services/jobScheduler/error.js';
+import { JobScheduler, buildJobScheduler } from '#infra/services/jobScheduler/service.js';
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
-import { randomString } from '#test-utils/faker.js';
+import { randomAnyDate, randomString } from '#test-utils/faker.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
+import { mockMainLogger } from '#test-utils/services.js';
 
-import { buildBtJobScheduler } from '../services/jobScheduler.js';
-import { BtJobDeps, defineBtJob } from './backtesting.job.js';
+import { BtJobDeps, ScheduleBtJobDeps, defineBtJob, scheduleBtJob } from './backtesting.job.js';
 
-function mockDeps(overrides?: Partial<BtJobDeps>): BtJobDeps {
+function mockBtJobDeps(overrides?: Partial<BtJobDeps>): BtJobDeps {
   return mergeDeepRight(
-    { mainLogger: pino({ enabled: false }), fork: jest.fn().mockReturnValue(new EventEmitter()) },
+    { mainLogger: mockMainLogger(), fork: jest.fn().mockReturnValue(new EventEmitter()) },
     overrides ?? {},
   );
+}
+function mockScheduleBtJobDeps(overrides?: Partial<ScheduleBtJobDeps>): ScheduleBtJobDeps {
+  return mergeDeepRight(
+    {
+      dateService: { getCurrentDate: () => randomAnyDate() },
+      btExecutionDao: { generateId: () => randomBtExecutionId() },
+    },
+    overrides ?? {},
+  );
+}
+function randomBtStrategyId() {
+  return randomString() as BtStrategyId;
+}
+function randomBtExecutionId() {
+  return randomString() as BtExecutionId;
 }
 
 const client = await createMongoClient();
@@ -40,12 +56,13 @@ describe('Job processor', () => {
 
     jobScheduler = unsafeUnwrapEitherRight(
       await pipe(
-        createJobScheduler({ mainLogger: pino({ enabled: false }) }),
-        te.chainFirstW(({ agenda, loggerIo }) =>
+        buildJobScheduler({ mainLogger: mockMainLogger() }),
+        te.chainFirstW((jobScheduler) =>
           shouldDefineJob ?? true
-            ? te.fromIOEither(defineBtJob(agenda, loggerIo, mockDeps(overrides)))
+            ? te.fromIOEither(jobScheduler.composeWith(defineBtJob(mockBtJobDeps(overrides))))
             : te.right(undefined),
         ),
+        te.chainFirstW((jobScheduler) => jobScheduler.start),
         executeT,
       ),
     );
@@ -60,40 +77,47 @@ describe('Job processor', () => {
   describe('Schedule backtesting job', () => {
     describe('WHEN scheduling a backtesting job succeeds', () => {
       it('THEN it should return Right of ID and created timestamp', async () => {
-        const btJobScheduler = buildBtJobScheduler(jobScheduler);
+        const executionId = randomBtExecutionId();
+        const currentDate = randomAnyDate();
+        const deps = mockScheduleBtJobDeps({
+          btExecutionDao: { generateId: () => executionId },
+          dateService: { getCurrentDate: () => currentDate },
+        });
+        const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(deps));
 
-        const result = await executeT(btJobScheduler.scheduleBtJob(randomString() as BtStrategyId));
+        const result = await executeT(scheduleBtJobFn(randomBtStrategyId()));
 
-        expect(result).toEqualRight({ id: expect.toBeString(), createdAt: expect.toBeDate() });
+        expect(result).toEqualRight({ id: executionId, createdAt: currentDate });
       });
       it('THEN the job scheduler should be able to pickup the scheduled job', async () => {
-        const deps = mockDeps();
-        await setupJobScheduler(deps);
-        const btJobScheduler = buildBtJobScheduler(jobScheduler);
+        const jobDeps = mockBtJobDeps();
+        await setupJobScheduler(jobDeps);
 
-        const btStrategyId = randomString() as BtStrategyId;
-        const addedJob = await executeT(btJobScheduler.scheduleBtJob(btStrategyId));
-        const executionId = path(['right', 'id'], addedJob);
+        const executionId = randomBtExecutionId();
+        const deps = mockScheduleBtJobDeps({ btExecutionDao: { generateId: () => executionId } });
+        const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(deps));
+
+        await executeT(scheduleBtJobFn(randomBtStrategyId()));
 
         await waitForExpect.default(() =>
-          expect(deps.fork).toHaveBeenCalledWith(expect.anything(), [executionId], expect.anything()),
+          expect(jobDeps.fork).toHaveBeenCalledWith(expect.anything(), [executionId], expect.anything()),
         );
       });
     });
     describe('GIVEN there is a running backtesting job WHEN schedule a new backtesting job', () => {
       it('THEN it should return Left of error', async () => {
-        const deps = mockDeps();
-        await setupJobScheduler(deps);
-        const btJobScheduler = buildBtJobScheduler(jobScheduler);
+        const jobDeps = mockBtJobDeps();
+        await setupJobScheduler(jobDeps);
+        const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(mockScheduleBtJobDeps()));
 
-        const id = randomString() as BtStrategyId;
-        await executeT(btJobScheduler.scheduleBtJob(id));
+        const id = randomBtStrategyId();
+        await executeT(scheduleBtJobFn(id));
 
         // Wait for job scheduler to pick the first job up
-        // The job will not be finished b/c we never trigger 'close' event of the worker process
-        await waitForExpect.default(() => expect(deps.fork).toHaveBeenCalledOnce());
+        // This job will not be finished b/c we never trigger 'close' event of the worker process
+        await waitForExpect.default(() => expect(jobDeps.fork).toHaveBeenCalledOnce());
 
-        const result = await executeT(btJobScheduler.scheduleBtJob(id));
+        const result = await executeT(scheduleBtJobFn(id));
 
         expect(result).toEqualLeft(expect.toSatisfy(isJobSchedulerError));
       });
@@ -102,12 +126,12 @@ describe('Job processor', () => {
       it('THEN it should return Left of error', async () => {
         // Not define backtesting job, so the job scheduler will never pick it up
         await setupJobScheduler(undefined, false);
-        const btJobScheduler = buildBtJobScheduler(jobScheduler);
+        const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(mockScheduleBtJobDeps()));
 
-        const id = randomString() as BtStrategyId;
-        await executeT(btJobScheduler.scheduleBtJob(id));
+        const id = randomBtStrategyId();
+        await executeT(scheduleBtJobFn(id));
 
-        const result = await executeT(btJobScheduler.scheduleBtJob(id));
+        const result = await executeT(scheduleBtJobFn(id));
 
         expect(result).toEqualLeft(expect.toSatisfy(isJobSchedulerError));
       });
@@ -116,10 +140,10 @@ describe('Job processor', () => {
 
   describe('WHEN the job has been picked up', () => {
     it('THEN it should update status to be running', async () => {
-      const btJobScheduler = buildBtJobScheduler(jobScheduler);
+      const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(mockScheduleBtJobDeps()));
 
-      const btStrategyId = randomString() as BtStrategyId;
-      await executeT(btJobScheduler.scheduleBtJob(btStrategyId));
+      const btStrategyId = randomBtStrategyId();
+      await executeT(scheduleBtJobFn(btStrategyId));
 
       await waitForExpect.default(async () => {
         const jobRecord = await jobCollection.findOne({
@@ -130,12 +154,12 @@ describe('Job processor', () => {
       });
     });
     it('THEN it should fork a new worker process to handle the job', async () => {
-      const deps = mockDeps();
+      const deps = mockBtJobDeps();
       await setupJobScheduler(deps);
-      const btJobScheduler = buildBtJobScheduler(jobScheduler);
+      const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(mockScheduleBtJobDeps()));
 
-      const btStrategyId = randomString() as BtStrategyId;
-      await executeT(btJobScheduler.scheduleBtJob(btStrategyId));
+      const btStrategyId = randomBtStrategyId();
+      await executeT(scheduleBtJobFn(btStrategyId));
 
       await waitForExpect.default(() => expect(deps.fork).toHaveBeenCalledOnce());
     });
@@ -144,12 +168,12 @@ describe('Job processor', () => {
   describe('WHEN the worker process close with exit code equals to 0', () => {
     it('THEN it should call done', async () => {
       const worker = new EventEmitter();
-      const deps = mockDeps({ fork: jest.fn().mockReturnValue(worker) });
+      const deps = mockBtJobDeps({ fork: jest.fn().mockReturnValue(worker) });
       await setupJobScheduler(deps);
-      const btJobScheduler = buildBtJobScheduler(jobScheduler);
+      const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(mockScheduleBtJobDeps()));
 
-      const btStrategyId = randomString() as BtStrategyId;
-      await executeT(btJobScheduler.scheduleBtJob(btStrategyId));
+      const btStrategyId = randomBtStrategyId();
+      await executeT(scheduleBtJobFn(btStrategyId));
 
       await waitForExpect.default(async () => {
         expect(deps.fork).toHaveBeenCalledOnce();
@@ -167,12 +191,12 @@ describe('Job processor', () => {
   describe('WHEN the worker process close with exit code other than 0', () => {
     it('THEN it should set status to failed and call done', async () => {
       const worker = new EventEmitter();
-      const deps = mockDeps({ fork: jest.fn().mockReturnValue(worker) });
+      const deps = mockBtJobDeps({ fork: jest.fn().mockReturnValue(worker) });
       await setupJobScheduler(deps);
-      const btJobScheduler = buildBtJobScheduler(jobScheduler);
+      const scheduleBtJobFn = jobScheduler.composeWith(scheduleBtJob(mockScheduleBtJobDeps()));
 
       const btStrategyId = randomString() as BtStrategyId;
-      await executeT(btJobScheduler.scheduleBtJob(btStrategyId));
+      await executeT(scheduleBtJobFn(btStrategyId));
 
       await waitForExpect.default(async () => {
         expect(deps.fork).toHaveBeenCalledOnce();

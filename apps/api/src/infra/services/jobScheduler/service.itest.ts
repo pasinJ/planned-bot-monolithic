@@ -1,26 +1,25 @@
-import { pino } from 'pino';
 import { mergeDeepRight } from 'ramda';
 
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
+import { mockMainLogger } from '#test-utils/services.js';
 
-import { JobSchedulerDeps, createJobScheduler } from './service.js';
-import { JobScheduler } from './service.type.js';
+import { JobScheduler, JobSchedulerDeps, buildJobScheduler } from './service.js';
 
 function mockDeps(overrides?: Partial<JobSchedulerDeps>): JobSchedulerDeps {
-  return mergeDeepRight({ mainLogger: pino({ enabled: false }) }, overrides ?? {});
+  return mergeDeepRight({ mainLogger: mockMainLogger() }, overrides ?? {});
 }
+
+let jobScheduler: JobScheduler;
+
+beforeAll(async () => {
+  jobScheduler = unsafeUnwrapEitherRight(await executeT(buildJobScheduler(mockDeps())));
+});
+afterAll(() => jobScheduler.stop());
 
 describe('Create job scheduler', () => {
   describe('WHEN successfully create a job scheduler', () => {
-    let jobScheduler: JobScheduler;
-
-    beforeAll(async () => {
-      jobScheduler = unsafeUnwrapEitherRight(await executeT(createJobScheduler(mockDeps())));
-    });
-    afterAll(() => jobScheduler.stop());
-
     it('THEN it should return Right of job scheduler', () => {
-      expect(jobScheduler).toEqual(expect.toContainAllKeys(['agenda', 'loggerIo', 'stop']));
+      expect(jobScheduler).toEqual(expect.toContainAllKeys(['composeWith', 'start', 'stop']));
     });
   });
 });

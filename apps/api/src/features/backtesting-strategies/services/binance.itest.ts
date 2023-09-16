@@ -6,12 +6,11 @@ import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { dissoc, values } from 'ramda';
 
-import { SymbolName } from '#features/symbols/data-models/symbol-model/index.js';
+import { SymbolName } from '#features/shared/domain/symbolName.js';
+import { timeframeEnum } from '#features/shared/domain/timeframe.js';
 import { createHttpError } from '#infra/http/client.error.js';
-import { createAxiosHttpClient } from '#infra/http/client.js';
+import { buildAxiosHttpClient } from '#infra/http/client.js';
 import { getBnbConfig } from '#infra/services/binance/config.js';
-import { timeframeEnum } from '#shared/domain/timeframe.js';
-import { createExternalError } from '#shared/errors/externalError.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
 import { executeT } from '#shared/utils/fp.js';
 import { randomTimeframe } from '#test-utils/domain.js';
@@ -30,7 +29,7 @@ afterAll(() => msw.close());
 describe('Download monthly klines zip file', () => {
   function mockDeps() {
     return {
-      httpClient: createAxiosHttpClient(mockLoggerIo(), {
+      httpClient: buildAxiosHttpClient(mockLoggerIo(), {
         baseURL: PUBLIC_DATA_BASE_URL,
         responseType: 'arraybuffer',
       }),
@@ -72,15 +71,11 @@ describe('Download monthly klines zip file', () => {
         request.timeframe
       }/${request.symbol.toUpperCase()}-${request.timeframe}-${request.year}-${request.month}.zip`;
 
-      const error = createHttpError(
-        'UnhandledError',
-        'Mock',
-        createExternalError({ message: 'Mock', cause: new Error() }),
-      );
-      const deps = { httpClient: { sendRequest: jest.fn().mockReturnValue(te.left(error)) } };
+      const error = createHttpError('UnhandledError', 'Mock', new Error());
+      const deps = { httpClient: { downloadFile: jest.fn().mockReturnValue(te.left(error)) } };
       await executeT(downloadMonthlyKlinesZipFile(deps, request));
 
-      expect(deps.httpClient.sendRequest).toHaveBeenCalledWith(expect.objectContaining({ url }));
+      expect(deps.httpClient.downloadFile).toHaveBeenCalledWith(expect.objectContaining({ url }));
     });
   });
   describe('WHEN download monthly file with 1M timeframe', () => {
@@ -90,15 +85,11 @@ describe('Download monthly klines zip file', () => {
         request.year
       }-${request.month}.zip`;
 
-      const error = createHttpError(
-        'UnhandledError',
-        'Mock',
-        createExternalError({ message: 'Mock', cause: new Error() }),
-      );
-      const deps = { httpClient: { sendRequest: jest.fn().mockReturnValue(te.left(error)) } };
+      const error = createHttpError('UnhandledError', 'Mock', new Error());
+      const deps = { httpClient: { downloadFile: jest.fn().mockReturnValue(te.left(error)) } };
       await executeT(downloadMonthlyKlinesZipFile(deps, request));
 
-      expect(deps.httpClient.sendRequest).toHaveBeenCalledWith(expect.objectContaining({ url }));
+      expect(deps.httpClient.downloadFile).toHaveBeenCalledWith(expect.objectContaining({ url }));
     });
   });
 

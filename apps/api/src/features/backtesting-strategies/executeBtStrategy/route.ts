@@ -1,20 +1,27 @@
 import { RouteOptions } from 'fastify';
 
-import { commonHooksForAppRoutes } from '#infra/http/hooks.js';
+import { onSendHook, preValidationHook } from '#infra/http/hooks.js';
 import { AppDeps } from '#shared/appDeps.type.js';
 
+import { existBtStrategyModelById } from '../DAOs/btStrategy.feature.js';
+import { generateBtExecutionId } from '../data-models/btExecution.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
-import { buildBtJobScheduler } from '../services/jobScheduler.js';
+import { scheduleBtJob } from './backtesting.job.js';
 import { buildExecuteBtStrategyController } from './controller.js';
 
 export function executeBtStrategyRouteOptions(deps: AppDeps): RouteOptions {
-  const { btStrategyModelDao, jobScheduler } = deps;
+  const { btStrategyDao, jobScheduler, dateService } = deps;
   return {
     ...BT_STRATEGY_ENDPOINTS.EXECUTE_BT_STRATEGY,
-    ...commonHooksForAppRoutes,
+    preValidation: preValidationHook,
+    onSend: onSendHook,
     handler: buildExecuteBtStrategyController({
-      btStrategyModelDao,
-      btJobScheduler: buildBtJobScheduler(jobScheduler),
+      btStrategyDao: { existById: btStrategyDao.composeWith(existBtStrategyModelById) },
+      btJobScheduler: {
+        scheduleBtJob: jobScheduler.composeWith(
+          scheduleBtJob({ dateService, btExecutionDao: { generateId: generateBtExecutionId } }),
+        ),
+      },
     }),
   };
 }

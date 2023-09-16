@@ -3,10 +3,7 @@ import { z } from 'zod';
 
 import { nonEmptyString } from '#shared/utils/zod.schema.js';
 
-export type JobSchedulerConfig = {
-  URI: MongoDbUri;
-  COLLECTION_NAME: string;
-};
+export type JobSchedulerConfig = { URI: MongoDbUri; COLLECTION_NAME: string };
 
 type MongoDbUri = z.infer<typeof mongoDbUriSchema>;
 const mongoDbUriSchema = nonEmptyString

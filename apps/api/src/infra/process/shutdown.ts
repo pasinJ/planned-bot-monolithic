@@ -5,17 +5,16 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 
 import { HttpServerError } from '#infra/http/server.error.js';
-import { closeHttpServer } from '#infra/http/server.js';
-import { FastifyServer } from '#infra/http/server.type.js';
+import { HttpServer } from '#infra/http/server.js';
 import { LoggerIo } from '#infra/logging.js';
 import { MongoDbClientError } from '#infra/mongoDb/client.error.js';
 import { disconnectMongoDbClient } from '#infra/mongoDb/client.js';
-import { JobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
-import { JobScheduler } from '#infra/services/jobScheduler/service.type.js';
+import { JobSchedulerError } from '#infra/services/jobScheduler/error.js';
+import { JobScheduler } from '#infra/services/jobScheduler/service.js';
 import { GracefulPeriodMs, getAppConfig } from '#shared/app.config.js';
 import { executeT } from '#shared/utils/fp.js';
 
-type ShutdownDeps = { httpServer: FastifyServer; mongoDbClient: Mongoose; jobScheduler: JobScheduler };
+type ShutdownDeps = { httpServer: HttpServer; mongoDbClient: Mongoose; jobScheduler: JobScheduler };
 
 export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO<void> {
   let shutdownProcessStarted = false;
@@ -79,8 +78,8 @@ function startGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): t.Task<nev
     te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
     te.chainFirstW(() =>
       // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-      te.sequenceArray<void, HttpServerError<'CloseServerFailed'> | JobSchedulerError<'StopServiceFailed'>>([
-        closeHttpServer(httpServer),
+      te.sequenceArray<void, HttpServerError<'StopServerFailed'> | JobSchedulerError<'StopServiceFailed'>>([
+        httpServer.stop,
         jobScheduler.stop,
       ]),
     ),

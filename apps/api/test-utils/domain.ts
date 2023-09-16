@@ -1,18 +1,17 @@
 import { faker } from '@faker-js/faker';
-import { values } from 'ramda';
 
-import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
-import { languageEnum } from '#shared/domain/language.js';
-import { timeframeEnum } from '#shared/domain/timeframe.js';
+import { exchangeNameList } from '#features/shared/domain/exchangeName.js';
+import { languageList } from '#features/shared/domain/language.js';
+import { timeframeList } from '#features/shared/domain/timeframe.js';
 
 export function randomExchangeName() {
-  return faker.helpers.arrayElement(values(exchangeNameEnum));
+  return faker.helpers.arrayElement(exchangeNameList);
 }
 
 export function randomTimeframe() {
-  return faker.helpers.arrayElement(values(timeframeEnum));
+  return faker.helpers.arrayElement(timeframeList);
 }
 
 export function randomLanguage() {
-  return faker.helpers.arrayElement(values(languageEnum));
+  return faker.helpers.arrayElement(languageList);
 }

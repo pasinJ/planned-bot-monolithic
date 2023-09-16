@@ -1,15 +1,15 @@
 import { faker } from '@faker-js/faker';
-import { values } from 'ramda';
 
-import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
+import { exchangeNameList } from '#features/shared/domain/exchangeName.js';
 import {
   LotSizeFilter,
   MarketLotSizeFilter,
   MinNotionalFilter,
   NotionalFilter,
   PriceFilter,
-} from '#features/symbols/data-models/symbol-model/filters.js';
-import { SymbolModel, orderTypeEnum } from '#features/symbols/data-models/symbol-model/index.js';
+  SymbolModel,
+  orderTypeList,
+} from '#features/symbols/data-models/symbol.js';
 import { RemoveBrand } from '#test-utils/types.js';
 
 import {
@@ -25,14 +25,13 @@ export function mockSymbol(override?: Partial<RemoveBrand<SymbolModel>>): Symbol
   const maxRange: [number, number] = [11, 20];
 
   return {
-    id: randomString(),
     name: randomString(),
-    exchange: faker.helpers.arrayElement(values(exchangeNameEnum)),
+    exchange: faker.helpers.arrayElement(exchangeNameList),
     baseAsset: randomString(),
     baseAssetPrecision: faker.number.int({ min: 0, max: 10 }),
     quoteAsset: randomString(),
     quoteAssetPrecision: faker.number.int({ min: 0, max: 10 }),
-    orderTypes: faker.helpers.arrayElements(values(orderTypeEnum)),
+    orderTypes: faker.helpers.arrayElements(orderTypeList),
     filters: [
       mockLotSizeFilter(minRange, maxRange),
       mockMarketLotSizeFilter(minRange, maxRange),
@@ -40,9 +39,7 @@ export function mockSymbol(override?: Partial<RemoveBrand<SymbolModel>>): Symbol
       mockNotionalFilter(),
       mockPriceFilter(minRange, maxRange),
     ] as SymbolModel['filters'],
-    version: override?.version ?? faker.number.int({ min: 0, max: 10 }),
-    createdAt: faker.date.past(),
-    updatedAt: faker.date.recent(),
+    ...override,
   } as SymbolModel;
 }
 

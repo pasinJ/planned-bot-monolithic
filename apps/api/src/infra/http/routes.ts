@@ -1,3 +1,4 @@
+import { RouteOptions } from 'fastify';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 
@@ -5,17 +6,24 @@ import { addBtStrategyRouteOptions } from '#features/backtesting-strategies/addB
 import { executeBtStrategyRouteOptions } from '#features/backtesting-strategies/executeBtStrategy/route.js';
 import { getSymbolsRouteOptions } from '#features/symbols/getSymbols/route.js';
 import { AppDeps } from '#shared/appDeps.type.js';
-import { createErrorFromUnknown } from '#shared/errors/externalError.js';
+import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
 import { HttpServerError, createAddHttpRouteError } from './server.error.js';
-import { FastifyServer } from './server.type.js';
+import type { FastifyServer } from './server.js';
+
+const generalRouteOptions: RouteOptions = {
+  method: 'HEAD',
+  url: '/',
+  handler: (_, reply) => reply.code(200).send(),
+};
 
 export function addRoutes(
-  instance: FastifyServer,
+  fastify: FastifyServer,
   deps: AppDeps,
-): ioe.IOEither<HttpServerError<'AddRouteFailed'>, FastifyServer> {
+): ioe.IOEither<HttpServerError<'AddRouteFailed'>, void> {
   return pipe(
     ioe.of([
+      generalRouteOptions,
       addBtStrategyRouteOptions(deps),
       executeBtStrategyRouteOptions(deps),
       getSymbolsRouteOptions(deps),
@@ -23,22 +31,12 @@ export function addRoutes(
     ioe.map((routeOptionsList) =>
       routeOptionsList.map((routeOptions) =>
         ioe.tryCatch(
-          () => instance.route(routeOptions),
+          () => fastify.route(routeOptions),
           createErrorFromUnknown(createAddHttpRouteError(routeOptions.method, routeOptions.url)),
         ),
       ),
     ),
     ioe.chain(ioe.sequenceArray),
-    ioe.as(instance),
-    ioe.chain(addGeneralRoutes),
-  );
-}
-
-export function addGeneralRoutes(
-  instance: FastifyServer,
-): ioe.IOEither<HttpServerError<'AddRouteFailed'>, FastifyServer> {
-  return ioe.tryCatch(
-    () => instance.head('/', (_, reply) => reply.code(200).send()),
-    createErrorFromUnknown(createAddHttpRouteError('HEAD', '/')),
+    ioe.asUnit,
   );
 }

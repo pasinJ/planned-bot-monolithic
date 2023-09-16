@@ -1,21 +1,21 @@
 import { randomString } from '#test-utils/faker.js';
 
-import { createAppError, isAppError } from './appError.js';
+import { createAppError, createErrorFromUnknown, getCausesList, isAppError, setCause } from './appError.js';
 
 function createAppErrorWithOnlyName() {
   const name = randomString();
-  return { name, error: createAppError({ name, cause: undefined }) };
+  return { name, error: createAppError({ name }) };
 }
 function createAppErrorWithNameAndType() {
   const name = randomString();
   const type = randomString();
-  return { name, type, error: createAppError({ name, type, cause: undefined }) };
+  return { name, type, error: createAppError({ name, type }) };
 }
 function createAppErrorWithNameAndTypeAndMessage() {
   const name = randomString();
   const type = randomString();
   const message = randomString();
-  return { name, type, message, error: createAppError({ name, type, message, cause: undefined }) };
+  return { name, type, message, error: createAppError({ name, type, message }) };
 }
 function createAppErrorWithNameAndTypeAndMessageAndCause(overrideCause?: Error | string) {
   const name = randomString();
@@ -27,10 +27,6 @@ function createAppErrorWithNameAndTypeAndMessageAndCause(overrideCause?: Error |
 
 describe('Application error', () => {
   describe('WHEN create an instance', () => {
-    it('THEN it should return an instance that inherits from Error', () => {
-      const { error } = createAppErrorWithOnlyName();
-      expect(error).toBeInstanceOf(Error);
-    });
     it('THEN it should return an instance with stack property', () => {
       const { error } = createAppErrorWithOnlyName();
       expect(error).toHaveProperty('stack');
@@ -87,33 +83,37 @@ describe('Application error', () => {
       expect(error).toHaveProperty('cause', cause);
     });
   });
+});
 
+describe('Set cause', () => {
   describe('WHEN set cause of an instance that already has a cause property', () => {
     it('THEN it should return an instance with replaced cause property', () => {
       const { error } = createAppErrorWithNameAndTypeAndMessageAndCause();
       const newCause = randomString();
 
-      expect(error.setCause(newCause)).toHaveProperty('cause', newCause);
+      expect(setCause(error, newCause)).toHaveProperty('cause', newCause);
     });
   });
+});
 
+describe('Get causes list', () => {
   describe('WHEN get a causes list from an error without cause', () => {
     it('THEN it should return an empty list', () => {
       const { error } = createAppErrorWithOnlyName();
-      expect(error.causesList).toBeArrayOfSize(0);
+      expect(getCausesList(error)).toBeArrayOfSize(0);
     });
   });
   describe('WHEN get a causes list from an error with string cause (1 depth)', () => {
     it('THEN it should return an list with the string cause', () => {
       const { error, cause } = createAppErrorWithNameAndTypeAndMessageAndCause();
-      expect(error.causesList).toIncludeSameMembers([cause]);
+      expect(getCausesList(error)).toIncludeSameMembers([cause]);
     });
   });
   describe('WHEN get a causes list from an error with error cause (1 depth)', () => {
     it("THEN it should return an list with the error's name and message", () => {
       const { error, cause } = createAppErrorWithNameAndTypeAndMessageAndCause(new Error('Mock error'));
 
-      expect(error.causesList).toEqual([cause.toString()]);
+      expect(getCausesList(error)).toEqual([cause.toString()]);
     });
   });
   describe('WHEN get a causes list from an error with nested error cause (2 depth)', () => {
@@ -123,7 +123,7 @@ describe('Application error', () => {
       );
       const { error } = createAppErrorWithNameAndTypeAndMessageAndCause(nestedError);
 
-      expect(error.causesList).toEqual([nestedError.toString(), cause.toString()]);
+      expect(getCausesList(error)).toEqual([nestedError.toString(), cause.toString()]);
     });
   });
   describe('WHEN get a causes list from an error with nested error cause and string cause (3 depth)', () => {
@@ -132,12 +132,12 @@ describe('Application error', () => {
       const { error: nestedError1 } = createAppErrorWithNameAndTypeAndMessageAndCause(nestedError2);
       const { error } = createAppErrorWithNameAndTypeAndMessageAndCause(nestedError1);
 
-      expect(error.causesList).toEqual([nestedError1.toString(), nestedError2.toString(), cause]);
+      expect(getCausesList(error)).toEqual([nestedError1.toString(), nestedError2.toString(), cause]);
     });
   });
 });
 
-describe('isAppError function', () => {
+describe('Validate AppError', () => {
   describe('WHEN validate an application error instance', () => {
     it('THEN it should return true', () => {
       const { error } = createAppErrorWithOnlyName();
@@ -147,6 +147,43 @@ describe('isAppError function', () => {
   describe('WHEN validate an object that is not an application error instance', () => {
     it('THEN it should return false', () => {
       expect(isAppError({ test: randomString() })).toBeFalse();
+    });
+  });
+});
+
+describe('Create custom error from unknown', () => {
+  describe('WHEN create an custom error', () => {
+    it('THEN it should return an error with name property equal to the given name', () => {
+      const { error: baseError, name } = createAppErrorWithOnlyName();
+      const error = createErrorFromUnknown(baseError)(randomString());
+
+      expect(error).toHaveProperty('name', name);
+    });
+  });
+  describe('WHEN create a custom error from string', () => {
+    it('THEN it should return an error with cause equals to that string', () => {
+      const cause = randomString();
+      const { error: baseError } = createAppErrorWithOnlyName();
+      const error = createErrorFromUnknown(baseError)(cause);
+
+      expect(error).toHaveProperty('cause', cause);
+    });
+  });
+  describe('WHEN create a custom error from an error', () => {
+    it('THEN it should return an error with cause equal to that error', () => {
+      const cause = new Error(randomString());
+      const { error: baseError } = createAppErrorWithOnlyName();
+      const error = createErrorFromUnknown(baseError)(cause);
+
+      expect(error).toHaveProperty('cause', cause);
+    });
+  });
+  describe('WHEN create a custom error from something that is not neither string nor error', () => {
+    it('THEN it should return an error with cause equal to an informative string', () => {
+      const { error: baseError } = createAppErrorWithOnlyName();
+      const error = createErrorFromUnknown(baseError)(undefined);
+
+      expect(error).toHaveProperty('cause', expect.toBeString());
     });
   });
 });

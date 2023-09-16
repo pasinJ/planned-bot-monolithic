@@ -1,20 +1,10 @@
-import { faker } from '@faker-js/faker';
-import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid } from 'fp-ts/lib/function.js';
+import { pino } from 'pino';
 
-import { LoggerIo } from '#infra/logging.js';
-import { BnbService } from '#infra/services/binance/service.type.js';
-import { DateService } from '#infra/services/date.type.js';
+import { LoggerIo, PinoLogger } from '#infra/logging.js';
 
-export function mockDateService(overrides?: Partial<DateService>): DateService {
-  return { getCurrentDate: () => faker.date.recent(), ...overrides };
-}
-
-export function mockBnbService(overrides?: Partial<BnbService>): BnbService {
-  return {
-    getSpotSymbols: te.of([]),
-    ...overrides,
-  };
+export function mockMainLogger(): PinoLogger {
+  return pino({ enabled: false });
 }
 
 export function mockLoggerIo(): LoggerIo {

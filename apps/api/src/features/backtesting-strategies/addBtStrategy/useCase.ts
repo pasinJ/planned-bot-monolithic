@@ -1,21 +1,33 @@
+import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { equals } from 'ramda';
 
-import { DateService } from '#infra/services/date/service.type.js';
-import { GeneralError } from '#shared/errors/generalError.js';
-import { SchemaValidationError } from '#shared/utils/zod.js';
+import { ExchangeName } from '#features/shared/domain/exchangeName.js';
+import { SymbolName } from '#features/shared/domain/symbolName.js';
+import { SymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
+import { DateService } from '#infra/services/date/service.js';
+import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 
-import { BtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js';
-import { BtStrategyModelDao } from '../data-models/btStrategy.dao.type.js';
-import { BtStrategyId, createBtStrategyModel } from '../data-models/btStrategy.model.js';
+import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
+import { BtStrategyId, BtStrategyModel, createBtStrategyModel } from '../data-models/btStrategy.js';
 
 export type AddBtStrategyDeps = {
-  btStrategyModelDao: Pick<BtStrategyModelDao, 'generateId' | 'add'>;
-  dateService: Pick<DateService, 'getCurrentDate'>;
+  dateService: DateService;
+  symbolDao: {
+    existByNameAndExchange: (
+      name: string,
+      exchange: ExchangeName,
+    ) => te.TaskEither<SymbolDaoError<'ExistByNameAndExchangeFailed'>, boolean>;
+  };
+  btStrategyDao: {
+    generateId: io.IO<BtStrategyId>;
+    add: (btStrategy: BtStrategyModel) => te.TaskEither<BtStrategyDaoError<'AddFailed'>, void>;
+  };
 };
 export type AddBtStrategyRequest = {
   name: string;
-  exchange: string;
+  exchange: ExchangeName;
   symbol: string;
   currency: string;
   timeframe: string;
@@ -31,21 +43,32 @@ export type AddBtStrategyRequest = {
 
 export function addBtStrategy(
   dep: AddBtStrategyDeps,
-  data: AddBtStrategyRequest,
+  request: AddBtStrategyRequest,
 ): te.TaskEither<
-  BtStrategyModelDaoError<'AddFailed'> | GeneralError<'CreateBtStrategyError', SchemaValidationError>,
+  | SymbolDaoError<'ExistByNameAndExchangeFailed'>
+  | GeneralError<'SymbolNotExist' | 'CreateBtStrategyModelError'>
+  | BtStrategyDaoError<'AddFailed'>,
   { id: BtStrategyId; createdAt: Date }
 > {
-  const { dateService, btStrategyModelDao } = dep;
+  const { dateService, btStrategyDao, symbolDao } = dep;
 
   return pipe(
-    te.Do,
-    te.let('id', () => btStrategyModelDao.generateId()),
-    te.let('currentDate', () => dateService.getCurrentDate()),
-    te.bindW('btStrategy', ({ id, currentDate }) =>
-      te.fromEither(createBtStrategyModel({ ...data, id }, currentDate)),
+    symbolDao.existByNameAndExchange(request.symbol, request.exchange),
+    te.chainW(
+      te.fromPredicate(equals(true), () =>
+        createGeneralError(
+          'SymbolNotExist',
+          `Symbol ${request.symbol} of exchnage ${request.exchange} doesn't exist`,
+        ),
+      ),
     ),
-    te.chainFirstW(({ btStrategy }) => btStrategyModelDao.add(btStrategy)),
+    te.let('symbol', () => request.symbol as SymbolName),
+    te.let('id', () => btStrategyDao.generateId()),
+    te.let('currentDate', () => dateService.getCurrentDate()),
+    te.bindW('btStrategy', ({ symbol, id, currentDate }) =>
+      te.fromEither(createBtStrategyModel({ ...request, id, symbol }, currentDate)),
+    ),
+    te.chainFirstW(({ btStrategy }) => btStrategyDao.add(btStrategy)),
     te.map(({ btStrategy }) => ({ id: btStrategy.id, createdAt: btStrategy.createdAt })),
   );
 }

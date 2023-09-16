@@ -2,19 +2,19 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { mergeDeepRight } from 'ramda';
 
-import { createJobSchedulerError } from '#infra/services/jobScheduler/service.error.js';
-import { DeepPartial } from '#shared/common.type.js';
-import { isBusinessError } from '#shared/errors/businessError.js';
+import { createJobSchedulerError } from '#infra/services/jobScheduler/error.js';
+import { isGeneralError } from '#shared/errors/generalError.js';
+import { DeepPartial } from '#shared/helpers.type.js';
 import { executeT } from '#shared/utils/fp.js';
 import { randomAnyDate, randomString } from '#test-utils/faker.js';
 
-import { createBtStrategyModelDaoError } from '../data-models/btStrategy.dao.error.js';
+import { createBtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import { ExecuteBtStrategyDeps, ExecuteBtStrategyRequest, executeBtStrategy } from './useCase.js';
 
 function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyDeps>): ExecuteBtStrategyDeps {
   return mergeDeepRight(
     {
-      btStrategyModelDao: { existById: jest.fn().mockReturnValue(te.right(true)) },
+      btStrategyDao: { existById: jest.fn().mockReturnValue(te.right(true)) },
       btJobScheduler: {
         scheduleBtJob: jest
           .fn()
@@ -34,23 +34,23 @@ describe('WHEN user requests to execute a backtesting strategy', () => {
     const request = mockRequest();
     await pipe(executeBtStrategy(deps, request), executeT);
 
-    expect(deps.btStrategyModelDao.existById).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
+    expect(deps.btStrategyDao.existById).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
   });
 });
 
 describe('WHEN the backtesting strategy ID does not exist', () => {
   it('THEN it should return Left of error', async () => {
-    const deps = mockDeps({ btStrategyModelDao: { existById: () => te.right(false) } });
+    const deps = mockDeps({ btStrategyDao: { existById: () => te.right(false) } });
     const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
-    expect(result).toEqualLeft(expect.toSatisfy(isBusinessError));
+    expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
   });
 });
 
 describe('WHEN checking existence of the strategy fails', () => {
   it('THEN it should return Left of error', async () => {
-    const error = createBtStrategyModelDaoError('ExistByIdFailed', 'Mock');
-    const deps = mockDeps({ btStrategyModelDao: { existById: () => te.left(error) } });
+    const error = createBtStrategyDaoError('ExistByIdFailed', 'Mock');
+    const deps = mockDeps({ btStrategyDao: { existById: () => te.left(error) } });
     const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 
     expect(result).toEqualLeft(error);
@@ -68,7 +68,7 @@ describe('WHEN checking existence of the strategy succeeds', () => {
 
   describe('WHEN adding a backtesting job fails', () => {
     it('THEN it should return Left of error', async () => {
-      const error = createJobSchedulerError('ScheduleBtJobFailed', 'Mock');
+      const error = createJobSchedulerError('ScheduleJobFailed', 'Mock');
       const deps = mockDeps({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
       const result = await pipe(executeBtStrategy(deps, mockRequest()), executeT);
 

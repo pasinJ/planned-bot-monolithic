@@ -1,13 +1,12 @@
+import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
 
-import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError.js';
-import { ExternalError, isExternalError } from '#shared/errors/externalError.js';
-import { defineCauseSchema, implementZodSchema } from '#shared/errors/utils.js';
+import { AppError, appErrorSchema, createAppError, setStack } from '#shared/errors/appError.js';
+import { implementZodSchema } from '#shared/errors/utils.js';
 
 export type HttpServerError<Type extends HttpServerErrorType = HttpServerErrorType> = AppError<
   HttpServerErrorName,
-  Type,
-  ExternalError | undefined
+  Type
 >;
 
 type HttpServerErrorName = typeof httpServerErrorName;
@@ -19,7 +18,7 @@ const httpServerErrorType = [
   'AddRouteFailed',
   'AddHookFailed',
   'StartServerFailed',
-  'CloseServerFailed',
+  'StopServerFailed',
   'Unhandled',
 ] as const;
 
@@ -30,34 +29,31 @@ export function createHttpServerError<Type extends HttpServerError['type']>(
 ): HttpServerError<Type> {
   return createAppError({ name: httpServerErrorName, type, message, cause }, createHttpServerError);
 }
+
 export function createAddPluginFailed(pluginName: string): HttpServerError<'AddPluginFailed'> {
-  return createHttpServerError('AddPluginFailed', `Adding ${pluginName} plugin failed`).setFactoryContext(
-    createAddPluginFailed,
+  return pipe(createHttpServerError('AddPluginFailed', `Adding ${pluginName} plugin failed`), (error) =>
+    setStack(error, createAddPluginFailed),
   );
 }
+
 export function createAddHookFailed(hookName: string): HttpServerError<'AddHookFailed'> {
-  return createHttpServerError('AddHookFailed', `Adding ${hookName} hook failed`).setFactoryContext(
-    createAddHookFailed,
+  return pipe(createHttpServerError('AddHookFailed', `Adding ${hookName} hook failed`), (error) =>
+    setStack(error, createAddPluginFailed),
   );
 }
+
 export function createAddHttpRouteError(
   method: string | string[],
   url: string,
 ): HttpServerError<'AddRouteFailed'> {
-  return createHttpServerError(
-    'AddRouteFailed',
-    `Adding ${method.toString()} ${url} route failed`,
-  ).setFactoryContext(createAddHttpRouteError);
+  return pipe(
+    createHttpServerError('AddRouteFailed', `Adding ${method.toString()} ${url} route failed`),
+    (error) => setStack(error, createAddPluginFailed),
+  );
 }
 
 export function isHttpServerError(input: unknown): input is HttpServerError {
   return implementZodSchema<HttpServerError>()
-    .with(
-      appErrorSchema.extend({
-        name: z.literal(httpServerErrorName),
-        type: z.enum(httpServerErrorType),
-        cause: defineCauseSchema([isExternalError]).optional(),
-      }),
-    )
+    .with(appErrorSchema.extend({ name: z.literal(httpServerErrorName), type: z.enum(httpServerErrorType) }))
     .safeParse(input).success;
 }

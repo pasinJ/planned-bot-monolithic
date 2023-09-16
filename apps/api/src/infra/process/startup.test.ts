@@ -1,12 +1,9 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight } from 'ramda';
 
-import {
-  createSymbolModelDaoError,
-  isSymbolModelDaoError,
-} from '#features/symbols/data-models/symbol.dao.error.js';
+import { createSymbolDaoError, isSymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { createBnbServiceError, isBnbServiceError } from '#infra/services/binance/error.js';
-import { DeepPartial } from '#shared/common.type.js';
+import { DeepPartial } from '#shared/helpers.type.js';
 import { executeT } from '#shared/utils/fp.js';
 import { resetEnvVar, setEnvVar } from '#test-utils/envVar.js';
 import { generateArrayOf } from '#test-utils/faker.js';
@@ -18,12 +15,12 @@ import { StartupProcessDeps, startupProcess } from './startup.js';
 function mockDeps(overrides?: DeepPartial<StartupProcessDeps>): StartupProcessDeps {
   return mergeDeepRight(
     {
-      symbolModelDao: {
+      symbolDao: {
         existByExchange: jest.fn().mockReturnValue(te.right(false)),
         add: jest.fn().mockReturnValue(te.right(undefined)),
       },
-      bnbService: { getSpotSymbols: jest.fn(te.right(generateArrayOf(mockSymbol))) },
-      logger: mockLoggerIo(),
+      bnbService: { getSpotSymbolsList: jest.fn(te.right(generateArrayOf(mockSymbol))) },
+      loggerIo: mockLoggerIo(),
     },
     overrides ?? {},
   ) as StartupProcessDeps;
@@ -40,7 +37,7 @@ describe('GIVEN application is running in test environment WHEN execute startup 
     const deps = mockDeps();
     await executeT(startupProcess(deps));
 
-    expect(deps.bnbService.getSpotSymbols).not.toHaveBeenCalled();
+    expect(deps.bnbService.getSpotSymbolsList).not.toHaveBeenCalled();
   });
 });
 
@@ -49,10 +46,10 @@ describe('GIVEN application is running in environment other than test environmen
 
   describe('GIVEN there is existing symbols in database WHEN execute startup process', () => {
     it('THEN it should not try to get SPOT symbols from Binance server', async () => {
-      const deps = mockDeps({ symbolModelDao: { existByExchange: () => te.right(true) } });
+      const deps = mockDeps({ symbolDao: { existByExchange: () => te.right(true) } });
       await executeT(startupProcess(deps));
 
-      expect(deps.bnbService.getSpotSymbols).not.toHaveBeenCalled();
+      expect(deps.bnbService.getSpotSymbolsList).not.toHaveBeenCalled();
     });
   });
 
@@ -61,13 +58,13 @@ describe('GIVEN application is running in environment other than test environmen
       const deps = mockDeps();
       await executeT(startupProcess(deps));
 
-      expect(deps.bnbService.getSpotSymbols).toHaveBeenCalledOnce();
+      expect(deps.bnbService.getSpotSymbolsList).toHaveBeenCalledOnce();
     });
 
     describe('WHEN getting SPOT symbols from Binance server fails', () => {
       it('THEN it should return Left of error', async () => {
         const error = createBnbServiceError('GetSpotSymbolsFailed', 'Mock');
-        const deps = mockDeps({ bnbService: { getSpotSymbols: te.left(error) } });
+        const deps = mockDeps({ bnbService: { getSpotSymbolsList: te.left(error) } });
         const result = await executeT(startupProcess(deps));
 
         expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
@@ -77,20 +74,20 @@ describe('GIVEN application is running in environment other than test environmen
     describe('WHEN getting SPOT symbols from Binance server is successful', () => {
       it('THEN it should add symbols using symbol model DAO', async () => {
         const symbols = generateArrayOf(mockSymbol);
-        const deps = mockDeps({ bnbService: { getSpotSymbols: te.right(symbols) } });
+        const deps = mockDeps({ bnbService: { getSpotSymbolsList: te.right(symbols) } });
         await executeT(startupProcess(deps));
 
-        expect(deps.symbolModelDao.add).toHaveBeenCalledExactlyOnceWith(symbols);
+        expect(deps.symbolDao.add).toHaveBeenCalledExactlyOnceWith(symbols);
       });
     });
 
     describe('WHEN adding symbols into database fails', () => {
       it('THEN it should return Left of error', async () => {
-        const error = createSymbolModelDaoError('AddFailed', 'Mock');
-        const deps = mockDeps({ symbolModelDao: { add: () => te.left(error) } });
+        const error = createSymbolDaoError('AddFailed', 'Mock');
+        const deps = mockDeps({ symbolDao: { add: () => te.left(error) } });
         const result = await executeT(startupProcess(deps));
 
-        expect(result).toEqualLeft(expect.toSatisfy(isSymbolModelDaoError));
+        expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
       });
     });
 

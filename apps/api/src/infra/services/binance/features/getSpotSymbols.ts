@@ -3,37 +3,27 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { __, dissoc, filter, includes, map, pick, prop, propEq, propSatisfies } from 'ramda';
 
-import { exchangeNameEnum } from '#features/exchanges/domain/exchange.js';
+import { exchangeNameEnum } from '#features/shared/domain/exchangeName.js';
 import {
   CreateSymbolModelError,
   SymbolModel,
   createSymbolModel,
-} from '#features/symbols/data-models/symbol-model/index.js';
-import { SymbolModelDao } from '#features/symbols/data-models/symbol.dao.type.js';
+} from '#features/symbols/data-models/symbol.js';
 import { HttpClient } from '#infra/http/client.type.js';
-import { DateService } from '#infra/services/date/service.type.js';
 
-import { ExchangeInfoResp, exchangeInfoRespSchema } from '../api.type.js';
-import { BNB_ENDPOINT_PATHS } from '../constants.js';
+import { BNB_ENDPOINTS } from '../constants.js';
 import { createBnbServiceError } from '../error.js';
-import { BnbService } from '../service.type.js';
+import { ExchangeInfoResp, exchangeInfoRespSchema } from '../response-schemas/exchangeInfo.js';
 
-type GetSpotSymbolsDeps = {
-  httpClient: HttpClient;
-  dateService: Pick<DateService, 'getCurrentDate'>;
-  symbolModelDao: Pick<SymbolModelDao, 'generateId'>;
-};
-export function getSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSymbols'] {
-  const { httpClient, dateService, symbolModelDao } = deps;
-
+export function getSpotSymbolsList({ httpClient }: { httpClient: Pick<HttpClient, 'sendRequest'> }) {
   return pipe(
     httpClient.sendRequest({
       method: 'GET',
-      url: BNB_ENDPOINT_PATHS.exchangeInfo,
+      url: BNB_ENDPOINTS.exchangeInfo,
       params: { permissions: 'SPOT' },
       responseSchema: exchangeInfoRespSchema,
     }),
-    te.chainIOEitherKW(transformExchangeInfoToSymbols(dateService, symbolModelDao)),
+    te.chainIOEitherKW(transformExchangeInfoToSymbols),
     te.mapLeft((error) =>
       createBnbServiceError(
         'GetSpotSymbolsFailed',
@@ -45,37 +35,28 @@ export function getSpotSymbols(deps: GetSpotSymbolsDeps): BnbService['getSpotSym
 }
 
 function transformExchangeInfoToSymbols(
-  dateService: Pick<DateService, 'getCurrentDate'>,
-  symbolModelDao: Pick<SymbolModelDao, 'generateId'>,
-) {
-  return (exchangeInfo: ExchangeInfoResp): ioe.IOEither<CreateSymbolModelError, readonly SymbolModel[]> =>
-    pipe(
-      prop('symbols', exchangeInfo),
-      filter(propEq('TRADING', 'status')),
-      map(pickSymbolProps),
-      map(renameSymbolProp),
-      map((symbol) => ({
-        ...symbol,
-        filters: symbol.filters
-          .map(renameFilterProp)
-          .filter(filterSymbolFilters) as RenameFilterProp<RequiredFilter>[],
-      })),
-      ioe.of,
-      ioe.chainW((symbols) =>
-        ioe.sequenceArray(
-          symbols.map((symbol) =>
-            pipe(
-              ioe.Do,
-              ioe.let('id', () => symbolModelDao.generateId()),
-              ioe.let('currentDate', () => dateService.getCurrentDate()),
-              ioe.chainEitherK(({ id, currentDate }) =>
-                createSymbolModel({ ...symbol, id, exchange: exchangeNameEnum.BINANCE }, currentDate),
-              ),
-            ),
-          ),
+  exchangeInfo: ExchangeInfoResp,
+): ioe.IOEither<CreateSymbolModelError, readonly SymbolModel[]> {
+  return pipe(
+    prop('symbols', exchangeInfo),
+    filter(propEq('TRADING', 'status')),
+    map(pickSymbolProps),
+    map(renameSymbolProp),
+    map((symbol) => ({
+      ...symbol,
+      filters: symbol.filters
+        .map(renameFilterProp)
+        .filter(filterSymbolFilters) as RenameFilterProp<RequiredFilter>[],
+    })),
+    ioe.of,
+    ioe.chainW((symbols) =>
+      ioe.sequenceArray(
+        symbols.map((symbol) =>
+          ioe.fromEither(createSymbolModel({ ...symbol, exchange: exchangeNameEnum.BINANCE })),
         ),
       ),
-    );
+    ),
+  );
 }
 
 type SymbolWithOnlyRequiredProperties = Pick<

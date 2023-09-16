@@ -15,7 +15,7 @@
     "test:i": "npm run test -- --selectProjects INTEGRATION --runInBand --testPathPattern",
     "test:ic": "npm run test:i -- --onlyChanged",
     "test:iw": "npm run test:ic -- --watch",
-    "test:e": "npm run test -- --selectProjects E2E --testPathPattern",
+    "test:e": "npm run test -- --selectProjects E2E --runInBand --testPathPattern",
     "test:ec": "npm run test:e -- --onlyChanged",
     "test:w": "concurrently -c 'auto' -P npm:test:uw npm:test:iw",
     "start": "node --experimental-specifier-resolution=node --no-warnings dist/main.js",

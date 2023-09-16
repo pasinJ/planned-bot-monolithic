@@ -1,4 +1,4 @@
-import { type HttpError } from './client.error.js';
+import type { HttpError } from './client.error.js';
 
 export const HTTP_ERRORS: Record<HttpError['type'], { type: HttpError['type']; message: string }> = {
   InvalidRequest: {

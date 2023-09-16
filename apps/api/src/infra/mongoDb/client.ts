@@ -4,13 +4,13 @@ import mongoose, { Mongoose } from 'mongoose';
 
 import { LoggerIo } from '#infra/logging.js';
 import { getMongoDbConfig } from '#infra/mongoDb/config.js';
-import { createErrorFromUnknown } from '#shared/errors/externalError.js';
+import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
 import { MongoDbClientError, createMongoDbClientError } from './client.error.js';
 
-export function createMongoDbClient(
+export function buildMongoDbClient(
   logger: LoggerIo,
-): te.TaskEither<MongoDbClientError<'CreateClientFailed'>, Mongoose> {
+): te.TaskEither<MongoDbClientError<'BuildClientFailed'>, Mongoose> {
   const { URI } = getMongoDbConfig();
   return pipe(
     te.fromIO(logger.infoIo('MongoDB client start connecting to MongoDB')),
@@ -18,7 +18,7 @@ export function createMongoDbClient(
       te.tryCatch(
         () => mongoose.connect(URI),
         createErrorFromUnknown(
-          createMongoDbClientError('CreateClientFailed', 'Creating MongoDb client failed'),
+          createMongoDbClientError('BuildClientFailed', 'Creating MongoDb client failed'),
         ),
       ),
     ),

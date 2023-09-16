@@ -5,38 +5,12 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Stream } from 'stream';
 
-import { btExecutionStatusEnum } from '#features/backtesting-strategies/data-models/btExecution.model.js';
+import { btExecutionStatusEnum } from '#features/backtesting-strategies/data-models/btExecution.js';
 import { wrapLogger } from '#infra/logging.js';
 import { getJobSchedulerConfig } from '#infra/services/jobScheduler/config.js';
 import { executeT } from '#shared/utils/fp.js';
 
-import { BtJobData, btJobName } from './backtesting.job.type.js';
-
-// eslint-disable-next-line no-console
-const logger = new console.Console(new Stream.Writable());
-const logs: string[] = [];
-const executionId = process.argv[2];
-
-consoleStamp.default(logger, {
-  stdout: new Stream.Writable({
-    write: (chunk: Buffer, _, cb) => {
-      logs.push(chunk.toString().replace(/\n$/, ''));
-      cb();
-    },
-  }) as NodeJS.WriteStream,
-});
-
-const loggerIo = wrapLogger(logger);
-
-await executeT(
-  pipe(
-    te.fromIO(loggerIo.infoIo(`Worker process for backtesting job (id:${executionId}) started`)),
-    te.bindW('agenda', () => startAgenda()),
-    te.bindW('job', ({ agenda }) => getCurrentJobById(agenda)),
-    te.chainFirstIOK(({ job, agenda }) => addProcessSignalHandlers({ job, agenda })),
-    te.chainW(({ job, agenda }) => handleSuccessfulProcess({ job, agenda })),
-  ),
-);
+import { BtJobData, btJobName } from './backtesting.job.js';
 
 function startAgenda(): te.TaskEither<void, Agenda> {
   return te.tryCatch(
@@ -126,3 +100,29 @@ function handleSuccessfulProcess({ job, agenda }: { job: Job<BtJobData>; agenda:
     () => process.exit(1),
   );
 }
+
+// eslint-disable-next-line no-console
+const logger = new console.Console(new Stream.Writable());
+const logs: string[] = [];
+const executionId = process.argv[2];
+
+consoleStamp.default(logger, {
+  stdout: new Stream.Writable({
+    write: (chunk: Buffer, _, cb) => {
+      logs.push(chunk.toString().replace(/\n$/, ''));
+      cb();
+    },
+  }) as NodeJS.WriteStream,
+});
+
+const loggerIo = wrapLogger(logger);
+
+await executeT(
+  pipe(
+    te.fromIO(loggerIo.infoIo(`Worker process for backtesting job (id:${executionId}) started`)),
+    te.bindW('agenda', () => startAgenda()),
+    te.bindW('job', ({ agenda }) => getCurrentJobById(agenda)),
+    te.chainFirstIOK(({ job, agenda }) => addProcessSignalHandlers({ job, agenda })),
+    te.chainW(({ job, agenda }) => handleSuccessfulProcess({ job, agenda })),
+  ),
+);

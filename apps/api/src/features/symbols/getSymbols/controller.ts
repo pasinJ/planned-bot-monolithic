@@ -6,22 +6,25 @@ import { match } from 'ts-pattern';
 
 import { executeT } from '#shared/utils/fp.js';
 
-import { SymbolModelDao } from '../data-models/symbol.dao.type.js';
+import { SymbolDaoError } from '../DAOs/symbol.error.js';
+import { SymbolModel } from '../data-models/symbol.js';
 
-export type GetSymbolsControllerDeps = { symbolModelDao: Pick<SymbolModelDao, 'getAll'> };
+export type GetSymbolsControllerDeps = {
+  symbolDao: { getAll: te.TaskEither<SymbolDaoError<'GetAllFailed'>, readonly SymbolModel[]> };
+};
 
 export function buildGetSymbolsController(deps: GetSymbolsControllerDeps): RouteHandlerMethod {
   return function getSymbolsController(_, reply): Promise<FastifyReply> {
-    const { symbolModelDao } = deps;
+    const { symbolDao } = deps;
 
     return pipe(
-      symbolModelDao.getAll,
+      symbolDao.getAll,
       te.map(map(pick(['name', 'exchange', 'baseAsset', 'quoteAsset']))),
       te.matchW(
         (error) =>
           match(error)
             .returnType<FastifyReply>()
-            .with({ type: 'GetAllFailed' }, (error) => reply.code(500).send(error))
+            .with({ type: 'GetAllFailed' }, (error) => reply.code(500).send({ error }))
             .exhaustive(),
         (symbols) => reply.code(200).send(symbols),
       ),

@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 
-import { BtStrategyModel } from '#features/backtesting-strategies/data-models/btStrategy.model.js';
-import { KlineModel } from '#features/backtesting-strategies/data-models/kline.model.js';
+import { BtStrategyModel } from '#features/backtesting-strategies/data-models/btStrategy.js';
+import { KlineModel } from '#features/backtesting-strategies/data-models/kline.js';
 import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain.js';
 import {
   randomBeforeAndAfterDate,

@@ -1,16 +1,11 @@
 import { z } from 'zod';
 
-import { CreateSymbolModelError } from '#features/symbols/data-models/symbol-model/index.js';
-import { HttpError, isHttpError } from '#infra/http/client.error.js';
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError.js';
-import { ExternalError, isExternalError } from '#shared/errors/externalError.js';
-import { isGeneralError } from '#shared/errors/generalError.js';
-import { defineCauseSchema, implementZodSchema } from '#shared/errors/utils.js';
+import { implementZodSchema } from '#shared/errors/utils.js';
 
 export type BnbServiceError<Type extends BnbServiceErrorType = BnbServiceErrorType> = AppError<
   BnbServiceErrorName,
-  Type,
-  HttpError | CreateSymbolModelError | ExternalError | undefined
+  Type
 >;
 
 type BnbServiceErrorName = (typeof bnbServiceErrorName)[number];
@@ -28,12 +23,6 @@ export function createBnbServiceError<Type extends BnbServiceError['type']>(
 
 export function isBnbServiceError(input: unknown): input is BnbServiceError {
   return implementZodSchema<BnbServiceError>()
-    .with(
-      appErrorSchema.extend({
-        name: z.literal(bnbServiceErrorName),
-        type: z.enum(bnbServiceErrorType),
-        cause: defineCauseSchema([isHttpError, isGeneralError, isExternalError]).optional(),
-      }),
-    )
+    .with(appErrorSchema.extend({ name: z.literal(bnbServiceErrorName), type: z.enum(bnbServiceErrorType) }))
     .safeParse(input).success;
 }

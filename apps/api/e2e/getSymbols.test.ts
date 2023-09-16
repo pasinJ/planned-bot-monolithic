@@ -1,10 +1,6 @@
 import { pick } from 'ramda';
 
-import {
-  SymbolMongooseModel,
-  createSymbolModelDao,
-  symbolModelName,
-} from '#features/symbols/data-models/symbol.dao.js';
+import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from '#features/symbols/DAOs/symbol.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { generateArrayOf } from '#test-utils/faker.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
@@ -14,7 +10,7 @@ import { expectHttpStatus } from './commands/expect.js';
 import { getSymbols } from './commands/symbols.js';
 
 const client = await createMongoClient();
-executeIo(createSymbolModelDao(client));
+executeIo(buildSymbolDao(client));
 const symbolModel: SymbolMongooseModel = client.models[symbolModelName];
 
 afterEach(() => symbolModel.deleteMany());
