@@ -18,6 +18,9 @@ import {
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');
 
+export type MaxNumKlines = z.infer<typeof maxNumKlinesSchema>;
+const maxNumKlinesSchema = z.number().positive().int().brand('MaxNumKlines');
+
 export type BtStrategyModel = z.infer<typeof btStrategyModelSchema>;
 const btStrategyModelSchema = z
   .object({
@@ -30,7 +33,7 @@ const btStrategyModelSchema = z
     initialCapital: nonNegativeFloat8Digits,
     takerFeeRate: nonNegativePercentage8Digits,
     makerFeeRate: nonNegativePercentage8Digits,
-    maxNumKlines: z.number().positive().int(),
+    maxNumKlines: maxNumKlinesSchema,
     startTimestamp: z.date(),
     endTimestamp: z.date(),
     language: languageSchema,
@@ -41,10 +44,9 @@ const btStrategyModelSchema = z
   })
   .strict()
   .refine(
-    ({ startTimestamp, endTimestamp }) =>
-      isEqual(startTimestamp, endTimestamp) || isBefore(startTimestamp, endTimestamp),
+    ({ startTimestamp, endTimestamp }) => isBefore(startTimestamp, endTimestamp),
     ({ startTimestamp, endTimestamp }) => ({
-      message: `end timestamp (${endTimestamp.toISOString()}) must be equal or after start timestamp (${startTimestamp.toISOString()})`,
+      message: `end timestamp (${endTimestamp.toISOString()}) must be after start timestamp (${startTimestamp.toISOString()})`,
       path: ['endTimestamp'],
     }),
   )

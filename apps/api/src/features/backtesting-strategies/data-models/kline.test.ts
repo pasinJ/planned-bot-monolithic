@@ -1,18 +1,67 @@
+import { getTime } from 'date-fns';
 import { assoc } from 'ramda';
 
+import { ExchangeName } from '#features/shared/domain/exchangeName.js';
+import { SymbolName } from '#features/shared/domain/symbolName.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
-import { randomBeforeAndAfterDate, randomNegativeInt, randomPositiveFloat } from '#test-utils/faker.js';
+import {
+  randomBeforeAndAfterDate,
+  randomNegativeInt,
+  randomPositiveFloat,
+  randomString,
+} from '#test-utils/faker.js';
 import { mockKline } from '#test-utils/features/btStrategies/models.js';
 
 import { createKlineModel } from './kline.js';
 
-const mockValidData = mockKline;
+function mockValidData() {
+  const kline = mockKline();
+  return {
+    ...kline,
+    openTimestamp: getTime(kline.openTimestamp),
+    closeTimestamp: getTime(kline.closeTimestamp),
+  };
+}
 
 describe('Create kline model', () => {
   describe('WHEN all properties are valid', () => {
     it('THEN it should return Right of kline model', () => {
       const validData = mockValidData();
-      expect(createKlineModel(validData)).toEqualRight(validData);
+      expect(createKlineModel(validData)).toEqualRight({
+        ...validData,
+        openTimestamp: new Date(validData.openTimestamp),
+        closeTimestamp: new Date(validData.closeTimestamp),
+      });
+    });
+  });
+  describe('exchange property', () => {
+    const propertyName = 'exchange';
+
+    it('WHEN the property is not in the enum list THEN it should return Left of error', () => {
+      const data = assoc(propertyName, randomString() as ExchangeName, mockValidData());
+      const result = createKlineModel(data);
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+    });
+  });
+  describe('symbol property', () => {
+    const propertyName = 'symbol';
+
+    it.each([
+      { case: 'the property is an empty string', value: '' },
+      { case: 'the property is a string with only whitespace', value: ' ' },
+    ])('WHEN $case THEN it should return Left of error', ({ value }) => {
+      const data = assoc(propertyName, value as SymbolName, mockValidData());
+      const result = createKlineModel(data);
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+    });
+  });
+  describe('timeframe property', () => {
+    const propertyName = 'timeframe';
+
+    it('WHEN the property is not in the enum list THEN it should return Left of error', () => {
+      const data = assoc(propertyName, randomString(), mockValidData());
+      const result = createKlineModel(data);
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
     });
   });
   describe('open timestamp property', () => {

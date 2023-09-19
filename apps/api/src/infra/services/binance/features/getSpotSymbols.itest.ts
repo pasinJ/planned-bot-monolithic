@@ -12,8 +12,8 @@ import { buildBnbService } from '../service.js';
 import { getSpotSymbolsList } from './getSpotSymbols.js';
 
 const { HTTP_BASE_URL } = getBnbConfig();
-const { exchangeInfo } = BNB_ENDPOINTS;
-const exchangeInfoPath = `${HTTP_BASE_URL}${exchangeInfo}`;
+const { EXCHANGE_INFO } = BNB_ENDPOINTS;
+const exchangeInfoPath = `${HTTP_BASE_URL}${EXCHANGE_INFO}`;
 const bnbService = unsafeUnwrapEitherRight(executeIo(buildBnbService({ mainLogger: mockMainLogger() })));
 const getSpotSymbolsListFn = bnbService.composeWith(getSpotSymbolsList);
 

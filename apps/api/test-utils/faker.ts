@@ -44,7 +44,7 @@ export const randomBeforeAndAfterDate = (refDate?: Date) => {
 };
 export const randomBeforeAndAfterDateInPast = (refDate?: Date) => {
   const before = faker.date.past({ refDate });
-  const after = faker.date.recent({ refDate: before });
+  const after = faker.date.soon({ refDate: before });
 
   return { before, after };
 };

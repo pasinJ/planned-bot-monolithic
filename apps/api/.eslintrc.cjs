@@ -34,7 +34,6 @@ module.exports = {
         'plugin:import/typescript',
         'plugin:fp-ts/recommended',
         'plugin:fp-ts/recommended-requiring-type-checking',
-        'plugin:security/recommended',
       ],
       plugins: ['import'],
       rules: {

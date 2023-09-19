@@ -19,7 +19,7 @@ export function getSpotSymbolsList({ httpClient }: { httpClient: Pick<HttpClient
   return pipe(
     httpClient.sendRequest({
       method: 'GET',
-      url: BNB_ENDPOINTS.exchangeInfo,
+      url: BNB_ENDPOINTS.EXCHANGE_INFO,
       params: { permissions: 'SPOT' },
       responseSchema: exchangeInfoRespSchema,
     }),

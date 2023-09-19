@@ -1,4 +1,5 @@
 export const BNB_ENDPOINTS = {
-  ping: '/api/v3/ping',
-  exchangeInfo: '/api/v3/exchangeInfo',
+  PING: '/api/v3/ping',
+  EXCHANGE_INFO: '/api/v3/exchangeInfo',
+  KLINES: '/api/v3/klines',
 };

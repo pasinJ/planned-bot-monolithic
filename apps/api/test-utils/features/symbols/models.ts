@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import { exchangeNameList } from '#features/shared/domain/exchangeName.js';
+import { SymbolName } from '#features/shared/domain/symbolName.js';
 import {
   LotSizeFilter,
   MarketLotSizeFilter,
@@ -97,4 +98,8 @@ export function mockPriceFilter(
     maxPrice: randomPositiveFloat(8, maxPriceRange),
     tickSize: randomPrecisionStep(),
   };
+}
+
+export function randomSymbolName() {
+  return faker.string.alpha({ length: 6, casing: 'upper' }) as SymbolName;
 }

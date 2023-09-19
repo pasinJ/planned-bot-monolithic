@@ -11,7 +11,15 @@ export type BnbServiceError<Type extends BnbServiceErrorType = BnbServiceErrorTy
 type BnbServiceErrorName = (typeof bnbServiceErrorName)[number];
 const bnbServiceErrorName = 'BnbServiceError' as const;
 type BnbServiceErrorType = (typeof bnbServiceErrorType)[number];
-const bnbServiceErrorType = ['CreateServiceFailed', 'GetSpotSymbolsFailed', 'InvalidRequest'] as const;
+const bnbServiceErrorType = [
+  'CreateServiceFailed',
+  'GetSpotSymbolsFailed',
+  'InvalidRequest',
+  'GetKlinesFromMonthlyFilesFailed',
+  'GetKlinesFromDailyFilesFailed',
+  'GetKlinesFromApiFailed',
+  'GetKlinesForBtFailed',
+] as const;
 
 export function createBnbServiceError<Type extends BnbServiceError['type']>(
   type: Type,

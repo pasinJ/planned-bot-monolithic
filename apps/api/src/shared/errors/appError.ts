@@ -47,7 +47,8 @@ export function createAppError<
   const appError = {
     ...pickBy(isNotNil, { name: 'AppError', message: '', ...data }),
     toString() {
-      return `[${this.name}${propOr<string, AppError, string>('', 'type', this)}]: ${this.message}`;
+      const type = propOr<null, AppError, string | null>(null, 'type', this);
+      return `[${this.name}${type ? '' : ':' + type}]: ${this.message}`;
     },
     toJSON() {
       return { ...pick(['name', 'message', 'type'], this), causesList: getCausesList(this) };

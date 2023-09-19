@@ -3,14 +3,20 @@ import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
 
+import { ExchangeName, exchangeNameSchema } from '#features/shared/domain/exchangeName.js';
+import { SymbolName, symbolNameSchema } from '#features/shared/domain/symbolName.js';
+import { timeframeSchema } from '#features/shared/domain/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
 export type KlineModel = z.infer<typeof klineModelSchema>;
 const klineModelSchema = z
   .object({
-    openTimestamp: z.number().positive().int(),
-    closeTimestamp: z.number().positive().int(),
+    exchange: exchangeNameSchema,
+    symbol: symbolNameSchema,
+    timeframe: timeframeSchema,
+    openTimestamp: z.number().positive().int().pipe(z.coerce.date()),
+    closeTimestamp: z.number().positive().int().pipe(z.coerce.date()),
     open: z.number().positive(),
     close: z.number().positive(),
     high: z.number().positive(),
@@ -24,13 +30,16 @@ const klineModelSchema = z
   .refine(
     ({ openTimestamp, closeTimestamp }) => isBefore(openTimestamp, closeTimestamp),
     ({ openTimestamp, closeTimestamp }) => ({
-      message: `close timestamp (${closeTimestamp}) must be after open timestamp (${openTimestamp})`,
+      message: `close timestamp (${closeTimestamp.toISOString()}) must be after open timestamp (${openTimestamp.toISOString()})`,
       path: ['endTimestamp'],
     }),
   );
 
 export type CreateKlineModelError = GeneralError<'CreateKlineModelFailed'>;
 export function createKlineModel(data: {
+  exchange: ExchangeName;
+  symbol: SymbolName;
+  timeframe: string;
   openTimestamp: number;
   closeTimestamp: number;
   open: number;

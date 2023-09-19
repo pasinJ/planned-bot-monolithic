@@ -200,6 +200,12 @@ describe('Create backtesting strategy model', () => {
       const result = createBtStrategyModel(data, currentDate);
       expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
     });
+    it('WHEN the property equals to start timestamp THEN it should return Left of error', () => {
+      const validData = mockValidData();
+      const data = { ...validData, [propertyName]: validData.startTimestamp };
+      const result = createBtStrategyModel(data, currentDate);
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+    });
     it('WHEN the property is a date before start timestamp THEN it should return Left of error', () => {
       const { before, after } = randomBeforeAndAfterDate();
       const validData = mockValidData();
