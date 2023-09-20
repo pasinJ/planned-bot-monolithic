@@ -23,10 +23,10 @@ export function addSymbolModels({ mongooseModel }: { mongooseModel: SymbolMongoo
 export function getAllSymbolModels({ mongooseModel }: { mongooseModel: SymbolMongooseModel }) {
   return pipe(
     te.tryCatch(
-      () => mongooseModel.find(),
+      () => mongooseModel.find().lean(),
       createErrorFromUnknown(createSymbolDaoError('GetAllFailed', 'Getting all symbols failed')),
     ),
-    te.map((list) => list.map((doc) => omit(['_id', '__v'], doc.toJSON()))),
+    te.map((list) => list.map((doc) => omit(['_id', '__v'], doc))),
   );
 }
 

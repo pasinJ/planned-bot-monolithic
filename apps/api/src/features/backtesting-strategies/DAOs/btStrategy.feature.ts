@@ -44,7 +44,7 @@ export function getBtStrategyModelById({ mongooseModel }: { mongooseModel: BtStr
   return (id: string): te.TaskEither<BtStrategyDaoError<'GetByIdFailed' | 'NotExist'>, BtStrategyModel> =>
     pipe(
       te.tryCatch(
-        () => mongooseModel.findById(id),
+        () => mongooseModel.findById(id).lean(),
         createErrorFromUnknown(
           createBtStrategyDaoError('GetByIdFailed', 'Getting backtesting strategy by ID failed'),
         ),
@@ -55,11 +55,7 @@ export function getBtStrategyModelById({ mongooseModel }: { mongooseModel: BtStr
         ),
       ),
       te.map((btStrategyModel) =>
-        btStrategyModel.toObject({
-          virtuals: true,
-          aliases: true,
-          transform: (_, record) => omit(['_id', '__v'], record),
-        }),
+        omit(['_id', '__v'], { ...btStrategyModel, id: btStrategyModel._id as BtStrategyId }),
       ),
     );
 }
