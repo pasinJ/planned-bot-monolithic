@@ -43,11 +43,11 @@ function createMongooseModel(
     takerBuyQuoteAssetVolume: { type: Number, required: true },
     numTrades: { type: Number, required: true },
   };
-  const indexes: IndexDefinition = { exchange: 1, name: 1, timeframe: 1, closeTimestamp: 1 };
+  const indexes: IndexDefinition = { exchange: 1, symbol: 1, timeframe: 1, closeTimestamp: 1 };
 
   return pipe(
     ioe.tryCatch(
-      () => new client.Schema<KlineDocument>(mongooseSchema).index(indexes),
+      () => new client.Schema<KlineDocument>(mongooseSchema).index(indexes, { unique: true }),
       createErrorFromUnknown(
         createKlineDaoError('BuildDaoFailed', 'Creating a Mongoose model schema for kline failed'),
       ),
