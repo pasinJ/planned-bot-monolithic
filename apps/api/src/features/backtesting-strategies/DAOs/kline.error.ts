@@ -11,7 +11,12 @@ export type KlineDaoError<Type extends KlineDaoErrorType = KlineDaoErrorType> = 
 type KlineDaoErrorName = typeof klineDaoErrorName;
 export const klineDaoErrorName = 'KlineDaoError';
 type KlineDaoErrorType = (typeof klineDaoErrorType)[number];
-export const klineDaoErrorType = ['BuildDaoFailed', 'AddFailed'] as const;
+export const klineDaoErrorType = [
+  'BuildDaoFailed',
+  'AddFailed',
+  'CreateIteratorFailed',
+  'CursorNextFailed',
+] as const;
 
 export function createKlineDaoError<Type extends KlineDaoError['type']>(
   type: Type,
