@@ -1,22 +1,22 @@
 import { faker } from '@faker-js/faker';
 
-import { BtExecutionId } from '#features/backtesting-strategies/data-models/btExecution.js';
-import { BtStrategyModel, MaxNumKlines } from '#features/backtesting-strategies/data-models/btStrategy.js';
-import { KlineModel } from '#features/backtesting-strategies/data-models/kline.js';
-import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain.js';
+import { BtExecutionId } from '#features/btStrategies/dataModels/btExecution.js';
+import { BtStrategyId, BtStrategyModel, MaxNumKlines } from '#features/btStrategies/dataModels/btStrategy.js';
+import { KlineModel } from '#features/btStrategies/dataModels/kline.js';
+import { RemoveBrandFromObjVal } from '#shared/utils/types.js';
+import { randomBeforeAndAfterDateInPast } from '#test-utils/faker/date.js';
 import {
-  randomBeforeAndAfterDate,
   randomNonNegativeFloat,
   randomNonNegativeInt,
   randomPositiveFloat,
   randomPositiveInt,
-  randomString,
-} from '#test-utils/faker.js';
-import { RemoveBrand } from '#test-utils/types.js';
+} from '#test-utils/faker/number.js';
+import { randomString } from '#test-utils/faker/string.js';
+import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/features/shared/domain.js';
 
 import { randomSymbolName } from '../symbols/models.js';
 
-export function mockBtStrategy(overrides?: Partial<RemoveBrand<BtStrategyModel>>): BtStrategyModel {
+export function mockBtStrategy(overrides?: Partial<RemoveBrandFromObjVal<BtStrategyModel>>): BtStrategyModel {
   return {
     id: randomString(),
     name: randomString(),
@@ -39,8 +39,8 @@ export function mockBtStrategy(overrides?: Partial<RemoveBrand<BtStrategyModel>>
   } as BtStrategyModel;
 }
 
-export function mockKline(overrides?: Partial<RemoveBrand<KlineModel>>): KlineModel {
-  const { before, after } = randomBeforeAndAfterDate();
+export function mockKline(overrides?: Partial<RemoveBrandFromObjVal<KlineModel>>): KlineModel {
+  const { before, after } = randomBeforeAndAfterDateInPast();
   return {
     exchange: randomExchangeName(),
     symbol: randomSymbolName(),
@@ -60,7 +60,11 @@ export function mockKline(overrides?: Partial<RemoveBrand<KlineModel>>): KlineMo
   } as KlineModel;
 }
 
-export function randomExecutionId() {
+export function randomBtStrategyId() {
+  return faker.string.nanoid() as BtStrategyId;
+}
+
+export function randomBtExecutionId() {
   return faker.string.nanoid() as BtExecutionId;
 }
 

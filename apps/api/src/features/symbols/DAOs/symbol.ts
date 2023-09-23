@@ -2,30 +2,29 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { IndexDefinition, Model, Mongoose, SchemaDefinition } from 'mongoose';
 
-import { exchangeNameList } from '#features/shared/domain/exchangeName.js';
+import { exchangeNameList } from '#features/shared/domain/exchange.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { SymbolModel } from '../data-models/symbol.js';
+import { SymbolModel } from '../dataModels/symbol.js';
 import { SymbolDaoError, createSymbolDaoError } from './symbol.error.js';
 
 type SymbolDocument = SymbolModel & { _id: string; __v: number };
 export type SymbolMongooseModel = Model<SymbolDocument>;
 export const symbolModelName = 'Symbol';
 
-export type SymbolDao = {
+export type SymbolDao = Readonly<{
   composeWith: <R>(fn: (internal: { mongooseModel: SymbolMongooseModel }) => R) => R;
-};
+}>;
 
-export function buildSymbolDao(client: Mongoose): ioe.IOEither<SymbolDaoError<'BuildDaoFailed'>, SymbolDao> {
+type BuildSymbolDaoError = SymbolDaoError<'BuildDaoFailed'>;
+export function buildSymbolDao(client: Mongoose): ioe.IOEither<BuildSymbolDaoError, SymbolDao> {
   return pipe(
     createMongooseModel(client),
     ioe.map((mongooseModel) => ({ composeWith: (fn) => fn({ mongooseModel }) })),
   );
 }
 
-function createMongooseModel(
-  client: Mongoose,
-): ioe.IOEither<SymbolDaoError<'BuildDaoFailed'>, SymbolMongooseModel> {
+function createMongooseModel(client: Mongoose): ioe.IOEither<BuildSymbolDaoError, SymbolMongooseModel> {
   const mongooseSchema: SchemaDefinition<SymbolDocument> = {
     name: { type: String, required: true },
     exchange: { type: String, required: true, enum: exchangeNameList },

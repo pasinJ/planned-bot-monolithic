@@ -12,13 +12,16 @@ describe('URI property', () => {
     { env: 'invalid', expected: undefined },
     { env: ' ', expected: undefined },
     { env: undefined, expected: undefined },
-  ])('WHEN process.env.MONGODB_URI = "$env"', ({ env, expected }) => {
-    beforeEach(setEnvVar('MONGODB_URI', env));
+  ])(
+    '[GIVEN] process.env.MONGODB_URI = "$env" [WHEN] get job scheduler configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('MONGODB_URI', env));
 
-    it(`THEN URI property should equal to "${expected}"`, () => {
-      expect(getJobSchedulerConfig()).toHaveProperty('URI', expected);
-    });
-  });
+      it(`[THEN] it will return URI property equals to "${expected}"`, () => {
+        expect(getJobSchedulerConfig()).toHaveProperty('URI', expected);
+      });
+    },
+  );
 });
 
 describe('COLLECTION_NAME property', () => {
@@ -27,11 +30,14 @@ describe('COLLECTION_NAME property', () => {
     { env: '', expected: 'agenda' },
     { env: ' ', expected: 'agenda' },
     { env: undefined, expected: 'agenda' },
-  ])('WHEN process.env.JOB_COLLECTION_NAME = "$env"', ({ env, expected }) => {
-    beforeEach(setEnvVar('JOB_COLLECTION_NAME', env));
+  ])(
+    '[GIVEN] process.env.JOB_COLLECTION_NAME = "$env" [WHEN] get job scheduler configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('JOB_COLLECTION_NAME', env));
 
-    it(`THEN URI property should equal to "${expected}"`, () => {
-      expect(getJobSchedulerConfig()).toHaveProperty('COLLECTION_NAME', expected);
-    });
-  });
+      it(`[THEN] it will return COLLECTION_NAME property equals to "${expected}"`, () => {
+        expect(getJobSchedulerConfig()).toHaveProperty('COLLECTION_NAME', expected);
+      });
+    },
+  );
 });

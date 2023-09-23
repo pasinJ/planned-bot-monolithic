@@ -1,10 +1,10 @@
 import { HTTPMethods, RouteHandlerMethod } from 'fastify';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { DeepPartial } from 'ts-essentials';
 
 import { FastifyServer, buildHttpServer } from '#infra/http/server.js';
 import { AppDeps } from '#shared/appDeps.type.js';
-import { DeepPartial } from '#shared/helpers.type.js';
 import { executeIo, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 
 import { mockMainLogger } from './services.js';

@@ -3,21 +3,10 @@ import { z } from 'zod';
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError.js';
 import { implementZodSchema } from '#shared/errors/utils.js';
 
-export type SymbolDaoError<Type extends SymbolDaoErrorType = SymbolDaoErrorType> = AppError<
-  SymbolDaoErrorName,
-  Type
->;
+export type SymbolDaoError<Type extends string = string> = AppError<SymbolDaoErrorName, Type>;
 
 type SymbolDaoErrorName = typeof symbolDaoErrorName;
 export const symbolDaoErrorName = 'SymbolDaoError';
-type SymbolDaoErrorType = (typeof symbolDaoErrorType)[number];
-export const symbolDaoErrorType = [
-  'BuildDaoFailed',
-  'AddFailed',
-  'GetAllFailed',
-  'ExistByExchangeFailed',
-  'ExistByNameAndExchangeFailed',
-] as const;
 
 export function createSymbolDaoError<Type extends SymbolDaoError['type']>(
   type: Type,
@@ -29,11 +18,6 @@ export function createSymbolDaoError<Type extends SymbolDaoError['type']>(
 
 export function isSymbolDaoError(input: unknown): input is SymbolDaoError {
   return implementZodSchema<SymbolDaoError>()
-    .with(
-      appErrorSchema.extend({
-        name: z.literal(symbolDaoErrorName),
-        type: z.enum(symbolDaoErrorType),
-      }),
-    )
+    .with(appErrorSchema.extend({ name: z.literal(symbolDaoErrorName), type: z.string() }))
     .safeParse(input).success;
 }

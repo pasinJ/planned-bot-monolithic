@@ -1,9 +1,9 @@
 import io from 'fp-ts/lib/IO.js';
 import { z } from 'zod';
 
-import { nonEmptyString } from '#shared/utils/zod.schema.js';
+import { nonEmptyStringSchema } from './utils/string.js';
 
-export type AppConfig = {
+export type AppConfig = Readonly<{
   ENV: Env;
   NAME: AppName;
   VERSION: AppVersion;
@@ -11,38 +11,38 @@ export type AppConfig = {
   LOG_LEVEL: LogLevel;
   LOG_FILE_ENABLE: boolean;
   LOG_FILE_PATH: LogFilePath;
-};
+}>;
 
 export type Env = z.infer<typeof envSchema>;
-const envSchema = nonEmptyString.toLowerCase().catch('development').brand('Env');
+const envSchema = nonEmptyStringSchema.pipe(z.string().toLowerCase()).catch('development').brand('Env');
 
 export type AppName = z.infer<typeof appNameSchema>;
-const appNameSchema = nonEmptyString.catch('undefined name').brand('AppName');
+const appNameSchema = nonEmptyStringSchema.catch('undefined name').brand('AppName');
 
 export type AppVersion = z.infer<typeof appVersionSchema>;
-const appVersionSchema = nonEmptyString.catch('undefined version').brand('AppVersion');
+const appVersionSchema = nonEmptyStringSchema.catch('undefined version').brand('AppVersion');
 
 export type GracefulPeriodMs = z.infer<typeof gracefulPeriodMsSchema>;
-const gracefulPeriodMsSchema = nonEmptyString
+const gracefulPeriodMsSchema = nonEmptyStringSchema
   .pipe(z.coerce.number().int().nonnegative())
   .catch(10000)
   .brand('GracefulPeriodMs');
 
 export type LogLevel = z.infer<typeof logLevelSchema>;
-const logLevelSchema = nonEmptyString
-  .toLowerCase()
+const logLevelSchema = nonEmptyStringSchema
+  .pipe(z.string().toLowerCase())
   .pipe(z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']))
   .catch('info')
   .brand('LogLevel');
 
-const logFileEnablSchema = nonEmptyString
-  .toLowerCase()
+const logFileEnablSchema = nonEmptyStringSchema
+  .pipe(z.string().toLowerCase())
   .pipe(z.enum(['true', 'false']))
   .pipe(z.coerce.boolean())
   .catch(false);
 
 export type LogFilePath = z.infer<typeof logFilePathSchema>;
-const logFilePathSchema = nonEmptyString.brand('LogFilePath').or(z.undefined()).catch(undefined);
+const logFilePathSchema = nonEmptyStringSchema.brand('LogFilePath').or(z.undefined()).catch(undefined);
 
 export const getAppConfig: io.IO<AppConfig> = () => {
   return {

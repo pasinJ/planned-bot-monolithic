@@ -1,6 +1,10 @@
+import { DeepReadonly } from 'ts-essentials';
+
 import type { HttpError } from './client.error.js';
 
-export const HTTP_ERRORS: Record<HttpError['type'], { type: HttpError['type']; message: string }> = {
+export const HTTP_ERRORS: DeepReadonly<
+  Record<HttpError['type'], { type: HttpError['type']; message: string }>
+> = {
   InvalidRequest: {
     type: 'InvalidRequest',
     message: 'Request was rejected because it is invalid.',

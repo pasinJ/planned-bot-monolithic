@@ -4,8 +4,8 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 
-import { buildBtStrategyDao as buildBtStrategyDaoOrg } from '#features/backtesting-strategies/DAOs/btStrategy.js';
-import { defineBtJob } from '#features/backtesting-strategies/executeBtStrategy/backtesting.job.js';
+import { buildBtStrategyDao as buildBtStrategyDaoOrg } from '#features/btStrategies/DAOs/btStrategy.js';
+import { defineBtJob } from '#features/btStrategies/executeBtStrategy/backtesting.job.js';
 import { addSymbolModels, existSymbolModelByExchange } from '#features/symbols/DAOs/symbol.feature.js';
 import { buildSymbolDao as buildSymbolDaoOrg } from '#features/symbols/DAOs/symbol.js';
 import { HttpServer, addPluginsAndRoutes, buildHttpServer } from '#infra/http/server.js';

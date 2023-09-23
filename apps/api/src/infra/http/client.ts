@@ -79,7 +79,6 @@ function downloadFile(axiosInstance: AxiosInstance, logger: LoggerIo): HttpClien
       ),
       te.chainW(({ data }: { data: Buffer }) =>
         te.tryCatch(
-          // eslint-disable-next-line security/detect-non-literal-fs-filename
           () => writeFile(outputPath, data),
           createErrorFromUnknown(
             createGeneralError('WriteFileFailed', `Writing file to ${outputPath} failed`),

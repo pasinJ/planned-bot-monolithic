@@ -7,11 +7,11 @@ import { match } from 'ts-pattern';
 import { executeT } from '#shared/utils/fp.js';
 
 import { SymbolDaoError } from '../DAOs/symbol.error.js';
-import { SymbolModel } from '../data-models/symbol.js';
+import { SymbolModel } from '../dataModels/symbol.js';
 
-export type GetSymbolsControllerDeps = {
+export type GetSymbolsControllerDeps = Readonly<{
   symbolDao: { getAll: te.TaskEither<SymbolDaoError<'GetAllFailed'>, readonly SymbolModel[]> };
-};
+}>;
 
 export function buildGetSymbolsController(deps: GetSymbolsControllerDeps): RouteHandlerMethod {
   return function getSymbolsController(_, reply): Promise<FastifyReply> {

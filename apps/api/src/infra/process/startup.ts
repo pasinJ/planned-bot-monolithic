@@ -1,9 +1,9 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid, pipe } from 'fp-ts/lib/function.js';
 
-import { ExchangeName, exchangeNameEnum } from '#features/shared/domain/exchangeName.js';
+import { ExchangeName, exchangeNameEnum } from '#features/shared/domain/exchange.js';
 import { SymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
-import { SymbolModel } from '#features/symbols/data-models/symbol.js';
+import { SymbolModel } from '#features/symbols/dataModels/symbol.js';
 import { LoggerIo } from '#infra/logging.js';
 import { BnbServiceError } from '#infra/services/binance/error.js';
 import { getAppConfig } from '#shared/app.config.js';

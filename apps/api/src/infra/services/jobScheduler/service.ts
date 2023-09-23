@@ -10,13 +10,13 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { getJobSchedulerConfig } from './config.js';
 import { JobSchedulerError, createJobSchedulerError } from './error.js';
 
-export type JobScheduler = {
+export type JobScheduler = Readonly<{
   composeWith: <R>(fn: (internal: { agenda: Agenda; loggerIo: LoggerIo }) => R) => R;
   start: te.TaskEither<JobSchedulerError<'StartServiceFailed'>, void>;
   stop: te.TaskEither<JobSchedulerError<'StopServiceFailed'>, void>;
-};
+}>;
 
-export type JobSchedulerDeps = { mainLogger: Logger };
+export type JobSchedulerDeps = Readonly<{ mainLogger: Logger }>;
 export function buildJobScheduler(
   deps: JobSchedulerDeps,
 ): te.TaskEither<JobSchedulerError<'CreateServiceFailed' | 'DefineJobFailed'>, JobScheduler> {

@@ -1,47 +1,62 @@
 import { faker } from '@faker-js/faker';
 
-import { exchangeNameList } from '#features/shared/domain/exchangeName.js';
-import { SymbolName } from '#features/shared/domain/symbolName.js';
 import {
+  AssetName,
   LotSizeFilter,
   MarketLotSizeFilter,
   MinNotionalFilter,
   NotionalFilter,
   PriceFilter,
   SymbolModel,
+  SymbolName,
   orderTypeList,
-} from '#features/symbols/data-models/symbol.js';
-import { RemoveBrand } from '#test-utils/types.js';
-
+} from '#features/symbols/dataModels/symbol.js';
+import { RemoveBrandFromObjVal } from '#shared/utils/types.js';
+import { randomBoolean } from '#test-utils/faker/boolean.js';
+import { generateArrayOf } from '#test-utils/faker/helper.js';
 import {
-  randomBoolean,
   randomNonNegativeInt,
   randomPositiveFloat,
+  randomPositiveInt,
   randomPrecisionStep,
-  randomString,
-} from '../../faker.js';
+} from '#test-utils/faker/number.js';
+import { randomString } from '#test-utils/faker/string.js';
 
-export function mockSymbol(override?: Partial<RemoveBrand<SymbolModel>>): SymbolModel {
+import { randomExchangeName } from '../shared/domain.js';
+
+export function mockSymbol(override?: Partial<RemoveBrandFromObjVal<SymbolModel>>): SymbolModel {
   const minRange: [number, number] = [1, 10];
   const maxRange: [number, number] = [11, 20];
 
   return {
     name: randomString(),
-    exchange: faker.helpers.arrayElement(exchangeNameList),
+    exchange: randomExchangeName(),
     baseAsset: randomString(),
-    baseAssetPrecision: faker.number.int({ min: 0, max: 10 }),
+    baseAssetPrecision: randomPositiveInt(),
     quoteAsset: randomString(),
-    quoteAssetPrecision: faker.number.int({ min: 0, max: 10 }),
-    orderTypes: faker.helpers.arrayElements(orderTypeList),
+    quoteAssetPrecision: randomPositiveInt(),
+    orderTypes: generateArrayOf(randomOrderType),
     filters: [
       mockLotSizeFilter(minRange, maxRange),
       mockMarketLotSizeFilter(minRange, maxRange),
       mockMinNotionalFilter(),
       mockNotionalFilter(),
       mockPriceFilter(minRange, maxRange),
-    ] as SymbolModel['filters'],
+    ],
     ...override,
   } as SymbolModel;
+}
+
+export function randomSymbolName() {
+  return faker.string.alpha({ length: 6, casing: 'upper' }) as SymbolName;
+}
+
+export function randomAssetName() {
+  return faker.string.alpha({ length: 3, casing: 'upper' }) as AssetName;
+}
+
+export function randomOrderType() {
+  return faker.helpers.arrayElement(orderTypeList);
 }
 
 export function mockLotSizeFilter(
@@ -53,7 +68,7 @@ export function mockLotSizeFilter(
     minQty: randomPositiveFloat(8, minQtyRange),
     maxQty: randomPositiveFloat(8, maxQtyRange),
     stepSize: randomPrecisionStep(),
-  };
+  } as LotSizeFilter;
 }
 
 export function mockMarketLotSizeFilter(
@@ -65,7 +80,7 @@ export function mockMarketLotSizeFilter(
     minQty: randomPositiveFloat(8, minQtyRange),
     maxQty: randomPositiveFloat(8, maxQtyRange),
     stepSize: randomPrecisionStep(),
-  };
+  } as MarketLotSizeFilter;
 }
 
 export function mockMinNotionalFilter(): MinNotionalFilter {
@@ -74,7 +89,7 @@ export function mockMinNotionalFilter(): MinNotionalFilter {
     minNotional: randomPositiveFloat(8),
     applyToMarket: randomBoolean(),
     avgPriceMins: randomNonNegativeInt(),
-  };
+  } as MinNotionalFilter;
 }
 
 export function mockNotionalFilter(): NotionalFilter {
@@ -85,7 +100,7 @@ export function mockNotionalFilter(): NotionalFilter {
     maxNotional: randomPositiveFloat(8),
     applyMaxToMarket: randomBoolean(),
     avgPriceMins: randomNonNegativeInt(),
-  };
+  } as NotionalFilter;
 }
 
 export function mockPriceFilter(
@@ -97,9 +112,5 @@ export function mockPriceFilter(
     minPrice: randomPositiveFloat(8, minPriceRange),
     maxPrice: randomPositiveFloat(8, maxPriceRange),
     tickSize: randomPrecisionStep(),
-  };
-}
-
-export function randomSymbolName() {
-  return faker.string.alpha({ length: 6, casing: 'upper' }) as SymbolName;
+  } as PriceFilter;
 }

@@ -1,12 +1,12 @@
 import e from 'fp-ts/lib/Either.js';
 import { stringify } from 'fp-ts/lib/Json.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { isString } from 'fp-ts/lib/string.js';
 import { append, assoc, isNotNil, pick, pickBy, propOr } from 'ramda';
+import type { NonNever } from 'ts-essentials';
 import { z } from 'zod';
 
-import { OmitNever } from '#shared/helpers.type.js';
-import { isError, isString } from '#shared/utils/typeGuards.js';
-import { Json } from '#shared/utils/zod.schema.js';
+import { Json, isError } from '#shared/utils/general.js';
 
 import { implementZodSchema } from './utils.js';
 
@@ -14,14 +14,18 @@ import { implementZodSchema } from './utils.js';
 type FactoryContext = ((...args: any[]) => any) | Function;
 
 export type GeneralCause = Error | string | undefined;
-export type AppError<Name extends string = string, Type extends string | undefined = string | undefined> = {
+export type AppError<
+  Name extends string = string,
+  Type extends string | undefined = string | undefined,
+> = Readonly<{
   name: Name;
   message: string;
   cause?: AppError | GeneralCause;
   stack?: string;
   toString: () => string;
   toJSON: () => Json;
-} & OmitNever<undefined extends Type ? { type?: Type } : { type: Type }>;
+}> &
+  Readonly<NonNever<undefined extends Type ? { type?: Type } : { type: Type }>>;
 
 const baseAppErrorSchema = z.object({
   name: z.string(),

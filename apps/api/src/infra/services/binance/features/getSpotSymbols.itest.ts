@@ -23,9 +23,9 @@ beforeAll(() => msw.listen());
 afterEach(() => msw.resetHandlers());
 afterAll(() => msw.close());
 
-describe('Get list of SPOT symbols information', () => {
-  describe('WHEN successfully get SPOT symbols', () => {
-    it('THEN it should return Right of a list of symbols', async () => {
+describe('UUT: Get list of SPOT symbols information', () => {
+  describe('[WHEN] get SPOT symbols', () => {
+    it('[THEN] it will return Right of a list of symbols', async () => {
       msw.use(rest.get(exchangeInfoPath, (_, res, ctx) => res(ctx.status(200), ctx.json(exchangeInfoResp))));
 
       const result = await executeT(getSpotSymbolsListFn);
@@ -63,8 +63,8 @@ describe('Get list of SPOT symbols information', () => {
       ]);
     });
   });
-  describe('WHEN unsuccessfully get SPOT symbols (error response)', () => {
-    it('THEN it should return Left of Binance service error', async () => {
+  describe('[WHEN] get SPOT symbols [BUT] Binance server return error', () => {
+    it('[THEN] it will return Left of Binance service error', async () => {
       msw.use(rest.get(exchangeInfoPath, (_, res, ctx) => res(ctx.status(500))));
 
       const result = await executeT(getSpotSymbolsListFn);

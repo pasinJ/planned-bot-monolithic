@@ -3,8 +3,8 @@ import { path } from 'ramda';
 import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from '#features/symbols/DAOs/symbol.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
-import { randomString } from '#test-utils/faker.js';
-import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
+import { randomString } from '#test-utils/faker/string.js';
+import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/apis.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
@@ -30,7 +30,11 @@ describe('GIVEN the backtesting strategy does not exist WHEN user requests to ex
 describe('GIVEN the backtesting strategy already exists WHEN user requests to execute the strategy', () => {
   it('THEN it should return HTTP202 and response body with id, created timestamp, progress path, and result path', async () => {
     const createSymbolRequest = mockValidAddBtStrategyRequestBody();
-    const symbol = mockSymbol({ name: createSymbolRequest.symbol, exchange: createSymbolRequest.exchange });
+    const symbol = mockSymbol({
+      name: createSymbolRequest.symbol,
+      exchange: createSymbolRequest.exchange,
+      baseAsset: createSymbolRequest.currency,
+    });
     await symbolModel.create(symbol);
 
     const { response: addResponse } = await addBtStrategy(createSymbolRequest);

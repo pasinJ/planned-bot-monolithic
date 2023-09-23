@@ -14,10 +14,10 @@ describe('PORT_NUMBER property', () => {
     { env: '0.1', expected: 80 },
     { env: ' ', expected: 80 },
     { env: undefined, expected: 80 },
-  ])('WHEN process.env.HTTP_PORT_NUMBER = "$env"', ({ env, expected }) => {
+  ])('[GIVEN] process.env.HTTP_PORT_NUMBER = "$env" [WHEN] get http configuration', ({ env, expected }) => {
     beforeEach(setEnvVar('HTTP_PORT_NUMBER', env));
 
-    it(`THEN PORT_NUMBER property should equal to "${expected}"`, () => {
+    it(`[THEN] it will return PORT_NUMBER property equals to "${expected}"`, () => {
       expect(getHttpConfig()).toHaveProperty('PORT_NUMBER', expected);
     });
   });

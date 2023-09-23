@@ -15,11 +15,11 @@ const createBnbClient = Binance.default as unknown as typeof Binance;
 export type BnbClient = ReturnType<typeof Binance>;
 type BnbClientOptions = Parameters<typeof createBnbClient>[0];
 
-export type BnbService = {
+export type BnbService = Readonly<{
   composeWith: <R>(
     fn: (internal: { bnbClient: BnbClient; httpClient: HttpClient; loggerIo: LoggerIo }) => R,
   ) => R;
-};
+}>;
 
 export type BnbServiceDeps = { mainLogger: PinoLogger };
 export function buildBnbService(

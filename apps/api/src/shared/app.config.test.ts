@@ -12,10 +12,10 @@ describe('ENV property', () => {
     { env: 'Test', expected: 'test' },
     { env: ' ', expected: 'development' },
     { env: undefined, expected: 'development' },
-  ])('WHEN process.env.NODE_ENV = "$env"', ({ env, expected }) => {
+  ])('[WHEN] process.env.NODE_ENV = "$env"', ({ env, expected }) => {
     beforeEach(setEnvVar('NODE_ENV', env));
 
-    it(`THEN ENV property should equal to "${expected}"`, () => {
+    it(`[THEN] it will return ENV property equals to "${expected}"`, () => {
       expect(getAppConfig()).toHaveProperty('ENV', expected);
     });
   });
@@ -26,10 +26,10 @@ describe('NAME property', () => {
     { env: 'app name', expected: 'app name' },
     { env: ' ', expected: 'undefined name' },
     { env: undefined, expected: 'undefined name' },
-  ])('WHEN process.env.APP_NAME = "$env"', ({ env, expected }) => {
+  ])('[GIVEN] process.env.APP_NAME = "$env" [WHEN] get application configuration', ({ env, expected }) => {
     beforeEach(setEnvVar('APP_NAME', env));
 
-    it(`THEN NAME property should equal to "${expected}"`, () => {
+    it(`[THEN] it will return NAME property equals to "${expected}"`, () => {
       expect(getAppConfig()).toHaveProperty('NAME', expected);
     });
   });
@@ -40,10 +40,10 @@ describe('VERSION property', () => {
     { env: 'verion0-alpha', expected: 'verion0-alpha' },
     { env: ' ', expected: 'undefined version' },
     { env: undefined, expected: 'undefined version' },
-  ])('WHEN process.env.APP_VERSION = "$env"', ({ env, expected }) => {
+  ])('[GIVEN] process.env.APP_VERSION = "$env" [WHEN] get application configuration', ({ env, expected }) => {
     beforeEach(setEnvVar('APP_VERSION', env));
 
-    it(`THEN VERSION property should equal to "${expected}"`, () => {
+    it(`[THEN] it will return VERSION property equals to "${expected}"`, () => {
       expect(getAppConfig()).toHaveProperty('VERSION', expected);
     });
   });
@@ -57,13 +57,16 @@ describe('GRACEFUL_PERIOD_MS property', () => {
     { env: '0.1', expected: 10000 },
     { env: ' ', expected: 10000 },
     { env: undefined, expected: 10000 },
-  ])('WHEN process.env.APP_GRACEFUL_PERIOD_MS = "$env"', ({ env, expected }) => {
-    beforeEach(setEnvVar('APP_GRACEFUL_PERIOD_MS', env));
+  ])(
+    '[GIVEN] process.env.APP_GRACEFUL_PERIOD_MS = "$env" [WHEN] get application configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('APP_GRACEFUL_PERIOD_MS', env));
 
-    it(`THEN GRACEFUL_PERIOD_MS property should equal to "${expected}"`, () => {
-      expect(getAppConfig()).toHaveProperty('GRACEFUL_PERIOD_MS', expected);
-    });
-  });
+      it(`[THEN] it will return GRACEFUL_PERIOD_MS property equals to "${expected}"`, () => {
+        expect(getAppConfig()).toHaveProperty('GRACEFUL_PERIOD_MS', expected);
+      });
+    },
+  );
 });
 
 describe('LOG_LEVEL property', () => {
@@ -73,10 +76,10 @@ describe('LOG_LEVEL property', () => {
     { env: 'undefined', expected: 'info' },
     { env: ' ', expected: 'info' },
     { env: undefined, expected: 'info' },
-  ])('WHEN process.env.LOG_LEVEL = "$env"', ({ env, expected }) => {
+  ])('[GIVEN] process.env.LOG_LEVEL = "$env" [WHEN] get application configuration', ({ env, expected }) => {
     beforeEach(setEnvVar('LOG_LEVEL', env));
 
-    it(`THEN LOG_LEVEL property should equal to "${expected}"`, () => {
+    it(`[THEN] it will return LOG_LEVEL property equals to "${expected}"`, () => {
       expect(getAppConfig()).toHaveProperty('LOG_LEVEL', expected);
     });
   });
@@ -90,13 +93,16 @@ describe('LOG_FILE_ENABLE property', () => {
     { env: 'undefined', expected: false },
     { env: ' ', expected: false },
     { env: undefined, expected: false },
-  ])('WHEN process.env.LOG_FILE_ENABLE = "$env"', ({ env, expected }) => {
-    beforeEach(setEnvVar('LOG_FILE_ENABLE', env));
+  ])(
+    '[GIVEN] process.env.LOG_FILE_ENABLE = "$env" [WHEN] get application configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('LOG_FILE_ENABLE', env));
 
-    it(`THEN LOG_FILE_ENABLE property should equal to "${expected}"`, () => {
-      expect(getAppConfig()).toHaveProperty('LOG_FILE_ENABLE', expected);
-    });
-  });
+      it(`[THEN] it will return LOG_FILE_ENABLE property equals to "${expected}"`, () => {
+        expect(getAppConfig()).toHaveProperty('LOG_FILE_ENABLE', expected);
+      });
+    },
+  );
 });
 
 describe('LOG_FILE_PATH property', () => {
@@ -104,11 +110,14 @@ describe('LOG_FILE_PATH property', () => {
     { env: './log/File.log', expected: './log/File.log' },
     { env: ' ', expected: undefined },
     { env: undefined, expected: undefined },
-  ])('WHEN process.env.LOG_FILE_PATH = "$env"', ({ env, expected }) => {
-    beforeEach(setEnvVar('LOG_FILE_PATH', env));
+  ])(
+    '[GIVEN] process.env.LOG_FILE_PATH = "$env" [WHEN] get application configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('LOG_FILE_PATH', env));
 
-    it(`THEN LOG_FILE_PATH property should equal to "${expected}"`, () => {
-      expect(getAppConfig()).toHaveProperty('LOG_FILE_PATH', expected);
-    });
-  });
+      it(`[THEN] it will return LOG_FILE_PATH property equals to "${expected}"`, () => {
+        expect(getAppConfig()).toHaveProperty('LOG_FILE_PATH', expected);
+      });
+    },
+  );
 });

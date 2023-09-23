@@ -2,7 +2,7 @@ import { pick } from 'ramda';
 
 import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from '#features/symbols/DAOs/symbol.js';
 import { executeIo } from '#shared/utils/fp.js';
-import { generateArrayOf } from '#test-utils/faker.js';
+import { generateArrayOf } from '#test-utils/faker/helper.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 

@@ -16,9 +16,9 @@ beforeAll(async () => {
 });
 afterAll(() => jobScheduler.stop());
 
-describe('Create job scheduler', () => {
-  describe('WHEN successfully create a job scheduler', () => {
-    it('THEN it should return Right of job scheduler', () => {
+describe('UUT: Create job scheduler', () => {
+  describe('[WHEN] create a job scheduler', () => {
+    it('[THEN] it will return Right of job scheduler', () => {
       expect(jobScheduler).toEqual(expect.toContainAllKeys(['composeWith', 'start', 'stop']));
     });
   });

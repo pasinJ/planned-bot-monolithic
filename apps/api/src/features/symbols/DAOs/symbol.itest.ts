@@ -10,27 +10,33 @@ const client = await createMongoClient();
 
 afterAll(() => client.disconnect());
 
-describe('Build symbol DAO', () => {
+describe('UUT: Build symbol DAO', () => {
   afterEach(() => deleteModel(client, symbolModelName));
 
-  describe('WHEN successfully build symbol DAO', () => {
-    it('THEN it should create a new mongoose model', () => {
-      executeIo(buildSymbolDao(client));
-      expect(client.models).toHaveProperty(symbolModelName);
-    });
-    it('THEN it should return Right of symbol DAO', () => {
-      const dao = executeIo(buildSymbolDao(client));
-      expect(dao).toEqualRight(expect.toContainKey('composeWith'));
+  describe('[GIVEN] symbol DAO has not been built', () => {
+    describe('[WHEN] build a symbol DAO', () => {
+      it('[THEN] it will create mongoose model', () => {
+        executeIo(buildSymbolDao(client));
+
+        expect(client.models).toHaveProperty(symbolModelName);
+      });
+      it('[THEN] it will return Right of symbol DAO', () => {
+        const dao = executeIo(buildSymbolDao(client));
+
+        expect(dao).toEqualRight(expect.toContainKey('composeWith'));
+      });
     });
   });
 
-  describe('WHEN unsuccessfully build symbol model DAO (duplicated model)', () => {
-    it('THEN it should return Left of error', () => {
-      client.model(symbolModelName, new Schema({}));
+  describe('[GIVEN] symbol DAO has already been built', () => {
+    describe('[WHEN] build a symbol DAO', () => {
+      it('[THEN] it will return Left of error', () => {
+        client.model(symbolModelName, new Schema({}));
 
-      const repository = executeIo(buildSymbolDao(client));
+        const dao = executeIo(buildSymbolDao(client));
 
-      expect(repository).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
+        expect(dao).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
+      });
     });
   });
 });

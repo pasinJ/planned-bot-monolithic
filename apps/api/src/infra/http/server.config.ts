@@ -1,12 +1,12 @@
 import io from 'fp-ts/lib/IO.js';
 import { z } from 'zod';
 
-import { nonEmptyString } from '#shared/utils/zod.schema.js';
+import { nonEmptyStringSchema } from '#shared/utils/string.js';
 
-export type HttpConfig = { PORT_NUMBER: PortNumber };
+export type HttpConfig = Readonly<{ PORT_NUMBER: PortNumber }>;
 
 export type PortNumber = z.infer<typeof portNumberSchema>;
-const portNumberSchema = nonEmptyString
+const portNumberSchema = nonEmptyStringSchema
   .pipe(z.coerce.number().int().positive())
   .catch(80)
   .brand('PortNumber');

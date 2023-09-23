@@ -2,8 +2,8 @@ import { RouteOptions } from 'fastify';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 
-import { addBtStrategyRouteOptions } from '#features/backtesting-strategies/addBtStrategy/route.js';
-import { executeBtStrategyRouteOptions } from '#features/backtesting-strategies/executeBtStrategy/route.js';
+import { addBtStrategyRouteOptions } from '#features/btStrategies/addBtStrategy/route.js';
+import { executeBtStrategyRouteOptions } from '#features/btStrategies/executeBtStrategy/route.js';
 import { getSymbolsRouteOptions } from '#features/symbols/getSymbols/route.js';
 import { AppDeps } from '#shared/appDeps.type.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';

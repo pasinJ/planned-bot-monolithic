@@ -12,10 +12,10 @@ describe('URI property', () => {
     { env: 'invalid', expected: undefined },
     { env: ' ', expected: undefined },
     { env: undefined, expected: undefined },
-  ])('WHEN process.env.MONGODB_URI = "$env"', ({ env, expected }) => {
+  ])('[GIVEN] process.env.MONGODB_URI = "$env" [WHEN] get mongoDB configuration', ({ env, expected }) => {
     beforeEach(setEnvVar('MONGODB_URI', env));
 
-    it(`THEN URI property should equal to "${expected}"`, () => {
+    it(`[THEN] it will return URI property equals to "${expected}"`, () => {
       expect(getMongoDbConfig()).toHaveProperty('URI', expected);
     });
   });

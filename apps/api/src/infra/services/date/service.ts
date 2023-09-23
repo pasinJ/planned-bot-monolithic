@@ -1,5 +1,7 @@
 import io from 'fp-ts/lib/IO.js';
 
-export type DateService = { getCurrentDate: io.IO<Date> };
+import { ValidDate } from '#shared/utils/date.js';
 
-export const dateService: DateService = { getCurrentDate: () => new Date() };
+export type DateService = Readonly<{ getCurrentDate: io.IO<ValidDate> }>;
+
+export const dateService: DateService = { getCurrentDate: () => new Date() as ValidDate };

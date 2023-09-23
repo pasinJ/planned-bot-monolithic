@@ -1,12 +1,12 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight } from 'ramda';
+import { DeepPartial } from 'ts-essentials';
 
 import { createSymbolDaoError, isSymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { createBnbServiceError, isBnbServiceError } from '#infra/services/binance/error.js';
-import { DeepPartial } from '#shared/helpers.type.js';
 import { executeT } from '#shared/utils/fp.js';
 import { resetEnvVar, setEnvVar } from '#test-utils/envVar.js';
-import { generateArrayOf } from '#test-utils/faker.js';
+import { generateArrayOf } from '#test-utils/faker/helper.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
 import { mockLoggerIo } from '#test-utils/services.js';
 
@@ -30,74 +30,88 @@ const originalEnv = process.env;
 
 afterEach(resetEnvVar(originalEnv));
 
-describe('GIVEN application is running in test environment WHEN execute startup process', () => {
-  it('THEN it should skip getting SPOT symbols', async () => {
-    setEnvVar('NODE_ENV', 'test');
+describe('[GIVEN] application is running in test environment', () => {
+  describe('[WHEN] execute startup process', () => {
+    it('[THEN] it will skip getting SPOT symbols', async () => {
+      setEnvVar('NODE_ENV', 'test');
 
-    const deps = mockDeps();
-    await executeT(startupProcess(deps));
-
-    expect(deps.bnbService.getSpotSymbolsList).not.toHaveBeenCalled();
-  });
-});
-
-describe('GIVEN application is running in environment other than test environment', () => {
-  beforeEach(setEnvVar('NODE_ENV', 'development'));
-
-  describe('GIVEN there is existing symbols in database WHEN execute startup process', () => {
-    it('THEN it should not try to get SPOT symbols from Binance server', async () => {
-      const deps = mockDeps({ symbolDao: { existByExchange: () => te.right(true) } });
+      const deps = mockDeps();
       await executeT(startupProcess(deps));
 
       expect(deps.bnbService.getSpotSymbolsList).not.toHaveBeenCalled();
     });
   });
+});
 
-  describe('GIVEN there is no binance symbol in database WHEN execute startup process', () => {
-    it('THEN it should get SPOT symbols from Binance server', async () => {
+describe('[GIVEN] application is running in environment other than test environment [AND] there is existing symbols in database', () => {
+  beforeEach(setEnvVar('NODE_ENV', 'development'));
+
+  describe('[WHEN] execute startup process', () => {
+    it('[THEN] it will not try to get SPOT symbols from Binance server', async () => {
+      const deps = mockDeps({ symbolDao: { existByExchange: () => te.right(true) } });
+
+      await executeT(startupProcess(deps));
+
+      expect(deps.bnbService.getSpotSymbolsList).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('[GIVEN] application is running in environment other than test environment [BUT] there is no binance symbol in database', () => {
+  beforeEach(setEnvVar('NODE_ENV', 'development'));
+
+  describe('[WHEN] execute startup process', () => {
+    it('[THEN] it will get SPOT symbols from Binance server', async () => {
       const deps = mockDeps();
+
       await executeT(startupProcess(deps));
 
       expect(deps.bnbService.getSpotSymbolsList).toHaveBeenCalledOnce();
     });
+    it('[THEN] it will add symbols using symbol model DAO', async () => {
+      const symbols = generateArrayOf(mockSymbol);
+      const deps = mockDeps({ bnbService: { getSpotSymbolsList: te.right(symbols) } });
 
-    describe('WHEN getting SPOT symbols from Binance server fails', () => {
-      it('THEN it should return Left of error', async () => {
-        const error = createBnbServiceError('GetSpotSymbolsFailed', 'Mock');
-        const deps = mockDeps({ bnbService: { getSpotSymbolsList: te.left(error) } });
-        const result = await executeT(startupProcess(deps));
+      await executeT(startupProcess(deps));
 
-        expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
-      });
+      expect(deps.symbolDao.add).toHaveBeenCalledExactlyOnceWith(symbols);
     });
+    it('[THEN] it will return Right of undefined', async () => {
+      const deps = mockDeps();
 
-    describe('WHEN getting SPOT symbols from Binance server is successful', () => {
-      it('THEN it should add symbols using symbol model DAO', async () => {
-        const symbols = generateArrayOf(mockSymbol);
-        const deps = mockDeps({ bnbService: { getSpotSymbolsList: te.right(symbols) } });
-        await executeT(startupProcess(deps));
+      const result = await executeT(startupProcess(deps));
 
-        expect(deps.symbolDao.add).toHaveBeenCalledExactlyOnceWith(symbols);
-      });
+      expect(result).toEqualRight(undefined);
     });
+  });
+});
 
-    describe('WHEN adding symbols into database fails', () => {
-      it('THEN it should return Left of error', async () => {
-        const error = createSymbolDaoError('AddFailed', 'Mock');
-        const deps = mockDeps({ symbolDao: { add: () => te.left(error) } });
-        const result = await executeT(startupProcess(deps));
+describe('[GIVEN] application is running in environment other than test environment [BUT] there is no binance symbol in database [AND] getting SPOT symbols from Binance server fails', () => {
+  beforeEach(setEnvVar('NODE_ENV', 'development'));
 
-        expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
-      });
+  describe('[WHEN] execute startup process', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createBnbServiceError('GetSpotSymbolsFailed', 'Mock');
+      const deps = mockDeps({ bnbService: { getSpotSymbolsList: te.left(error) } });
+
+      const result = await executeT(startupProcess(deps));
+
+      expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
     });
+  });
+});
 
-    describe('WHEN adding symbols into database is successful', () => {
-      it('THEN it should return Right of undefined', async () => {
-        const deps = mockDeps();
-        const result = await executeT(startupProcess(deps));
+describe('[GIVEN] application is running in environment other than test environment [BUT] there is no binance symbol in database [AND] getting SPOT symbols from Binance server succeeds [BUT] DAO fails to add symbols', () => {
+  beforeEach(setEnvVar('NODE_ENV', 'development'));
 
-        expect(result).toEqualRight(undefined);
-      });
+  describe('[WHEN] execute startup process', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createSymbolDaoError('AddFailed', 'Mock');
+      const deps = mockDeps({ symbolDao: { add: () => te.left(error) } });
+
+      const result = await executeT(startupProcess(deps));
+
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
     });
   });
 });

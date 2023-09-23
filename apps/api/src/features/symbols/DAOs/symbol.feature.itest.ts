@@ -1,8 +1,10 @@
+import { faker } from '@faker-js/faker';
 import { prop } from 'ramda';
 
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
-import { randomExchangeName } from '#test-utils/domain.js';
-import { generateArrayOf, randomString } from '#test-utils/faker.js';
+import { generateArrayOf } from '#test-utils/faker/helper.js';
+import { randomString } from '#test-utils/faker/string.js';
+import { randomExchangeName } from '#test-utils/features/shared/domain.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
@@ -10,8 +12,8 @@ import { isSymbolDaoError } from './symbol.error.js';
 import {
   addSymbolModels,
   existSymbolModelByExchange,
-  existSymbolModelByNameAndExchange,
   getAllSymbolModels,
+  getSymbolModelByNameAndExchange,
 } from './symbol.feature.js';
 import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from './symbol.js';
 
@@ -22,128 +24,143 @@ const symbolModel: SymbolMongooseModel = client.models[symbolModelName];
 afterEach(() => symbolModel.deleteMany());
 afterAll(() => client.disconnect());
 
-describe('Add symbol models', () => {
+describe('UUT: Add symbol models', () => {
   const addFn = symbolDao.composeWith(addSymbolModels);
 
-  describe('WHEN successfully add a symbol', () => {
-    it('THEN it should return Right of undefined', async () => {
-      const result = await executeT(addFn(mockSymbol()));
-
-      expect(result).toEqualRight(undefined);
-    });
-    it('THEN it should insert the symbol into database', async () => {
+  describe('[WHEN] add a symbol model with not existing combination of exchange and name', () => {
+    it('[THEN] it will insert the symbol into database', async () => {
       const symbol = mockSymbol();
+
       await executeT(addFn(symbol));
 
       const findResult = await symbolModel.find({ name: symbol.name });
       expect(findResult).not.toBeNull();
     });
+    it('[THEN] it will return Right of undefined', async () => {
+      const result = await executeT(addFn(mockSymbol()));
+
+      expect(result).toEqualRight(undefined);
+    });
   });
 
-  describe('WHEN successfully add multiple symbols at the same time', () => {
-    it('THEN it should return Right of undefined', async () => {
+  describe('[WHEN] add multiple klines with not existing combination of exchange, symbol, timeframe, and close timestamp', () => {
+    it('[THEN] it will insert those klines into database', async () => {
       const symbols = generateArrayOf(mockSymbol);
+
+      await executeT(addFn(symbols));
+
+      const findResult = await symbolModel.find({ name: { $in: symbols.map(prop('name')) } });
+      expect(findResult).toHaveLength(symbols.length);
+    });
+    it('[THEN] it will return Right of undefined', async () => {
+      const symbols = generateArrayOf(mockSymbol);
+
       const result = await executeT(addFn(symbols));
 
       expect(result).toEqualRight(undefined);
     });
-    it('THEN it should insert those symbols into database', async () => {
-      const symbols = generateArrayOf(mockSymbol);
+  });
+
+  describe('[WHEN] add multiple symbols with some symbols have existing combination of symbol name and exchange', () => {
+    it('[THEN] it will skip those existing klines', async () => {
+      const symbols = generateArrayOf(mockSymbol, 5);
+      const existingSymbols = faker.helpers.arrayElements(symbols);
+      await symbolModel.insertMany(existingSymbols);
+
       await executeT(addFn(symbols));
 
-      const namesList = symbols.map(prop('name'));
-      const findResult = await symbolModel.find({ name: { $in: namesList } });
-      expect(findResult).toHaveLength(namesList.length);
+      const findResult = await symbolModel.find({ name: { $in: symbols.map(prop('name')) } });
+      expect(findResult).toHaveLength(symbols.length);
     });
-  });
+    it('[THEN] it will still return Right of undefined', async () => {
+      const symbols = generateArrayOf(mockSymbol, 5);
+      const existingSymbols = faker.helpers.arrayElements(symbols);
+      await symbolModel.insertMany(existingSymbols);
 
-  describe('WHEN add a new symbol with existing combination of symbol name and exchange', () => {
-    it('THEN it should return Left of error', async () => {
-      const symbol1 = mockSymbol();
-      await symbolModel.create(symbol1);
+      const result = await executeT(addFn(symbols));
 
-      const symbol2 = mockSymbol({ name: symbol1.name, exchange: symbol1.exchange });
-      const result = await executeT(addFn(symbol2));
-
-      expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
-    });
-    it('THEN it should not record into database', async () => {
-      const symbol1 = mockSymbol();
-      await symbolModel.create(symbol1);
-
-      const symbol2 = mockSymbol({ name: symbol1.name, exchange: symbol1.exchange });
-      await executeT(addFn(symbol2));
-
-      await expect(symbolModel.count({ name: symbol1.name, exchange: symbol1.exchange })).resolves.toBe(1);
+      expect(result).toEqualRight(undefined);
     });
   });
 });
 
-describe('Get all symbol models', () => {
+describe('UUT: Get all symbol models', () => {
   const getAllFn = symbolDao.composeWith(getAllSymbolModels);
 
-  describe('GIVEN there is no existing symbol WHEN get all symbol models', () => {
-    it('THEN it should return Right of an empty array', async () => {
-      const getResult = await executeT(getAllFn);
+  describe('[GIVEN] there is no existing symbol', () => {
+    describe('[WHEN] get all symbol models', () => {
+      it('[THEN] it will return Right of an empty array', async () => {
+        const getResult = await executeT(getAllFn);
 
-      expect(getResult).toEqualRight([]);
+        expect(getResult).toEqualRight([]);
+      });
     });
   });
 
-  describe('GIVEN there is existing symbols WHEN get all symbol models', () => {
-    it('THEN it should return Right of an array with the existing symbols', async () => {
-      const symbols = generateArrayOf(mockSymbol);
-      await symbolModel.insertMany(symbols);
+  describe('[GIVEN] there is existing symbols', () => {
+    describe('[WHEN] get all symbol models', () => {
+      it('[THEN] it will return Right of an array with the existing symbols', async () => {
+        const symbols = generateArrayOf(mockSymbol);
+        await symbolModel.insertMany(symbols);
 
-      const getResult = await executeT(getAllFn);
+        const getResult = await executeT(getAllFn);
 
-      expect(getResult).toEqualRight(expect.toIncludeAllMembers(symbols));
+        expect(getResult).toEqualRight(expect.toIncludeAllMembers(symbols));
+      });
     });
   });
 });
 
-describe('Check existence of symbol models by exchange name', () => {
+describe('UUT: Check existence of symbol models by exchange name', () => {
   const existFn = symbolDao.composeWith(existSymbolModelByExchange);
 
-  describe('GIVEN some symbol of the exchange already exists WHEN check existence by exchange', () => {
-    it('THEN it should return Right of true', async () => {
-      const symbol = mockSymbol();
-      await symbolModel.create(symbol);
+  describe('[GIVEN] some symbol of the exchange already exists', () => {
+    describe('[WHEN] check existence by exchange', () => {
+      it('[THEN] it will return Right of true', async () => {
+        const symbol = mockSymbol();
+        await symbolModel.create(symbol);
 
-      const result = await executeT(existFn(symbol.exchange));
+        const result = await executeT(existFn(symbol.exchange));
 
-      expect(result).toEqualRight(true);
+        expect(result).toEqualRight(true);
+      });
     });
   });
 
-  describe('GIVEN the ID does not exist WHEN check existence by ID', () => {
-    it('THEN it should return Right of false', async () => {
-      const result = await executeT(existFn(randomExchangeName()));
+  describe('[GIVEN] the ID does not exist', () => {
+    describe('[WHEN] check existence by exchange', () => {
+      it('[THEN] it will return Right of false', async () => {
+        const result = await executeT(existFn(randomExchangeName()));
 
-      expect(result).toEqualRight(false);
+        expect(result).toEqualRight(false);
+      });
     });
   });
 });
 
-describe('Check existence of symbol models by symbol name and exchange name', () => {
-  const existFn = symbolDao.composeWith(existSymbolModelByNameAndExchange);
+describe('UUT: Get symbol models by name and exchange name', () => {
+  const getFn = symbolDao.composeWith(getSymbolModelByNameAndExchange);
 
-  describe('GIVEN a symbol with the symbol name and exchange name exists WHEN check existence', () => {
-    it('THEN it should return Right of true', async () => {
-      const symbol = mockSymbol();
-      await symbolModel.create(symbol);
+  describe('GIVEN a symbol with this name and exchange exists', () => {
+    describe('[WHEN] get a symbol with name and exchange name', () => {
+      it('[THEN] it will return Right of the symbol', async () => {
+        const symbol = mockSymbol();
+        await symbolModel.create(symbol);
 
-      const result = await executeT(existFn(symbol.name, symbol.exchange));
+        const result = await executeT(getFn(symbol.name, symbol.exchange));
 
-      expect(result).toEqualRight(true);
+        expect(result).toEqualRight(symbol);
+      });
     });
   });
 
-  describe('GIVEN the combination of symbol name and exchange name does not exist WHEN check existence', () => {
-    it('THEN it should return Right of false', async () => {
-      const result = await executeT(existFn(randomString(), randomExchangeName()));
+  describe('[GIVEN] there is no symbol with this name and exchange', () => {
+    describe('[WHEN] get a symbol with name and exchange name', () => {
+      it('[THEN] it will return Left of error', async () => {
+        const result = await executeT(getFn(randomString(), randomExchangeName()));
 
-      expect(result).toEqualRight(false);
+        expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
+      });
     });
   });
 });

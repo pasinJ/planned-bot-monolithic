@@ -1,13 +1,13 @@
 import io from 'fp-ts/lib/IO.js';
 import { z } from 'zod';
 
-import { nonEmptyString } from '#shared/utils/zod.schema.js';
+import { nonEmptyStringSchema } from '#shared/utils/string.js';
 
-export type MongoDbConfig = { URI: MongoDbUri };
+export type MongoDbConfig = Readonly<{ URI: MongoDbUri }>;
 
 export type MongoDbUri = z.infer<typeof mongoDbUriSchema>;
-const mongoDbUriSchema = nonEmptyString
-  .regex(/^mongodb:\/{2}/)
+const mongoDbUriSchema = nonEmptyStringSchema
+  .pipe(z.string().regex(/^mongodb:\/{2}/))
   .or(z.undefined())
   .catch(undefined)
   .brand('MongoDbUri');

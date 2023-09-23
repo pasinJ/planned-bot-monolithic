@@ -1,25 +1,25 @@
-import { randomString } from '#test-utils/faker.js';
+import { randomString } from '#test-utils/faker/string.js';
 
 import { createBnbServiceError, isBnbServiceError } from './error.js';
 
-describe('Validate binance service error', () => {
-  it.each([
-    {
-      case: 'WHEN validate an error that is a binance service error without cause property',
-      input: createBnbServiceError('CreateServiceFailed', randomString()),
-      expected: true,
-    },
-    {
-      case: 'WHEN validate an error that is a binance service error with cause property',
-      input: createBnbServiceError('InvalidRequest', randomString(), new Error()),
-      expected: true,
-    },
-    {
-      case: 'WHEN validate an error that is not a binance service error',
-      input: new Error(),
-      expected: false,
-    },
-  ])('$case THEN it should return $expected', ({ input, expected }) => {
+describe.each([
+  {
+    case: 'validate an error that is a binance service error without cause property',
+    input: createBnbServiceError(randomString(), randomString()),
+    expected: true,
+  },
+  {
+    case: 'validate an error that is a binance service error with cause property',
+    input: createBnbServiceError(randomString(), randomString(), new Error()),
+    expected: true,
+  },
+  {
+    case: 'validate an error that is not a binance service error',
+    input: new Error(),
+    expected: false,
+  },
+])('[WHEN] $case', ({ input, expected }) => {
+  it(`[THEN] it will return ${expected}`, () => {
     expect(isBnbServiceError(input)).toBe(expected);
   });
 });

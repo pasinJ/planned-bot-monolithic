@@ -1,6 +1,6 @@
-import { BT_STRATEGY_ENDPOINTS } from '#features/backtesting-strategies/routes.constant.js';
-import { randomString } from '#test-utils/faker.js';
-import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
+import { BT_STRATEGY_ENDPOINTS } from '#features/btStrategies/routes.constant.js';
+import { randomString } from '#test-utils/faker/string.js';
+import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/apis.js';
 
 import { client } from './httpClient.js';
 

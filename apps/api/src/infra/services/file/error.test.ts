@@ -1,25 +1,25 @@
-import { randomString } from '#test-utils/faker.js';
+import { randomString } from '#test-utils/faker/string.js';
 
 import { createFileServiceError, isFileServiceError } from './error.js';
 
-describe('Validate file service error', () => {
-  it.each([
-    {
-      case: 'WHEN validate an error that is a file service error without cause property',
-      input: createFileServiceError('ReadFileFailed', randomString()),
-      expected: true,
-    },
-    {
-      case: 'WHEN validate an error that is a file service error with cause property',
-      input: createFileServiceError('WriteFileFailed', randomString(), new Error()),
-      expected: true,
-    },
-    {
-      case: 'WHEN validate an error that is not a file service error',
-      input: new Error(),
-      expected: false,
-    },
-  ])('$case THEN it should return $expected', ({ input, expected }) => {
+describe.each([
+  {
+    case: 'validate an error that is a file service error without cause property',
+    input: createFileServiceError(randomString(), randomString()),
+    expected: true,
+  },
+  {
+    case: 'validate an error that is a file service error with cause property',
+    input: createFileServiceError(randomString(), randomString(), new Error()),
+    expected: true,
+  },
+  {
+    case: 'validate an error that is not a file service error',
+    input: new Error(),
+    expected: false,
+  },
+])('[WHEN] $case', ({ input, expected }) => {
+  it(`[THEN] it will return ${expected}`, () => {
     expect(isFileServiceError(input)).toBe(expected);
   });
 });

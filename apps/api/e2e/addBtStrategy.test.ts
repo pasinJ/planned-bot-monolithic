@@ -1,7 +1,7 @@
 import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from '#features/symbols/DAOs/symbol.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
-import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/requests.js';
+import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/apis.js';
 import { mockSymbol } from '#test-utils/features/symbols/models.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
@@ -18,7 +18,7 @@ afterAll(() => client.disconnect());
 describe('WHEN user successfully add a backtesting strategy', () => {
   it('THEN it should return HTTP201 and the created backtesting strategy ID and timestamp', async () => {
     const body = mockValidAddBtStrategyRequestBody();
-    const symbol = mockSymbol({ name: body.symbol, exchange: body.exchange });
+    const symbol = mockSymbol({ name: body.symbol, exchange: body.exchange, baseAsset: body.currency });
     await symbolModel.create(symbol);
 
     const { response } = await addBtStrategy(body);

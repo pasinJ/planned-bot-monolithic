@@ -3,12 +3,12 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { __, dissoc, filter, includes, map, pick, prop, propEq, propSatisfies } from 'ramda';
 
-import { exchangeNameEnum } from '#features/shared/domain/exchangeName.js';
+import { exchangeNameEnum } from '#features/shared/domain/exchange.js';
 import {
   CreateSymbolModelError,
   SymbolModel,
   createSymbolModel,
-} from '#features/symbols/data-models/symbol.js';
+} from '#features/symbols/dataModels/symbol.js';
 import { HttpClient } from '#infra/http/client.type.js';
 
 import { BNB_ENDPOINTS } from '../constants.js';
