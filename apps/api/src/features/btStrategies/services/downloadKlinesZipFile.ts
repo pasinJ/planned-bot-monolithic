@@ -10,9 +10,9 @@ import { HttpClient } from '#infra/http/client.type.js';
 import { getBnbConfig } from '#infra/services/binance/config.js';
 import { FileServiceError } from '#infra/services/file/error.js';
 import { GeneralError } from '#shared/errors/generalError.js';
+import { DayString, MonthString, YearString } from '#shared/utils/date.js';
 
 import { BtExecutionId } from '../dataModels/btExecution.js';
-import { Day, Month, Year } from './getKlinesForBt.js';
 
 export type DownloadKlinesZipFileDeps = DeepReadonly<{
   httpClient: Pick<HttpClient, 'downloadFile'>;
@@ -27,9 +27,9 @@ export type DownloadKlinesZipFileRequest = Readonly<{
   executionId: BtExecutionId;
   symbol: SymbolName;
   timeframe: Timeframe;
-  year: Year;
-  month: Month;
-  day?: Day;
+  year: YearString;
+  month: MonthString;
+  day?: DayString;
 }>;
 
 export type CsvFilePath = string & z.BRAND<'CsvFilePath'>;
@@ -62,8 +62,8 @@ export function downloadKlinesZipFile(
 function formMonthlyFileUrl(
   symbol: SymbolName,
   timeframe: Timeframe,
-  year: Year,
-  month: Month,
+  year: YearString,
+  month: MonthString,
 ): Readonly<{ url: string; fileName: string }> {
   const baseUrl = getBnbConfig().PUBLIC_DATA_BASE_URL;
   const basePath = '/data/spot/monthly/klines/<symbol_in_uppercase>/<interval>/'
@@ -81,9 +81,9 @@ function formMonthlyFileUrl(
 function formDailyFileUrl(
   symbol: SymbolName,
   timeframe: Timeframe,
-  year: Year,
-  month: Month,
-  day: Day,
+  year: YearString,
+  month: MonthString,
+  day: DayString,
 ): Readonly<{ url: string; fileName: string }> {
   const baseUrl = getBnbConfig().PUBLIC_DATA_BASE_URL;
   const basePath = '/data/spot/daily/klines/<symbol_in_uppercase>/<interval>'

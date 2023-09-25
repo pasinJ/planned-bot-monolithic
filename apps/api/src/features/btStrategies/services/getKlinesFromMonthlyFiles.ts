@@ -14,11 +14,11 @@ import { HttpClient } from '#infra/http/client.type.js';
 import { BnbServiceError, createBnbServiceError } from '#infra/services/binance/error.js';
 import { FileServiceError } from '#infra/services/file/error.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
+import { DateRange, MonthString, YearString } from '#shared/utils/date.js';
 
 import { BtExecutionId } from '../dataModels/btExecution.js';
 import { KlineModel } from '../dataModels/kline.js';
 import { downloadKlinesZipFile } from './downloadKlinesZipFile.js';
-import { DateRange, Month, Year } from './getKlinesForBt.js';
 import { transformKlineCsvToKlineModel } from './transformKlineCsvToKlineModel.js';
 
 export type GetKlinesFromMonthlyFilesDeps = DeepReadonly<{
@@ -108,15 +108,17 @@ export function getKlinesFromMonthlyFiles(deps: GetKlinesFromMonthlyFilesDeps) {
   };
 }
 
-export function getListOfMonths(dateRange: DateRange): readonly Readonly<{ year: Year; month: Month }>[] {
+export function getListOfMonths(
+  dateRange: DateRange,
+): readonly Readonly<{ year: YearString; month: MonthString }>[] {
   return eachMonthOfInterval(dateRange).map((date) => ({
-    year: date.getUTCFullYear().toString() as Year,
-    month: format(date, 'MM') as Month,
+    year: date.getUTCFullYear().toString() as YearString,
+    month: format(date, 'MM') as MonthString,
   }));
 }
 
 function getFallbackList(
-  listOfMonths: readonly Readonly<{ year: Year; month: Month }>[],
+  listOfMonths: readonly Readonly<{ year: YearString; month: MonthString }>[],
   results: readonly e.Either<
     HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractFileFailed'>,
     string
@@ -126,7 +128,7 @@ function getFallbackList(
   | GeneralError<'WriteFileFailed'>
   | FileServiceError<'ExtractFileFailed'>
   | GeneralError<'FileMissing'>,
-  { fallback: readonly Readonly<{ year: Year; month: Month }>[]; csvFilePath: readonly string[] }
+  { fallback: readonly Readonly<{ year: YearString; month: MonthString }>[]; csvFilePath: readonly string[] }
 > {
   let fileBeginToExist = false;
 
@@ -137,7 +139,7 @@ function getFallbackList(
         | GeneralError<'WriteFileFailed'>
         | FileServiceError<'ExtractFileFailed'>
         | GeneralError<'FileMissing'>,
-        { fallback: { year: Year; month: Month }[]; csvFilePath: string[] }
+        { fallback: { year: YearString; month: MonthString }[]; csvFilePath: string[] }
       >,
       current,
       index,
@@ -172,7 +174,7 @@ function getFallbackList(
 }
 
 function createFallbackDateRange(
-  fallback: readonly Readonly<{ year: Year; month: Month }>[],
+  fallback: readonly Readonly<{ year: YearString; month: MonthString }>[],
   orgDateRange: DateRange,
 ): DateRange | null {
   if (fallback.length === 0) return null;

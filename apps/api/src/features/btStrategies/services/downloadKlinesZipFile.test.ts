@@ -6,6 +6,7 @@ import { DeepPartial } from 'ts-essentials';
 import { createHttpError, isHttpError } from '#infra/http/client.error.js';
 import { getBnbConfig } from '#infra/services/binance/config.js';
 import { createFileServiceError, isFileServiceError } from '#infra/services/file/error.js';
+import { DayString, MonthString, YearString } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
 import { randomDate } from '#test-utils/faker/date.js';
 import { randomBtExecutionId } from '#test-utils/features/btStrategies/models.js';
@@ -13,7 +14,6 @@ import { randomTimeframe } from '#test-utils/features/shared/domain.js';
 import { randomSymbolName } from '#test-utils/features/symbols/models.js';
 
 import { DownloadKlinesZipFileDeps, downloadKlinesZipFile } from './downloadKlinesZipFile.js';
-import { Day, Month, Year } from './getKlinesForBt.js';
 
 function mockDeps(overrides?: DeepPartial<DownloadKlinesZipFileDeps>): DownloadKlinesZipFileDeps {
   return mergeDeepRight(
@@ -30,8 +30,8 @@ function createMonthlyFileRequest() {
     executionId: randomBtExecutionId(),
     symbol: randomSymbolName(),
     timeframe: randomTimeframe(),
-    year: format(date, 'yyyy') as Year,
-    month: format(date, 'MM') as Month,
+    year: format(date, 'yyyy') as YearString,
+    month: format(date, 'MM') as MonthString,
   };
 }
 function createDailyFileRequest() {
@@ -40,9 +40,9 @@ function createDailyFileRequest() {
     executionId: randomBtExecutionId(),
     symbol: randomSymbolName(),
     timeframe: randomTimeframe(),
-    year: format(date, 'yyyy') as Year,
-    month: format(date, 'MM') as Month,
-    day: format(date, 'dd') as Day,
+    year: format(date, 'yyyy') as YearString,
+    month: format(date, 'MM') as MonthString,
+    day: format(date, 'dd') as DayString,
   };
 }
 

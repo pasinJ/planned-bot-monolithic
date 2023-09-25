@@ -8,13 +8,13 @@ import { getBnbConfig } from '#infra/services/binance/config.js';
 import { BNB_ENDPOINTS } from '#infra/services/binance/constants.js';
 import { isBnbServiceError } from '#infra/services/binance/error.js';
 import { buildBnbService } from '#infra/services/binance/service.js';
+import { DateRange } from '#shared/utils/date.js';
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { randomDate } from '#test-utils/faker/date.js';
 import { randomTimeframe } from '#test-utils/features/shared/domain.js';
 import { randomSymbolName } from '#test-utils/features/symbols/models.js';
 import { mockMainLogger } from '#test-utils/services.js';
 
-import { DateRange } from './getKlinesForBt.js';
 import { GetKlinesFromApiRequest, getKlinesFromApi } from './getKlinesFromApi.js';
 
 function createRequest(overrides?: Partial<GetKlinesFromApiRequest>): GetKlinesFromApiRequest {

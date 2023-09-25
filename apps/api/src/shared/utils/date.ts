@@ -46,3 +46,7 @@ type Range<F extends number, T extends number> = Exclude<Enumerate<T>, Enumerate
 type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] extends N
   ? Acc[number]
   : Enumerate<N, [...Acc, Acc['length']]>;
+
+export type DateRange = Readonly<{ start: StartTimestamp; end: EndTimestamp }>;
+type StartTimestamp = ValidDate & z.BRAND<'StartTimestamp'>;
+type EndTimestamp = ValidDate & z.BRAND<'EndTimestamp'>;

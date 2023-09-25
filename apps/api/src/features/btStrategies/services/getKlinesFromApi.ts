@@ -12,9 +12,9 @@ import { SymbolName } from '#features/symbols/dataModels/symbol.js';
 import { BnbServiceError, createBnbServiceError } from '#infra/services/binance/error.js';
 import { BnbClient } from '#infra/services/binance/service.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
+import { DateRange } from '#shared/utils/date.js';
 
 import { CreateKlineModelError, KlineModel, createKlineModel } from '../dataModels/kline.js';
-import { DateRange } from './getKlinesForBt.js';
 
 export type GetKlinesFromApiDeps = Readonly<{ bnbClient: BnbClient }>;
 export type GetKlinesFromApiRequest = Readonly<{

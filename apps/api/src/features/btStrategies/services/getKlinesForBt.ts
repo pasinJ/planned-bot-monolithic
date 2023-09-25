@@ -19,14 +19,13 @@ import t from 'fp-ts/lib/Task.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { DeepReadonly } from 'ts-essentials';
-import { z } from 'zod';
 
 import { Timeframe } from '#features/shared/domain/timeframe.js';
 import { SymbolName } from '#features/symbols/dataModels/symbol.js';
 import { getBnbConfig } from '#infra/services/binance/config.js';
 import { BnbServiceError, createBnbServiceError } from '#infra/services/binance/error.js';
 import { FileServiceError } from '#infra/services/file/error.js';
-import { ValidDate } from '#shared/utils/date.js';
+import { DateRange, ValidDate } from '#shared/utils/date.js';
 
 import { BtExecutionId } from '../dataModels/btExecution.js';
 import { BtEndTimestamp, BtStartTimestamp, MaxNumKlines } from '../dataModels/btStrategy.js';
@@ -89,14 +88,6 @@ export function getKlinesForBt(deps: GetKlinesForBtDeps) {
     );
   };
 }
-
-export type DateRange = Readonly<{ start: StartTimestamp; end: EndTimestamp }>;
-type StartTimestamp = ValidDate & z.BRAND<'StartTimestamp'>;
-type EndTimestamp = ValidDate & z.BRAND<'EndTimestamp'>;
-
-export type Year = string & z.BRAND<'Year'>;
-export type Month = string & z.BRAND<'Month'>;
-export type Day = string & z.BRAND<'Day'>;
 
 export function extendDateRangeToIncludeRequiredNumOfKlines(
   dateRange: DateRange,

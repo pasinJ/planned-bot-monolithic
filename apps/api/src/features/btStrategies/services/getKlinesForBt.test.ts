@@ -9,6 +9,7 @@ import { Timeframe, timeframeEnum } from '#features/shared/domain/timeframe.js';
 import { getBnbConfig } from '#infra/services/binance/config.js';
 import { createBnbServiceError, isBnbServiceError } from '#infra/services/binance/error.js';
 import { createFileServiceError } from '#infra/services/file/error.js';
+import { DateRange } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
 import { randomBeforeAndAfterDateInPast } from '#test-utils/faker/date.js';
 import { generateArrayOf } from '#test-utils/faker/helper.js';
@@ -22,7 +23,6 @@ import { randomSymbolName } from '#test-utils/features/symbols/models.js';
 
 import { BtEndTimestamp, BtStartTimestamp, MaxNumKlines } from '../dataModels/btStrategy.js';
 import {
-  DateRange,
   GetKlinesForBtDeps,
   GetKlinesForBtRequest,
   approximateNumOfApiCalls,

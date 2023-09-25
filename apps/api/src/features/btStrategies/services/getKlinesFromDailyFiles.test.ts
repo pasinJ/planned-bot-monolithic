@@ -7,6 +7,7 @@ import { exchangeNameEnum } from '#features/shared/domain/exchange.js';
 import { createHttpError } from '#infra/http/client.error.js';
 import { isBnbServiceError } from '#infra/services/binance/error.js';
 import { createGeneralError } from '#shared/errors/generalError.js';
+import { DateRange } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
 import { randomDate } from '#test-utils/faker/date.js';
 import { generateArrayOf } from '#test-utils/faker/helper.js';
@@ -15,7 +16,6 @@ import { mockKline, randomBtExecutionId } from '#test-utils/features/btStrategie
 import { randomTimeframe } from '#test-utils/features/shared/domain.js';
 import { randomSymbolName } from '#test-utils/features/symbols/models.js';
 
-import { DateRange } from './getKlinesForBt.js';
 import {
   GetKlinesFromDailyFilesDeps,
   GetKlinesFromDailyFilesRequest,
