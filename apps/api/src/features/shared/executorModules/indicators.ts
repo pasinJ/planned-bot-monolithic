@@ -1,3 +1,6 @@
+import { ReadonlyNonEmptyArray } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
+import { DeepReadonly } from 'ts-essentials';
+
 import { KlineModel } from '#features/btStrategies/dataModels/kline.js';
 
 import {
@@ -32,52 +35,55 @@ export type Indicators = {
      *  @param source   Series of values to process
      *  @param period   Number of bars
      */
-    sma: (source: number[], period: number) => Promise<number[]>;
+    sma: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Exponential moving average
      *  @param source   Series of values to process
      *  @param period   Number of bars
      */
-    ema: (source: number[], period: number) => Promise<number[]>;
+    ema: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Weighted moving average
      *  @param source   Series of values to process
      *  @param period   Number of bars
      */
-    wma: (source: number[], period: number) => Promise<number[]>;
+    wma: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Volume-weighted moving average
      *  @param source   Series of values to process
      *  @param period   Number of bars
      */
-    vwma: (source: number[], period: number) => Promise<number[]>;
+    vwma: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Supertrend
      *  @param factor   Multiplier for ATR
      *  @param period   Period of ATR
      */
-    supertrend: (fator: number, atrPeriod: number) => Promise<{ supertrend: number[]; direction: number[] }>;
+    supertrend: (
+      fator: number,
+      atrPeriod: number,
+    ) => Promise<DeepReadonly<{ supertrend: number[]; direction: number[] }>>;
     /** Parabolic SAR
      *  @param step     Acceleration increment step
      *  @param max      Maximum acceleration
      */
-    psar: (step: number, max: number) => Promise<number[]>;
+    psar: (step: number, max: number) => Promise<readonly number[]>;
   };
   volume: {
     /** On balance volume */
-    obv: () => Promise<number[]>;
+    obv: () => Promise<readonly number[]>;
     /** Price-volume trend */
-    pvt: () => number[];
+    pvt: () => readonly number[];
     /** Money flow index
      *  @param period     Number of bars
      */
-    mfi: (period: number) => Promise<number[]>;
+    mfi: (period: number) => Promise<readonly number[]>;
     /** Accumulation/Distribution line */
-    ad: () => Promise<number[]>;
+    ad: () => Promise<readonly number[]>;
     /** Williams Accumulation/Distribution */
-    wad: () => Promise<number[]>;
+    wad: () => Promise<readonly number[]>;
     /** Ease of movement */
-    emv: () => Promise<number[]>;
+    emv: () => Promise<readonly number[]>;
     /** Volume weighted average price
      *  @param period     Number of bars
      */
-    vwap: (period: number) => Promise<number[]>;
+    vwap: (period: number) => Promise<readonly number[]>;
   };
   momentum: {
     /** Moving average Convergence/Divergence
@@ -87,25 +93,25 @@ export type Indicators = {
      *  @param signalPeriod     Period of signal
      */
     macd: (
-      source: number[],
+      source: readonly number[],
       shortPeriod: number,
       longPeriod: number,
       signalPeriod: number,
-    ) => Promise<{ macd: number[]; signal: number[]; histogram: number[] }>;
+    ) => Promise<DeepReadonly<{ macd: number[]; signal: number[]; histogram: number[] }>>;
     /** Relative strength index
      *  @param source     Series of values to process
      *  @param period     Number of bars
      */
-    rsi: (source: number[], period: number) => Promise<number[]>;
+    rsi: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Average direction index
      *  @param period     Number of bars
      */
-    adx: (period: number) => Promise<number[]>;
+    adx: (period: number) => Promise<readonly number[]>;
     /** Rate of change
      *  @param source     Series of values to process
      *  @param period     Number of bars
      */
-    roc: (source: number[], period: number) => Promise<number[]>;
+    roc: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Stochastic
      *  @param kPeriod    Period of moving average of %K
      *  @param kSlow      Period of slow oscillating %K
@@ -115,12 +121,12 @@ export type Indicators = {
       kPeriod: number,
       kSlow: number,
       dPeriod: number,
-    ) => Promise<{ stoch: number[]; stochMa: number[] }>;
+    ) => Promise<DeepReadonly<{ stoch: number[]; stochMa: number[] }>>;
     /** Stochastic RSI
      *  @param source     Series of values to process
      *  @param period     Number of bars
      */
-    stochRsi: (source: number[], period: number) => Promise<number[]>;
+    stochRsi: (source: readonly number[], period: number) => Promise<readonly number[]>;
   };
   volatility: {
     /** Bollinger Band
@@ -129,27 +135,30 @@ export type Indicators = {
      *  @param stddev     Standard deviation factor
      */
     bb: (
-      source: number[],
+      source: readonly number[],
       period: number,
       stddev: number,
-    ) => Promise<{ upper: number[]; middle: number[]; lower: number[] }>;
+    ) => Promise<DeepReadonly<{ upper: number[]; middle: number[]; lower: number[] }>>;
     /** Bollinger Bands Width
      *  @param bb     Bollinger Band values
      */
-    bbw: (bb: { upper: number[]; middle: number[]; lower: number[] }) => number[];
+    bbw: (bb: DeepReadonly<{ upper: number[]; middle: number[]; lower: number[] }>) => readonly number[];
     /** Keltner Channel
      *  @param period     Number of bars
      *  @param stddev     Standard deviation factor
      */
-    kc: (period: number, stddev: number) => Promise<{ upper: number[]; middle: number[]; lower: number[] }>;
+    kc: (
+      period: number,
+      stddev: number,
+    ) => Promise<DeepReadonly<{ upper: number[]; middle: number[]; lower: number[] }>>;
     /** Average True Range
      *  @param period     Number of bars
      */
-    atr: (period: number) => Promise<number[]>;
+    atr: (period: number) => Promise<readonly number[]>;
   };
 };
 
-export function buildIndicators(klines: readonly KlineModel[]): Indicators {
+export function buildIndicators(klines: ReadonlyNonEmptyArray<KlineModel>): Indicators {
   return {
     trend: {
       sma: sma,
