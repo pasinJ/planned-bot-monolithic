@@ -14,6 +14,7 @@ import {
   kc,
   macd,
   mfi,
+  momentum,
   obv,
   psar,
   pvt,
@@ -86,6 +87,11 @@ export type Indicators = {
     vwap: (period: number) => Promise<readonly number[]>;
   };
   momentum: {
+    /** Momentum
+     *  @param source           Series of values to process
+     *  @param period           Period of value to compare
+     */
+    momentum: (source: readonly number[], period: number) => Promise<readonly number[]>;
     /** Moving average Convergence/Divergence
      *  @param source           Series of values to process
      *  @param shortPeriod      Period of short EMA
@@ -161,9 +167,9 @@ export type Indicators = {
 export function buildIndicators(klines: ReadonlyNonEmptyArray<KlineModel>): Indicators {
   return {
     trend: {
-      sma: sma,
-      ema: ema,
-      wma: wma,
+      sma,
+      ema,
+      wma,
       vwma: (source, period) => vwma(klines, source, period),
       supertrend: (factor, atrPeriod) => supertrend(klines, factor, atrPeriod),
       psar: (step, max) => psar(klines, step, max),
@@ -178,16 +184,17 @@ export function buildIndicators(klines: ReadonlyNonEmptyArray<KlineModel>): Indi
       vwap: (period) => vwap(klines, period),
     },
     momentum: {
-      macd: macd,
-      rsi: rsi,
+      momentum,
+      macd,
+      rsi,
       adx: (period) => adx(klines, period),
-      roc: roc,
+      roc,
       stoch: (kPeriod, kSlow, dPeriod) => stoch(klines, kPeriod, kSlow, dPeriod),
-      stochRsi: stochRsi,
+      stochRsi,
     },
     volatility: {
-      bb: bb,
-      bbw: bbw,
+      bb,
+      bbw,
       kc: (period, stddev) => kc(klines, period, stddev),
       atr: (period) => atr(klines, period),
     },

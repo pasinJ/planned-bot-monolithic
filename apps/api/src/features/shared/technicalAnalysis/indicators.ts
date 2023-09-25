@@ -12,8 +12,8 @@ const ta = new IndicatorsNormalized();
  *  @param source   Series of values to process
  *  @param period   Number of bars
  */
-export function sma(source: readonly number[], period: number): Promise<readonly number[]> {
-  return ta.sma(clone(source), period);
+export async function sma(source: readonly number[], period: number): Promise<readonly number[]> {
+  return replaceEmptyItemWithNaN(await ta.sma(clone(source), period));
 }
 
 /** Exponential moving average
@@ -28,8 +28,8 @@ export function ema(source: readonly number[], period: number): Promise<readonly
  *  @param source   Series of values to process
  *  @param period   Number of bars
  */
-export function wma(source: readonly number[], period: number): Promise<readonly number[]> {
-  return ta.wma(clone(source), period);
+export async function wma(source: readonly number[], period: number): Promise<readonly number[]> {
+  return replaceEmptyItemWithNaN(await ta.wma(clone(source), period));
 }
 
 /** Volume-weighted moving average
@@ -37,7 +37,7 @@ export function wma(source: readonly number[], period: number): Promise<readonly
  *  @param source   Series of values to process
  *  @param period   Number of bars
  */
-export function vwma(
+export async function vwma(
   klines: readonly KlineModel[],
   source: readonly number[],
   period: number,
@@ -49,7 +49,7 @@ export function vwma(
     { volumeSeries: [] as number[] },
   );
 
-  return ta.vwma(clone(source), volumeSeries, period);
+  return replaceEmptyItemWithNaN(await ta.vwma(clone(source), volumeSeries, period));
 }
 
 /** Supertrend
@@ -196,7 +196,7 @@ export function pvt(klines: readonly KlineModel[]): readonly number[] {
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export function mfi(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function mfi(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
   const { highSeries, lowSeries, closeSeries, volumeSeries } = klines.reduce(
     ({ highSeries, lowSeries, closeSeries, volumeSeries }, kline) => {
       return {
@@ -214,7 +214,7 @@ export function mfi(klines: readonly KlineModel[], period: number): Promise<read
     },
   );
 
-  return ta.mfi(highSeries, lowSeries, closeSeries, volumeSeries, period);
+  return replaceEmptyItemWithNaN(await ta.mfi(highSeries, lowSeries, closeSeries, volumeSeries, period));
 }
 
 /** Accumulation/Distribution line
@@ -289,7 +289,7 @@ export function emv(klines: readonly KlineModel[]): Promise<readonly number[]> {
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export function vwap(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function vwap(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
   const { highSeries, lowSeries, closeSeries, volumeSeries } = klines.reduce(
     ({ highSeries, lowSeries, closeSeries, volumeSeries }, kline) => {
       return {
@@ -307,7 +307,15 @@ export function vwap(klines: readonly KlineModel[], period: number): Promise<rea
     },
   );
 
-  return ta.vwap(highSeries, lowSeries, closeSeries, volumeSeries, period);
+  return replaceEmptyItemWithNaN(await ta.vwap(highSeries, lowSeries, closeSeries, volumeSeries, period));
+}
+
+/** Momentum
+ *  @param source           Series of values to process
+ *  @param period           Period of value to compare
+ */
+export async function momentum(source: readonly number[], period: number): Promise<readonly number[]> {
+  return replaceEmptyItemWithNaN(await ta.mom(clone(source), period));
 }
 
 /** Moving average Convergence/Divergence
@@ -323,22 +331,26 @@ export async function macd(
   signalPeriod: number,
 ): Promise<DeepReadonly<{ macd: number[]; signal: number[]; histogram: number[] }>> {
   const [macd, signal, histogram] = await ta.macd(clone(source), shortPeriod, longPeriod, signalPeriod);
-  return { macd, signal, histogram };
+  return {
+    macd: replaceEmptyItemWithNaN(macd),
+    signal: replaceEmptyItemWithNaN(signal),
+    histogram: replaceEmptyItemWithNaN(histogram),
+  };
 }
 
 /** Relative strength index
  *  @param source     Series of values to process
  *  @param period     Number of bars
  */
-export function rsi(source: readonly number[], period: number): Promise<readonly number[]> {
-  return ta.rsi(clone(source), period);
+export async function rsi(source: readonly number[], period: number): Promise<readonly number[]> {
+  return replaceEmptyItemWithNaN(await ta.rsi(clone(source), period));
 }
 
 /** Average direction index
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export function adx(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function adx(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
   const { highSeries, lowSeries } = klines.reduce(
     ({ highSeries, lowSeries }, kline) => {
       return {
@@ -352,15 +364,15 @@ export function adx(klines: readonly KlineModel[], period: number): Promise<read
     },
   );
 
-  return ta.adx(highSeries, lowSeries, period);
+  return replaceEmptyItemWithNaN(await ta.adx(highSeries, lowSeries, period));
 }
 
 /** Rate of change
  *  @param source     Series of values to process
  *  @param period     Number of bars
  */
-export function roc(source: readonly number[], period: number): Promise<readonly number[]> {
-  return ta.roc(clone(source), period);
+export async function roc(source: readonly number[], period: number): Promise<readonly number[]> {
+  return replaceEmptyItemWithNaN(await ta.roc(clone(source), period));
 }
 
 /** Stochastic Oscillator
@@ -390,7 +402,7 @@ export async function stoch(
   );
   const [stoch, stochMa] = await ta.stoch(highSeries, lowSeries, closeSeries, kPeriod, kSlow, dPeriod);
 
-  return { stoch, stochMa };
+  return { stoch: replaceEmptyItemWithNaN(stoch), stochMa: replaceEmptyItemWithNaN(stochMa) };
 }
 
 /** Stochastic RSI
@@ -398,7 +410,7 @@ export async function stoch(
  *  @param period     Number of bars
  */
 export async function stochRsi(source: readonly number[], period: number): Promise<readonly number[]> {
-  return ta.stochrsi(clone(source), period);
+  return replaceEmptyItemWithNaN(await ta.stochrsi(clone(source), period));
 }
 
 /** Bollinger Band
@@ -413,9 +425,9 @@ export async function bb(
 ): Promise<DeepReadonly<{ upper: number[]; middle: number[]; lower: number[] }>> {
   const [lower, middle, upper] = await ta.bbands(clone(source), period, stddev);
   return {
-    lower: Array.from(lower, (item) => item || NaN),
-    middle: Array.from(middle, (item) => item || NaN),
-    upper: Array.from(upper, (item) => item || NaN),
+    lower: replaceEmptyItemWithNaN(lower),
+    middle: replaceEmptyItemWithNaN(middle),
+    upper: replaceEmptyItemWithNaN(upper),
   };
 }
 
@@ -456,13 +468,23 @@ export async function kc(
   );
 
   const [lower, middle, upper] = await ta.kc(highSeries, lowSeries, closeSeries, period, stddev);
-  return { lower, middle, upper };
+  return {
+    lower: replaceEmptyItemWithNaN(lower),
+    middle: replaceEmptyItemWithNaN(middle),
+    upper: replaceEmptyItemWithNaN(upper),
+  };
 }
 
 /** Average True Range
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export function atr(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
-  return ta.atr(klines.map(prop('high')), klines.map(prop('low')), klines.map(prop('close')), period);
+export async function atr(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+  return replaceEmptyItemWithNaN(
+    await ta.atr(klines.map(prop('high')), klines.map(prop('low')), klines.map(prop('close')), period),
+  );
+}
+
+function replaceEmptyItemWithNaN<T>(arr: readonly T[]): readonly T[] {
+  return Array.from(arr, (item) => item || NaN) as readonly T[];
 }
