@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import { ValidDate } from '#shared/utils/date.js';
+import { TimezoneString } from '#shared/utils/string.js';
 
 export const invalidDate = new Date('invalid');
 export const randomDate = () => faker.date.anytime() as ValidDate;
@@ -20,3 +21,5 @@ export const randomBeforeAndAfterDateInPast = (refDate?: Date) => {
 
   return { before, after };
 };
+
+export const randomTimezone = () => faker.location.timeZone() as TimezoneString;

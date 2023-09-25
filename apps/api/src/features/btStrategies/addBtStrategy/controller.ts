@@ -9,7 +9,7 @@ import { languageSchema } from '#features/shared/domain/strategy.js';
 import { timeframeSchema } from '#features/shared/domain/timeframe.js';
 import { validDateSchema } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
-import { isoUtcDateStringSchema } from '#shared/utils/string.js';
+import { isoUtcDateStringSchema, timezoneStringSchema } from '#shared/utils/string.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
 import { AddBtStrategyDeps, addBtStrategy } from './useCase.js';
@@ -57,6 +57,7 @@ function validateRequestBody(body: unknown) {
       makerFeeRate: z.number(),
       startTimestamp: isoUtcDateStringSchema.pipe(z.coerce.date()).pipe(validDateSchema),
       endTimestamp: isoUtcDateStringSchema.pipe(z.coerce.date()).pipe(validDateSchema),
+      timezone: timezoneStringSchema,
       language: languageSchema,
       body: z.string(),
     })

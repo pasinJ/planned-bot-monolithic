@@ -10,7 +10,7 @@ import { AssetName, SymbolName } from '#features/symbols/dataModels/symbol.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate, validDateSchema } from '#shared/utils/date.js';
 import { nonNegativeFloat8DigitsSchema, nonNegativePercentage8DigitsSchema } from '#shared/utils/number.js';
-import { nonEmptyStringSchema } from '#shared/utils/string.js';
+import { TimezoneString, nonEmptyStringSchema } from '#shared/utils/string.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
 export type BtStrategyModel = Readonly<{
@@ -26,6 +26,7 @@ export type BtStrategyModel = Readonly<{
   maxNumKlines: MaxNumKlines;
   startTimestamp: BtStartTimestamp;
   endTimestamp: BtEndTimestamp;
+  timezone: TimezoneString;
   language: Language;
   body: BtBody;
   version: number;
@@ -77,6 +78,7 @@ export function createBtStrategyModel(
     maxNumKlines: number;
     startTimestamp: ValidDate;
     endTimestamp: ValidDate;
+    timezone: TimezoneString;
     language: Language;
     body: string;
   },
@@ -102,6 +104,7 @@ export function createBtStrategyModel(
         (endTimestamp) => isBefore(endTimestamp, currentDate),
         'End timestamp must be in the past',
       ),
+      timezone: z.any(),
       language: z.any(),
       body: btBodySchema,
       version: z.number().nonnegative().int(),

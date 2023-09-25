@@ -11,6 +11,7 @@ import { AssetName, SymbolModel } from '#features/symbols/dataModels/symbol.js';
 import { DateService } from '#infra/services/date/service.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate } from '#shared/utils/date.js';
+import { TimezoneString } from '#shared/utils/string.js';
 
 import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import { BtStrategyId, BtStrategyModel, createBtStrategyModel } from '../dataModels/btStrategy.js';
@@ -40,6 +41,7 @@ export type AddBtStrategyRequest = Readonly<{
   makerFeeRate: number;
   startTimestamp: ValidDate;
   endTimestamp: ValidDate;
+  timezone: TimezoneString;
   language: Language;
   body: string;
 }>;

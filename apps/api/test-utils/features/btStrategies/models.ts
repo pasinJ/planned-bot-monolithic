@@ -4,7 +4,7 @@ import { BtExecutionId } from '#features/btStrategies/dataModels/btExecution.js'
 import { BtStrategyId, BtStrategyModel, MaxNumKlines } from '#features/btStrategies/dataModels/btStrategy.js';
 import { KlineModel } from '#features/btStrategies/dataModels/kline.js';
 import { RemoveBrandFromObjVal } from '#shared/utils/types.js';
-import { randomBeforeAndAfterDateInPast } from '#test-utils/faker/date.js';
+import { randomBeforeAndAfterDateInPast, randomTimezone } from '#test-utils/faker/date.js';
 import {
   randomNonNegativeFloat,
   randomNonNegativeInt,
@@ -30,6 +30,7 @@ export function mockBtStrategy(overrides?: Partial<RemoveBrandFromObjVal<BtStrat
     maxNumKlines: randomPositiveInt(),
     startTimestamp: faker.date.soon(),
     endTimestamp: faker.date.future(),
+    timezone: randomTimezone(),
     language: randomLanguage(),
     body: randomString(),
     version: randomNonNegativeInt(),

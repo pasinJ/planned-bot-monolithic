@@ -42,6 +42,7 @@ function createMongooseModel(
     maxNumKlines: { type: Number, required: true },
     startTimestamp: { type: Date, required: true },
     endTimestamp: { type: Date, required: true },
+    timezone: { type: String, required: true },
     language: { type: String, required: true, enum: languageList },
     body: { type: String, required: true },
     version: { type: Number, required: true },

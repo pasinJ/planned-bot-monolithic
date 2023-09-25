@@ -5,7 +5,7 @@ import { DeepPartial } from 'ts-essentials';
 import { createSymbolDaoError, isSymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
 import { executeT } from '#shared/utils/fp.js';
-import { randomBeforeAndAfterDateInPast, randomDate } from '#test-utils/faker/date.js';
+import { randomBeforeAndAfterDateInPast, randomDate, randomTimezone } from '#test-utils/faker/date.js';
 import { randomPositiveFloat, randomPositiveInt } from '#test-utils/faker/number.js';
 import { randomString } from '#test-utils/faker/string.js';
 import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/features/shared/domain.js';
@@ -50,6 +50,7 @@ function mockDepsAndRequest(overrides?: {
       makerFeeRate: randomPositiveFloat(),
       startTimestamp: before,
       endTimestamp: after,
+      timezone: randomTimezone(),
       language: randomLanguage(),
       body: randomString(),
       ...overrides?.request,

@@ -1,3 +1,5 @@
+import { faker } from '@faker-js/faker';
+
 import { randomBeforeAndAfterDateInPast } from '#test-utils/faker/date.js';
 import { randomPositiveFloat, randomPositiveInt } from '#test-utils/faker/number.js';
 import { randomString } from '#test-utils/faker/string.js';
@@ -17,6 +19,7 @@ export function mockValidAddBtStrategyRequestBody() {
     makerFeeRate: randomPositiveFloat(),
     startTimestamp: before.toISOString(),
     endTimestamp: after.toISOString(),
+    timezone: faker.location.timeZone(),
     language: randomLanguage(),
     body: randomString(),
   };
