@@ -1,105 +1,102 @@
 import { format, getWeek } from 'date-fns';
 import { utcToZonedTime } from 'date-fns-tz';
-import { last } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
+import { mergeDeepRight } from 'ramda';
+import { DeepPartial } from 'ts-essentials';
 
-import { randomTimezone } from '#test-utils/faker/date.js';
-import { generateArrayOf } from '#test-utils/faker/helper.js';
-import { mockKline } from '#test-utils/features/btStrategies/models.js';
+import { randomDate, randomTimezone } from '#test-utils/faker/date.js';
 
-import { buildSymtemModule } from './system.js';
+import { SystemModuleDeps, buildSymtemModule } from './system.js';
+
+function mockDeps(overrides?: DeepPartial<SystemModuleDeps>): SystemModuleDeps {
+  return mergeDeepRight({ dateService: { getCurrentDate: () => randomDate() } }, overrides ?? {});
+}
 
 describe('UUT: System module', () => {
   const timezone = randomTimezone();
-  const klines = generateArrayOf(mockKline);
-  const systemModule = buildSymtemModule(timezone, klines);
+  const currentDate = randomDate();
+  const localCurrentDate = utcToZonedTime(currentDate, timezone);
+  const systemModule = buildSymtemModule(
+    mockDeps({ dateService: { getCurrentDate: () => currentDate } }),
+    timezone,
+  );
 
   describe('[WHEN] get date', () => {
-    it('[THEN] it will return the date of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the current date in the given timezone', () => {
       const result = systemModule.getDate();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone);
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate);
     });
   });
 
   describe('[WHEN] get unix millisecond time', () => {
-    it('[THEN] it will return the unix millisecond of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the unix millisecond in the given timezone', () => {
       const result = systemModule.getUnixMsTime();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getTime();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getTime());
     });
   });
 
   describe('[WHEN] get day', () => {
-    it('[THEN] it will return the day of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the day of month in the given timezone', () => {
       const result = systemModule.getDay();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getDate();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getDate());
     });
   });
 
   describe('[WHEN] get month', () => {
-    it('[THEN] it will return the month of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the month in the given timezone', () => {
       const result = systemModule.getMonth();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getMonth();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getMonth());
     });
   });
 
   describe('[WHEN] get year', () => {
-    it('[THEN] it will return the year of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the year in the given timezone', () => {
       const result = systemModule.getYear();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getFullYear();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getFullYear());
     });
   });
 
   describe('[WHEN] get hour', () => {
-    it('[THEN] it will return the hour of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the hour in the given timezone', () => {
       const result = systemModule.getHours();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getHours();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getHours());
     });
   });
 
   describe('[WHEN] get minute', () => {
-    it('[THEN] it will return the minute of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the minute in the given timezone', () => {
       const result = systemModule.getMinutes();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getMinutes();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getMinutes());
     });
   });
 
   describe('[WHEN] get seconds', () => {
-    it('[THEN] it will return the seconds of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the seconds in the given timezone', () => {
       const result = systemModule.getSeconds();
 
-      const expected = utcToZonedTime(last(klines).closeTimestamp, timezone).getSeconds();
-      expect(result).toEqual(expected);
+      expect(result).toEqual(localCurrentDate.getSeconds());
     });
   });
 
   describe('[WHEN] get day of week', () => {
-    it('[THEN] it will return the day of week of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the day of week in the given timezone', () => {
       const result = systemModule.getDayOfWeek();
 
-      const expected = format(utcToZonedTime(last(klines).closeTimestamp, timezone), 'eeee');
-      expect(result).toEqual(expected);
+      expect(result).toEqual(format(localCurrentDate, 'eeee'));
     });
   });
 
   describe('[WHEN] get week of year', () => {
-    it('[THEN] it will return the week of year of close timestamp of the last kline from array in given timezone', () => {
+    it('[THEN] it will return the week of year in the given timezone', () => {
       const result = systemModule.getWeekOfYear();
 
-      const expected = getWeek(utcToZonedTime(last(klines).closeTimestamp, timezone));
-      expect(result).toEqual(expected);
+      expect(result).toEqual(getWeek(localCurrentDate));
     });
   });
 });

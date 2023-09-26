@@ -1,4 +1,7 @@
+import { utcToZonedTime as utcToZonedTimeBase } from 'date-fns-tz';
 import { z } from 'zod';
+
+import { TimezoneString } from './string.js';
 
 export type ValidDate = z.infer<typeof validDateSchema>;
 export const validDateSchema = z.date().brand('ValidDate');
@@ -50,3 +53,7 @@ type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] exte
 export type DateRange = Readonly<{ start: StartTimestamp; end: EndTimestamp }>;
 type StartTimestamp = ValidDate & z.BRAND<'StartTimestamp'>;
 type EndTimestamp = ValidDate & z.BRAND<'EndTimestamp'>;
+
+export function utcToZonedTime(timezone: TimezoneString) {
+  return (date: ValidDate): ValidDate => utcToZonedTimeBase(date, timezone) as ValidDate;
+}

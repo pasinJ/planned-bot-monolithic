@@ -1,8 +1,9 @@
 import { format, getWeek } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
-import { ReadonlyNonEmptyArray, last } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
+import io from 'fp-ts/lib/IO.js';
+import { pipe } from 'fp-ts/lib/function.js';
+import { DeepReadonly } from 'ts-essentials';
 
-import { KlineModel } from '#features/btStrategies/dataModels/kline.js';
+import { DateService } from '#infra/services/date/service.js';
 import {
   Day,
   DayOfWeekString,
@@ -14,6 +15,7 @@ import {
   ValidDate,
   WeekOfYear,
   Year,
+  utcToZonedTime,
 } from '#shared/utils/date.js';
 import { TimezoneString } from '#shared/utils/string.js';
 
@@ -31,23 +33,49 @@ export type SymtemModule = {
   getWeekOfYear: () => WeekOfYear;
 };
 
-export function buildSymtemModule(
-  timezone: TimezoneString,
-  klines: ReadonlyNonEmptyArray<KlineModel>,
-): SymtemModule {
-  const lastKline = last(klines);
-  const clientLocalTime = utcToZonedTime(lastKline.closeTimestamp, timezone) as ValidDate;
+export type SystemModuleDeps = DeepReadonly<{ dateService: DateService }>;
+
+export function buildSymtemModule(deps: SystemModuleDeps, timezone: TimezoneString): SymtemModule {
+  const { dateService } = deps;
+  const getClientLocalDate = pipe(dateService.getCurrentDate, io.map(utcToZonedTime(timezone)));
 
   return {
-    getDate: () => clientLocalTime,
-    getUnixMsTime: () => clientLocalTime.getTime() as UnixMs,
-    getDay: () => clientLocalTime.getDate() as Day,
-    getMonth: () => clientLocalTime.getMonth() as Month,
-    getYear: () => clientLocalTime.getFullYear() as Year,
-    getHours: () => clientLocalTime.getHours() as Hour,
-    getMinutes: () => clientLocalTime.getMinutes() as Minute,
-    getSeconds: () => clientLocalTime.getSeconds() as Second,
-    getDayOfWeek: () => format(clientLocalTime, 'eeee') as DayOfWeekString,
-    getWeekOfYear: () => getWeek(clientLocalTime) as WeekOfYear,
+    getDate: getClientLocalDate,
+    getUnixMsTime: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getTime() as UnixMs),
+    ),
+    getDay: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getDate() as Day),
+    ),
+    getMonth: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getMonth() as Month),
+    ),
+    getYear: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getFullYear() as Year),
+    ),
+    getHours: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getHours() as Hour),
+    ),
+    getMinutes: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getMinutes() as Minute),
+    ),
+    getSeconds: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => clientLocalDate.getSeconds() as Second),
+    ),
+    getDayOfWeek: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => format(clientLocalDate, 'eeee') as DayOfWeekString),
+    ),
+    getWeekOfYear: pipe(
+      getClientLocalDate,
+      io.map((clientLocalDate) => getWeek(clientLocalDate) as WeekOfYear),
+    ),
   };
 }
