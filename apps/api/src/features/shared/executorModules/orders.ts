@@ -1,8 +1,10 @@
 import { utcToZonedTime } from 'date-fns-tz/fp';
+import { Decimal } from 'decimal.js';
 import io from 'fp-ts/lib/IO.js';
 import ior from 'fp-ts/lib/IORef.js';
 import { flow, pipe } from 'fp-ts/lib/function.js';
 import {
+  __,
   anyPass,
   append,
   concat,
@@ -27,15 +29,16 @@ import { ValidDate } from '#shared/utils/date.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { isUndefined } from '#shared/utils/general.js';
 
-export type OrdersModule = {
+import type { StrategyModule } from './strategy.js';
+
+export type OrdersModule = DeepReadonly<{
   /**   Enter a trading position with a market order (Taker)
    * A market order is an instruction to buy immediately (at the market’s current price).
-   * @param request can be either 'quantity' or 'quoteQuantity'
+   * @param request <br/>
    *    - 'quantity' specifies the amount of the base asset the user wants to buy at the market price.
-   *    - 'quoteQuantity' specifies the amount the user wants to spend the quote asset.
    * @returns void
    */
-  enterMarket: (request: { quantity?: number } | { quoteQuantity?: number }) => void;
+  enterMarket: (request: { quantity?: number }) => void;
   /**   Enter a trading position with a limit order (Maker)
    * A limit order is an instruction to wait until the price hits a limit or better price before being executed.
    * Limit orders will be rejected if they would immediately match and trade as a taker.
@@ -66,12 +69,11 @@ export type OrdersModule = {
   enterStopLimit: (request: { quantity: number; stopPrice: number; limitPrice: number }) => void;
   /**   Exit a trading position with a market order (Taker)
    * A market order is an instruction to sell immediately (at the market’s current price).
-   * @param request can be either 'quantity' or 'quoteQuantity'
+   * @param request <br/>
    *    - 'quantity' specifies the amount of the base asset the user wants to sell at the market price.
-   *    - 'quoteQuantity' specifies the amount the user wants to receive the quote asset.
    * @returns void
    */
-  exitMarket: (request: { quantity?: number } | { quoteQuantity?: number }) => void;
+  exitMarket: (request: { quantity?: number }) => void;
   /**   Exit a trading position with a limit order (Maker)
    * A limit order is an instruction to wait until the price hits a limit or better price before being executed.
    * Limit orders will be rejected if they would immediately match and trade as a taker.
@@ -108,44 +110,45 @@ export type OrdersModule = {
    * @returns void
    */
   cancelAllOrders: (request?: {
-    side?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
+    type?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
     status?: 'PENDING' | 'OPENING' | 'ALL';
   }) => void;
   getPendingOrders: () => readonly PendingOrder[];
   getOpeningOrders: () => readonly OpeningOrder[];
-};
+}>;
 
 export type Order = MarketOrder | LimitOrder | StopMarketOrder | StopLimitOrder | CancelOrder;
 
-export type MarketOrder = BaseOrder & Market & (Pending | Opening | Filled | Canceled | Rejected);
-export type LimitOrder = BaseOrder & Limit & (Pending | Opening | Filled | Canceled | Rejected);
-export type StopMarketOrder = BaseOrder & StopMarket & (Pending | Opening | Filled | Canceled | Rejected);
-export type StopLimitOrder = BaseOrder & StopLimit & (Pending | Opening | Filled | Canceled | Rejected);
-export type CancelOrder = CancelBaseOrder & Cancel & (Pending | Submitted | Rejected);
+export type MarketOrder = DeepReadonly<BaseOrder & Market & (Pending | Filled | Rejected)>;
+export type LimitOrder = DeepReadonly<BaseOrder & Limit & (Pending | Opening | Filled | Canceled | Rejected)>;
+export type StopMarketOrder = DeepReadonly<
+  BaseOrder & StopMarket & (Pending | Opening | Filled | Canceled | Rejected)
+>;
+export type StopLimitOrder = DeepReadonly<
+  BaseOrder & StopLimit & (Pending | Opening | Filled | Canceled | Rejected)
+>;
+export type CancelOrder = DeepReadonly<CancelBaseOrder & Cancel & (Pending | Submitted | Rejected)>;
 
-export type PendingOrder =
-  | (BaseOrder & (Market | Limit | StopMarket | StopLimit) & Pending)
-  | (CancelBaseOrder & Cancel & Pending);
-export type SubmittedOrder = (BaseOrder & Market & Submitted) | (CancelBaseOrder & Cancel & Submitted);
-export type OpeningOrder = BaseOrder & (Limit | StopMarket | StopLimit) & Opening;
-export type FilledOrder = BaseOrder & (Market | Limit | StopMarket | StopLimit) & Filled;
-export type CanceledOrder = BaseOrder & (Limit | StopMarket | StopLimit) & Canceled;
-export type RejectedOrder =
-  | (BaseOrder & (Market | Limit | StopMarket | StopLimit) & Rejected)
-  | (CancelBaseOrder & Cancel & Rejected);
+export type PendingOrder = DeepReadonly<
+  (BaseOrder & (Market | Limit | StopMarket | StopLimit) & Pending) | (CancelBaseOrder & Cancel & Pending)
+>;
+export type SubmittedOrder = DeepReadonly<CancelBaseOrder & Cancel & Submitted>;
+export type OpeningOrder = DeepReadonly<BaseOrder & (Limit | StopMarket | StopLimit) & Opening>;
+export type FilledOrder = DeepReadonly<BaseOrder & (Market | Limit | StopMarket | StopLimit) & Filled>;
+export type CanceledOrder = DeepReadonly<BaseOrder & (Limit | StopMarket | StopLimit) & Canceled>;
+export type RejectedOrder = DeepReadonly<
+  (BaseOrder & (Market | Limit | StopMarket | StopLimit) & Rejected) | (CancelBaseOrder & Cancel & Rejected)
+>;
 
-type BaseOrder = {
-  id: OrderId;
-  symbol: SymbolName;
-  isEntry: boolean;
-  currency: AssetName;
-  createdAt: ValidDate;
-};
+type BaseOrder = { id: OrderId; symbol: SymbolName; createdAt: ValidDate } & (Entry | Exit);
 type CancelBaseOrder = { id: OrderId; symbol: SymbolName; createdAt: ValidDate };
 
 export type OrderId = string & z.BRAND<'OrderId'>;
 
-type Market = { type: 'MARKET' } & ({ quantity: number } | { quoteQuantity: number });
+type Entry = { orderSide: 'ENTRY' };
+type Exit = { orderSide: 'EXIT' };
+
+type Market = { type: 'MARKET'; quantity: number };
 type Limit = { type: 'LIMIT'; quantity: number; limitPrice: number };
 type StopMarket = { type: 'STOP_MARKET'; quantity: number; stopPrice: number };
 type StopLimit = { type: 'STOP_LIMIT'; quantity: number; stopPrice: number; limitPrice: number };
@@ -154,15 +157,12 @@ type Cancel = { type: 'CANCEL'; orderIdToCancel: OrderId };
 type Pending = { status: 'PENDING' };
 type Submitted = { status: 'SUBMITTED'; submittedAt: ValidDate };
 type Opening = { status: 'OPENING'; submittedAt: ValidDate };
-type Filled = {
-  status: 'FILLED';
-  fee: number;
-  submittedAt: ValidDate;
-  filledPrice: Price;
-  filledAt: ValidDate;
-};
+type Filled = { status: 'FILLED'; filledPrice: Price; fee: Fee; submittedAt: ValidDate; filledAt: ValidDate };
 type Canceled = { status: 'CANCELED'; submittedAt: ValidDate; canceledAt: ValidDate };
 type Rejected = { status: 'REJECTED'; submittedAt: ValidDate; reason: string };
+
+export type Fee = Readonly<{ amount: FeeAmount; currency: AssetName }>;
+export type FeeAmount = number & z.BRAND<'FeeAmount'>;
 
 export type OrdersModuleDeps = DeepReadonly<{
   dateService: DateService;
@@ -197,8 +197,8 @@ function enterMarket(
   strategy: BtStrategyModel,
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
-  return (request: { quantity?: number } | { quoteQuantity?: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+  return (request: { quantity?: number }): void => {
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -209,8 +209,7 @@ function enterMarket(
           ({
             id,
             symbol,
-            currency,
-            isEntry: true,
+            orderSide: 'ENTRY',
             createdAt,
             type: 'MARKET',
             status: 'PENDING',
@@ -229,7 +228,7 @@ function enterLimit(
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
   return (request: { quantity: number; limitPrice: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -240,8 +239,7 @@ function enterLimit(
           ({
             id,
             symbol,
-            currency,
-            isEntry: true,
+            orderSide: 'ENTRY',
             createdAt,
             type: 'LIMIT',
             status: 'PENDING',
@@ -260,7 +258,7 @@ function enterStopMarket(
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
   return (request: { quantity: number; stopPrice: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -271,8 +269,7 @@ function enterStopMarket(
           ({
             id,
             symbol,
-            currency,
-            isEntry: true,
+            orderSide: 'ENTRY',
             createdAt,
             type: 'STOP_MARKET',
             status: 'PENDING',
@@ -291,7 +288,7 @@ function enterStopLimit(
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
   return (request: { quantity: number; stopPrice: number; limitPrice: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -302,8 +299,7 @@ function enterStopLimit(
           ({
             id,
             symbol,
-            currency,
-            isEntry: true,
+            orderSide: 'ENTRY',
             createdAt,
             type: 'STOP_LIMIT',
             status: 'PENDING',
@@ -321,8 +317,8 @@ function exitMarket(
   strategy: BtStrategyModel,
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
-  return (request: { quantity?: number } | { quoteQuantity?: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+  return (request: { quantity?: number }): void => {
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -333,8 +329,7 @@ function exitMarket(
           ({
             id,
             symbol,
-            currency,
-            isEntry: false,
+            orderSide: 'EXIT',
             createdAt,
             type: 'MARKET',
             status: 'PENDING',
@@ -353,7 +348,7 @@ function exitLimit(
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
   return (request: { quantity: number; limitPrice: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -364,8 +359,7 @@ function exitLimit(
           ({
             id,
             symbol,
-            currency,
-            isEntry: false,
+            orderSide: 'EXIT',
             createdAt,
             type: 'LIMIT',
             status: 'PENDING',
@@ -384,7 +378,7 @@ function exitStopMarket(
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
   return (request: { quantity: number; stopPrice: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -395,8 +389,7 @@ function exitStopMarket(
           ({
             id,
             symbol,
-            currency,
-            isEntry: false,
+            orderSide: 'EXIT',
             createdAt,
             type: 'STOP_MARKET',
             status: 'PENDING',
@@ -415,7 +408,7 @@ function exitStopLimit(
   pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
 ) {
   return (request: { quantity: number; stopPrice: number; limitPrice: number }): void => {
-    const { symbol, currency, timezone } = strategy;
+    const { symbol, timezone } = strategy;
 
     return pipe(
       io.Do,
@@ -426,8 +419,7 @@ function exitStopLimit(
           ({
             id,
             symbol,
-            currency,
-            isEntry: false,
+            orderSide: 'EXIT',
             createdAt,
             type: 'STOP_LIMIT',
             status: 'PENDING',
@@ -470,17 +462,17 @@ function cancelAllOrders(
 ) {
   return (
     {
-      side = ['ENTRY', 'EXIT', 'CANCEL'],
+      type = ['ENTRY', 'EXIT', 'CANCEL'],
       status = 'ALL',
     }: {
-      side?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
+      type?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
       status?: 'PENDING' | 'OPENING' | 'ALL';
-    } = { side: ['ENTRY', 'EXIT', 'CANCEL'], status: 'ALL' },
+    } = { type: ['ENTRY', 'EXIT', 'CANCEL'], status: 'ALL' },
   ) => {
     const cancelFilter = [
-      side.includes('ENTRY') ? propSatisfies(equals(true), 'isEntry') : undefined,
-      side.includes('EXIT') ? propSatisfies(equals(false), 'isEntry') : undefined,
-      side.includes('CANCEL') ? propSatisfies(equals('CANCEL'), 'type') : undefined,
+      type.includes('ENTRY') ? propSatisfies(equals('ENTRY'), 'orderSide') : undefined,
+      type.includes('EXIT') ? propSatisfies(equals('EXIT'), 'orderSide') : undefined,
+      type.includes('CANCEL') ? propSatisfies(equals('CANCEL'), 'type') : undefined,
     ].filter(isNotNil);
     const orderIdsToCancel =
       status === 'PENDING' ? [] : filter(anyPass(cancelFilter), openingOrders).map(prop('id'));
@@ -493,7 +485,7 @@ function cancelAllOrders(
               orderIdsToCancel.map((orderId) => createCancelOrder(deps, strategy, orderId)),
               io.sequenceArray,
               io.chain((cancelOrders) =>
-                pendingOrdersRef.modify(flow(concat(cancelOrders), uniqWith(removeDuplicateCancelOrder))),
+                pendingOrdersRef.modify(flow(concat(__, cancelOrders), uniqWith(removeDuplicateCancelOrder))),
               ),
             )
           : io.of(undefined),
@@ -525,4 +517,101 @@ function createCancelOrder(deps: OrdersModuleDeps, strategy: BtStrategyModel, or
 
 function removeDuplicateCancelOrder(x: PendingOrder, y: PendingOrder) {
   return x.type === 'CANCEL' && y.type === 'CANCEL' && x.orderIdToCancel === y.orderIdToCancel ? true : false;
+}
+
+export function shouldTreatLimitOrderAsMarketOrder(limitOrder: LimitOrder, currentPrice: Price): boolean {
+  return (
+    (limitOrder.orderSide === 'ENTRY' && limitOrder.limitPrice >= currentPrice) ||
+    (limitOrder.orderSide === 'EXIT' && limitOrder.limitPrice <= currentPrice)
+  );
+}
+
+export function calculateFee(
+  strategy: StrategyModule,
+  order:
+    | Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }>
+    | Extract<OpeningOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  currentPrice: Price,
+): Fee {
+  const { takerFeeRate, makerFeeRate, baseCurrency, assetCurrency } = strategy;
+  const { type, quantity } = order;
+
+  const currency = order.orderSide === 'ENTRY' ? assetCurrency : baseCurrency;
+  const feeRate =
+    type === 'MARKET' ||
+    type === 'STOP_MARKET' ||
+    (type === 'LIMIT' && shouldTreatLimitOrderAsMarketOrder(order, currentPrice))
+      ? takerFeeRate
+      : makerFeeRate;
+  const fillPrice =
+    type === 'MARKET' || (type === 'LIMIT' && shouldTreatLimitOrderAsMarketOrder(order, currentPrice))
+      ? currentPrice
+      : 'limitPrice' in order
+      ? order.limitPrice
+      : order.stopPrice;
+  const amount = (
+    order.orderSide === 'ENTRY' ? new Decimal(quantity) : new Decimal(quantity).times(fillPrice)
+  )
+    .times(feeRate)
+    .dividedBy(100)
+    .toDecimalPlaces(8, Decimal.ROUND_UP)
+    .toNumber();
+
+  return { amount, currency } as Fee;
+}
+
+export function createOpeningOrder(
+  order: Extract<PendingOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  currentDate: ValidDate,
+): OpeningOrder {
+  return {
+    ...order,
+    status: 'OPENING',
+    submittedAt: currentDate,
+  };
+}
+
+export function createSubmittedOrder(
+  order: Extract<PendingOrder, { type: 'CANCEL' }>,
+  currentDate: ValidDate,
+): SubmittedOrder {
+  return { ...order, status: 'SUBMITTED', submittedAt: currentDate };
+}
+
+export function createFilledOrder(
+  strategy: StrategyModule,
+  order:
+    | Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }>
+    | Extract<OpeningOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  currentDate: ValidDate,
+  currentPrice: Price,
+): FilledOrder {
+  return {
+    ...order,
+    status: 'FILLED',
+    filledPrice: currentPrice,
+    fee: calculateFee(strategy, order, currentPrice),
+    submittedAt: currentDate,
+    filledAt: currentDate,
+  };
+}
+
+export function createCanceledOrder(
+  order: Extract<OpeningOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  currentDate: ValidDate,
+): CanceledOrder {
+  return { ...order, status: 'CANCELED', canceledAt: currentDate };
+}
+
+export function createRejectedOrder(
+  order: PendingOrder | SubmittedOrder | OpeningOrder,
+  reason: string,
+  currentDate: ValidDate,
+): RejectedOrder {
+  return {
+    ...order,
+    status: 'REJECTED',
+    reason,
+    submittedAt: currentDate,
+  };
 }

@@ -1,53 +1,52 @@
-import { faker } from '@faker-js/faker';
 import { utcToZonedTime } from 'date-fns-tz';
 import { ReadonlyNonEmptyArray, last } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
 import { ascend, mergeDeepRight, prop, sort } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
-import { KlineModel } from '#features/btStrategies/dataModels/kline.js';
+import { KlineModel, Price } from '#features/btStrategies/dataModels/kline.js';
 import { randomDate } from '#test-utils/faker/date.js';
 import { generateArrayOf } from '#test-utils/faker/helper.js';
 import { randomPositiveFloat } from '#test-utils/faker/number.js';
+import { randomString } from '#test-utils/faker/string.js';
 import { mockBtStrategy, mockKline } from '#test-utils/features/btStrategies/models.js';
+import {
+  mockOpeningLimitOrder,
+  mockOpeningStopLimitOrder,
+  mockOpeningStopMarketOrder,
+  mockPendingLimitOrder,
+  mockPendingMarketOrder,
+  randomOrderId,
+} from '#test-utils/features/shared/order.js';
+import { mockStrategyModule } from '#test-utils/features/shared/strategy.js';
 
-import { OpeningOrder, OrderId, OrdersModuleDeps, buildOrdersModule } from './orders.js';
-
-function mockDeps(overrides?: DeepPartial<OrdersModuleDeps>): OrdersModuleDeps {
-  return mergeDeepRight(
-    {
-      generateOrderId: () => randomOrderId(),
-      dateService: { getCurrentDate: () => lastKline.closeTimestamp },
-    },
-    overrides ?? {},
-  );
-}
-function randomOrderId() {
-  return faker.string.nanoid() as OrderId;
-}
-function mockOpeningOrder(orderId: OrderId, isEntry = true): OpeningOrder {
-  return {
-    id: orderId,
-    symbol: lastKline.symbol,
-    isEntry,
-    currency: strategy.currency,
-    createdAt: randomDate(),
-    status: 'OPENING',
-    submittedAt: randomDate(),
-    type: 'LIMIT',
-    quantity: randomPositiveFloat(),
-    limitPrice: randomPositiveFloat(),
-  };
-}
-
-const strategy = mockBtStrategy();
-const unorderedKlines = generateArrayOf(() => mockKline({ symbol: strategy.symbol }), 5);
-const klines = sort(
-  ascend(prop('closeTimestamp')),
-  unorderedKlines,
-) as unknown as ReadonlyNonEmptyArray<KlineModel>;
-const lastKline = last(klines);
+import {
+  OrdersModuleDeps,
+  buildOrdersModule,
+  calculateFee,
+  createFilledOrder,
+  createOpeningOrder,
+  createRejectedOrder,
+} from './orders.js';
 
 describe('UUT: Orders module', () => {
+  function mockDeps(overrides?: DeepPartial<OrdersModuleDeps>): OrdersModuleDeps {
+    return mergeDeepRight(
+      {
+        generateOrderId: () => randomOrderId(),
+        dateService: { getCurrentDate: () => lastKline.closeTimestamp },
+      },
+      overrides ?? {},
+    );
+  }
+
+  const strategy = mockBtStrategy();
+  const unorderedKlines = generateArrayOf(() => mockKline({ symbol: strategy.symbol }), 5);
+  const klines = sort(
+    ascend(prop('closeTimestamp')),
+    unorderedKlines,
+  ) as unknown as ReadonlyNonEmptyArray<KlineModel>;
+  const lastKline = last(klines);
+
   describe('UUT: Enter with market order', () => {
     describe('[WHEN] enter a trade position with market order using quantity property', () => {
       it('[THEN] it will return void', () => {
@@ -72,45 +71,10 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: true,
-            currency: strategy.currency,
+            orderSide: 'ENTRY',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'MARKET',
             quantity,
-            status: 'PENDING',
-          });
-        });
-      });
-    });
-
-    describe('[WHEN] enter a trade position with market order using quote quantity property', () => {
-      it('[THEN] it will return void', () => {
-        const ordersModule = buildOrdersModule(mockDeps(), strategy, []);
-
-        const result = ordersModule.enterMarket({ quoteQuantity: randomPositiveFloat() });
-
-        expect(result).toBeUndefined();
-      });
-    });
-    describe('[GIVEN] user called enter trade position with market order using quote quantity property', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the entered market order', () => {
-          const orderId = randomOrderId();
-          const deps = mockDeps({ generateOrderId: () => orderId });
-          const ordersModule = buildOrdersModule(deps, strategy, []);
-          const quoteQuantity = randomPositiveFloat();
-          ordersModule.enterMarket({ quoteQuantity });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual({
-            id: orderId,
-            symbol: strategy.symbol,
-            isEntry: true,
-            currency: strategy.currency,
-            createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
-            type: 'MARKET',
-            quoteQuantity,
             status: 'PENDING',
           });
         });
@@ -147,8 +111,7 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: true,
-            currency: strategy.currency,
+            orderSide: 'ENTRY',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'LIMIT',
             quantity,
@@ -189,8 +152,7 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: true,
-            currency: strategy.currency,
+            orderSide: 'ENTRY',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'STOP_MARKET',
             quantity,
@@ -233,8 +195,7 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: true,
-            currency: strategy.currency,
+            orderSide: 'ENTRY',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'STOP_LIMIT',
             quantity,
@@ -271,45 +232,10 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: false,
-            currency: strategy.currency,
+            orderSide: 'EXIT',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'MARKET',
             quantity,
-            status: 'PENDING',
-          });
-        });
-      });
-    });
-
-    describe('[WHEN] exit a trade position with market order using quote quantity property', () => {
-      it('[THEN] it will return void', () => {
-        const ordersModule = buildOrdersModule(mockDeps(), strategy, []);
-
-        const result = ordersModule.exitMarket({ quoteQuantity: randomPositiveFloat() });
-
-        expect(result).toBeUndefined();
-      });
-    });
-    describe('[GIVEN] user called exit trade position with market order using quote quantity property', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the exited market order', () => {
-          const orderId = randomOrderId();
-          const deps = mockDeps({ generateOrderId: () => orderId });
-          const ordersModule = buildOrdersModule(deps, strategy, []);
-          const quoteQuantity = randomPositiveFloat();
-          ordersModule.exitMarket({ quoteQuantity });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual({
-            id: orderId,
-            symbol: strategy.symbol,
-            isEntry: false,
-            currency: strategy.currency,
-            createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
-            type: 'MARKET',
-            quoteQuantity,
             status: 'PENDING',
           });
         });
@@ -346,8 +272,7 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: false,
-            currency: strategy.currency,
+            orderSide: 'EXIT',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'LIMIT',
             quantity,
@@ -388,8 +313,7 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: false,
-            currency: strategy.currency,
+            orderSide: 'EXIT',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'STOP_MARKET',
             quantity,
@@ -432,8 +356,7 @@ describe('UUT: Orders module', () => {
           expect(result).toContainEqual({
             id: orderId,
             symbol: strategy.symbol,
-            isEntry: false,
-            currency: strategy.currency,
+            orderSide: 'EXIT',
             createdAt: utcToZonedTime(lastKline.closeTimestamp, strategy.timezone),
             type: 'STOP_LIMIT',
             quantity,
@@ -489,7 +412,9 @@ describe('UUT: Orders module', () => {
           const openingOrderId = randomOrderId();
           const cancelOrderId = randomOrderId();
           const deps = mockDeps({ generateOrderId: () => cancelOrderId });
-          const ordersModule = buildOrdersModule(deps, strategy, [mockOpeningOrder(openingOrderId)]);
+          const ordersModule = buildOrdersModule(deps, strategy, [
+            mockOpeningLimitOrder({ id: openingOrderId, orderSide: 'ENTRY' }),
+          ]);
           ordersModule.cancelOrder(openingOrderId);
 
           const result = ordersModule.getPendingOrders();
@@ -511,7 +436,9 @@ describe('UUT: Orders module', () => {
           const openingOrderId = randomOrderId();
           const cancelOrderId = randomOrderId();
           const deps = mockDeps({ generateOrderId: () => cancelOrderId });
-          const ordersModule = buildOrdersModule(deps, strategy, [mockOpeningOrder(openingOrderId)]);
+          const ordersModule = buildOrdersModule(deps, strategy, [
+            mockOpeningLimitOrder({ id: openingOrderId, orderSide: 'ENTRY' }),
+          ]);
           ordersModule.cancelOrder(openingOrderId);
           ordersModule.cancelOrder(openingOrderId);
 
@@ -538,9 +465,9 @@ describe('UUT: Orders module', () => {
       const openingExitOrderId = randomOrderId();
       const newCancelOrder = randomOrderId();
       const ordersModule = buildOrdersModule(mockDeps({ generateOrderId: () => newCancelOrder }), strategy, [
-        mockOpeningOrder(openingOrderId, true),
-        mockOpeningOrder(openingEntryOrderId, true),
-        mockOpeningOrder(openingExitOrderId, false),
+        mockOpeningLimitOrder({ id: openingOrderId, orderSide: 'ENTRY' }),
+        mockOpeningLimitOrder({ id: openingEntryOrderId, orderSide: 'ENTRY' }),
+        mockOpeningLimitOrder({ id: openingExitOrderId, orderSide: 'EXIT' }),
       ]);
       ordersModule.enterMarket({ quantity: randomPositiveFloat() });
       ordersModule.exitMarket({ quantity: randomPositiveFloat() });
@@ -574,12 +501,12 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with only exit and cancel orders', () => {
           const { ordersModule } = setupOrders();
-          ordersModule.cancelAllOrders({ side: ['ENTRY'], status: 'PENDING' });
+          ordersModule.cancelAllOrders({ type: ['ENTRY'], status: 'PENDING' });
 
           const result = ordersModule.getPendingOrders();
 
-          expect(result).not.toPartiallyContain({ isEntry: true });
-          expect(result).toIncludeAllPartialMembers([{ isEntry: false }, { type: 'CANCEL' }]);
+          expect(result).not.toPartiallyContain({ orderSide: 'ENTRY' });
+          expect(result).toIncludeAllPartialMembers([{ orderSide: 'EXIT' }, { type: 'CANCEL' }]);
         });
       });
     });
@@ -587,12 +514,12 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with only entry and cancel orders', () => {
           const { ordersModule } = setupOrders();
-          ordersModule.cancelAllOrders({ side: ['EXIT'], status: 'PENDING' });
+          ordersModule.cancelAllOrders({ type: ['EXIT'], status: 'PENDING' });
 
           const result = ordersModule.getPendingOrders();
 
-          expect(result).not.toPartiallyContain({ isEntry: false });
-          expect(result).toIncludeAllPartialMembers([{ isEntry: true }, { type: 'CANCEL' }]);
+          expect(result).not.toPartiallyContain({ orderSide: 'EXIT' });
+          expect(result).toIncludeAllPartialMembers([{ orderSide: 'ENTRY' }, { type: 'CANCEL' }]);
         });
       });
     });
@@ -600,12 +527,12 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with only entry and exit orders', () => {
           const { ordersModule } = setupOrders();
-          ordersModule.cancelAllOrders({ side: ['CANCEL'], status: 'PENDING' });
+          ordersModule.cancelAllOrders({ type: ['CANCEL'], status: 'PENDING' });
 
           const result = ordersModule.getPendingOrders();
 
           expect(result).not.toPartiallyContain({ type: 'CANCEL' });
-          expect(result).toIncludeAllPartialMembers([{ isEntry: true }, { isEntry: false }]);
+          expect(result).toIncludeAllPartialMembers([{ orderSide: 'ENTRY' }, { orderSide: 'EXIT' }]);
         });
       });
     });
@@ -636,7 +563,7 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with a new cancel order for only opening entry order', () => {
           const { ordersModule, newCancelOrder, openingEntryOrderId } = setupOrders();
-          ordersModule.cancelAllOrders({ side: ['ENTRY'], status: 'OPENING' });
+          ordersModule.cancelAllOrders({ type: ['ENTRY'], status: 'OPENING' });
 
           const result = ordersModule.getPendingOrders();
 
@@ -656,7 +583,7 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with a new cancel order for only opening entry order', () => {
           const { ordersModule, newCancelOrder, openingExitOrderId } = setupOrders();
-          ordersModule.cancelAllOrders({ side: ['EXIT'], status: 'OPENING' });
+          ordersModule.cancelAllOrders({ type: ['EXIT'], status: 'OPENING' });
 
           const result = ordersModule.getPendingOrders();
 
@@ -676,7 +603,7 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array without any new cancel order', () => {
           const { ordersModule, openingEntryOrderId, openingExitOrderId } = setupOrders();
-          ordersModule.cancelAllOrders({ side: ['CANCEL'], status: 'OPENING' });
+          ordersModule.cancelAllOrders({ type: ['CANCEL'], status: 'OPENING' });
 
           const result = ordersModule.getPendingOrders();
 
@@ -693,8 +620,8 @@ describe('UUT: Orders module', () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return the given opening orders', () => {
           const openingOrders = [
-            mockOpeningOrder(randomOrderId(), true),
-            mockOpeningOrder(randomOrderId(), false),
+            mockOpeningLimitOrder({ orderSide: 'ENTRY' }),
+            mockOpeningLimitOrder({ orderSide: 'EXIT' }),
           ];
           const ordersModule = buildOrdersModule(mockDeps(), strategy, openingOrders);
 
@@ -703,6 +630,191 @@ describe('UUT: Orders module', () => {
           expect(result).toEqual(openingOrders);
         });
       });
+    });
+  });
+});
+
+describe('UUT: Calculate fee', () => {
+  describe('[GIVEN] the order is an entry MARKET order', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from taker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 5 });
+        const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 0.5, currency: strategy.assetCurrency });
+      });
+    });
+  });
+  describe('[GIVEN] the order is an exit MARKET order', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from taker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 5 });
+        const order = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 10 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 5, currency: strategy.baseCurrency });
+      });
+    });
+  });
+
+  describe('[GIVEN] the order is an entry LIMIT order [AND] the limit price is less than the current price', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from maker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 1, makerFeeRate: 2 });
+        const order = mockOpeningLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 20 });
+        const currentPrice = 30 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 0.2, currency: strategy.assetCurrency });
+      });
+    });
+  });
+  describe('[GIVEN] the order is an entry LIMIT order [AND] the limit price is greater than or equal to the current price', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from taker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 1, makerFeeRate: 2 });
+        const order = mockOpeningLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 20 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 0.1, currency: strategy.assetCurrency });
+      });
+    });
+  });
+  describe('[GIVEN] the order is an exit LIMIT order [AND] the limit price is greater than the current price', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from maker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 1, makerFeeRate: 2 });
+        const order = mockOpeningLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 20 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 4, currency: strategy.baseCurrency });
+      });
+    });
+  });
+  describe('[GIVEN] the order is an exit LIMIT order [AND] the limit price is less than or equal to the current price', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from taker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 1, makerFeeRate: 2 });
+        const order = mockOpeningLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 20 });
+        const currentPrice = 30 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 3, currency: strategy.baseCurrency });
+      });
+    });
+  });
+
+  describe('[GIVEN] the order is an entry STOP_MARKET order', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from taker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 5 });
+        const order = mockOpeningStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 20 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 0.5, currency: strategy.assetCurrency });
+      });
+    });
+  });
+  describe('[GIVEN] the order is an exit STOP_MARKET order', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from taker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ takerFeeRate: 5 });
+        const order = mockOpeningStopMarketOrder({ orderSide: 'EXIT', quantity: 10, stopPrice: 20 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 10, currency: strategy.baseCurrency });
+      });
+    });
+  });
+
+  describe('[GIVEN] the order is an entry STOP_LIMIT order', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from maker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ makerFeeRate: 2 });
+        const order = mockOpeningStopLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 20 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 0.2, currency: strategy.assetCurrency });
+      });
+    });
+  });
+  describe('[GIVEN] the order is an exit STOP_LIMIT order', () => {
+    describe('[WHEN] calculate fee', () => {
+      it('[THEN] it will return fee amount that calculate from maker fee rate, and asset currency', () => {
+        const strategy = mockStrategyModule({ makerFeeRate: 2 });
+        const order = mockOpeningStopLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 20 });
+        const currentPrice = 10 as Price;
+
+        const result = calculateFee(strategy, order, currentPrice);
+
+        expect(result).toEqual({ amount: 4, currency: strategy.baseCurrency });
+      });
+    });
+  });
+});
+
+describe('UUT: Create opening order', () => {
+  describe('[WHEN] create opening order', () => {
+    it('[THEN] it will return a opening order', () => {
+      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10 });
+      const currentDate = randomDate();
+
+      const result = createOpeningOrder(order, currentDate);
+
+      expect(result).toEqual({ ...order, status: 'OPENING', submittedAt: currentDate });
+    });
+  });
+});
+
+describe('UUT: Create filled order', () => {
+  describe('[WHEN] create filled order', () => {
+    it('[THEN] it will return a filled order', () => {
+      const strategy = mockStrategyModule({ takerFeeRate: 5 });
+      const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
+      const currentDate = randomDate();
+      const currentPrice = 10 as Price;
+
+      const result = createFilledOrder(strategy, order, currentDate, currentPrice);
+
+      expect(result).toEqual({
+        ...order,
+        status: 'FILLED',
+        filledPrice: currentPrice,
+        fee: { amount: 0.5, currency: strategy.assetCurrency },
+        submittedAt: currentDate,
+        filledAt: currentDate,
+      });
+    });
+  });
+});
+
+describe('UUT: Create rejected order', () => {
+  describe('[WHEN] create rejected order', () => {
+    it('[THEN] it will return a rejected order', () => {
+      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10 });
+      const reason = randomString();
+      const currentDate = randomDate();
+
+      const result = createRejectedOrder(order, reason, currentDate);
+
+      expect(result).toEqual({ ...order, status: 'REJECTED', reason, submittedAt: currentDate });
     });
   });
 });
