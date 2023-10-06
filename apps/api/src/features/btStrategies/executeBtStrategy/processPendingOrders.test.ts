@@ -7,6 +7,7 @@ import { ValidDate } from '#shared/utils/date.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import {
+  mockFilledMarketOrder,
   mockOpeningLimitOrder,
   mockPendingCancelOrder,
   mockPendingLimitOrder,
@@ -201,12 +202,14 @@ describe('UUT: Process pending MARKET order', () => {
       totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
     });
     const orders = defaultOrders;
-    const openingTrade = mockOpeningTrade({
-      orderSide: 'ENTRY',
-      quantity: 10,
-      filledPrice: 4,
-      fee: { amount: 0.1, currency: strategyModule.assetCurrency },
-    });
+    const openingTrade = mockOpeningTrade(
+      mockFilledMarketOrder({
+        orderSide: 'ENTRY',
+        quantity: 10,
+        filledPrice: 4,
+        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
+      }),
+    );
     const trades = { ...defaultTrades, openingTrades: [openingTrade] };
     const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 9.9 });
     const currentPrice = 5 as Price;
@@ -350,12 +353,14 @@ describe('UUT: Process pending MARKET order', () => {
       totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
     });
     const orders = defaultOrders;
-    const openingTrade = mockOpeningTrade({
-      orderSide: 'ENTRY',
-      quantity: 10,
-      filledPrice: 4,
-      fee: { amount: 0.1, currency: strategyModule.assetCurrency },
-    });
+    const openingTrade = mockOpeningTrade(
+      mockFilledMarketOrder({
+        orderSide: 'ENTRY',
+        quantity: 10,
+        filledPrice: 4,
+        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
+      }),
+    );
     const trades = { ...defaultTrades, openingTrades: [openingTrade] };
     const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 9.9 });
     const currentPrice = 5 as Price;
@@ -849,12 +854,14 @@ describe('UUT: Process pending LIMIT order', () => {
       totalFees: { inCapitalCurrency: 1, inAssetCurrency: 1 },
     });
     const orders = defaultOrders;
-    const openingTrade = mockOpeningTrade({
-      orderSide: 'ENTRY',
-      quantity: 10.1,
-      filledPrice: 4,
-      fee: { amount: 0.1, currency: strategyModule.assetCurrency },
-    });
+    const openingTrade = mockOpeningTrade(
+      mockFilledMarketOrder({
+        orderSide: 'ENTRY',
+        quantity: 10.1,
+        filledPrice: 4,
+        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
+      }),
+    );
     const trades = { ...defaultTrades, openingTrades: [openingTrade] };
     const limitOrder = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
     const currentPrice = 10 as Price;

@@ -1,22 +1,62 @@
-import { dissoc } from 'ramda';
-import { DeepPartial } from 'ts-essentials';
+import { DeepReadonly } from 'ts-essentials';
 
 import { FilledOrder } from '#features/shared/order.js';
-import { OpeningTrade, TradeId, createFullOpeningTrade } from '#features/shared/trade.js';
-import { Unbrand } from '#shared/utils/types.js';
+import {
+  ClosedTrade,
+  OpeningTrade,
+  TradeId,
+  closeTrades,
+  createFullOpeningTrade,
+} from '#features/shared/trade.js';
+import { unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 
-import { mockFilledMarketOrder } from './order.js';
+import {
+  mockFilledLimitOrder,
+  mockFilledMarketOrder,
+  mockFilledStopLimitOrder,
+  mockFilledStopMarketOrder,
+} from './order.js';
 
 export function mockOpeningTrade(
-  override?: DeepPartial<Unbrand<Extract<FilledOrder, { type: 'MARKET'; orderSide: 'ENTRY' }>>>,
+  entryOrderRequest: DeepReadonly<Extract<FilledOrder, { orderSide: 'ENTRY' }>>,
 ): OpeningTrade {
-  const entryOrder = mockFilledMarketOrder({
-    orderSide: 'ENTRY',
-    quantity: 10,
-    fee: { amount: 0.2 },
-    filledPrice: 2,
-    ...dissoc('orderSide', override ?? {}),
-  });
+  const entryOrder =
+    entryOrderRequest.type === 'MARKET'
+      ? mockFilledMarketOrder(entryOrderRequest)
+      : entryOrderRequest.type === 'LIMIT'
+      ? mockFilledLimitOrder(entryOrderRequest)
+      : entryOrderRequest.type === 'STOP_MARKET'
+      ? mockFilledStopMarketOrder(entryOrderRequest)
+      : mockFilledStopLimitOrder(entryOrderRequest);
 
   return createFullOpeningTrade('yGYz6XiSBS' as TradeId, entryOrder);
+}
+
+export function mockClosedTrade(
+  entryOrderRequest: DeepReadonly<Extract<FilledOrder, { orderSide: 'ENTRY' }>>,
+  exitOrderRequest: DeepReadonly<Extract<FilledOrder, { orderSide: 'EXIT' }>>,
+): ClosedTrade {
+  const entryOrder =
+    entryOrderRequest.type === 'MARKET'
+      ? mockFilledMarketOrder(entryOrderRequest)
+      : entryOrderRequest.type === 'LIMIT'
+      ? mockFilledLimitOrder(entryOrderRequest)
+      : entryOrderRequest.type === 'STOP_MARKET'
+      ? mockFilledStopMarketOrder(entryOrderRequest)
+      : mockFilledStopLimitOrder(entryOrderRequest);
+  const exitOrder =
+    exitOrderRequest.type === 'MARKET'
+      ? mockFilledMarketOrder(exitOrderRequest)
+      : exitOrderRequest.type === 'LIMIT'
+      ? mockFilledLimitOrder(exitOrderRequest)
+      : exitOrderRequest.type === 'STOP_MARKET'
+      ? mockFilledStopMarketOrder(exitOrderRequest)
+      : mockFilledStopLimitOrder(exitOrderRequest);
+
+  const openingTrade = createFullOpeningTrade('9jNx8NgSCl' as TradeId, entryOrder);
+  const { closedTrades } = unsafeUnwrapEitherRight(
+    closeTrades({ generateTradeId: () => 'PCtQBEwjj_' as TradeId }, [openingTrade], exitOrder)(),
+  );
+
+  return closedTrades[0];
 }
