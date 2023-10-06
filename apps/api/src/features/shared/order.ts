@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { ValidDate } from '#shared/utils/date.js';
 import { nonEmptyStringSchema } from '#shared/utils/string.js';
+import { Unbrand } from '#shared/utils/types.js';
 
 import type { Price } from './kline.js';
 import type { MakerFeeRate, TakerFeeRate } from './strategy.js';
@@ -11,16 +12,20 @@ import type { AssetName } from './symbol.js';
 
 export type Order = MarketOrder | LimitOrder | StopMarketOrder | StopLimitOrder | CancelOrder;
 
-export type MarketOrder = DeepReadonly<BaseOrder & Market & (Pending | Filled | Rejected)>;
-export type LimitOrder = DeepReadonly<BaseOrder & Limit & (Pending | Opening | Filled | Canceled | Rejected)>;
-export type StopMarketOrder = DeepReadonly<
+type MarketOrder = DeepReadonly<BaseOrder & Market & (Pending | Filled | Rejected)>;
+type LimitOrder = DeepReadonly<BaseOrder & Limit & (Pending | Opening | Filled | Canceled | Rejected)>;
+type StopMarketOrder = DeepReadonly<
   BaseOrder & StopMarket & (Pending | Opening | Filled | Canceled | Rejected)
 >;
-export type StopLimitOrder = DeepReadonly<
+type StopLimitOrder = DeepReadonly<
   BaseOrder & StopLimit & (Pending | Opening | Triggered | Filled | Canceled | Rejected)
 >;
-export type CancelOrder = DeepReadonly<CancelBaseOrder & Cancel & (Pending | Submitted | Rejected)>;
+type CancelOrder = DeepReadonly<CancelBaseOrder & Cancel & (Pending | Submitted | Rejected)>;
 
+export type PendingOrderRequest = DeepReadonly<
+  | (BaseOrder & Unbrand<Market | Limit | StopMarket | StopLimit> & Pending)
+  | (CancelBaseOrder & Cancel & Pending)
+>;
 export type PendingOrder = DeepReadonly<
   (BaseOrder & (Market | Limit | StopMarket | StopLimit) & Pending) | (CancelBaseOrder & Cancel & Pending)
 >;
@@ -30,7 +35,8 @@ export type TriggeredOrder = DeepReadonly<BaseOrder & StopLimitOrder & Triggered
 export type FilledOrder = DeepReadonly<BaseOrder & (Market | Limit | StopMarket | StopLimit) & Filled>;
 export type CanceledOrder = DeepReadonly<BaseOrder & (Limit | StopMarket | StopLimit) & Canceled>;
 export type RejectedOrder = DeepReadonly<
-  (BaseOrder & (Market | Limit | StopMarket | StopLimit) & Rejected) | (CancelBaseOrder & Cancel & Rejected)
+  | (BaseOrder & Unbrand<Market | Limit | StopMarket | StopLimit> & Rejected)
+  | (CancelBaseOrder & Cancel & Rejected)
 >;
 
 type BaseOrder = { id: OrderId; createdAt: ValidDate } & (Entry | Exit);
@@ -48,10 +54,15 @@ export const orderSideSchema = z.enum(['ENTRY', 'EXIT']);
 type Entry = { orderSide: 'ENTRY' };
 type Exit = { orderSide: 'EXIT' };
 
-type Market = { type: 'MARKET'; quantity: number };
-type Limit = { type: 'LIMIT'; quantity: number; limitPrice: number };
-type StopMarket = { type: 'STOP_MARKET'; quantity: number; stopPrice: number };
-type StopLimit = { type: 'STOP_LIMIT'; quantity: number; stopPrice: number; limitPrice: number };
+type Market = { type: 'MARKET'; quantity: OrderQuantity };
+type Limit = { type: 'LIMIT'; quantity: OrderQuantity; limitPrice: OrderPrice };
+type StopMarket = { type: 'STOP_MARKET'; quantity: OrderQuantity; stopPrice: OrderPrice };
+type StopLimit = {
+  type: 'STOP_LIMIT';
+  quantity: OrderQuantity;
+  stopPrice: OrderPrice;
+  limitPrice: OrderPrice;
+};
 type Cancel = { type: 'CANCEL'; orderIdToCancel: OrderId };
 
 type Pending = { status: 'PENDING' };
@@ -62,14 +73,21 @@ type Filled = { status: 'FILLED'; filledPrice: Price; fee: Fee; submittedAt: Val
 type Canceled = { status: 'CANCELED'; submittedAt: ValidDate; canceledAt: ValidDate };
 type Rejected = { status: 'REJECTED'; submittedAt: ValidDate; reason: string };
 
+export type OrderQuantity = z.infer<typeof orderQuantitySchema>;
+const orderQuantitySchema = z.number().positive().brand('OrderQuantity');
+export type OrderPrice = z.infer<typeof orderPriceSchema>;
+const orderPriceSchema = z.number().positive().brand('OrderPrice');
 export type Fee = Readonly<{ amount: FeeAmount; currency: AssetName }>;
-export type FeeAmount = number & z.BRAND<'FeeAmount'>;
+export type FeeAmount = z.infer<typeof feeAmountSchema>;
+const feeAmountSchema = z.number().nonnegative().brand('FeeAmount');
 
-export function createPendingOrder(
-  request: DeepReadonly<({ orderSide: OrderSide } & (Market | Limit | StopMarket | StopLimit)) | Cancel>,
+export function createPendingOrderRequest(
+  request: DeepReadonly<
+    ({ orderSide: OrderSide } & Unbrand<Market | Limit | StopMarket | StopLimit>) | Cancel
+  >,
   orderId: OrderId,
   currentDate: ValidDate,
-): PendingOrder {
+): PendingOrderRequest {
   return { ...request, id: orderId, status: 'PENDING', createdAt: currentDate };
 }
 
@@ -87,13 +105,15 @@ export function createOpeningOrder(
   return { ...order, status: 'OPENING', submittedAt: currentDate };
 }
 
-export function createFilledOrder(
-  order: Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }> | OpeningOrder | TriggeredOrder,
+export function createFilledOrder<
+  O extends Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }> | OpeningOrder | TriggeredOrder,
+>(
+  order: O,
   currentDate: ValidDate,
   filledPrice: Price,
   feeRates: { takerFeeRate: TakerFeeRate; makerFeeRate: MakerFeeRate },
   currencies: { capitalCurrency: AssetName; assetCurrency: AssetName },
-): FilledOrder {
+): Extract<FilledOrder, Pick<O, 'type' | 'orderSide'>> {
   return {
     submittedAt: currentDate,
     ...order,
@@ -112,7 +132,7 @@ export function createCanceledOrder(
 }
 
 export function createRejectedOrder(
-  order: PendingOrder,
+  order: PendingOrderRequest,
   reason: string,
   currentDate: ValidDate,
 ): RejectedOrder {
@@ -142,12 +162,15 @@ export function calculateFee(
     .times(feeRate)
     .dividedBy(100)
     .toDecimalPlaces(8, Decimal.ROUND_HALF_UP)
-    .toNumber();
+    .toNumber() as FeeAmount;
 
-  return { amount: feeAmount, currency: feeCurrency } as Fee;
+  return { amount: feeAmount, currency: feeCurrency };
 }
 
-export function shouldTreatLimitOrderAsMarketOrder(limitOrder: LimitOrder, marketPrice: Price): boolean {
+export function shouldTreatLimitOrderAsMarketOrder(
+  limitOrder: Extract<PendingOrderRequest, { type: 'LIMIT' }> | LimitOrder,
+  marketPrice: Price,
+): boolean {
   return (
     (limitOrder.orderSide === 'ENTRY' && limitOrder.limitPrice >= marketPrice) ||
     (limitOrder.orderSide === 'EXIT' && limitOrder.limitPrice <= marketPrice)

@@ -18,7 +18,10 @@ import {
   CanceledOrder,
   FilledOrder,
   OpeningOrder,
+  OrderPrice,
+  OrderQuantity,
   PendingOrder,
+  PendingOrderRequest,
   RejectedOrder,
   SubmittedOrder,
   createCanceledOrder,
@@ -40,7 +43,7 @@ import {
   OpeningTrade,
   TradeId,
   closeTrades,
-  createOpeningTrade,
+  createFullOpeningTrade,
 } from '#features/shared/trade.js';
 import { DateService } from '#infra/services/date/service.js';
 import { ValidDate } from '#shared/utils/date.js';
@@ -64,7 +67,7 @@ export function processPendingOrders(
   deps: ProcessOrdersDeps,
   strategyModule: StrategyModule,
   orders: DeepReadonly<{
-    pendingOrders: PendingOrder[];
+    pendingOrders: PendingOrderRequest[];
     openingOrders: OpeningOrder[];
     submittedOrders: SubmittedOrder[];
     filledOrders: FilledOrder[];
@@ -123,10 +126,10 @@ export function processPendingMarketOrder(
   strategyModule: StrategyModule,
   orders: DeepReadonly<{ filledOrders: FilledOrder[]; rejectedOrders: RejectedOrder[] }>,
   trades: DeepReadonly<{ openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] }>,
-  marketOrder: Extract<PendingOrder, { type: 'MARKET' }>,
+  orderRequest: Extract<PendingOrderRequest, { type: 'MARKET' }>,
   currentPrice: Price,
 ): io.IO<ProcessPendingMarketOrderResult> {
-  return processAsMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice);
+  return processAsMarketOrder(deps, strategyModule, orders, trades, orderRequest, currentPrice);
 }
 
 function processAsMarketOrder(
@@ -134,7 +137,7 @@ function processAsMarketOrder(
   strategyModule: StrategyModule,
   orders: DeepReadonly<{ filledOrders: FilledOrder[]; rejectedOrders: RejectedOrder[] }>,
   trades: DeepReadonly<{ openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] }>,
-  order: Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }>,
+  orderRequest: Extract<PendingOrderRequest, { type: 'MARKET' | 'LIMIT' }>,
   currentPrice: Price,
 ) {
   const { dateService, generateTradeId } = deps;
@@ -145,19 +148,31 @@ function processAsMarketOrder(
   const feeRates = { takerFeeRate, makerFeeRate };
   const currencies = { capitalCurrency, assetCurrency };
 
-  type FilledMarketOrder = Extract<FilledOrder, { type: 'MARKET' }>;
+  const validatePendingRequest: e.Either<
+    string,
+    Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }>
+  > = orderRequest.type === 'MARKET'
+    ? pipe(
+        isOrderTypeAllowed('MARKET', symbol),
+        e.chain(() => validateQuantity(orderRequest, symbol)),
+        e.chainFirst(() => validateMarketNotional(orderRequest, symbol, currentPrice)),
+        e.map((quantity) => ({ ...orderRequest, quantity })),
+      )
+    : pipe(
+        isOrderTypeAllowed('MARKET', symbol),
+        e.bind('quantity', () => validateQuantity(orderRequest, symbol)),
+        e.bind('price', () => validatePrice(orderRequest, symbol)),
+        e.chainFirst(() => validateMarketNotional(orderRequest, symbol, currentPrice)),
+        e.map(({ quantity, price: { limitPrice } }) => ({ ...orderRequest, quantity, limitPrice })),
+      );
 
   return pipe(
     dateService.getCurrentDate,
     io.chain((currentDate) =>
       pipe(
-        ioe.fromEither(isOrderTypeAllowed(order.type, symbol)),
-        ioe.chainEitherK(() => validateQuantity(order, symbol)),
-        ioe.chainEitherK(() => validateMarketNotional(order, symbol, currentPrice)),
-        ioe.let(
-          'filledOrder',
-          () =>
-            createFilledOrder(order, currentDate, currentPrice, feeRates, currencies) as FilledMarketOrder,
+        ioe.fromEither(validatePendingRequest),
+        ioe.let('filledOrder', (pendingOrder) =>
+          createFilledOrder(pendingOrder, currentDate, currentPrice, feeRates, currencies),
         ),
         ioe.bindW('updatedStrategy', ({ filledOrder }) =>
           ioe.fromEither(transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder)),
@@ -167,7 +182,7 @@ function processAsMarketOrder(
             if (filledOrder.orderSide === 'ENTRY') {
               return pipe(
                 generateTradeId,
-                io.map((tradeId) => createOpeningTrade(tradeId, filledOrder)),
+                io.map((tradeId) => createFullOpeningTrade(tradeId, filledOrder)),
                 io.map((openingTrade) => ({
                   strategyModule: updatedStrategy,
                   orders: { ...orders, filledOrders: append(filledOrder, filledOrders) },
@@ -177,7 +192,7 @@ function processAsMarketOrder(
               );
             } else {
               return pipe(
-                ioe.fromEither(closeTrades(openingTrades, filledOrder)),
+                closeTrades({ generateTradeId }, openingTrades, filledOrder),
                 ioe.map((trades) => ({
                   strategyModule: updatedStrategy,
                   orders: { ...orders, filledOrders: append(filledOrder, filledOrders) },
@@ -188,7 +203,7 @@ function processAsMarketOrder(
           },
         ),
         ioe.match((reason) => {
-          const rejectedOrder = createRejectedOrder(order, reason, currentDate);
+          const rejectedOrder = createRejectedOrder(orderRequest, reason, currentDate);
           return {
             strategyModule: strategyModule,
             orders: { ...orders, rejectedOrders: append(rejectedOrder, rejectedOrders) },
@@ -218,20 +233,25 @@ export function processPendingLimitOrder(
     rejectedOrders: RejectedOrder[];
   }>,
   trades: DeepReadonly<{ openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] }>,
-  limitOrder: Extract<PendingOrder, { type: 'LIMIT' }>,
+  orderRequest: Extract<PendingOrderRequest, { type: 'LIMIT' }>,
   currentPrice: Price,
 ): io.IO<ProcessPendingLimitOrderResult> {
   const { dateService } = deps;
   const { symbol } = strategyModule;
   const { openingOrders, rejectedOrders } = orders;
 
+  const validatePendingRequest: e.Either<string, Extract<PendingOrder, { type: 'LIMIT' }>> = pipe(
+    isOrderTypeAllowed(orderRequest.type, symbol),
+    e.bind('quantity', () => validateQuantity(orderRequest, symbol)),
+    e.bind('price', () => validatePrice(orderRequest, symbol)),
+    e.chainFirst(() => validateNotional(orderRequest, symbol)),
+    e.map(({ quantity, price: { limitPrice } }) => ({ ...orderRequest, quantity, limitPrice })),
+  );
+
   function processAsLimitOrder(currentDate: ValidDate) {
     return pipe(
-      ioe.fromEither(isOrderTypeAllowed(limitOrder.type, symbol)),
-      ioe.chainEitherK(() => validateQuantity(limitOrder, symbol)),
-      ioe.chainEitherK(() => validatePrice(limitOrder, symbol)),
-      ioe.chainEitherK(() => validateNotional(limitOrder, symbol)),
-      ioe.let('openingOrder', () => createOpeningOrder(limitOrder, currentDate)),
+      ioe.fromEither(validatePendingRequest),
+      ioe.let('openingOrder', (limitOrder) => createOpeningOrder(limitOrder, currentDate)),
       ioe.bindW('updatedStrategy', ({ openingOrder }) =>
         ioe.fromEither(transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder)),
       ),
@@ -241,7 +261,7 @@ export function processPendingLimitOrder(
         trades,
       })),
       ioe.matchW((reason) => {
-        const rejectedOrder = createRejectedOrder(limitOrder, reason, currentDate);
+        const rejectedOrder = createRejectedOrder(orderRequest, reason, currentDate);
         return {
           strategyModule: strategyModule,
           orders: { ...orders, rejectedOrders: append(rejectedOrder, rejectedOrders) },
@@ -254,9 +274,9 @@ export function processPendingLimitOrder(
   return pipe(
     dateService.getCurrentDate,
     io.chain((currentDate) =>
-      shouldTreatLimitOrderAsMarketOrder(limitOrder, currentPrice)
+      shouldTreatLimitOrderAsMarketOrder(orderRequest, currentPrice)
         ? pipe(
-            processAsMarketOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+            processAsMarketOrder(deps, strategyModule, orders, trades, orderRequest, currentPrice),
             io.map(({ orders, ...rest }) => ({ orders: { ...orders, openingOrders }, ...rest })),
           )
         : processAsLimitOrder(currentDate),
@@ -273,21 +293,26 @@ export function processPendingStopMarketOrder(
   deps: ProcessPendingStopMarketOrderDeps,
   strategyModule: StrategyModule,
   orders: DeepReadonly<{ openingOrders: OpeningOrder[]; rejectedOrders: RejectedOrder[] }>,
-  stopMarketOrder: Extract<PendingOrder, { type: 'STOP_MARKET' }>,
+  orderRequest: Extract<PendingOrderRequest, { type: 'STOP_MARKET' }>,
 ): io.IO<ProcessPendingStopMarketOrderResult> {
   const { dateService } = deps;
   const { symbol } = strategyModule;
   const { openingOrders, rejectedOrders } = orders;
 
+  const validatePendingRequest: e.Either<string, Extract<PendingOrder, { type: 'STOP_MARKET' }>> = pipe(
+    isOrderTypeAllowed(orderRequest.type, symbol),
+    e.bind('quantity', () => validateQuantity(orderRequest, symbol)),
+    e.bind('price', () => validatePrice(orderRequest, symbol)),
+    e.chainFirst(() => validateNotional(orderRequest, symbol)),
+    e.map(({ quantity, price: { stopPrice } }) => ({ ...orderRequest, quantity, stopPrice })),
+  );
+
   return pipe(
     dateService.getCurrentDate,
     io.chain((currentDate) =>
       pipe(
-        ioe.fromEither(isOrderTypeAllowed(stopMarketOrder.type, symbol)),
-        ioe.chainEitherK(() => validateQuantity(stopMarketOrder, symbol)),
-        ioe.chainEitherK(() => validatePrice(stopMarketOrder, symbol)),
-        ioe.chainEitherK(() => validateNotional(stopMarketOrder, symbol)),
-        ioe.let('openingOrder', () => createOpeningOrder(stopMarketOrder, currentDate)),
+        ioe.fromEither(validatePendingRequest),
+        ioe.let('openingOrder', (stopMarketOrder) => createOpeningOrder(stopMarketOrder, currentDate)),
         ioe.bindW('updatedStrategy', ({ openingOrder }) =>
           ioe.fromEither(
             transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder),
@@ -298,7 +323,7 @@ export function processPendingStopMarketOrder(
           orders: { ...orders, openingOrders: append(openingOrder, openingOrders) },
         })),
         ioe.matchW((reason) => {
-          const rejectedOrder = createRejectedOrder(stopMarketOrder, reason, currentDate);
+          const rejectedOrder = createRejectedOrder(orderRequest, reason, currentDate);
           return {
             strategyModule: strategyModule,
             orders: { ...orders, rejectedOrders: append(rejectedOrder, rejectedOrders) },
@@ -318,21 +343,31 @@ export function processPendingStopLimitOrder(
   deps: ProcessPendingStopLimitOrderDeps,
   strategyModule: StrategyModule,
   orders: DeepReadonly<{ openingOrders: OpeningOrder[]; rejectedOrders: RejectedOrder[] }>,
-  stopLimitOrder: Extract<PendingOrder, { type: 'STOP_LIMIT' }>,
+  orderRequest: Extract<PendingOrderRequest, { type: 'STOP_LIMIT' }>,
 ): io.IO<ProcessPendingStopLimitOrderResult> {
   const { dateService } = deps;
   const { symbol } = strategyModule;
   const { openingOrders, rejectedOrders } = orders;
 
+  const validatePendingRequest: e.Either<string, Extract<PendingOrder, { type: 'STOP_LIMIT' }>> = pipe(
+    isOrderTypeAllowed(orderRequest.type, symbol),
+    e.bind('quantity', () => validateQuantity(orderRequest, symbol)),
+    e.bind('price', () => validatePrice(orderRequest, symbol)),
+    e.chainFirst(() => validateNotional(orderRequest, symbol)),
+    e.map(({ quantity, price: { stopPrice, limitPrice } }) => ({
+      ...orderRequest,
+      quantity,
+      stopPrice,
+      limitPrice,
+    })),
+  );
+
   return pipe(
     dateService.getCurrentDate,
     io.chain((currentDate) =>
       pipe(
-        ioe.fromEither(isOrderTypeAllowed(stopLimitOrder.type, symbol)),
-        ioe.chainEitherK(() => validateQuantity(stopLimitOrder, symbol)),
-        ioe.chainEitherK(() => validatePrice(stopLimitOrder, symbol)),
-        ioe.chainEitherK(() => validateNotional(stopLimitOrder, symbol)),
-        ioe.let('openingOrder', () => createOpeningOrder(stopLimitOrder, currentDate)),
+        ioe.fromEither(validatePendingRequest),
+        ioe.let('openingOrder', (stopLimitOrder) => createOpeningOrder(stopLimitOrder, currentDate)),
         ioe.bindW('updatedStrategy', ({ openingOrder }) =>
           ioe.fromEither(
             transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder),
@@ -343,7 +378,7 @@ export function processPendingStopLimitOrder(
           orders: { ...orders, openingOrders: append(openingOrder, openingOrders) },
         })),
         ioe.matchW((reason) => {
-          const rejectedOrder = createRejectedOrder(stopLimitOrder, reason, currentDate);
+          const rejectedOrder = createRejectedOrder(orderRequest, reason, currentDate);
           return {
             strategyModule: strategyModule,
             orders: { ...orders, rejectedOrders: append(rejectedOrder, rejectedOrders) },
@@ -373,7 +408,7 @@ export function processPendingCancelOrder(
     canceledOrders: CanceledOrder[];
     rejectedOrders: RejectedOrder[];
   }>,
-  cancelOrder: Extract<PendingOrder, { type: 'CANCEL' }>,
+  cancelOrder: Extract<PendingOrderRequest, { type: 'CANCEL' }>,
 ): io.IO<ProcessPendingCancelOrderResult> {
   const { dateService } = deps;
   const { openingOrders, submittedOrders, canceledOrders, rejectedOrders } = orders;
@@ -418,22 +453,22 @@ export function processPendingCancelOrder(
 }
 
 function validateQuantity(
-  order: Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  order: Extract<PendingOrderRequest, { type: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
   symbol: Symbol,
-): e.Either<string, void> {
+): e.Either<string, OrderQuantity> {
   return order.type === 'MARKET'
     ? pipe(
         e.sequenceArray([
           validateWithLotSizeFilter(order.quantity, symbol),
           validateWithMarketLotSizeFilter(order.quantity, symbol),
         ]),
-        e.asUnit,
+        e.as(order.quantity as OrderQuantity),
       )
-    : validateWithLotSizeFilter(order.quantity, symbol);
+    : pipe(validateWithLotSizeFilter(order.quantity, symbol), e.as(order.quantity as OrderQuantity));
 }
 
 function validateMarketNotional(
-  order: Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }>,
+  order: Extract<PendingOrderRequest, { type: 'MARKET' | 'LIMIT' }>,
   symbol: Symbol,
   currentPrice: Price,
 ): e.Either<string, void> {
@@ -447,7 +482,7 @@ function validateMarketNotional(
 }
 
 function validateNotional(
-  order: Extract<PendingOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  order: Extract<PendingOrderRequest, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
   symbol: Symbol,
 ): e.Either<string, void> {
   const price = 'limitPrice' in order ? order.limitPrice : order.stopPrice;
@@ -461,18 +496,35 @@ function validateNotional(
 }
 
 function validatePrice(
-  order: Extract<PendingOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  order: Extract<PendingOrderRequest, { type: 'LIMIT' }>,
   symbol: Symbol,
-): e.Either<string, void> {
+): e.Either<string, { limitPrice: OrderPrice }>;
+function validatePrice(
+  order: Extract<PendingOrderRequest, { type: 'STOP_MARKET' }>,
+  symbol: Symbol,
+): e.Either<string, { stopPrice: OrderPrice }>;
+function validatePrice(
+  order: Extract<PendingOrderRequest, { type: 'STOP_LIMIT' }>,
+  symbol: Symbol,
+): e.Either<string, { limitPrice: OrderPrice; stopPrice: OrderPrice }>;
+function validatePrice<
+  O extends Extract<PendingOrderRequest, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+>(order: O, symbol: Symbol) {
   return order.type === 'LIMIT'
-    ? validateWithPriceFilter(order.limitPrice, symbol)
+    ? pipe(
+        validateWithPriceFilter(order.limitPrice, symbol),
+        e.as({ limitPrice: order.limitPrice as OrderPrice }),
+      )
     : order.type === 'STOP_MARKET'
-    ? validateWithPriceFilter(order.stopPrice, symbol)
+    ? pipe(
+        validateWithPriceFilter(order.stopPrice, symbol),
+        e.as({ stopPrice: order.stopPrice as OrderPrice }),
+      )
     : pipe(
         e.sequenceArray([
           validateWithPriceFilter(order.limitPrice, symbol),
           validateWithPriceFilter(order.stopPrice, symbol),
         ]),
-        e.asUnit,
+        e.as({ limitPrice: order.limitPrice as OrderPrice, stopPrice: order.stopPrice as OrderPrice }),
       );
 }

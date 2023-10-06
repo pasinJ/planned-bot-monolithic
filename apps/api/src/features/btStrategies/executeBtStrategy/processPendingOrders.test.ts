@@ -7,7 +7,6 @@ import { ValidDate } from '#shared/utils/date.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import {
-  mockFilledMarketOrder,
   mockOpeningLimitOrder,
   mockPendingCancelOrder,
   mockPendingLimitOrder,
@@ -107,7 +106,10 @@ describe('UUT: Process pending MARKET order', () => {
           },
           tradeQuantity: 9.8,
           maxDrawdown: 0,
+          minPrice: currentPrice,
           maxRunup: 0,
+          maxPrice: currentPrice,
+          unrealizedReturn: 0,
         });
       });
       it('[THEN] it will return unchanged closed trades list', () => {
@@ -200,13 +202,10 @@ describe('UUT: Process pending MARKET order', () => {
     });
     const orders = defaultOrders;
     const openingTrade = mockOpeningTrade({
-      entryOrder: mockFilledMarketOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        filledPrice: 4,
-        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
-      }),
-      tradeQuantity: 9.9,
+      orderSide: 'ENTRY',
+      quantity: 10,
+      filledPrice: 4,
+      fee: { amount: 0.1, currency: strategyModule.assetCurrency },
     });
     const trades = { ...defaultTrades, openingTrades: [openingTrade] };
     const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 9.9 });
@@ -244,7 +243,7 @@ describe('UUT: Process pending MARKET order', () => {
         );
 
         expect(result.trades.closedTrades).toContainEqual({
-          ...openingTrade,
+          ...dissoc('unrealizedReturn', openingTrade),
           exitOrder: {
             ...marketOrder,
             status: 'FILLED',
@@ -253,6 +252,8 @@ describe('UUT: Process pending MARKET order', () => {
             submittedAt: currentDate,
             filledAt: currentDate,
           },
+          maxRunup: 9.9,
+          maxPrice: currentPrice,
           netReturn: 8.51,
         });
       });
@@ -350,13 +351,10 @@ describe('UUT: Process pending MARKET order', () => {
     });
     const orders = defaultOrders;
     const openingTrade = mockOpeningTrade({
-      entryOrder: mockFilledMarketOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        filledPrice: 4,
-        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
-      }),
-      tradeQuantity: 9.9,
+      orderSide: 'ENTRY',
+      quantity: 10,
+      filledPrice: 4,
+      fee: { amount: 0.1, currency: strategyModule.assetCurrency },
     });
     const trades = { ...defaultTrades, openingTrades: [openingTrade] };
     const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 9.9 });
@@ -642,7 +640,7 @@ describe('UUT: Process pending LIMIT order', () => {
     const currentDate = new Date('2010-03-05') as ValidDate;
     const tradeId = 'gHrQH_QA5Z' as TradeId;
     const strategyModule = mockStrategyModule({
-      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
       takerFeeRate: 1,
       totalCapital: 100,
       availableCapital: 100,
@@ -699,7 +697,10 @@ describe('UUT: Process pending LIMIT order', () => {
           },
           tradeQuantity: 9.9,
           maxDrawdown: 0,
+          minPrice: currentPrice,
           maxRunup: 0,
+          maxPrice: currentPrice,
+          unrealizedReturn: 0,
         });
       });
       it('[THEN] it will return unchanged closed trades list', () => {
@@ -839,7 +840,7 @@ describe('UUT: Process pending LIMIT order', () => {
     let deps: ProcessPendingMarketOrderDeps;
     const currentDate = new Date('2010-03-05') as ValidDate;
     const strategyModule = mockStrategyModule({
-      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
       takerFeeRate: 1,
       totalCapital: 100,
       availableCapital: 100,
@@ -849,13 +850,10 @@ describe('UUT: Process pending LIMIT order', () => {
     });
     const orders = defaultOrders;
     const openingTrade = mockOpeningTrade({
-      entryOrder: mockFilledMarketOrder({
-        orderSide: 'ENTRY',
-        quantity: 10.1,
-        filledPrice: 4,
-        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
-      }),
-      tradeQuantity: 10,
+      orderSide: 'ENTRY',
+      quantity: 10.1,
+      filledPrice: 4,
+      fee: { amount: 0.1, currency: strategyModule.assetCurrency },
     });
     const trades = { ...defaultTrades, openingTrades: [openingTrade] };
     const limitOrder = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
@@ -901,7 +899,7 @@ describe('UUT: Process pending LIMIT order', () => {
         );
 
         expect(result.trades.closedTrades).toContainEqual({
-          ...openingTrade,
+          ...dissoc('unrealizedReturn', openingTrade),
           exitOrder: {
             ...limitOrder,
             status: 'FILLED',
@@ -910,6 +908,8 @@ describe('UUT: Process pending LIMIT order', () => {
             submittedAt: currentDate,
             filledAt: currentDate,
           },
+          maxPrice: currentPrice,
+          maxRunup: 60,
           netReturn: 58.6,
         });
       });
@@ -2206,7 +2206,10 @@ describe('UUT: Process pending orders', () => {
           },
           tradeQuantity: 9.9,
           maxDrawdown: 0,
+          minPrice: currentPrice,
           maxRunup: 0,
+          maxPrice: currentPrice,
+          unrealizedReturn: 0,
         });
       });
       it('[THEN] it will return updated strategy module', () => {
@@ -2289,7 +2292,10 @@ describe('UUT: Process pending orders', () => {
           },
           tradeQuantity: 9.9,
           maxDrawdown: 0,
+          minPrice: currentPrice,
           maxRunup: 0,
+          maxPrice: currentPrice,
+          unrealizedReturn: 0,
         });
       });
       it('[THEN] it will return updated strategy module', () => {

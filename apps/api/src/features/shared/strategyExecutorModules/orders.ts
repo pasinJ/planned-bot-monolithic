@@ -28,10 +28,11 @@ import {
   OpeningOrder,
   OrderId,
   PendingOrder,
+  PendingOrderRequest,
   RejectedOrder,
   SubmittedOrder,
   TriggeredOrder,
-  createPendingOrder,
+  createPendingOrderRequest,
 } from '../order.js';
 import { Symbol, roundAsset } from '../symbol.js';
 
@@ -117,7 +118,7 @@ export type OrdersModule = DeepReadonly<{
     type?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
     status?: 'PENDING' | 'OPENING' | 'ALL';
   }) => void;
-  getPendingOrders: () => readonly PendingOrder[];
+  getPendingOrders: () => readonly PendingOrderRequest[];
   getSubmittedOrders: () => readonly SubmittedOrder[];
   getOpeningOrders: () => readonly OpeningOrder[];
   getTriggeredOrders: () => readonly TriggeredOrder[];
@@ -144,20 +145,20 @@ export function buildOrdersModule(
 ): OrdersModule {
   const { openingOrders, submittedOrders, triggeredOrders, filledOrders, canceledOrders, rejectedOrders } =
     orders;
-  const pendingOrdersRef = new ior.IORef([] as readonly PendingOrder[]);
+  const pendingOrderRequestsRef = new ior.IORef([] as readonly PendingOrderRequest[]);
 
   return {
-    enterMarket: enterMarket(deps, symbol, pendingOrdersRef),
-    enterLimit: enterLimit(deps, symbol, pendingOrdersRef),
-    enterStopMarket: enterStopMarket(deps, symbol, pendingOrdersRef),
-    enterStopLimit: enterStopLimit(deps, symbol, pendingOrdersRef),
-    exitMarket: exitMarket(deps, symbol, pendingOrdersRef),
-    exitLimit: exitLimit(deps, symbol, pendingOrdersRef),
-    exitStopMarket: exitStopMarket(deps, symbol, pendingOrdersRef),
-    exitStopLimit: exitStopLimit(deps, symbol, pendingOrdersRef),
-    cancelOrder: cancelOrder(deps, pendingOrdersRef, openingOrders),
-    cancelAllOrders: cancelAllOrders(deps, pendingOrdersRef, openingOrders),
-    getPendingOrders: pendingOrdersRef.read,
+    enterMarket: enterMarket(deps, symbol, pendingOrderRequestsRef),
+    enterLimit: enterLimit(deps, symbol, pendingOrderRequestsRef),
+    enterStopMarket: enterStopMarket(deps, symbol, pendingOrderRequestsRef),
+    enterStopLimit: enterStopLimit(deps, symbol, pendingOrderRequestsRef),
+    exitMarket: exitMarket(deps, symbol, pendingOrderRequestsRef),
+    exitLimit: exitLimit(deps, symbol, pendingOrderRequestsRef),
+    exitStopMarket: exitStopMarket(deps, symbol, pendingOrderRequestsRef),
+    exitStopLimit: exitStopLimit(deps, symbol, pendingOrderRequestsRef),
+    cancelOrder: cancelOrder(deps, pendingOrderRequestsRef, openingOrders),
+    cancelAllOrders: cancelAllOrders(deps, pendingOrderRequestsRef, openingOrders),
+    getPendingOrders: pendingOrderRequestsRef.read,
     getSubmittedOrders: () => submittedOrders,
     getOpeningOrders: () => openingOrders,
     getTriggeredOrders: () => triggeredOrders,
@@ -170,7 +171,7 @@ export function buildOrdersModule(
 function enterMarket(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number }): void =>
     pipe(
@@ -179,9 +180,13 @@ function enterMarket(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity }) =>
-        createPendingOrder({ orderSide: 'ENTRY', type: 'MARKET', quantity: roundedQuantity }, id, createdAt),
+        createPendingOrderRequest(
+          { orderSide: 'ENTRY', type: 'MARKET', quantity: roundedQuantity },
+          id,
+          createdAt,
+        ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -189,7 +194,7 @@ function enterMarket(
 function enterLimit(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number; limitPrice: number }): void =>
     pipe(
@@ -199,13 +204,13 @@ function enterLimit(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity, roundedLimitPrice }) =>
-        createPendingOrder(
+        createPendingOrderRequest(
           { orderSide: 'ENTRY', type: 'LIMIT', quantity: roundedQuantity, limitPrice: roundedLimitPrice },
           id,
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -213,7 +218,7 @@ function enterLimit(
 function enterStopMarket(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number; stopPrice: number }): void =>
     pipe(
@@ -223,13 +228,13 @@ function enterStopMarket(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity, roundedStopPrice }) =>
-        createPendingOrder(
+        createPendingOrderRequest(
           { orderSide: 'ENTRY', type: 'STOP_MARKET', quantity: roundedQuantity, stopPrice: roundedStopPrice },
           id,
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -237,7 +242,7 @@ function enterStopMarket(
 function enterStopLimit(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number; stopPrice: number; limitPrice: number }): void =>
     pipe(
@@ -248,7 +253,7 @@ function enterStopLimit(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity, roundedStopPrice, roundedLimitPrice }) =>
-        createPendingOrder(
+        createPendingOrderRequest(
           {
             orderSide: 'ENTRY',
             type: 'STOP_LIMIT',
@@ -260,7 +265,7 @@ function enterStopLimit(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -268,7 +273,7 @@ function enterStopLimit(
 function exitMarket(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number }): void =>
     pipe(
@@ -277,9 +282,13 @@ function exitMarket(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity }) =>
-        createPendingOrder({ orderSide: 'EXIT', type: 'MARKET', quantity: roundedQuantity }, id, createdAt),
+        createPendingOrderRequest(
+          { orderSide: 'EXIT', type: 'MARKET', quantity: roundedQuantity },
+          id,
+          createdAt,
+        ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -287,7 +296,7 @@ function exitMarket(
 function exitLimit(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number; limitPrice: number }): void =>
     pipe(
@@ -297,13 +306,13 @@ function exitLimit(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity, roundedLimitPrice }) =>
-        createPendingOrder(
+        createPendingOrderRequest(
           { orderSide: 'EXIT', type: 'LIMIT', quantity: roundedQuantity, limitPrice: roundedLimitPrice },
           id,
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -311,7 +320,7 @@ function exitLimit(
 function exitStopMarket(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number; stopPrice: number }): void =>
     pipe(
@@ -321,13 +330,13 @@ function exitStopMarket(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity, roundedStopPrice }) =>
-        createPendingOrder(
+        createPendingOrderRequest(
           { orderSide: 'EXIT', type: 'STOP_MARKET', quantity: roundedQuantity, stopPrice: roundedStopPrice },
           id,
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
@@ -335,7 +344,7 @@ function exitStopMarket(
 function exitStopLimit(
   deps: OrdersModuleDeps,
   symbol: Symbol,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
   return (request: { quantity: number; stopPrice: number; limitPrice: number }): void =>
     pipe(
@@ -346,7 +355,7 @@ function exitStopLimit(
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity, roundedStopPrice, roundedLimitPrice }) =>
-        createPendingOrder(
+        createPendingOrderRequest(
           {
             orderSide: 'EXIT',
             type: 'STOP_LIMIT',
@@ -358,14 +367,14 @@ function exitStopLimit(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrdersRef.modify(append(order))),
+      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
       executeIo,
     );
 }
 
 function cancelOrder(
   deps: OrdersModuleDeps,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
   openingOrders: readonly OpeningOrder[],
 ) {
   return (orderIdToCancel: OrderId): void =>
@@ -373,11 +382,11 @@ function cancelOrder(
       openingOrders.find(propEq(orderIdToCancel, 'id')),
       (openingOrder) =>
         isUndefined(openingOrder)
-          ? pendingOrdersRef.modify(reject(propEq(orderIdToCancel, 'id')))
+          ? pendingOrderRequestsRef.modify(reject(propEq(orderIdToCancel, 'id')))
           : pipe(
               createCancelOrder(deps, orderIdToCancel),
               io.chain((cancelOrder) =>
-                pendingOrdersRef.modify((pendingOrders) => {
+                pendingOrderRequestsRef.modify((pendingOrders) => {
                   const newPendingOrders = append(cancelOrder, pendingOrders);
                   return uniqWith(removeDuplicateCancelOrder, newPendingOrders);
                 }),
@@ -389,7 +398,7 @@ function cancelOrder(
 
 function cancelAllOrders(
   deps: OrdersModuleDeps,
-  pendingOrdersRef: ior.IORef<readonly PendingOrder[]>,
+  pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
   openingOrders: readonly OpeningOrder[],
 ) {
   return (
@@ -410,14 +419,16 @@ function cancelAllOrders(
       status === 'PENDING' ? [] : filter(anyPass(cancelFilter), openingOrders).map(prop('id'));
 
     return pipe(
-      status !== 'OPENING' ? pendingOrdersRef.modify(reject(anyPass(cancelFilter))) : io.of(undefined),
+      status !== 'OPENING' ? pendingOrderRequestsRef.modify(reject(anyPass(cancelFilter))) : io.of(undefined),
       io.chain(() =>
         !isEmpty(orderIdsToCancel)
           ? pipe(
               orderIdsToCancel.map((orderId) => createCancelOrder(deps, orderId)),
               io.sequenceArray,
               io.chain((cancelOrders) =>
-                pendingOrdersRef.modify(flow(concat(__, cancelOrders), uniqWith(removeDuplicateCancelOrder))),
+                pendingOrderRequestsRef.modify(
+                  flow(concat(__, cancelOrders), uniqWith(removeDuplicateCancelOrder)),
+                ),
               ),
             )
           : io.of(undefined),
@@ -437,7 +448,7 @@ function createCancelOrder(
     io.bind('createdAt', () => deps.dateService.getCurrentDate),
     io.map(
       ({ id, createdAt }) =>
-        createPendingOrder({ type: 'CANCEL', orderIdToCancel }, id, createdAt) as Extract<
+        createPendingOrderRequest({ type: 'CANCEL', orderIdToCancel }, id, createdAt) as Extract<
           PendingOrder,
           { type: 'CANCEL' }
         >,
@@ -445,6 +456,6 @@ function createCancelOrder(
   );
 }
 
-function removeDuplicateCancelOrder(x: PendingOrder, y: PendingOrder): boolean {
+function removeDuplicateCancelOrder(x: PendingOrderRequest, y: PendingOrderRequest): boolean {
   return x.type === 'CANCEL' && y.type === 'CANCEL' && x.orderIdToCancel === y.orderIdToCancel ? true : false;
 }

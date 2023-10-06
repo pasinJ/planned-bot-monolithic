@@ -1,11 +1,6 @@
 import { Primitive, UnionToIntersection } from 'ts-essentials';
 import { z } from 'zod';
 
-// export type RemoveBrand<T> = Omit<T, typeof z.BRAND>;
-// export type RemoveBrandFromObjVal<T> = {
-//   [K in keyof T]: T[K] extends Record<string, unknown> ? RemoveBrandFromObjVal<T[K]> : RemoveBrand<T[K]>;
-// };
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type IterateOnTuple<T extends [...any[]]> = T extends [infer Head, ...infer Tail]
   ? [Unbrand<Head>, ...IterateOnTuple<Tail>]
@@ -27,6 +22,8 @@ export type Unbrand<T> = T extends Primitive
   ? Unbrand<E>[]
   : T extends Set<infer E>
   ? Set<Unbrand<E>>
+  : T extends Date
+  ? RemoveBrand<T>
   : T extends Map<infer E, infer F>
   ? Map<Unbrand<E>, Unbrand<F>>
   : {

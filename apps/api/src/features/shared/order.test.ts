@@ -16,21 +16,21 @@ import {
   calculateFee,
   createFilledOrder,
   createOpeningOrder,
-  createPendingOrder,
+  createPendingOrderRequest,
   createRejectedOrder,
   createSubmittedOrder,
 } from './order.js';
 import { MakerFeeRate, TakerFeeRate } from './strategy.js';
 import { AssetName } from './symbol.js';
 
-describe('UUT: Create pending order', () => {
-  describe('[WHEN] create a pending order', () => {
-    it('[THEN] it will return a pending order', () => {
+describe('UUT: Create pending order request', () => {
+  describe('[WHEN] create a pending order request', () => {
+    it('[THEN] it will return a pending order request', () => {
       const request = { orderSide: 'ENTRY', type: 'MARKET', quantity: 1 } as const;
       const orderId = 'nqAPDnvL1V' as OrderId;
       const currentDate = new Date('2021-12-12') as ValidDate;
 
-      const result = createPendingOrder(request, orderId, currentDate);
+      const result = createPendingOrderRequest(request, orderId, currentDate);
 
       expect(result).toEqual({ ...request, id: orderId, status: 'PENDING', createdAt: currentDate });
     });
