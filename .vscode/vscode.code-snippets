@@ -100,5 +100,31 @@
     "prefix": "~fake",
     "scope": "javascript,javascriptreact,typescript,typescriptreact",
     "body": ["import { faker } from '@faker-js/faker';"]
+  },
+  "given-when-then": {
+    "description": "Given-When-Then test case pattern",
+    "prefix": "descGWT",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": [
+      "describe('[GIVEN]',() => {",
+      "\tdescribe('[WHEN]',() => {",
+      "\t\tit('[THEN]', () => {",
+      "\t\t\t$0",
+      "\t\t})",
+      "\t})",
+      "})"
+    ]
+  },
+  "when-then": {
+    "description": "When-Then test case pattern",
+    "prefix": "descWT",
+    "scope": "javascript,javascriptreact,typescript,typescriptreact",
+    "body": [
+      "describe('[WHEN]',() => {",
+      "\tit('[THEN]',() => {",
+      "\t\t$0",
+      "\t})",
+      "})"
+    ]
   }
 }

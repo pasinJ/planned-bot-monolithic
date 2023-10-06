@@ -1,229 +1,186 @@
-import { assoc, omit } from 'ramda';
-
+import { exchangeNameEnum } from '#features/shared/exchange.js';
+import { languageEnum } from '#features/shared/strategy.js';
+import { AssetName, SymbolName } from '#features/shared/symbol.js';
+import { timeframeEnum } from '#features/shared/timeframe.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
-import { randomBeforeAndAfterDateInPast, randomDate, randomDateAfter } from '#test-utils/faker/date.js';
-import {
-  random9DigitsPositiveFloatAndRoundUpValue,
-  randomNegativeInt,
-  randomPositiveFloat,
-} from '#test-utils/faker/number.js';
-import { randomString } from '#test-utils/faker/string.js';
-import { mockBtStrategy } from '#test-utils/features/btStrategies/models.js';
+import { ValidDate } from '#shared/utils/date.js';
+import { TimezoneString } from '#shared/utils/string.js';
 
-import { createBtStrategyModel } from './btStrategy.js';
-
-function mockValidData() {
-  const { before, after } = randomBeforeAndAfterDateInPast(currentDate);
-  return {
-    ...omit(
-      ['version', 'createdAt', 'updatedAt'],
-      mockBtStrategy({ startTimestamp: before, endTimestamp: after }),
-    ),
-    id: randomString(),
-  };
-}
-
-const currentDate = randomDate();
+import { BtStrategyId, createBtStrategyModel } from './btStrategy.js';
 
 describe('UUT: Create backtesting strategy model', () => {
-  describe('[WHEN] create a backtesting strategy with all valid perperties', () => {
-    it('[THEN] it will return Right of backtesting strategy model', () => {
-      const validData = mockValidData();
+  const defaultCurrentDate = new Date('2022-10-10') as ValidDate;
+  const validData = {
+    id: 'aRexb1yIua' as BtStrategyId,
+    name: 'name' as string,
+    exchange: exchangeNameEnum.BINANCE,
+    symbol: 'BTCUSDT' as SymbolName,
+    timeframe: timeframeEnum['15m'],
+    initialCapital: 1000,
+    capitalCurrency: 'USDT' as AssetName,
+    takerFeeRate: 1,
+    makerFeeRate: 2,
+    maxNumKlines: 10,
+    startTimestamp: new Date('2022-01-01') as ValidDate,
+    endTimestamp: new Date('2022-01-02') as ValidDate,
+    timezone: '+06:00' as TimezoneString,
+    language: languageEnum.javascript,
+    body: 'console.log("Hello")',
+  };
 
-      expect(createBtStrategyModel(validData, currentDate)).toEqualRight({
-        ...validData,
-        version: 0,
-        createdAt: currentDate,
-        updatedAt: currentDate,
+  describe('[GIVEN] input data is valid', () => {
+    describe('[WHEN] create a backtesting strategy model', () => {
+      it('[THEN] it will return Right of backtesting strategy model', () => {
+        const currentDate = defaultCurrentDate;
+
+        const result = createBtStrategyModel(validData, currentDate);
+
+        expect(result).toEqualRight({
+          ...validData,
+          version: 0,
+          createdAt: currentDate,
+          updatedAt: currentDate,
+        });
       });
     });
   });
-  describe('id property', () => {
-    const propertyName = 'id';
 
-    it.each([
+  describe('[GIVEN] the name property of input data is invalid', () => {
+    describe.each([
       { case: 'the property is an empty string', value: '' },
       { case: 'the property is a string with only whitespace', value: ' ' },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const currentDate = defaultCurrentDate;
+        const data = { ...validData, name: value };
 
-      const result = createBtStrategyModel(data, currentDate);
+        const result = createBtStrategyModel(data, currentDate);
 
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
     });
   });
-  describe('name property', () => {
-    const propertyName = 'name';
 
-    it.each([
-      { case: 'the property is an empty string', value: '' },
-      { case: 'the property is a string with only whitespace', value: ' ' },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
+  describe('[GIVEN] the initial capital property of input data is invalid', () => {
+    describe.each([
+      { case: 'the property is a negative number', value: -1 },
+      { case: 'the property is NaN', value: NaN },
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const currentDate = defaultCurrentDate;
+        const data = { ...validData, initialCapital: value };
 
-      const result = createBtStrategyModel(data, currentDate);
+        const result = createBtStrategyModel(data, currentDate);
 
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
     });
   });
-  describe('maximum number of klines property', () => {
-    const propertyName = 'maxNumKlines';
 
-    it.each([
-      { case: 'the property is a negative number', value: randomNegativeInt() },
+  describe('[GIVEN] the taker fee rate property of input data is invalid', () => {
+    describe.each([
+      { case: 'the property is a negative number', value: -1 },
+      { case: 'the property is NaN', value: NaN },
+      { case: 'the property is more than 100', value: 100.1 },
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const currentDate = defaultCurrentDate;
+        const data = { ...validData, takerFeeRate: value };
+
+        const result = createBtStrategyModel(data, currentDate);
+
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
+    });
+  });
+
+  describe('[GIVEN] the maker fee rate property of input data is invalid', () => {
+    describe.each([
+      { case: 'the property is a negative number', value: -1 },
+      { case: 'the property is NaN', value: NaN },
+      { case: 'the property is more than 100', value: 100.1 },
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const currentDate = defaultCurrentDate;
+        const data = { ...validData, makerFeeRate: value };
+
+        const result = createBtStrategyModel(data, currentDate);
+
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
+    });
+  });
+
+  describe('[GIVEN] the maximum number of klines property of input data is invalid', () => {
+    describe.each([
+      { case: 'the property is a negative number', value: -1 },
       { case: 'the property is NaN', value: NaN },
       { case: 'the property is 0', value: 0 },
-      { case: 'the property is a float number', value: randomPositiveFloat() },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
+      { case: 'the property is a float number', value: 1.2 },
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const currentDate = defaultCurrentDate;
+        const data = { ...validData, maxNumKlines: value };
 
-      const result = createBtStrategyModel(data, currentDate);
+        const result = createBtStrategyModel(data, currentDate);
 
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
     });
   });
-  describe('initial capital property', () => {
-    const propertyName = 'initialCapital';
 
-    it.each([
-      { case: 'the property is a negative number', value: randomNegativeInt() },
-      { case: 'the property is NaN', value: NaN },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
+  describe('[GIVEN] the start timestamp property of input data is invalid', () => {
+    const currentDate = new Date('2021-12-01') as ValidDate;
 
-      const result = createBtStrategyModel(data, currentDate);
+    describe.each([{ case: 'the property is a date before current date', value: new Date('2022-01-01') }])(
+      '[WHEN] create a create backtesting strategy model with $case',
+      ({ value }) => {
+        it('[THEN] it will return Left of error', () => {
+          const data = { ...validData, startTimestamp: value as ValidDate };
 
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-    it('[WHEN] create a backtesting strategy with the property is 0 [THEN] it will return Right', () => {
-      const data = assoc(propertyName, 0, mockValidData());
+          const result = createBtStrategyModel(data, currentDate);
 
-      const result = createBtStrategyModel(data, currentDate);
+          expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+        });
+      },
+    );
+  });
 
-      expect(result).toBeRight();
-    });
-    it('[WHEN] create a backtesting strategy with the property has more than 8 digits [THEN] it will be rounded up to the closest number with 8 digits', () => {
-      const { float9Digits, float8Digits } = random9DigitsPositiveFloatAndRoundUpValue();
-      const data = assoc(propertyName, float9Digits, mockValidData());
+  describe('[GIVEN] the end timestamp property of input data is invalid', () => {
+    const currentDate = new Date('2021-12-01') as ValidDate;
 
-      const result = createBtStrategyModel(data, currentDate);
+    describe.each([
+      { case: 'the property is a date before current date', value: new Date('2022-01-02') },
+      { case: 'the property is a date that equals to start timestamp', value: new Date('2021-01-01') },
+      { case: 'the property is a date before start timestamp', value: new Date('2021-12-20') },
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const data = {
+          ...validData,
+          startTimestamp: new Date('2021-01-01') as ValidDate,
+          endTimestamp: value as ValidDate,
+        };
 
-      expect(result).toEqualRight(expect.toContainEntry([propertyName, float8Digits]));
+        const result = createBtStrategyModel(data, currentDate);
+
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
     });
   });
-  describe('taker fee rate property', () => {
-    const propertyName = 'takerFeeRate';
 
-    it.each([
-      { case: 'the property is a negative number', value: randomNegativeInt() },
-      { case: 'the property is NaN', value: NaN },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-    it('[WHEN] create a backtesting strategy with the property is 0 [THEN] it will return Right', () => {
-      const data = assoc(propertyName, 0, mockValidData());
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toBeRight();
-    });
-    it('[WHEN] create a backtesting strategy with the property has more than 8 digits [THEN] it will be rounded up to the closest number with 8 digits', () => {
-      const { float9Digits, float8Digits } = random9DigitsPositiveFloatAndRoundUpValue();
-      const data = assoc(propertyName, float9Digits, mockValidData());
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualRight(expect.toContainEntry([propertyName, float8Digits]));
-    });
-  });
-  describe('maker fee rate property', () => {
-    const propertyName = 'makerFeeRate';
-
-    it.each([
-      { case: 'the property is a negative number', value: randomNegativeInt() },
-      { case: 'the property is NaN', value: NaN },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-    it('[WHEN] create a backtesting strategy with the property is 0 [THEN] it will return Right', () => {
-      const data = assoc(propertyName, 0, mockValidData());
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toBeRight();
-    });
-    it('[WHEN] create a backtesting strategy with the property has more than 8 digits [THEN] it will be rounded up to the closest number with 8 digits', () => {
-      const { float9Digits, float8Digits } = random9DigitsPositiveFloatAndRoundUpValue();
-      const data = assoc(propertyName, float9Digits, mockValidData());
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualRight(expect.toContainEntry([propertyName, float8Digits]));
-    });
-  });
-  describe('start timestamp property', () => {
-    const propertyName = 'startTimestamp';
-
-    it('[WHEN] create a backtesting strategy with the property is after the current time [THEN] it will return Left of error', () => {
-      const validData = mockValidData();
-      const after = randomDateAfter(currentDate);
-      const data = { ...validData, [propertyName]: after };
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-  });
-  describe('end timestamp property', () => {
-    const propertyName = 'endTimestamp';
-
-    it('[WHEN] create a backtesting strategy with the property is after the current time [THEN] it will return Left of error', () => {
-      const validData = mockValidData();
-      const after = randomDateAfter(currentDate);
-      const data = { ...validData, [propertyName]: after };
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-    it('[WHEN] create a backtesting strategy with the property equals to start timestamp [THEN] it will return Left of error', () => {
-      const validData = mockValidData();
-      const data = { ...validData, [propertyName]: validData.startTimestamp };
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-    it('[WHEN] create a backtesting strategy with the property is a date before start timestamp [THEN] it will return Left of error', () => {
-      const validData = mockValidData();
-      const { before, after } = randomBeforeAndAfterDateInPast(currentDate);
-      const data = { ...validData, startTimestamp: after, [propertyName]: before };
-
-      const result = createBtStrategyModel(data, currentDate);
-
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-    });
-  });
-  describe('body property', () => {
-    const propertyName = 'body';
-
-    it.each([
+  describe('[GIVEN] the body property of input data is invalid', () => {
+    describe.each([
       { case: 'the property is an empty string', value: '' },
       { case: 'the property is a string with only whitespace', value: ' ' },
-    ])('[WHEN] create a backtesting strategy with $case [THEN] it will return Left of error', ({ value }) => {
-      const data = assoc(propertyName, value, mockValidData());
+    ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
+      it('[THEN] it will return Left of error', () => {
+        const currentDate = defaultCurrentDate;
+        const data = { ...validData, body: value };
 
-      const result = createBtStrategyModel(data, currentDate);
+        const result = createBtStrategyModel(data, currentDate);
 
-      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+        expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      });
     });
   });
 });

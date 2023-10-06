@@ -1,26 +1,24 @@
-import { faker } from '@faker-js/faker';
+import { exchangeNameEnum } from '#features/shared/exchange.js';
+import { languageEnum } from '#features/shared/strategy.js';
+import { timeframeEnum } from '#features/shared/timeframe.js';
 
-import { randomBeforeAndAfterDateInPast } from '#test-utils/faker/date.js';
-import { randomPositiveFloat, randomPositiveInt } from '#test-utils/faker/number.js';
-import { randomString } from '#test-utils/faker/string.js';
-import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/features/shared/domain.js';
-
-export function mockValidAddBtStrategyRequestBody() {
-  const { before, after } = randomBeforeAndAfterDateInPast();
+export function mockValidAddBtStrategyRequestBody(
+  request?: Partial<{ startTimestamp: Date; endTimestamp: Date }>,
+) {
   return {
-    name: randomString(),
-    exchange: randomExchangeName(),
-    symbol: randomString(),
-    currency: randomString(),
-    timeframe: randomTimeframe(),
-    maxNumKlines: randomPositiveInt(),
-    initialCapital: randomPositiveFloat(),
-    takerFeeRate: randomPositiveFloat(),
-    makerFeeRate: randomPositiveFloat(),
-    startTimestamp: before.toISOString(),
-    endTimestamp: after.toISOString(),
-    timezone: faker.location.timeZone(),
-    language: randomLanguage(),
-    body: randomString(),
+    name: 'name',
+    exchange: exchangeNameEnum.BINANCE,
+    symbol: 'BTCUSDT',
+    timeframe: timeframeEnum['1h'],
+    maxNumKlines: 10,
+    initialCapital: 1000,
+    capitalCurrency: 'USDT',
+    takerFeeRate: 1,
+    makerFeeRate: 2,
+    startTimestamp: request?.startTimestamp?.toISOString() ?? '2011-12-12T12:00:00.000Z',
+    endTimestamp: request?.endTimestamp?.toISOString() ?? '2011-12-12T13:00:00.000Z',
+    timezone: '+03:00',
+    language: languageEnum.typescript,
+    body: 'console.log("Hi")',
   };
 }

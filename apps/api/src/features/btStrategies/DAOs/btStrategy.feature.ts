@@ -1,8 +1,6 @@
 import e from 'fp-ts/lib/Either.js';
-import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { nanoid } from 'nanoid';
 import { isNotNil, omit } from 'ramda';
 
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
@@ -10,8 +8,6 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { BtStrategyId, BtStrategyModel } from '../dataModels/btStrategy.js';
 import { BtStrategyDaoError, createBtStrategyDaoError } from './btStrategy.error.js';
 import { BtStrategyMongooseModel } from './btStrategy.js';
-
-export const generateBtStrategyModelId: io.IO<BtStrategyId> = () => nanoid() as BtStrategyId;
 
 export function addBtStrategyModel({ mongooseModel }: { mongooseModel: BtStrategyMongooseModel }) {
   return (btStrategy: BtStrategyModel): te.TaskEither<BtStrategyDaoError<'AddFailed'>, void> =>

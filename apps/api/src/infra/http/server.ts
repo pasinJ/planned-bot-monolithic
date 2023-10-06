@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import Fastify, { FastifyInstance } from 'fastify';
 import e from 'fp-ts/lib/Either.js';
+import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
@@ -14,7 +15,7 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
 import { setErrorHandler, setNotFoundHandler } from './hooks.js';
 import { addRoutes } from './routes.js';
-import { getHttpConfig } from './server.config.js';
+import { PortNumber } from './server.config.js';
 import {
   HttpServerError,
   createAddHookFailed,
@@ -45,6 +46,7 @@ const corsConfig: cors.FastifyCorsOptions = { origin: [/^http:\/\/localhost/] };
 
 export function buildHttpServer(
   mainLogger: PinoLogger,
+  getHttpConfig: io.IO<{ PORT_NUMBER: PortNumber }>,
   deps: AppDeps,
 ): e.Either<HttpServerError<'InitiateServerFailed' | 'AddHookFailed'>, HttpServer> {
   return pipe(
@@ -66,19 +68,23 @@ export function buildHttpServer(
     ),
     e.map((fastify) => ({
       config: (fn) => fn(fastify, deps),
-      start: start(fastify),
+      start: start(fastify, getHttpConfig),
       stop: stop(fastify),
     })),
   );
 }
 
-function start(fastify: FastifyServer): HttpServer['start'] {
-  const { PORT_NUMBER } = getHttpConfig();
-
+function start(
+  fastify: FastifyServer,
+  getHttpConfig: io.IO<{ PORT_NUMBER: PortNumber }>,
+): HttpServer['start'] {
   return pipe(
-    te.tryCatch(
-      () => fastify.listen({ host: '0.0.0.0', port: PORT_NUMBER }),
-      createErrorFromUnknown(createHttpServerError('StartServerFailed', 'Starting Fastify server failed')),
+    te.fromIO(getHttpConfig),
+    te.chain(({ PORT_NUMBER }) =>
+      te.tryCatch(
+        () => fastify.listen({ host: '0.0.0.0', port: PORT_NUMBER }),
+        createErrorFromUnknown(createHttpServerError('StartServerFailed', 'Starting Fastify server failed')),
+      ),
     ),
     te.asUnit,
   );

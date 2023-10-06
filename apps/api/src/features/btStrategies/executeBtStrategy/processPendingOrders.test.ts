@@ -1,12 +1,13 @@
-import { dissoc, mergeDeepRight, omit } from 'ramda';
+import { dissoc, mergeDeepRight } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
-import { StrategyModule } from '#features/shared/executorModules/strategy.js';
-import { TradeId } from '#features/shared/executorModules/trades.js';
+import { Price } from '#features/shared/kline.js';
+import { TradeId } from '#features/shared/trade.js';
 import { ValidDate } from '#shared/utils/date.js';
 import { executeIo } from '#shared/utils/fp.js';
-import { randomDate } from '#test-utils/faker/date.js';
+import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import {
+  mockFilledMarketOrder,
   mockOpeningLimitOrder,
   mockPendingCancelOrder,
   mockPendingLimitOrder,
@@ -14,17 +15,9 @@ import {
   mockPendingStopLimitOrder,
   mockPendingStopMarketOrder,
 } from '#test-utils/features/shared/order.js';
-import { mockStrategyModule } from '#test-utils/features/shared/strategy.js';
-import { mockOpeningTrade, randomTradeId } from '#test-utils/features/shared/trades.js';
-import {
-  mockLotSizeFilter,
-  mockMinNotionalFilter,
-  mockNotionalFilter,
-  mockPriceFilter,
-  mockSymbol,
-} from '#test-utils/features/symbols/models.js';
+import { mockStrategyModule } from '#test-utils/features/shared/strategyModule.js';
+import { mockOpeningTrade } from '#test-utils/features/shared/trades.js';
 
-import { Price } from '../dataModels/kline.js';
 import {
   ProcessOrdersDeps,
   ProcessPendingLimitOrderDeps,
@@ -42,78 +35,73 @@ import {
 describe('UUT: Process pending MARKET order', () => {
   function mockDeps(overrides?: DeepPartial<ProcessPendingMarketOrderDeps>): ProcessPendingMarketOrderDeps {
     return mergeDeepRight(
-      { dateService: { getCurrentDate: () => randomDate() }, generateTradeId: () => randomTradeId() },
+      {
+        dateService: { getCurrentDate: () => new Date('2010-01-08') as ValidDate },
+        generateTradeId: () => 'Px05r9ahU3' as TradeId,
+      },
       overrides ?? {},
     );
   }
-  function validSetup() {
-    const currentDate = randomDate();
-    const tradeId = randomTradeId();
-    const deps = mockDeps({
-      dateService: { getCurrentDate: () => currentDate },
-      generateTradeId: () => tradeId,
-    });
-    const symbol = mockSymbol({ orderTypes: ['MARKET'], filters: [] });
-    const strategy = mockStrategyModule({
-      initialCapital: 1000,
+  const defaultOrders = { filledOrders: [], rejectedOrders: [] };
+  const defaultTrades = { openingTrades: [], closedTrades: [] };
+  const defaultCurrentPrice = 10 as Price;
+
+  describe('[GIVEN] the order is a valid entry MARKET order', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const tradeId = 'zuu-T50nM6' as TradeId;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
+      takerFeeRate: 2,
       totalCapital: 1000,
       availableCapital: 1000,
       totalAssetQuantity: 100,
       availableAssetQuantity: 100,
-      makerFeeRate: 1,
-      takerFeeRate: 2,
-      totalFees: { inBaseCurrency: 0, inAssetCurrency: 0 },
-      baseCurrency: symbol.quoteAsset,
-      assetCurrency: symbol.baseAsset,
-      symbol,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
     });
-    const orders = { filledOrders: [], rejectedOrders: [] };
-    const openingTrade = mockOpeningTrade({ tradeQuantity: 10 });
-    const trades = { openingTrades: [openingTrade], closedTrades: [] };
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
     const currentPrice = 10 as Price;
 
-    return { strategy, orders, trades, openingTrade, deps, tradeId, currentDate, currentPrice };
-  }
-
-  describe('[GIVEN] the order is a valid entry MARKET order', () => {
-    function setup() {
-      const { strategy, orders, trades, deps, tradeId, currentDate, currentPrice } = validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
-
-      return { strategy, order, orders, trades, deps, tradeId, currentDate, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate }, generateTradeId: () => tradeId });
+    });
 
     describe('[WHEN] process pending a pending MARKET order', () => {
       it('[THEN] it will return filled orders list with the order be filled', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.orders.filledOrders).toContainEqual({
-          ...order,
+          ...marketOrder,
           status: 'FILLED',
           filledPrice: currentPrice,
-          fee: { amount: 0.2, currency: strategy.assetCurrency },
+          fee: { amount: 0.2, currency: strategyModule.assetCurrency },
           submittedAt: currentDate,
           filledAt: currentDate,
         });
       });
-      it('[THEN] it will return opening trades list with a new opening trade', () => {
-        const { strategy, order, orders, trades, deps, tradeId, currentDate, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged rejected orders list', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
+      });
+      it('[THEN] it will return opening trades list with a new opening trade', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.trades.openingTrades).toContainEqual({
           id: tradeId,
           entryOrder: {
-            ...order,
+            ...marketOrder,
             status: 'FILLED',
             filledPrice: currentPrice,
-            fee: { amount: 0.2, currency: strategy.assetCurrency },
+            fee: { amount: 0.2, currency: strategyModule.assetCurrency },
             submittedAt: currentDate,
             filledAt: currentDate,
           },
@@ -122,336 +110,453 @@ describe('UUT: Process pending MARKET order', () => {
           maxRunup: 0,
         });
       });
-      it('[THEN] it will return strategy with updated available capital', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged closed trades list', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
-        expect(result.strategyModule.availableCapital).toBe(900);
+        expect(result.trades.closedTrades).toEqual(trades.closedTrades);
       });
-      it('[THEN] it will return strategy with updated total asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return strategy with updated strategy module', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
-        expect(result.strategyModule.totalAssetQuantity).toBe(109.8);
-      });
-      it('[THEN] it will return strategy with updated available asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.availableAssetQuantity).toBe(109.8);
-      });
-      it('[THEN] it will return strategy with accumulate total fee', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.totalFees).toEqual({ inBaseCurrency: 0, inAssetCurrency: 0.2 });
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          totalCapital: 900,
+          availableCapital: 900,
+          totalAssetQuantity: 109.8,
+          availableAssetQuantity: 109.8,
+          totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0.2 },
+        });
       });
     });
   });
+  describe('[GIVEN] the order is a valid entry MARKET order [BUT] strategy does not has enough available capital', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
+      availableCapital: 50,
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
+    const currentPrice = 10 as Price;
 
-  describe('[GIVEN] the order is an entry MARKET order [BUT] strategy does not has enough available capital', () => {
-    function setup() {
-      const { strategy, orders, trades, deps, tradeId, currentDate, currentPrice } = validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
-
-      return {
-        strategy: { ...strategy, availableCapital: 50 } as StrategyModule,
-        order,
-        orders,
-        trades,
-        deps,
-        tradeId,
-        currentDate,
-        currentPrice,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process pending a pending MARKET order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...marketOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
 
-  describe('[GIVEN] the order is a valid exit MARKET order', () => {
-    function setup() {
-      const { strategy, orders, trades, openingTrade, deps, tradeId, currentDate, currentPrice } =
-        validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 10 });
+  describe('[GIVEN] the order is a valid exit MARKET order [AND] has enough opening trade quantity', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-02-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
+      takerFeeRate: 2,
+      totalCapital: 1000,
+      availableCapital: 1000,
+      totalAssetQuantity: 100.9,
+      availableAssetQuantity: 100.9,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
+    });
+    const orders = defaultOrders;
+    const openingTrade = mockOpeningTrade({
+      entryOrder: mockFilledMarketOrder({
+        orderSide: 'ENTRY',
+        quantity: 10,
+        filledPrice: 4,
+        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
+      }),
+      tradeQuantity: 9.9,
+    });
+    const trades = { ...defaultTrades, openingTrades: [openingTrade] };
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 9.9 });
+    const currentPrice = 5 as Price;
 
-      return { strategy, order, orders, openingTrade, trades, deps, tradeId, currentDate, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process pending a pending MARKET order', () => {
-      it('[THEN] it will return filled orders list with the filled MARKET order', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
+      it('[THEN] it will return filled orders list with the order be filled', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.orders.filledOrders).toContainEqual({
-          ...order,
+          ...marketOrder,
           status: 'FILLED',
           filledPrice: currentPrice,
-          fee: { amount: 2, currency: strategy.baseCurrency },
+          fee: { amount: 0.99, currency: strategyModule.capitalCurrency },
           submittedAt: currentDate,
           filledAt: currentDate,
         });
       });
-      it('[THEN] it will return opening trades list without the matching opening trade', () => {
-        const { strategy, order, orders, trades, deps, openingTrade, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged rejected orders list', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
-        expect(result.trades.openingTrades).not.toContainEqual(openingTrade);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return closed trades list with the matching opening trade', () => {
-        const { strategy, order, orders, trades, deps, openingTrade, currentDate, currentPrice } = setup();
-
+      it('[THEN] it will return closed trades list with a new closed trade', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.trades.closedTrades).toContainEqual({
           ...openingTrade,
           exitOrder: {
-            ...order,
+            ...marketOrder,
             status: 'FILLED',
             filledPrice: currentPrice,
-            fee: { amount: 2, currency: strategy.baseCurrency },
+            fee: { amount: 0.99, currency: strategyModule.capitalCurrency },
             submittedAt: currentDate,
             filledAt: currentDate,
           },
+          netReturn: 8.51,
         });
       });
-      it('[THEN] it will return strategy with updated total capital', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return opening trades list without the matching opening trade', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
-        expect(result.strategyModule.totalCapital).toBe(1098);
+        expect(result.trades.openingTrades).toEqual([]);
       });
-      it('[THEN] it will return strategy with updated available capital', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return strategy with updated strategy module', () => {
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
-        expect(result.strategyModule.availableCapital).toBe(1098);
-      });
-      it('[THEN] it will return strategy with updated total asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.totalAssetQuantity).toBe(90);
-      });
-      it('[THEN] it will return strategy with updated available asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.availableAssetQuantity).toBe(90);
-      });
-      it('[THEN] it will return strategy with accumulate total fee', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.totalFees).toEqual({ inBaseCurrency: 2, inAssetCurrency: 0 });
-      });
-    });
-  });
-
-  describe('[GIVEN] the order is an exit MARKET order [BUT] strategy does not has enough available asset quantity', () => {
-    function setup() {
-      const { strategy, orders, trades, openingTrade, deps, tradeId, currentDate, currentPrice } =
-        validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 10 });
-
-      return {
-        strategy: { ...strategy, availableAssetQuantity: 5 } as StrategyModule,
-        order,
-        orders,
-        openingTrade,
-        trades,
-        deps,
-        tradeId,
-        currentDate,
-        currentPrice,
-      };
-    }
-
-    describe('[WHEN] process pending a pending MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
-          status: 'REJECTED',
-          submittedAt: currentDate,
-          reason: expect.toBeString(),
-        });
-      });
-    });
-  });
-
-  describe('[GIVEN] the order is a MARKET order [BUT] the MARKET order type is not allowed', () => {
-    function setup() {
-      const {
-        strategy: strategyModule,
-        orders,
-        trades,
-        deps,
-        tradeId,
-        currentDate,
-        currentPrice,
-      } = validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
-
-      return {
-        strategy: {
+        expect(result.strategyModule).toEqual({
           ...strategyModule,
-          symbol: { ...strategyModule.symbol, orderTypes: ['LIMIT'] },
-        } as StrategyModule,
-        order,
-        orders,
-        trades,
-        deps,
-        tradeId,
-        currentDate,
-        currentPrice,
-      };
-    }
+          totalCapital: 1048.51,
+          availableCapital: 1048.51,
+          totalAssetQuantity: 91,
+          availableAssetQuantity: 91,
+          totalFees: { inCapitalCurrency: 0.99, inAssetCurrency: 0 },
+        });
+      });
+    });
+  });
+  describe('[GIVEN] the order is a valid exit MARKET order [AND] does not have enough opening trade quantity', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-02-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
+      takerFeeRate: 2,
+      totalCapital: 1000,
+      availableCapital: 1000,
+      totalAssetQuantity: 100.9,
+      availableAssetQuantity: 100.9,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 10 });
+    const currentPrice = 5 as Price;
+
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process pending a pending MARKET order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...marketOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
+  describe('[GIVEN] the order is a valid exit MARKET order [AND] strategy does not have enough available asset quantity', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-02-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['MARKET'] }),
+      takerFeeRate: 2,
+      totalCapital: 1000,
+      availableCapital: 1000,
+      totalAssetQuantity: 100.9,
+      availableAssetQuantity: 5,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
+    });
+    const orders = defaultOrders;
+    const openingTrade = mockOpeningTrade({
+      entryOrder: mockFilledMarketOrder({
+        orderSide: 'ENTRY',
+        quantity: 10,
+        filledPrice: 4,
+        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
+      }),
+      tradeQuantity: 9.9,
+    });
+    const trades = { ...defaultTrades, openingTrades: [openingTrade] };
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'EXIT', quantity: 9.9 });
+    const currentPrice = 5 as Price;
 
-  describe('[GIVEN] the order is a MARKET order [BUT] the quantity property is invalid', () => {
-    function setup() {
-      const { strategy, orders, trades, deps, tradeId, currentDate, currentPrice } = validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 0 });
-
-      return { strategy, order, orders, trades, deps, tradeId, currentDate, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process pending a pending MARKET order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...marketOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
 
-  describe('[GIVEN] the order is a MARKET order [BUT] the notional is invalid', () => {
-    function setup() {
-      const {
-        strategy: strategyModule,
-        orders,
-        trades,
-        deps,
-        tradeId,
-        currentDate,
-        currentPrice,
-      } = validSetup();
-      const order = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
+  describe('[GIVEN] the order is a valid MARKET order [BUT] the MARKET order type is not allowed', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: [] }) });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
+    const currentPrice = defaultCurrentPrice;
 
-      return {
-        strategy: {
-          ...strategyModule,
-          symbol: {
-            ...strategyModule.symbol,
-            filters: [mockMinNotionalFilter({ applyToMarket: true, avgPriceMins: 0, minNotional: 150 })],
-          },
-        } as StrategyModule,
-        order,
-        orders,
-        trades,
-        deps,
-        tradeId,
-        currentDate,
-        currentPrice,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process pending a pending MARKET order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingMarketOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...marketOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
+    });
+  });
+  describe('[GIVEN] the order has invalid quantity', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['MARKET'],
+        filters: [{ type: 'MARKET_LOT_SIZE', minQty: 1, maxQty: 10, stepSize: 0.1 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 0.5 });
+    const currentPrice = defaultCurrentPrice;
+
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
+
+    describe('[WHEN] process pending a pending MARKET order', () => {
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.rejectedOrders).toContainEqual({
+          ...marketOrder,
+          status: 'REJECTED',
+          submittedAt: currentDate,
+          reason: expect.toBeString(),
+        });
+      });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
+    });
+  });
+  describe('[GIVEN] the order has invalid notional', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['MARKET'],
+        filters: [{ type: 'MIN_NOTIONAL', minNotional: 5, applyToMarket: true, avgPriceMins: 0 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const marketOrder = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 2 });
+    const currentPrice = 2 as Price;
+
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
+
+    describe('[WHEN] process pending a pending MARKET order', () => {
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.rejectedOrders).toContainEqual({
+          ...marketOrder,
+          status: 'REJECTED',
+          submittedAt: currentDate,
+          reason: expect.toBeString(),
+        });
+      });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingMarketOrder(deps, strategyModule, orders, trades, marketOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
@@ -460,532 +565,626 @@ describe('UUT: Process pending MARKET order', () => {
 describe('UUT: Process pending LIMIT order', () => {
   function mockDeps(overrides?: DeepPartial<ProcessPendingLimitOrderDeps>): ProcessPendingLimitOrderDeps {
     return mergeDeepRight(
-      { dateService: { getCurrentDate: () => randomDate() }, generateTradeId: () => randomTradeId() },
+      {
+        dateService: { getCurrentDate: () => new Date('2010-01-08') as ValidDate },
+        generateTradeId: () => 'Px05r9ahU3' as TradeId,
+      },
       overrides ?? {},
     );
   }
-  function validSetup() {
-    const currentDate = randomDate();
-    const tradeId = randomTradeId();
-    const deps = mockDeps({
-      dateService: { getCurrentDate: () => currentDate },
-      generateTradeId: () => tradeId,
-    });
-    const symbol = mockSymbol({ orderTypes: ['LIMIT'], filters: [] });
-    const strategy = mockStrategyModule({
-      initialCapital: 1000,
-      totalCapital: 300,
-      inOrdersCapital: 200,
-      availableCapital: 500,
-      totalAssetQuantity: 100,
-      inOrdersAssetQuantity: 10,
-      availableAssetQuantity: 50,
-      makerFeeRate: 1,
-      takerFeeRate: 2,
-      totalFees: { inBaseCurrency: 0, inAssetCurrency: 0 },
-      baseCurrency: symbol.quoteAsset,
-      assetCurrency: symbol.baseAsset,
-      symbol,
-    });
-    const orders = { openingOrders: [], filledOrders: [], rejectedOrders: [] };
-    const openingTrade = mockOpeningTrade({ tradeQuantity: 10 });
-    const trades = { openingTrades: [openingTrade], closedTrades: [] };
 
-    return { strategy, orders, tradeId, trades, openingTrade, deps, currentDate };
-  }
+  const defaultOrders = { openingOrders: [], filledOrders: [], rejectedOrders: [] };
+  const defaultTrades = { openingTrades: [], closedTrades: [] };
 
   describe('[GIVEN] the order is a valid entry LIMIT order [AND] the limit price is less than the current price', () => {
-    function setup() {
-      const { deps, orders, trades, strategy, currentDate } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 7 as Price;
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      makerFeeRate: 1,
+      availableCapital: 100,
+      inOrdersCapital: 100,
+      totalAssetQuantity: 100,
+      availableAssetQuantity: 100,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-      return { deps, order, orders, strategy, trades, currentDate, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return opening orders list with the order be opened', () => {
-        const { deps, order, orders, strategy, currentDate, trades, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.openingOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'OPENING',
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return a strategy with updated available capital', () => {
-        const { deps, order, orders, strategy, currentPrice, trades } = setup();
-
+      it('[THEN] it will return unchanged filled and rejected orders lists', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule).toHaveProperty('availableCapital', 450);
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return a strategy with updated in-orders capital', () => {
-        const { deps, order, orders, strategy, currentPrice, trades } = setup();
-
+      it('[THEN] it will return unchanged opening and closed trades lists', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule).toHaveProperty('inOrdersCapital', 250);
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          availableCapital: 50,
+          inOrdersCapital: 150,
+        });
       });
     });
   });
-
   describe('[GIVEN] the order is a valid entry LIMIT order [AND] the limit price is greater than or equal to the current price', () => {
-    function setup() {
-      const { deps, orders, tradeId, trades, strategy, currentDate } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 4 as Price;
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const tradeId = 'gHrQH_QA5Z' as TradeId;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      takerFeeRate: 1,
+      totalCapital: 100,
+      availableCapital: 100,
+      totalAssetQuantity: 100,
+      availableAssetQuantity: 100,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
+    const currentPrice = 4 as Price;
 
-      return { deps, order, orders, tradeId, trades, strategy, currentDate, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate }, generateTradeId: () => tradeId });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return filled orders list with the order be filled', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.filledOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'FILLED',
           filledPrice: currentPrice,
-          fee: { amount: 0.2, currency: strategy.assetCurrency },
+          fee: { amount: 0.1, currency: strategyModule.assetCurrency },
           submittedAt: currentDate,
           filledAt: currentDate,
         });
       });
-      it('[THEN] it will return opening trades list with a new opening trade', () => {
-        const { strategy, order, orders, trades, deps, tradeId, currentDate, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged opening and rejected orders lists', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
+      });
+      it('[THEN] it will return opening trades list with a new opening trade', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.trades.openingTrades).toContainEqual({
           id: tradeId,
           entryOrder: {
-            ...order,
+            ...limitOrder,
             status: 'FILLED',
             filledPrice: currentPrice,
-            fee: { amount: 0.2, currency: strategy.assetCurrency },
+            fee: { amount: 0.1, currency: strategyModule.assetCurrency },
             submittedAt: currentDate,
             filledAt: currentDate,
           },
-          tradeQuantity: 9.8,
+          tradeQuantity: 9.9,
           maxDrawdown: 0,
           maxRunup: 0,
         });
       });
-      it('[THEN] it will return strategy with updated available capital', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged closed trades list', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule.availableCapital).toBe(460);
+        expect(result.trades.closedTrades).toEqual(trades.closedTrades);
       });
-      it('[THEN] it will return strategy with updated total asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return updated strategy module', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule.totalAssetQuantity).toBe(109.8);
-      });
-      it('[THEN] it will return strategy with updated available asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.availableAssetQuantity).toBe(59.8);
-      });
-      it('[THEN] it will return strategy with accumulate total fee', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.totalFees).toEqual({ inBaseCurrency: 0, inAssetCurrency: 0.2 });
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          totalCapital: 60,
+          availableCapital: 60,
+          totalAssetQuantity: 109.9,
+          availableAssetQuantity: 109.9,
+          totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0.1 },
+        });
       });
     });
   });
+  describe('[GIVEN] the order is a valid entry LIMIT order [BUT] strategy does not has enough available capital', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      availableCapital: 40,
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-  describe('[GIVEN] the order is an entry LIMIT order [BUT] strategy does not has enough available capital', () => {
-    function setup() {
-      const { deps, orders, strategy, trades, currentDate } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 7 as Price;
-
-      return {
-        deps,
-        order,
-        orders,
-        trades,
-        currentPrice,
-        strategy: { ...strategy, availableCapital: 30 } as StrategyModule,
-        currentDate,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { deps, order, orders, strategy, trades, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
 
   describe('[GIVEN] the order is a valid exit LIMIT order [AND] the limit price is greater than the current price', () => {
-    function setup() {
-      const { deps, orders, strategy, trades, currentDate } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
-      const currentPrice = 4 as Price;
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      inOrdersAssetQuantity: 100,
+      availableAssetQuantity: 100,
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
+    const currentPrice = 4 as Price;
 
-      return { deps, order, orders, strategy, trades, currentDate, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return opening orders list with the order be opened', () => {
-        const { deps, order, orders, strategy, trades, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.openingOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'OPENING',
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return a strategy with updated available asset quantity', () => {
-        const { deps, order, orders, strategy, trades, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged filled and rejected orders lists', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule).toHaveProperty('availableAssetQuantity', 40);
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return a strategy with updated in-orders asset quantity', () => {
-        const { deps, order, orders, strategy, trades, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged opening and closed trades lists', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule).toHaveProperty('inOrdersAssetQuantity', 20);
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersAssetQuantity: 110,
+          availableAssetQuantity: 90,
+        });
       });
     });
   });
-
   describe('[GIVEN] the order is a valid exit LIMIT order [AND] the limit price is less than or equal to the current price', () => {
-    function setup() {
-      const { deps, orders, tradeId, trades, strategy, openingTrade, currentDate } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
-      const currentPrice = 10 as Price;
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      takerFeeRate: 1,
+      totalCapital: 100,
+      availableCapital: 100,
+      totalAssetQuantity: 100,
+      availableAssetQuantity: 100,
+      totalFees: { inCapitalCurrency: 1, inAssetCurrency: 1 },
+    });
+    const orders = defaultOrders;
+    const openingTrade = mockOpeningTrade({
+      entryOrder: mockFilledMarketOrder({
+        orderSide: 'ENTRY',
+        quantity: 10.1,
+        filledPrice: 4,
+        fee: { amount: 0.1, currency: strategyModule.assetCurrency },
+      }),
+      tradeQuantity: 10,
+    });
+    const trades = { ...defaultTrades, openingTrades: [openingTrade] };
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-      return { deps, order, orders, tradeId, trades, strategy, currentDate, openingTrade, currentPrice };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return filled orders list with the filled MARKET order', () => {
-        const { strategy, order, orders, trades, deps, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.filledOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'FILLED',
           filledPrice: currentPrice,
-          fee: { amount: 2, currency: strategy.baseCurrency },
+          fee: { amount: 1, currency: strategyModule.capitalCurrency },
           submittedAt: currentDate,
           filledAt: currentDate,
         });
       });
-      it('[THEN] it will return opening trades list without the matching opening trade', () => {
-        const { strategy, order, orders, trades, deps, openingTrade, currentPrice } = setup();
-
+      it('[THEN] it will return unchanged opening and rejected orders lists', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
+      });
+      it('[THEN] it will return opening trades list without the matching opening trade', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.trades.openingTrades).not.toContainEqual(openingTrade);
       });
       it('[THEN] it will return closed trades list with the matching opening trade', () => {
-        const { strategy, order, orders, trades, deps, openingTrade, currentDate, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.trades.closedTrades).toContainEqual({
           ...openingTrade,
           exitOrder: {
-            ...order,
+            ...limitOrder,
             status: 'FILLED',
             filledPrice: currentPrice,
-            fee: { amount: 2, currency: strategy.baseCurrency },
+            fee: { amount: 1, currency: strategyModule.capitalCurrency },
             submittedAt: currentDate,
             filledAt: currentDate,
           },
+          netReturn: 58.6,
         });
       });
-      it('[THEN] it will return strategy with updated total capital', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
+      it('[THEN] it will return updated strategy module', () => {
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
-        expect(result.strategyModule.totalCapital).toBe(398);
-      });
-      it('[THEN] it will return strategy with updated available capital', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.availableCapital).toBe(598);
-      });
-      it('[THEN] it will return strategy with updated total asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.totalAssetQuantity).toBe(90);
-      });
-      it('[THEN] it will return strategy with updated available asset quantity', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.availableAssetQuantity).toBe(40);
-      });
-      it('[THEN] it will return strategy with accumulate total fee', () => {
-        const { strategy, order, orders, trades, deps, currentPrice } = setup();
-
-        const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
-        );
-
-        expect(result.strategyModule.totalFees).toEqual({ inBaseCurrency: 2, inAssetCurrency: 0 });
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          totalCapital: 199,
+          availableCapital: 199,
+          totalAssetQuantity: 90,
+          availableAssetQuantity: 90,
+          totalFees: { inCapitalCurrency: 2, inAssetCurrency: 1 },
+        });
       });
     });
   });
-
   describe('[GIVEN] the order is an entry LIMIT order [BUT] strategy does not has enough available asset quantity', () => {
-    function setup() {
-      const { deps, orders, strategy, currentDate, trades } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
-      const currentPrice = 4 as Price;
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }),
+      availableAssetQuantity: 5,
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
+    const currentPrice = 4 as Price;
 
-      return {
-        deps,
-        order,
-        orders,
-        strategy: { ...strategy, availableAssetQuantity: 8 } as StrategyModule,
-        currentDate,
-        currentPrice,
-        trades,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { deps, order, orders, strategy, currentDate, trades, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
 
-  describe('[GIVEN] the order is a LIMIT order [BUT] the LIMIT order type is not allowed', () => {
-    function setup() {
-      const { deps, orders, strategy, currentDate, trades } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 6 as Price;
+  describe('[GIVEN] the order is a valid LIMIT order [BUT] the LIMIT order type is not allowed', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: [] }) });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-      return {
-        deps,
-        order,
-        orders,
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, orderTypes: ['MARKET'] },
-        } as StrategyModule,
-        currentDate,
-        trades,
-        currentPrice,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { deps, order, orders, strategy, currentDate, trades, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
-  describe('[GIVEN] the order is a LIMIT order [BUT] the quantity property is invalid', () => {
-    function setup() {
-      const { deps, orders, strategy, currentDate, trades } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 6 as Price;
+  describe('[GIVEN] the order has invalid quantity', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: ['LIMIT'] }) });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: -1, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-      return {
-        deps,
-        order,
-        orders,
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockLotSizeFilter({ maxQty: 9 })] },
-        } as StrategyModule,
-        currentDate,
-        trades,
-        currentPrice,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { deps, order, orders, strategy, currentDate, trades, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
-  describe('[GIVEN] the order is a LIMIT order [BUT] the limit price property is invalid', () => {
-    function setup() {
-      const { deps, orders, strategy, currentDate, trades } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 6 as Price;
+  describe('[GIVEN] the order has invalid limit price', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['LIMIT'],
+        filters: [{ type: 'PRICE_FILTER', minPrice: 10, maxPrice: 20, tickSize: 0.1 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-      return {
-        deps,
-        order,
-        orders,
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockPriceFilter({ minPrice: 10 })] },
-        } as StrategyModule,
-        currentDate,
-        trades,
-        currentPrice,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { deps, order, orders, strategy, currentDate, trades, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
       });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
+      });
     });
   });
-  describe('[GIVEN] the order is a LIMIT order [BUT] the notional is invalid', () => {
-    function setup() {
-      const { deps, orders, strategy, currentDate, trades } = validSetup();
-      const order = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
-      const currentPrice = 6 as Price;
+  describe('[GIVEN] the order has invalid notional', () => {
+    let deps: ProcessPendingMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['LIMIT'],
+        filters: [{ type: 'MIN_NOTIONAL', minNotional: 60, avgPriceMins: 5, applyToMarket: false }],
+      }),
+    });
+    const orders = defaultOrders;
+    const trades = defaultTrades;
+    const limitOrder = mockPendingLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
+    const currentPrice = 10 as Price;
 
-      return {
-        deps,
-        order,
-        orders,
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockMinNotionalFilter({ minNotional: 60 })] },
-        } as StrategyModule,
-        currentDate,
-        trades,
-        currentPrice,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order be rejected', () => {
-        const { deps, order, orders, strategy, currentDate, trades, currentPrice } = setup();
-
         const result = executeIo(
-          processPendingLimitOrder(deps, strategy, orders, trades, order, currentPrice),
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
         );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...limitOrder,
           status: 'REJECTED',
           submittedAt: currentDate,
           reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged filled trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.orders.filledOrders).toEqual(orders.filledOrders);
+      });
+      it('[THEN] it will return unchanged opening and closed trades list', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.trades).toEqual(trades);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingLimitOrder(deps, strategyModule, orders, trades, limitOrder, currentPrice),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
@@ -995,292 +1194,368 @@ describe('UUT: Process pending STOP_MARKET order', () => {
   function mockDeps(
     overrides?: DeepPartial<ProcessPendingStopMarketOrderDeps>,
   ): ProcessPendingStopMarketOrderDeps {
-    return mergeDeepRight({ dateService: { getCurrentDate: () => randomDate() } }, overrides ?? {});
+    return mergeDeepRight(
+      { dateService: { getCurrentDate: () => new Date('2011-11-11') as ValidDate } },
+      overrides ?? {},
+    );
   }
-  function validSetup() {
-    const currentDate = randomDate();
-    const deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
-    const symbol = mockSymbol({ orderTypes: ['STOP_LOSS', 'TAKE_PROFIT'], filters: [] });
-    const strategy = mockStrategyModule({
-      initialCapital: 1000,
-      totalCapital: 300,
-      inOrdersCapital: 200,
-      availableCapital: 500,
-      totalAssetQuantity: 100,
-      inOrdersAssetQuantity: 10,
-      availableAssetQuantity: 50,
-      makerFeeRate: 1,
-      takerFeeRate: 2,
-      totalFees: { inBaseCurrency: 0, inAssetCurrency: 0 },
-      baseCurrency: symbol.quoteAsset,
-      assetCurrency: symbol.baseAsset,
-      symbol,
-    });
-    const orders = { openingOrders: [], rejectedOrders: [] };
 
-    return { strategy, orders, deps, currentDate };
-  }
+  const defaultOrders = { openingOrders: [], rejectedOrders: [] };
 
   describe('[GIVEN] the order is a valid entry STOP_MARKET order', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_MARKET'] }),
+      availableCapital: 500,
+      inOrdersCapital: 500,
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
 
-      return { strategy, orders, deps, currentDate, order };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
       it('[THEN] it will return opening orders list with the order in opening state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.openingOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'OPENING',
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return strategy with updated in-orders capital', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return unchanged rejected orders list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('inOrdersCapital', 320);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return strategy with updated available capital', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('availableCapital', 380);
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersCapital: 620,
+          availableCapital: 380,
+        });
       });
     });
   });
   describe('[GIVEN] the order is a entry STOP_MARKET order [BUT] strategy does not has enough available capital', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_MARKET'] }),
+      availableCapital: 100,
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
 
-      return {
-        strategy: { ...strategy, availableCapital: 100 } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'REJECTED',
-          reason: expect.toBeString(),
           submittedAt: currentDate,
+          reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged opening trades list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
 
   describe('[GIVEN] the order is a valid exit STOP_MARKET order', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'EXIT', quantity: 10, stopPrice: 12 });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_MARKET'] }),
+      inOrdersAssetQuantity: 10,
+      availableAssetQuantity: 50,
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'EXIT', quantity: 10, stopPrice: 5 });
 
-      return { strategy, orders, deps, currentDate, order };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
       it('[THEN] it will return opening orders list with the order in opening state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.openingOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'OPENING',
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return strategy with updated in-orders asset quantity', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return unchanged rejected orders list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('inOrdersAssetQuantity', 20);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return strategy with updated available asset quantity', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('availableAssetQuantity', 40);
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersAssetQuantity: 20,
+          availableAssetQuantity: 40,
+        });
       });
     });
   });
   describe('[GIVEN] the order is a valid exit STOP_MARKET order [BUT] strategy does not has enough available asset quantity', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'EXIT', quantity: 10, stopPrice: 12 });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_MARKET'] }),
+      availableAssetQuantity: 5,
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'EXIT', quantity: 10, stopPrice: 5 });
 
-      return {
-        strategy: { ...strategy, availableAssetQuantity: 9 } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'REJECTED',
-          reason: expect.toBeString(),
           submittedAt: currentDate,
+          reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged opening trades list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
 
   describe('[GIVEN] the order is a STOP_MARKET order [BUT] the STOP_MARKET order type is not allowed', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: [] }) });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, orderTypes: ['MARKET'] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'REJECTED',
-          reason: expect.toBeString(),
           submittedAt: currentDate,
+          reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged opening trades list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is a STOP_MARKET order [BUT] the quantity property is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
+  describe('[GIVEN] the order has invalid quantity', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['STOP_MARKET'],
+        filters: [{ type: 'LOT_SIZE', minQty: 20, maxQty: 100, stepSize: 0.1 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockLotSizeFilter({ minQty: 12, maxQty: 15 })] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'REJECTED',
-          reason: expect.toBeString(),
           submittedAt: currentDate,
+          reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged opening trades list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is a STOP_MARKET order [BUT] the stop price property is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
+  describe('[GIVEN] the order has invalid stop price', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['STOP_MARKET'],
+        filters: [{ type: 'PRICE_FILTER', minPrice: 20, maxPrice: 100, tickSize: 0.1 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockPriceFilter({ minPrice: 1, maxPrice: 10 })] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'REJECTED',
-          reason: expect.toBeString(),
           submittedAt: currentDate,
+          reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged opening trades list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is a STOP_MARKET order [BUT] the notional is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
+  describe('[GIVEN] the order has invalid notional', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['STOP_MARKET'],
+        filters: [{ type: 'MIN_NOTIONAL', minNotional: 200, applyToMarket: false, avgPriceMins: 5 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const stopMarketOrder = mockPendingStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 12 });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: {
-            ...strategy.symbol,
-            filters: [mockNotionalFilter({ minNotional: 1, maxNotional: 100 })],
-          },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_MARKET order', () => {
-      it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopMarketOrder(deps, strategy, orders, order));
+      it('[THEN] it will return rejected orders list with the order be rejected', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopMarketOrder,
           status: 'REJECTED',
-          reason: expect.toBeString(),
           submittedAt: currentDate,
+          reason: expect.toBeString(),
         });
+      });
+      it('[THEN] it will return unchanged opening trades list', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(
+          processPendingStopMarketOrder(deps, strategyModule, orders, stopMarketOrder),
+        );
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
@@ -1290,366 +1565,394 @@ describe('UUT: Process pending STOP_LIMIT order', () => {
   function mockDeps(
     overrides?: DeepPartial<ProcessPendingStopLimitOrderDeps>,
   ): ProcessPendingStopLimitOrderDeps {
-    return mergeDeepRight({ dateService: { getCurrentDate: () => randomDate() } }, overrides ?? {});
+    return mergeDeepRight(
+      { dateService: { getCurrentDate: () => new Date('2011-11-11') as ValidDate } },
+      overrides ?? {},
+    );
   }
-  function validSetup() {
-    const currentDate = randomDate();
-    const deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
-    const symbol = mockSymbol({ orderTypes: ['STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'], filters: [] });
-    const strategy = mockStrategyModule({
-      initialCapital: 1000,
-      totalCapital: 300,
-      inOrdersCapital: 200,
-      availableCapital: 500,
-      totalAssetQuantity: 100,
-      inOrdersAssetQuantity: 10,
-      availableAssetQuantity: 50,
-      makerFeeRate: 1,
-      takerFeeRate: 2,
-      totalFees: { inBaseCurrency: 0, inAssetCurrency: 0 },
-      baseCurrency: symbol.quoteAsset,
-      assetCurrency: symbol.baseAsset,
-      symbol,
-    });
-    const orders = { openingOrders: [], rejectedOrders: [] };
 
-    return { strategy, orders, deps, currentDate };
-  }
+  const defaultOrders = { openingOrders: [], rejectedOrders: [] };
 
   describe('[GIVEN] the order is a valid entry STOP_LIMIT order', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_LIMIT'] }),
+      inOrdersCapital: 500,
+      availableCapital: 500,
+    });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return { strategy, orders, deps, currentDate, order };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return opening orders list with the order in opening state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.openingOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'OPENING',
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return strategy with updated in-orders capital', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return unchanged rejected orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('inOrdersCapital', 350);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return strategy with updated available capital', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('availableCapital', 350);
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersCapital: 650,
+          availableCapital: 350,
+        });
       });
     });
   });
   describe('[GIVEN] the order is a entry STOP_LIMIT order [BUT] strategy does not has enough available capital', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_LIMIT'] }),
+      availableCapital: 100,
+    });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return {
-        strategy: { ...strategy, availableCapital: 100 } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
 
   describe('[GIVEN] the order is a valid exit STOP_LIMIT order', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'EXIT',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_LIMIT'] }),
+      inOrdersAssetQuantity: 5,
+      availableAssetQuantity: 20,
+    });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'EXIT',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return { strategy, orders, deps, currentDate, order };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return opening orders list with the order in opening state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.openingOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'OPENING',
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return strategy with updated in-orders asset quantity', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return unchanged rejected orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('inOrdersAssetQuantity', 20);
+        expect(result.orders.rejectedOrders).toEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return strategy with updated available asset quantity', () => {
-        const { strategy, orders, deps, order } = setup();
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
-
-        expect(result.strategyModule).toHaveProperty('availableAssetQuantity', 40);
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersAssetQuantity: 15,
+          availableAssetQuantity: 10,
+        });
       });
     });
   });
   describe('[GIVEN] the order is a exit STOP_LIMIT order [BUT] strategy does not has enough available capital', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'EXIT',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({ orderTypes: ['STOP_LIMIT'] }),
+      availableAssetQuantity: 9,
+    });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'EXIT',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return {
-        strategy: { ...strategy, availableAssetQuantity: 8 } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
 
-  describe('[GIVEN] the order is an entry STOP_LIMIT order [BUT] the STOP_MARKET order type is not allowed', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+  describe('[GIVEN] the order is an entry STOP_LIMIT order [BUT] the STOP_LIMIT order type is not allowed', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: [] }) });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, orderTypes: ['MARKET'] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is an entry STOP_LIMIT order [BUT] the quantity property is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+  describe('[GIVEN] the order has invalid quantity', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['STOP_LIMIT'],
+        filters: [{ type: 'LOT_SIZE', minQty: 15, maxQty: 20, stepSize: 0.1 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockLotSizeFilter({ minQty: 15 })] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is an entry STOP_LIMIT order [BUT] the stop price property is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+  describe('[GIVEN] the order has invalid stop price', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: ['STOP_LIMIT'] }) });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 0,
+      limitPrice: 15,
+    });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockPriceFilter({ minPrice: 13, maxPrice: 20 })] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is an entry STOP_LIMIT order [BUT] the limit price property is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+  describe('[GIVEN] the order has invalid limit price', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({ symbol: mockBnbSymbol({ orderTypes: ['STOP_LIMIT'] }) });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: -1,
+    });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockPriceFilter({ minPrice: 10, maxPrice: 13 })] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
-  describe('[GIVEN] the order is an entry STOP_LIMIT order [BUT] the notional is invalid', () => {
-    function setup() {
-      const { strategy, orders, deps, currentDate } = validSetup();
-      const order = mockPendingStopLimitOrder({
-        orderSide: 'ENTRY',
-        quantity: 10,
-        stopPrice: 12,
-        limitPrice: 15,
-      });
+  describe('[GIVEN] the order has invalid notional', () => {
+    let deps: ProcessPendingStopMarketOrderDeps;
+    const currentDate = new Date('2010-03-05') as ValidDate;
+    const strategyModule = mockStrategyModule({
+      symbol: mockBnbSymbol({
+        orderTypes: ['STOP_LIMIT'],
+        filters: [{ type: 'MIN_NOTIONAL', minNotional: 200, applyToMarket: false, avgPriceMins: 5 }],
+      }),
+    });
+    const orders = defaultOrders;
+    const stopLimitOrder = mockPendingStopLimitOrder({
+      orderSide: 'ENTRY',
+      quantity: 10,
+      stopPrice: 12,
+      limitPrice: 15,
+    });
 
-      return {
-        strategy: {
-          ...strategy,
-          symbol: { ...strategy.symbol, filters: [mockMinNotionalFilter({ minNotional: 200 })] },
-        } as StrategyModule,
-        orders,
-        deps,
-        currentDate,
-        order,
-      };
-    }
+    beforeEach(() => {
+      deps = mockDeps({ dateService: { getCurrentDate: () => currentDate } });
+    });
 
     describe('[WHEN] process a pending STOP_LIMIT order', () => {
       it('[THEN] it will return rejected orders list with the order in rejected state', () => {
-        const { strategy, orders, deps, currentDate, order } = setup();
-
-        const result = executeIo(processPendingStopLimitOrder(deps, strategy, orders, order));
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
 
         expect(result.orders.rejectedOrders).toContainEqual({
-          ...order,
+          ...stopLimitOrder,
           status: 'REJECTED',
           reason: expect.toBeString(),
           submittedAt: currentDate,
         });
+      });
+      it('[THEN] it will return unchanged opening orders list', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+      });
+      it('[THEN] it will return unchanged strategy module', () => {
+        const result = executeIo(processPendingStopLimitOrder(deps, strategyModule, orders, stopLimitOrder));
+
+        expect(result.strategyModule).toEqual(strategyModule);
       });
     });
   });
@@ -1700,21 +2003,14 @@ describe('UUT: Process pending CANCEL order', () => {
 
         expect(result.orders.rejectedOrders).not.toContainEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return strategy with in-orders capital property equals to the current value - (opening order quantity * limit price)', () => {
+      it('[THEN] it will return updated strategy module', () => {
         const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
 
-        expect(result.strategyModule).toHaveProperty('inOrdersCapital', 150);
-      });
-      it('[THEN] it will return strategy with available capital property equals to the current value + (opening order quantity * limit price)', () => {
-        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
-
-        expect(result.strategyModule).toHaveProperty('availableCapital', 550);
-      });
-      it('[THEN] it will return strategy with the order properties remain unchanged', () => {
-        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
-
-        const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
-        expect(result.strategyModule).toEqual(expect.objectContaining(unchangedParts));
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersCapital: 150,
+          availableCapital: 550,
+        });
       });
     });
   });
@@ -1763,21 +2059,14 @@ describe('UUT: Process pending CANCEL order', () => {
 
         expect(result.orders.rejectedOrders).not.toContainEqual(orders.rejectedOrders);
       });
-      it('[THEN] it will return strategy with in-orders asset quantity property equals to the current value - opening order quantity', () => {
+      it('[THEN] it will return updated strategy module', () => {
         const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
 
-        expect(result.strategyModule).toHaveProperty('inOrdersAssetQuantity', 7);
-      });
-      it('[THEN] it will return strategy with available asset quantity property equals to the current value + opening order quantity', () => {
-        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
-
-        expect(result.strategyModule).toHaveProperty('availableAssetQuantity', 25);
-      });
-      it('[THEN] it will return strategy with the order properties remain unchanged', () => {
-        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
-
-        const unchangedParts = omit(['inOrdersAssetQuantity', 'availableAssetQuantity'], strategyModule);
-        expect(result.strategyModule).toEqual(expect.objectContaining(unchangedParts));
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersAssetQuantity: 7,
+          availableAssetQuantity: 25,
+        });
       });
     });
   });
@@ -1870,6 +2159,7 @@ describe('UUT: Process pending orders', () => {
       generateTradeId: () => tradeId,
     });
     const strategyModule = mockStrategyModule({
+      totalCapital: 1000,
       availableCapital: 100,
       totalAssetQuantity: 60,
       availableAssetQuantity: 30,
@@ -1924,6 +2214,7 @@ describe('UUT: Process pending orders', () => {
 
         expect(result.strategyModule).toEqual({
           ...strategyModule,
+          totalCapital: 950,
           availableCapital: 50,
           totalAssetQuantity: 69.9,
           availableAssetQuantity: 39.9,
@@ -1941,6 +2232,7 @@ describe('UUT: Process pending orders', () => {
       generateTradeId: () => tradeId,
     });
     const strategyModule = mockStrategyModule({
+      totalCapital: 1000,
       availableCapital: 60,
       totalAssetQuantity: 60,
       availableAssetQuantity: 30,
@@ -2005,6 +2297,7 @@ describe('UUT: Process pending orders', () => {
 
         expect(result.strategyModule).toEqual({
           ...strategyModule,
+          totalCapital: 950,
           availableCapital: 10,
           totalAssetQuantity: 69.9,
           availableAssetQuantity: 39.9,

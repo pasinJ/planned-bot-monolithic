@@ -1,9 +1,7 @@
 import { Decimal } from 'decimal.js';
 import { prop, take } from 'ramda';
 
-import { generateArrayOf } from '#test-utils/faker/helper.js';
-import { randomFloat } from '#test-utils/faker/number.js';
-import { mockKline } from '#test-utils/features/btStrategies/models.js';
+import { mockKline } from '#test-utils/features/shared/kline.js';
 
 import {
   ad,
@@ -32,7 +30,7 @@ import {
   wma,
 } from './indicators.js';
 
-const source = generateArrayOf(randomFloat, 10);
+const source = [0.1, 1.1, 1.2, 1.3, 1.4, 2, 1, 2.4, 6.2, 2.5];
 const klines = [
   { open: 0.02829166, high: 0.0335163, low: 0.02555602, close: 0.02849322, volume: 367958.01075971 },
   { open: 0.02849322, high: 1.73300963, low: 0.00995947, close: 0.06040588, volume: 1066026.93741542 },

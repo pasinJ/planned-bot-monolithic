@@ -1,13 +1,14 @@
 import { Agenda } from 'agenda';
-import e from 'fp-ts/lib/Either.js';
+import io from 'fp-ts/lib/IO.js';
+import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Logger } from 'pino';
 
 import { LoggerIo, createLoggerIo } from '#infra/logging.js';
+import { MongoDbUri } from '#infra/mongoDb/config.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { getJobSchedulerConfig } from './config.js';
 import { JobSchedulerError, createJobSchedulerError } from './error.js';
 
 export type JobScheduler = Readonly<{
@@ -16,21 +17,27 @@ export type JobScheduler = Readonly<{
   stop: te.TaskEither<JobSchedulerError<'StopServiceFailed'>, void>;
 }>;
 
-export type JobSchedulerDeps = Readonly<{ mainLogger: Logger }>;
+export type JobSchedulerDeps = Readonly<{
+  mainLogger: Logger;
+  getJobSchedulerConfig: io.IO<{ URI: MongoDbUri; COLLECTION_NAME: string }>;
+}>;
 export function buildJobScheduler(
   deps: JobSchedulerDeps,
 ): te.TaskEither<JobSchedulerError<'CreateServiceFailed' | 'DefineJobFailed'>, JobScheduler> {
-  const { URI, COLLECTION_NAME } = getJobSchedulerConfig();
   const loggerIo = createLoggerIo('JobScheduler', deps.mainLogger);
 
   return pipe(
-    e.tryCatch(
-      () => new Agenda({ db: { address: URI, collection: COLLECTION_NAME } }),
-      createErrorFromUnknown(
-        createJobSchedulerError('CreateServiceFailed', 'Creating job scheduler service failed'),
+    deps.getJobSchedulerConfig,
+    ioe.fromIO,
+    ioe.chain(({ URI, COLLECTION_NAME }) =>
+      ioe.tryCatch(
+        () => new Agenda({ db: { address: URI, collection: COLLECTION_NAME } }),
+        createErrorFromUnknown(
+          createJobSchedulerError('CreateServiceFailed', 'Creating job scheduler service failed'),
+        ),
       ),
     ),
-    te.fromEither,
+    te.fromIOEither,
     te.chainFirstIOK(() => loggerIo.infoIo('Job scheduler created')),
     te.map((agenda) => ({
       composeWith: (fn) => fn({ agenda, loggerIo }),

@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createFileServiceError, isFileServiceError } from './error.js';
 
 describe.each([
   {
     case: 'validate an error that is a file service error without cause property',
-    input: createFileServiceError(randomString(), randomString()),
+    input: createFileServiceError('name', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a file service error with cause property',
-    input: createFileServiceError(randomString(), randomString(), new Error()),
+    input: createFileServiceError('name', 'message', new Error()),
     expected: true,
   },
   {

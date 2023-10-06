@@ -2,9 +2,9 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Model, Mongoose, SchemaDefinition } from 'mongoose';
 
-import { exchangeNameList } from '#features/shared/domain/exchange.js';
-import { languageList } from '#features/shared/domain/strategy.js';
-import { timeframeList } from '#features/shared/domain/timeframe.js';
+import { exchangeNameList } from '#features/shared/exchange.js';
+import { languageList } from '#features/shared/strategy.js';
+import { timeframeList } from '#features/shared/timeframe.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
 import { BtStrategyModel } from '../dataModels/btStrategy.js';
@@ -34,9 +34,9 @@ function createMongooseModel(
     name: { type: String, required: true },
     exchange: { type: String, required: true, enum: exchangeNameList },
     symbol: { type: String, required: true },
-    currency: { type: String, required: true },
     timeframe: { type: String, required: true, enum: timeframeList },
     initialCapital: { type: Number, required: true },
+    capitalCurrency: { type: String, required: true },
     takerFeeRate: { type: Number, required: true },
     makerFeeRate: { type: Number, required: true },
     maxNumKlines: { type: Number, required: true },

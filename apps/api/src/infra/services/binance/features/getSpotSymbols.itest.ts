@@ -14,7 +14,14 @@ import { getSpotSymbolsList } from './getSpotSymbols.js';
 const { HTTP_BASE_URL } = getBnbConfig();
 const { EXCHANGE_INFO } = BNB_ENDPOINTS;
 const exchangeInfoPath = `${HTTP_BASE_URL}${EXCHANGE_INFO}`;
-const bnbService = unsafeUnwrapEitherRight(executeIo(buildBnbService({ mainLogger: mockMainLogger() })));
+const bnbService = unsafeUnwrapEitherRight(
+  executeIo(
+    buildBnbService({
+      mainLogger: mockMainLogger(),
+      getBnbConfig: () => ({ HTTP_BASE_URL }),
+    }),
+  ),
+);
 const getSpotSymbolsListFn = bnbService.composeWith(getSpotSymbolsList);
 
 const msw = setupServer();
@@ -38,7 +45,8 @@ describe('UUT: Get list of SPOT symbols information', () => {
           baseAssetPrecision: 8,
           quoteAsset: 'BTC',
           quoteAssetPrecision: 8,
-          orderTypes: ['LIMIT', 'LIMIT_MAKER', 'MARKET', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'],
+          orderTypes: expect.toIncludeAllMembers(['MARKET', 'LIMIT', 'STOP_LIMIT']),
+          bnbOrderTypes: ['LIMIT', 'LIMIT_MAKER', 'MARKET', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'],
           filters: [
             {
               type: 'PRICE_FILTER',

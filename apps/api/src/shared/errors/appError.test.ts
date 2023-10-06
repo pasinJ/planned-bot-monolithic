@@ -1,27 +1,25 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createAppError, createErrorFromUnknown, getCausesList, isAppError, setCause } from './appError.js';
 
 function createAppErrorWithOnlyName() {
-  const name = randomString();
+  const name = 'name1';
   return { name, error: createAppError({ name }) };
 }
 function createAppErrorWithNameAndType() {
-  const name = randomString();
-  const type = randomString();
+  const name = 'name2';
+  const type = 'type2';
   return { name, type, error: createAppError({ name, type }) };
 }
 function createAppErrorWithNameAndTypeAndMessage() {
-  const name = randomString();
-  const type = randomString();
-  const message = randomString();
+  const name = 'name3';
+  const type = 'type3';
+  const message = 'message3';
   return { name, type, message, error: createAppError({ name, type, message }) };
 }
 function createAppErrorWithNameAndTypeAndMessageAndCause(overrideCause?: Error | string) {
-  const name = randomString();
-  const type = randomString();
-  const message = randomString();
-  const cause = overrideCause ?? randomString();
+  const name = 'name4';
+  const type = 'type4';
+  const message = 'message4';
+  const cause = overrideCause ?? 'cause4';
   return { name, type, message, cause, error: createAppError({ name, type, message, cause }) };
 }
 
@@ -89,7 +87,7 @@ describe('UUT: Set cause', () => {
   describe('[WHEN] set cause of an instance that already has a cause property', () => {
     it('[THEN] it will return an instance with replaced cause property', () => {
       const { error } = createAppErrorWithNameAndTypeAndMessageAndCause();
-      const newCause = randomString();
+      const newCause = 'newCause';
 
       expect(setCause(error, newCause)).toHaveProperty('cause', newCause);
     });
@@ -146,7 +144,7 @@ describe('UUT: Validate AppError', () => {
   });
   describe('[WHEN] validate an object that is not an application error instance', () => {
     it('[THEN] it will return false', () => {
-      expect(isAppError({ test: randomString() })).toBeFalse();
+      expect(isAppError({ test: 'test' })).toBeFalse();
     });
   });
 });
@@ -155,14 +153,14 @@ describe('UUT: Create custom error from unknown', () => {
   describe('[WHEN] create an custom error', () => {
     it('[THEN] it will return an error with name property equal to the given name', () => {
       const { error: baseError, name } = createAppErrorWithOnlyName();
-      const error = createErrorFromUnknown(baseError)(randomString());
+      const error = createErrorFromUnknown(baseError)('cause');
 
       expect(error).toHaveProperty('name', name);
     });
   });
   describe('[WHEN] create a custom error from string', () => {
     it('[THEN] it will return an error with cause equals to that string', () => {
-      const cause = randomString();
+      const cause = 'cause';
       const { error: baseError } = createAppErrorWithOnlyName();
       const error = createErrorFromUnknown(baseError)(cause);
 
@@ -171,7 +169,7 @@ describe('UUT: Create custom error from unknown', () => {
   });
   describe('[WHEN] create a custom error from an error', () => {
     it('[THEN] it will return an error with cause equal to that error', () => {
-      const cause = new Error(randomString());
+      const cause = new Error('Error');
       const { error: baseError } = createAppErrorWithOnlyName();
       const error = createErrorFromUnknown(baseError)(cause);
 

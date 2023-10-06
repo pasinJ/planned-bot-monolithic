@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createKlineDaoError, isKlineDaoError } from './kline.error.js';
 
 describe.each([
   {
     case: 'validate an error that is a kline DAO error without cause property',
-    input: createKlineDaoError(randomString(), randomString()),
+    input: createKlineDaoError('name', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a kline DAO error with cause property',
-    input: createKlineDaoError(randomString(), randomString(), new Error()),
+    input: createKlineDaoError('name', 'message', new Error()),
     expected: true,
   },
   {

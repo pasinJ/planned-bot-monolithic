@@ -11,10 +11,15 @@ import { MongoDbClientError } from '#infra/mongoDb/client.error.js';
 import { disconnectMongoDbClient } from '#infra/mongoDb/client.js';
 import { JobSchedulerError } from '#infra/services/jobScheduler/error.js';
 import { JobScheduler } from '#infra/services/jobScheduler/service.js';
-import { GracefulPeriodMs, getAppConfig } from '#shared/app.config.js';
+import { GracefulPeriodMs } from '#shared/app.config.js';
 import { executeT } from '#shared/utils/fp.js';
 
-type ShutdownDeps = { httpServer: HttpServer; mongoDbClient: Mongoose; jobScheduler: JobScheduler };
+type ShutdownDeps = {
+  httpServer: HttpServer;
+  mongoDbClient: Mongoose;
+  jobScheduler: JobScheduler;
+  getAppConfig: io.IO<{ GRACEFUL_PERIOD_MS: GracefulPeriodMs }>;
+};
 
 export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO<void> {
   let shutdownProcessStarted = false;
@@ -70,12 +75,12 @@ export function addGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): io.IO
 }
 
 function startGracefulShutdown(deps: ShutdownDeps, logger: LoggerIo): t.Task<never> {
-  const { httpServer, mongoDbClient, jobScheduler } = deps;
-  const { GRACEFUL_PERIOD_MS } = getAppConfig();
+  const { httpServer, mongoDbClient, jobScheduler, getAppConfig } = deps;
 
   return pipe(
     te.fromIO(logger.infoIo('Graceful shutdown start')),
-    te.map(() => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
+    te.chainIOK(() => getAppConfig),
+    te.map(({ GRACEFUL_PERIOD_MS }) => startForceExitTimer(logger, GRACEFUL_PERIOD_MS)),
     te.chainFirstW(() =>
       // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
       te.sequenceArray<void, HttpServerError<'StopServerFailed'> | JobSchedulerError<'StopServiceFailed'>>([

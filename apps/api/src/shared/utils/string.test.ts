@@ -1,5 +1,3 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { isValidTimezoneString } from './string.js';
 
 describe('Validate Timezone string', () => {
@@ -7,6 +5,6 @@ describe('Validate Timezone string', () => {
     expect(isValidTimezoneString(Intl.DateTimeFormat().resolvedOptions().timeZone)).toBeTrue();
   });
   it('[WHEN] the input is an invalid timezone string [THEN] it will return false', () => {
-    expect(isValidTimezoneString(randomString())).toBeFalse();
+    expect(isValidTimezoneString('invalid')).toBeFalse();
   });
 });

@@ -71,7 +71,7 @@ export function highest<T extends number>(source: readonly T[], period: number):
 
   return takeLast(period, source).reduce(
     (max, current) => (current > max ? current : max),
-    Number.MIN_VALUE,
+    Number.MIN_SAFE_INTEGER,
   ) as T;
 }
 
@@ -80,6 +80,6 @@ export function lowest<T extends number>(source: readonly T[], period: number): 
 
   return takeLast(period, source).reduce(
     (min, current) => (current < min ? current : min),
-    Number.MAX_VALUE,
+    Number.MAX_SAFE_INTEGER,
   ) as T;
 }

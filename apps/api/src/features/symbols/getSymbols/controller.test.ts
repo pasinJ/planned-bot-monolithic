@@ -3,8 +3,7 @@ import { mergeDeepRight, pick } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
-import { generateArrayOf } from '#test-utils/faker/helper.js';
-import { mockSymbol } from '#test-utils/features/symbols/models.js';
+import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
 import { createSymbolDaoError } from '../DAOs/symbol.error.js';
@@ -13,7 +12,9 @@ import { GetSymbolsControllerDeps, buildGetSymbolsController } from './controlle
 
 function mockDeps(overrides?: DeepPartial<GetSymbolsControllerDeps>): GetSymbolsControllerDeps {
   return mergeDeepRight(
-    { symbolDao: { getAll: te.right(generateArrayOf(mockSymbol)) } },
+    {
+      symbolDao: { getAll: te.right([mockBnbSymbol({ name: 'BNBUSDT' })]) },
+    },
     overrides ?? {},
   ) as GetSymbolsControllerDeps;
 }
@@ -21,39 +22,45 @@ function mockDeps(overrides?: DeepPartial<GetSymbolsControllerDeps>): GetSymbols
 const { method, url } = SYMBOLS_ENDPOINTS.GET_SYMBOLS;
 const setupServer = setupTestServer(method, url, buildGetSymbolsController, mockDeps);
 
-describe('[GIVEN] there is no existing symbol [WHEN] get symbols', () => {
-  it('[THEN] it will return HTTP200 and empty array', async () => {
-    const httpServer = setupServer({ symbolDao: { getAll: te.right([]) } });
+describe('[GIVEN] there is no existing symbol', () => {
+  describe('[WHEN] get symbols', () => {
+    it('[THEN] it will return HTTP200 and empty array', async () => {
+      const httpServer = setupServer({ symbolDao: { getAll: te.right([]) } });
 
-    const resp = await httpServer.inject({ method, url });
+      const resp = await httpServer.inject({ method, url });
 
-    expect(resp.statusCode).toBe(200);
-    expect(resp.json()).toBeArrayOfSize(0);
+      expect(resp.statusCode).toBe(200);
+      expect(resp.json()).toBeArrayOfSize(0);
+    });
   });
 });
 
-describe('[GIVEN] there is an existing symbol [WHEN] get symbols', () => {
-  it('[THEN] it will return HTTP200 and an array of the existing symbols', async () => {
-    const symbols = generateArrayOf(mockSymbol);
-    const httpServer = setupServer({ symbolDao: { getAll: te.right(symbols) } });
+describe('[GIVEN] there is an existing symbol', () => {
+  describe('[WHEN] get symbols', () => {
+    it('[THEN] it will return HTTP200 and an array of the existing symbols', async () => {
+      const symbols = [mockBnbSymbol({ name: 'BNBUSDT' }), mockBnbSymbol({ name: 'BTCUSDT' })];
+      const httpServer = setupServer({ symbolDao: { getAll: te.right(symbols) } });
 
-    const resp = await httpServer.inject({ method, url });
+      const resp = await httpServer.inject({ method, url });
 
-    expect(resp.statusCode).toBe(200);
-    expect(resp.json()).toIncludeAllMembers(
-      symbols.map(pick(['name', 'exchange', 'baseAsset', 'quoteAsset'])),
-    );
+      expect(resp.statusCode).toBe(200);
+      expect(resp.json()).toIncludeAllMembers(
+        symbols.map(pick(['name', 'exchange', 'baseAsset', 'quoteAsset'])),
+      );
+    });
   });
 });
 
-describe('[WHEN] get symbols [BUT] DAO fails to get symbols', () => {
-  it('[THEN] it will return HTTP500 with error response', async () => {
-    const error = createSymbolDaoError('GetAllFailed', 'Mock');
-    const httpServer = setupServer({ symbolDao: { getAll: te.left(error) } });
+describe('[GIVEN] DAO fails to get symbols from database', () => {
+  describe('[WHEN] get symbols', () => {
+    it('[THEN] it will return HTTP500 with error response', async () => {
+      const error = createSymbolDaoError('GetAllFailed', 'Mock');
+      const httpServer = setupServer({ symbolDao: { getAll: te.left(error) } });
 
-    const resp = await httpServer.inject({ method, url });
+      const resp = await httpServer.inject({ method, url });
 
-    expect(resp.statusCode).toBe(500);
-    expect(resp.json()).toEqual(toBeHttpErrorResponse);
+      expect(resp.statusCode).toBe(500);
+      expect(resp.json()).toEqual(toBeHttpErrorResponse);
+    });
   });
 });

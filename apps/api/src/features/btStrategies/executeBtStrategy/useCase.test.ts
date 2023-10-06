@@ -5,13 +5,12 @@ import { DeepPartial } from 'ts-essentials';
 
 import { createJobSchedulerError } from '#infra/services/jobScheduler/error.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
+import { ValidDate } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
-import { randomDate } from '#test-utils/faker/date.js';
-import { randomString } from '#test-utils/faker/string.js';
-import { randomBtExecutionId } from '#test-utils/features/btStrategies/models.js';
 
 import { createBtStrategyDaoError } from '../DAOs/btStrategy.error.js';
-import { ExecuteBtStrategyDeps, ExecuteBtStrategyRequest, executeBtStrategy } from './useCase.js';
+import { BtExecutionId } from '../dataModels/btExecution.js';
+import { ExecuteBtStrategyDeps, executeBtStrategy } from './useCase.js';
 
 function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyDeps>): ExecuteBtStrategyDeps {
   return mergeDeepRight(
@@ -20,92 +19,104 @@ function mockDeps(overrides?: DeepPartial<ExecuteBtStrategyDeps>): ExecuteBtStra
       btJobScheduler: {
         scheduleBtJob: jest
           .fn()
-          .mockReturnValue(te.right({ btExecutionId: randomString(), createdAt: randomDate() })),
+          .mockReturnValue(
+            te.right({ btExecutionId: 'l57coyJ4FI' as BtExecutionId, createdAt: new Date('2010-11-04') }),
+          ),
       },
     },
     overrides ?? {},
   ) as ExecuteBtStrategyDeps;
 }
-function createRequest(): ExecuteBtStrategyRequest {
-  return { btStrategyId: randomString() };
-}
 
-describe('[WHEN] execute an existing backtesting strategy', () => {
-  it('[THEN] it will check if the strategy exists', async () => {
-    const deps = mockDeps();
-    const request = createRequest();
+describe('[GIVEN] the backtesting strategy ID exists', () => {
+  describe('[WHEN] execute the existing backtesting strategy', () => {
+    let deps: ExecuteBtStrategyDeps;
+    const executionId = 'nOuC-8aK_1' as BtExecutionId;
+    const createdAt = new Date('2034-10-30') as ValidDate;
+    const request = { btStrategyId: 'nv4f6qKmZZ' };
 
-    await pipe(executeBtStrategy(deps, request), executeT);
-
-    expect(deps.btStrategyDao.existById).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
-  });
-  it('[THEN] it will schedule a backtesting job', async () => {
-    const deps = mockDeps();
-    const request = createRequest();
-
-    await pipe(executeBtStrategy(deps, request), executeT);
-
-    expect(deps.btJobScheduler.scheduleBtJob).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
-  });
-  it('[THEN] it will return Right of execution ID, created timestamp, progressPath, and resultPath', async () => {
-    const executionId = randomBtExecutionId();
-    const createdAt = randomDate();
-    const deps = mockDeps({
-      btJobScheduler: { scheduleBtJob: () => te.right({ id: executionId, createdAt }) },
+    beforeEach(() => {
+      deps = mockDeps({
+        btJobScheduler: {
+          scheduleBtJob: jest.fn().mockReturnValue(te.right({ id: executionId, createdAt })),
+        },
+      });
     });
 
-    const result = await pipe(executeBtStrategy(deps, createRequest()), executeT);
+    it('[THEN] it will check if the strategy exists', async () => {
+      await pipe(executeBtStrategy(deps, request), executeT);
 
-    expect(result).toEqualRight({
-      id: executionId,
-      createdAt,
-      progressPath: expect.toInclude(executionId),
-      resultPath: expect.toInclude(executionId),
+      expect(deps.btStrategyDao.existById).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
+    });
+    it('[THEN] it will schedule a backtesting job', async () => {
+      await pipe(executeBtStrategy(deps, request), executeT);
+
+      expect(deps.btJobScheduler.scheduleBtJob).toHaveBeenCalledExactlyOnceWith(request.btStrategyId);
+    });
+    it('[THEN] it will return Right of execution ID, created timestamp, progressPath, and resultPath', async () => {
+      const result = await pipe(executeBtStrategy(deps, request), executeT);
+
+      expect(result).toEqualRight({
+        id: executionId,
+        createdAt,
+        progressPath: expect.toInclude(executionId),
+        resultPath: expect.toInclude(executionId),
+      });
     });
   });
 });
 
-describe('[WHEN] execute a not existing backtesting strategy', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const deps = mockDeps({ btStrategyDao: { existById: () => te.right(false) } });
-
-    const result = await pipe(executeBtStrategy(deps, createRequest()), executeT);
-
-    expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
-  });
-});
-
-describe('[WHEN] execute a backtesting strategy [BUT] DAO fails to check existence of the strategy', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const error = createBtStrategyDaoError('ExistByIdFailed', 'Mock');
-    const deps = mockDeps({ btStrategyDao: { existById: () => te.left(error) } });
-
-    const result = await pipe(executeBtStrategy(deps, createRequest()), executeT);
-
-    expect(result).toEqualLeft(error);
-  });
-});
-
-describe('[GIVEN] a backtesting strategy is pending or running', () => {
-  describe('[WHEN] execute that strategy again', () => {
+describe('[GIVEN] the backtesting strategy ID does not exist', () => {
+  describe('[WHEN] execute backtesting strategy', () => {
     it('[THEN] it will return Left of error', async () => {
-      const error = createJobSchedulerError('ExceedJobMaxSchedulingLimit', 'Mock');
-      const deps = mockDeps({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
+      const deps = mockDeps({ btStrategyDao: { existById: () => te.right(false) } });
+      const request = { btStrategyId: 'fIb_Q6besp' };
 
-      const result = await pipe(executeBtStrategy(deps, createRequest()), executeT);
+      const result = await pipe(executeBtStrategy(deps, request), executeT);
+
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+    });
+  });
+});
+
+describe('[GIVEN] DAO fails to check existence of the strategy', () => {
+  describe('[WHEN] execute a backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createBtStrategyDaoError('ExistByIdFailed', 'Mock');
+      const deps = mockDeps({ btStrategyDao: { existById: () => te.left(error) } });
+      const request = { btStrategyId: 'YHK0b4Wt9q' };
+
+      const result = await pipe(executeBtStrategy(deps, request), executeT);
 
       expect(result).toEqualLeft(error);
     });
   });
 });
 
-describe('[WHEN] execute an existing backtesting strategy [BUT] job schduler fails to schedule a backtesting job', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const error = createJobSchedulerError('ScheduleJobFailed', 'Mock');
-    const deps = mockDeps({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
+describe('[GIVEN] the backtesting strategy is pending or running', () => {
+  describe('[WHEN] execute that strategy again', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createJobSchedulerError('ExceedJobMaxSchedulingLimit', 'Mock');
+      const deps = mockDeps({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
+      const request = { btStrategyId: 'c0Xm3ej0UD' };
 
-    const result = await pipe(executeBtStrategy(deps, createRequest()), executeT);
+      const result = await pipe(executeBtStrategy(deps, request), executeT);
 
-    expect(result).toEqualLeft(error);
+      expect(result).toEqualLeft(error);
+    });
+  });
+});
+
+describe('[GIVEN] job schduler fails to schedule the backtesting job', () => {
+  describe('[WHEN] execute the backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createJobSchedulerError('ScheduleJobFailed', 'Mock');
+      const deps = mockDeps({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
+      const request = { btStrategyId: 'Al6gonQuDJ' };
+
+      const result = await pipe(executeBtStrategy(deps, request), executeT);
+
+      expect(result).toEqualLeft(error);
+    });
   });
 });

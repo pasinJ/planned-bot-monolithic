@@ -1,11 +1,6 @@
-import { faker } from '@faker-js/faker';
-import { prop } from 'ramda';
-
+import { exchangeNameEnum } from '#features/shared/exchange.js';
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
-import { generateArrayOf } from '#test-utils/faker/helper.js';
-import { randomString } from '#test-utils/faker/string.js';
-import { randomExchangeName } from '#test-utils/features/shared/domain.js';
-import { mockSymbol } from '#test-utils/features/symbols/models.js';
+import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
 import { isSymbolDaoError } from './symbol.error.js';
@@ -27,59 +22,70 @@ afterAll(() => client.disconnect());
 describe('UUT: Add symbol models', () => {
   const addFn = symbolDao.composeWith(addSymbolModels);
 
-  describe('[WHEN] add a symbol model with not existing combination of exchange and name', () => {
-    it('[THEN] it will insert the symbol into database', async () => {
-      const symbol = mockSymbol();
+  describe('[GIVEN] the combination of exchange name and symbol name does not exist', () => {
+    const symbol = mockBnbSymbol();
 
-      await executeT(addFn(symbol));
+    describe('[WHEN] add a symbol', () => {
+      it('[THEN] it will insert the symbol into database', async () => {
+        await executeT(addFn(symbol));
 
-      const findResult = await symbolModel.find({ name: symbol.name });
-      expect(findResult).not.toBeNull();
-    });
-    it('[THEN] it will return Right of undefined', async () => {
-      const result = await executeT(addFn(mockSymbol()));
+        const findResult = await symbolModel.find({ name: symbol.name });
+        expect(findResult).not.toBeNull();
+      });
+      it('[THEN] it will return Right of undefined', async () => {
+        const result = await executeT(addFn(symbol));
 
-      expect(result).toEqualRight(undefined);
-    });
-  });
-
-  describe('[WHEN] add multiple klines with not existing combination of exchange, symbol, timeframe, and close timestamp', () => {
-    it('[THEN] it will insert those klines into database', async () => {
-      const symbols = generateArrayOf(mockSymbol);
-
-      await executeT(addFn(symbols));
-
-      const findResult = await symbolModel.find({ name: { $in: symbols.map(prop('name')) } });
-      expect(findResult).toHaveLength(symbols.length);
-    });
-    it('[THEN] it will return Right of undefined', async () => {
-      const symbols = generateArrayOf(mockSymbol);
-
-      const result = await executeT(addFn(symbols));
-
-      expect(result).toEqualRight(undefined);
+        expect(result).toEqualRight(undefined);
+      });
     });
   });
 
-  describe('[WHEN] add multiple symbols with some symbols have existing combination of symbol name and exchange', () => {
-    it('[THEN] it will skip those existing klines', async () => {
-      const symbols = generateArrayOf(mockSymbol, 5);
-      const existingSymbols = faker.helpers.arrayElements(symbols);
-      await symbolModel.insertMany(existingSymbols);
+  describe('[GIVEN] all symbols in the input list do not have existing combination of exchange name and symbol name', () => {
+    const symbols = [
+      mockBnbSymbol({ name: 'BTCUSDT', exchange: exchangeNameEnum.BINANCE }),
+      mockBnbSymbol({ name: 'BNBUSDT', exchange: exchangeNameEnum.BINANCE }),
+      mockBnbSymbol({ name: 'ETHUSDT', exchange: exchangeNameEnum.BINANCE }),
+    ];
 
-      await executeT(addFn(symbols));
+    describe('[WHEN] add those symbols', () => {
+      it('[THEN] it will insert those symbols into database', async () => {
+        await executeT(addFn(symbols));
 
-      const findResult = await symbolModel.find({ name: { $in: symbols.map(prop('name')) } });
-      expect(findResult).toHaveLength(symbols.length);
+        const findResult = await symbolModel.find({ name: { $in: ['BTCUSDT', 'BNBUSDT', 'ETHUSDT'] } });
+        expect(findResult).toHaveLength(3);
+      });
+      it('[THEN] it will return Right of undefined', async () => {
+        const result = await executeT(addFn(symbols));
+
+        expect(result).toEqualRight(undefined);
+      });
     });
-    it('[THEN] it will still return Right of undefined', async () => {
-      const symbols = generateArrayOf(mockSymbol, 5);
-      const existingSymbols = faker.helpers.arrayElements(symbols);
-      await symbolModel.insertMany(existingSymbols);
+  });
 
-      const result = await executeT(addFn(symbols));
+  describe('[GIVEN] some symbols in the input list have existing combination of exchange name and symbol name', () => {
+    const existingSymbol = mockBnbSymbol({ name: 'BTCUSDT', exchange: exchangeNameEnum.BINANCE });
+    const symbols = [
+      existingSymbol,
+      mockBnbSymbol({ name: 'BNBUSDT', exchange: exchangeNameEnum.BINANCE }),
+      mockBnbSymbol({ name: 'ETHUSDT', exchange: exchangeNameEnum.BINANCE }),
+    ];
 
-      expect(result).toEqualRight(undefined);
+    describe('[WHEN] add those symbols', () => {
+      it('[THEN] it will skip those existing klines', async () => {
+        await symbolModel.create(existingSymbol);
+
+        await executeT(addFn(symbols));
+
+        const findResult = await symbolModel.find({ name: { $in: ['BTCUSDT', 'BNBUSDT', 'ETHUSDT'] } });
+        expect(findResult).toHaveLength(symbols.length);
+      });
+      it('[THEN] it will still return Right of undefined', async () => {
+        await symbolModel.create(existingSymbol);
+
+        const result = await executeT(addFn(symbols));
+
+        expect(result).toEqualRight(undefined);
+      });
     });
   });
 });
@@ -100,7 +106,11 @@ describe('UUT: Get all symbol models', () => {
   describe('[GIVEN] there is existing symbols', () => {
     describe('[WHEN] get all symbol models', () => {
       it('[THEN] it will return Right of an array with the existing symbols', async () => {
-        const symbols = generateArrayOf(mockSymbol);
+        const symbols = [
+          mockBnbSymbol({ name: 'BTCUSDT', exchange: exchangeNameEnum.BINANCE }),
+          mockBnbSymbol({ name: 'BNBUSDT', exchange: exchangeNameEnum.BINANCE }),
+          mockBnbSymbol({ name: 'ETHUSDT', exchange: exchangeNameEnum.BINANCE }),
+        ];
         await symbolModel.insertMany(symbols);
 
         const getResult = await executeT(getAllFn);
@@ -117,7 +127,7 @@ describe('UUT: Check existence of symbol models by exchange name', () => {
   describe('[GIVEN] some symbol of the exchange already exists', () => {
     describe('[WHEN] check existence by exchange', () => {
       it('[THEN] it will return Right of true', async () => {
-        const symbol = mockSymbol();
+        const symbol = mockBnbSymbol();
         await symbolModel.create(symbol);
 
         const result = await executeT(existFn(symbol.exchange));
@@ -130,7 +140,7 @@ describe('UUT: Check existence of symbol models by exchange name', () => {
   describe('[GIVEN] the ID does not exist', () => {
     describe('[WHEN] check existence by exchange', () => {
       it('[THEN] it will return Right of false', async () => {
-        const result = await executeT(existFn(randomExchangeName()));
+        const result = await executeT(existFn(exchangeNameEnum.BINANCE));
 
         expect(result).toEqualRight(false);
       });
@@ -144,7 +154,7 @@ describe('UUT: Get symbol models by name and exchange name', () => {
   describe('GIVEN a symbol with this name and exchange exists', () => {
     describe('[WHEN] get a symbol with name and exchange name', () => {
       it('[THEN] it will return Right of the symbol', async () => {
-        const symbol = mockSymbol();
+        const symbol = mockBnbSymbol();
         await symbolModel.create(symbol);
 
         const result = await executeT(getFn(symbol.name, symbol.exchange));
@@ -157,7 +167,7 @@ describe('UUT: Get symbol models by name and exchange name', () => {
   describe('[GIVEN] there is no symbol with this name and exchange', () => {
     describe('[WHEN] get a symbol with name and exchange name', () => {
       it('[THEN] it will return Left of error', async () => {
-        const result = await executeT(getFn(randomString(), randomExchangeName()));
+        const result = await executeT(getFn('random', exchangeNameEnum.BINANCE));
 
         expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
       });

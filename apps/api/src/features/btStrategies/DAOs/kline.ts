@@ -2,14 +2,14 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { IndexDefinition, Model, Mongoose, SchemaDefinition } from 'mongoose';
 
-import { exchangeNameList } from '#features/shared/domain/exchange.js';
-import { timeframeList } from '#features/shared/domain/timeframe.js';
+import { exchangeNameList } from '#features/shared/exchange.js';
+import { Kline } from '#features/shared/kline.js';
+import { timeframeList } from '#features/shared/timeframe.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { KlineModel } from '../dataModels/kline.js';
 import { KlineDaoError, createKlineDaoError } from './kline.error.js';
 
-type KlineDocument = KlineModel & { _id: string; __v: number };
+type KlineDocument = Kline & { _id: string; __v: number };
 export type KlineMongooseModel = Model<KlineDocument>;
 export const klineModelName = 'Kline';
 

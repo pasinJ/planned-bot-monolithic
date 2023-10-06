@@ -2,13 +2,13 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { IndexDefinition, Model, Mongoose, SchemaDefinition } from 'mongoose';
 
-import { exchangeNameList } from '#features/shared/domain/exchange.js';
+import { exchangeNameList } from '#features/shared/exchange.js';
+import { Symbol } from '#features/shared/symbol.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { SymbolModel } from '../dataModels/symbol.js';
 import { SymbolDaoError, createSymbolDaoError } from './symbol.error.js';
 
-type SymbolDocument = SymbolModel & { _id: string; __v: number };
+type SymbolDocument = Symbol & { _id: string; __v: number };
 export type SymbolMongooseModel = Model<SymbolDocument>;
 export const symbolModelName = 'Symbol';
 
@@ -33,6 +33,7 @@ function createMongooseModel(client: Mongoose): ioe.IOEither<BuildSymbolDaoError
     quoteAsset: { type: String, required: true },
     quoteAssetPrecision: { type: Number, required: true },
     orderTypes: { type: [String], required: true },
+    bnbOrderTypes: { type: [String], required: true },
     filters: { type: [], required: true },
   };
   const index: IndexDefinition = { name: 1, exchange: 1 };

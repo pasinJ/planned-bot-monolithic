@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createHttpServerError, isHttpServerError } from './server.error.js';
 
 describe.each([
   {
     case: 'validate an error that is a HTTP server error without cause property',
-    input: createHttpServerError('Unhandled', randomString()),
+    input: createHttpServerError('Unhandled', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a HTTP server error with cause property',
-    input: createHttpServerError('Unhandled', randomString(), new Error()),
+    input: createHttpServerError('Unhandled', 'message', new Error()),
     expected: true,
   },
   {

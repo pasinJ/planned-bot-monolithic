@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createBnbServiceError, isBnbServiceError } from './error.js';
 
 describe.each([
   {
     case: 'validate an error that is a binance service error without cause property',
-    input: createBnbServiceError(randomString(), randomString()),
+    input: createBnbServiceError('name', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a binance service error with cause property',
-    input: createBnbServiceError(randomString(), randomString(), new Error()),
+    input: createBnbServiceError('name', 'message', new Error()),
     expected: true,
   },
   {

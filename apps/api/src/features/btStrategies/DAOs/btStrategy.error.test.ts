@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createBtStrategyDaoError, isBtStrategyDaoError } from './btStrategy.error.js';
 
 describe.each([
   {
     case: 'validate an error that is a backtesting strategy DAO error without cause property',
-    input: createBtStrategyDaoError(randomString(), randomString()),
+    input: createBtStrategyDaoError('name', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a backtesting strategy DAO error with cause property',
-    input: createBtStrategyDaoError(randomString(), randomString(), new Error()),
+    input: createBtStrategyDaoError('name', 'message', new Error()),
     expected: true,
   },
   {

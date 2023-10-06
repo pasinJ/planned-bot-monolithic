@@ -4,9 +4,9 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { exchangeNameSchema } from '#features/shared/domain/exchange.js';
-import { languageSchema } from '#features/shared/domain/strategy.js';
-import { timeframeSchema } from '#features/shared/domain/timeframe.js';
+import { exchangeNameSchema } from '#features/shared/exchange.js';
+import { languageSchema } from '#features/shared/strategy.js';
+import { timeframeSchema } from '#features/shared/timeframe.js';
 import { validDateSchema } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
 import { isoUtcDateStringSchema, timezoneStringSchema } from '#shared/utils/string.js';
@@ -49,7 +49,7 @@ function validateRequestBody(body: unknown) {
       name: z.string(),
       exchange: exchangeNameSchema,
       symbol: z.string(),
-      currency: z.string(),
+      capitalCurrency: z.string(),
       timeframe: timeframeSchema,
       maxNumKlines: z.number(),
       initialCapital: z.number(),

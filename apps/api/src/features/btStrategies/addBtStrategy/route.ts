@@ -4,7 +4,8 @@ import { getSymbolModelByNameAndExchange } from '#features/symbols/DAOs/symbol.f
 import { onSendHook, preValidationHook } from '#infra/http/hooks.js';
 import { AppDeps } from '#shared/appDeps.type.js';
 
-import { addBtStrategyModel, generateBtStrategyModelId } from '../DAOs/btStrategy.feature.js';
+import { addBtStrategyModel } from '../DAOs/btStrategy.feature.js';
+import { generateBtStrategyModelId } from '../dataModels/btStrategy.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { buildAddBtStrategyController } from './controller.js';
 

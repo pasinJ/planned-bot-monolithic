@@ -3,8 +3,9 @@ import { Decimal } from 'decimal.js';
 import { append, clone, defaultTo, prop, transpose, zipWith } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
-import { KlineModel } from '#features/btStrategies/dataModels/kline.js';
 import { getPrevItem, isUndefined } from '#shared/utils/general.js';
+
+import { Kline } from '../kline.js';
 
 const ta = new IndicatorsNormalized();
 
@@ -38,7 +39,7 @@ export async function wma(source: readonly number[], period: number): Promise<re
  *  @param period   Number of bars
  */
 export async function vwma(
-  klines: readonly KlineModel[],
+  klines: readonly Kline[],
   source: readonly number[],
   period: number,
 ): Promise<readonly number[]> {
@@ -58,7 +59,7 @@ export async function vwma(
  *  @param atrPeriod    Period of ATR
  */
 export async function supertrend(
-  klines: readonly KlineModel[],
+  klines: readonly Kline[],
   factor: number,
   atrPeriod: number,
 ): Promise<DeepReadonly<{ supertrend: number[]; direction: number[] }>> {
@@ -134,7 +135,7 @@ export async function supertrend(
  *  @param step     Acceleration increment step
  *  @param max      Maximum acceleration
  */
-export function psar(klines: readonly KlineModel[], step: number, max: number): Promise<readonly number[]> {
+export function psar(klines: readonly Kline[], step: number, max: number): Promise<readonly number[]> {
   const { highSeries, lowSeries } = klines.reduce(
     ({ highSeries, lowSeries }, kline) => {
       return { highSeries: append(kline.high, highSeries), lowSeries: append(kline.low, lowSeries) };
@@ -148,7 +149,7 @@ export function psar(klines: readonly KlineModel[], step: number, max: number): 
 /** On balance volume
  *  @param klines   Series of klines (candlesticks)
  */
-export function obv(klines: readonly KlineModel[]): Promise<readonly number[]> {
+export function obv(klines: readonly Kline[]): Promise<readonly number[]> {
   const { closeSeries, volumeSeries } = klines.reduce(
     ({ closeSeries, volumeSeries }, kline) => {
       return {
@@ -165,7 +166,7 @@ export function obv(klines: readonly KlineModel[]): Promise<readonly number[]> {
 /** Price-volume trend
  *  @param klines   Series of klines (candlesticks)
  */
-export function pvt(klines: readonly KlineModel[]): readonly number[] {
+export function pvt(klines: readonly Kline[]): readonly number[] {
   const { closeSeries, volumeSeries } = klines.reduce(
     ({ closeSeries, volumeSeries }, kline) => {
       return {
@@ -196,7 +197,7 @@ export function pvt(klines: readonly KlineModel[]): readonly number[] {
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export async function mfi(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function mfi(klines: readonly Kline[], period: number): Promise<readonly number[]> {
   const { highSeries, lowSeries, closeSeries, volumeSeries } = klines.reduce(
     ({ highSeries, lowSeries, closeSeries, volumeSeries }, kline) => {
       return {
@@ -220,7 +221,7 @@ export async function mfi(klines: readonly KlineModel[], period: number): Promis
 /** Accumulation/Distribution line
  *  @param klines     Series of klines (candlesticks)
  */
-export function ad(klines: readonly KlineModel[]): Promise<readonly number[]> {
+export function ad(klines: readonly Kline[]): Promise<readonly number[]> {
   const { highSeries, lowSeries, closeSeries, volumeSeries } = klines.reduce(
     ({ highSeries, lowSeries, closeSeries, volumeSeries }, kline) => {
       return {
@@ -244,7 +245,7 @@ export function ad(klines: readonly KlineModel[]): Promise<readonly number[]> {
 /** Williams Accumulation/Distribution
  *  @param klines     Series of klines (candlesticks)
  */
-export function wad(klines: readonly KlineModel[]): Promise<readonly number[]> {
+export function wad(klines: readonly Kline[]): Promise<readonly number[]> {
   const { highSeries, lowSeries, closeSeries } = klines.reduce(
     ({ highSeries, lowSeries, closeSeries }, kline) => {
       return {
@@ -266,7 +267,7 @@ export function wad(klines: readonly KlineModel[]): Promise<readonly number[]> {
 /** Ease of movement
  *  @param klines     Series of klines (candlesticks)
  */
-export function emv(klines: readonly KlineModel[]): Promise<readonly number[]> {
+export function emv(klines: readonly Kline[]): Promise<readonly number[]> {
   const { highSeries, lowSeries, volumeSeries } = klines.reduce(
     ({ highSeries, lowSeries, volumeSeries }, kline) => {
       return {
@@ -289,7 +290,7 @@ export function emv(klines: readonly KlineModel[]): Promise<readonly number[]> {
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export async function vwap(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function vwap(klines: readonly Kline[], period: number): Promise<readonly number[]> {
   const { highSeries, lowSeries, closeSeries, volumeSeries } = klines.reduce(
     ({ highSeries, lowSeries, closeSeries, volumeSeries }, kline) => {
       return {
@@ -350,7 +351,7 @@ export async function rsi(source: readonly number[], period: number): Promise<re
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export async function adx(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function adx(klines: readonly Kline[], period: number): Promise<readonly number[]> {
   const { highSeries, lowSeries } = klines.reduce(
     ({ highSeries, lowSeries }, kline) => {
       return {
@@ -381,7 +382,7 @@ export async function roc(source: readonly number[], period: number): Promise<re
  *  @param dPeriod    Period of %D
  */
 export async function stoch(
-  klines: readonly KlineModel[],
+  klines: readonly Kline[],
   kPeriod: number,
   kSlow: number,
   dPeriod: number,
@@ -448,7 +449,7 @@ export function bbw(
  *  @param stddev     Standard deviation factor
  */
 export async function kc(
-  klines: readonly KlineModel[],
+  klines: readonly Kline[],
   period: number,
   stddev: number,
 ): Promise<DeepReadonly<{ upper: number[]; middle: number[]; lower: number[] }>> {
@@ -479,7 +480,7 @@ export async function kc(
  *  @param klines     Series of klines (candlesticks)
  *  @param period     Number of bars
  */
-export async function atr(klines: readonly KlineModel[], period: number): Promise<readonly number[]> {
+export async function atr(klines: readonly Kline[], period: number): Promise<readonly number[]> {
   return replaceEmptyItemWithNaN(
     await ta.atr(klines.map(prop('high')), klines.map(prop('low')), klines.map(prop('close')), period),
   );

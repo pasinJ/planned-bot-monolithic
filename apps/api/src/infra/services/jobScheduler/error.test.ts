@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createJobSchedulerError, isJobSchedulerError } from './error.js';
 
 describe.each([
   {
     case: '[WHEN] validate an error that is a job schduler error without cause property',
-    input: createJobSchedulerError(randomString(), randomString()),
+    input: createJobSchedulerError('name', 'message'),
     expected: true,
   },
   {
     case: '[WHEN] validate an error that is a job schduler error with cause property',
-    input: createJobSchedulerError(randomString(), randomString(), new Error()),
+    input: createJobSchedulerError('name', 'message', new Error()),
     expected: true,
   },
   {

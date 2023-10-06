@@ -3,10 +3,14 @@ import { mergeDeepRight } from 'ramda';
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { mockMainLogger } from '#test-utils/services.js';
 
+import { getJobSchedulerConfig } from './config.js';
 import { JobScheduler, JobSchedulerDeps, buildJobScheduler } from './service.js';
 
 function mockDeps(overrides?: Partial<JobSchedulerDeps>): JobSchedulerDeps {
-  return mergeDeepRight({ mainLogger: mockMainLogger() }, overrides ?? {});
+  return mergeDeepRight<JobSchedulerDeps, Partial<JobSchedulerDeps>>(
+    { mainLogger: mockMainLogger(), getJobSchedulerConfig },
+    overrides ?? {},
+  );
 }
 
 let jobScheduler: JobScheduler;

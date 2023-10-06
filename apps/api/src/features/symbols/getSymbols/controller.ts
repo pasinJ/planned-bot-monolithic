@@ -4,13 +4,13 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { map, pick } from 'ramda';
 import { match } from 'ts-pattern';
 
+import { Symbol } from '#features/shared/symbol.js';
 import { executeT } from '#shared/utils/fp.js';
 
 import { SymbolDaoError } from '../DAOs/symbol.error.js';
-import { SymbolModel } from '../dataModels/symbol.js';
 
 export type GetSymbolsControllerDeps = Readonly<{
-  symbolDao: { getAll: te.TaskEither<SymbolDaoError<'GetAllFailed'>, readonly SymbolModel[]> };
+  symbolDao: { getAll: te.TaskEither<SymbolDaoError<'GetAllFailed'>, readonly Symbol[]> };
 }>;
 
 export function buildGetSymbolsController(deps: GetSymbolsControllerDeps): RouteHandlerMethod {

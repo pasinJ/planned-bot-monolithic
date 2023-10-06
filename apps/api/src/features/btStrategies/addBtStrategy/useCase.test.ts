@@ -2,197 +2,272 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
+import { exchangeNameEnum } from '#features/shared/exchange.js';
+import { languageEnum } from '#features/shared/strategy.js';
+import { timeframeEnum } from '#features/shared/timeframe.js';
 import { createSymbolDaoError, isSymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
+import { ValidDate } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
-import { randomBeforeAndAfterDateInPast, randomDate, randomTimezone } from '#test-utils/faker/date.js';
-import { randomPositiveFloat, randomPositiveInt } from '#test-utils/faker/number.js';
-import { randomString } from '#test-utils/faker/string.js';
-import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/features/shared/domain.js';
-import { mockSymbol, randomAssetName, randomSymbolName } from '#test-utils/features/symbols/models.js';
+import { TimezoneString } from '#shared/utils/string.js';
+import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 
 import { createBtStrategyDaoError, isBtStrategyDaoError } from '../DAOs/btStrategy.error.js';
-import { AddBtStrategyDeps, AddBtStrategyRequest, addBtStrategy } from './useCase.js';
+import { BtStrategyId } from '../dataModels/btStrategy.js';
+import { AddBtStrategyDeps, addBtStrategy } from './useCase.js';
 
-function mockDepsAndRequest(overrides?: {
-  deps?: DeepPartial<AddBtStrategyDeps>;
-  request?: Partial<AddBtStrategyRequest>;
-}) {
-  const symbolName = randomSymbolName();
-  const exchange = randomExchangeName();
-  const currency = randomAssetName();
-  const symbol = mockSymbol({ name: symbolName, exchange, baseAsset: currency });
-
-  const currentDate = randomDate();
-  const { before, after } = randomBeforeAndAfterDateInPast(currentDate);
-
-  return {
-    deps: mergeDeepRight(
-      {
-        dateService: { getCurrentDate: jest.fn().mockReturnValue(currentDate) },
-        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
-        btStrategyDao: {
-          generateId: jest.fn().mockReturnValue(randomString()),
-          add: jest.fn().mockReturnValue(te.right(undefined)),
-        },
+function mockDeps(override?: DeepPartial<AddBtStrategyDeps>): AddBtStrategyDeps {
+  return mergeDeepRight(
+    {
+      dateService: { getCurrentDate: jest.fn().mockReturnValue(new Date('2010-03-04')) },
+      symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
+      btStrategyDao: {
+        generateId: jest.fn().mockReturnValue('random'),
+        add: jest.fn().mockReturnValue(te.right(undefined)),
       },
-      overrides?.deps ?? {},
-    ) as AddBtStrategyDeps,
-    request: {
-      name: randomString(),
-      exchange,
-      symbol: symbolName,
-      currency: currency,
-      timeframe: randomTimeframe(),
-      maxNumKlines: randomPositiveInt(),
-      initialCapital: randomPositiveFloat(),
-      takerFeeRate: randomPositiveFloat(),
-      makerFeeRate: randomPositiveFloat(),
-      startTimestamp: before,
-      endTimestamp: after,
-      timezone: randomTimezone(),
-      language: randomLanguage(),
-      body: randomString(),
-      ...overrides?.request,
     },
-  };
+    override ?? {},
+  ) as AddBtStrategyDeps;
 }
 
-describe('[WHEN] add a backtesting strategy that uses base asset of symbol as currency', () => {
-  function setupScenario() {
-    const symbol = mockSymbol();
-    return mockDepsAndRequest({
-      deps: { symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) } },
-      request: { symbol: symbol.name, exchange: symbol.exchange, currency: symbol.baseAsset },
+const defaultRequest = {
+  name: 'name',
+  exchange: exchangeNameEnum.BINANCE,
+  symbol: 'BTCUSDT',
+  timeframe: timeframeEnum['1h'],
+  maxNumKlines: 10,
+  initialCapital: 1000,
+  capitalCurrency: 'USDT',
+  takerFeeRate: 1,
+  makerFeeRate: 2,
+  startTimestamp: new Date('2010-03-01') as ValidDate,
+  endTimestamp: new Date('2010-03-02') as ValidDate,
+  timezone: '+03:00' as TimezoneString,
+  language: languageEnum.typescript,
+  body: 'console.log("Hi")',
+};
+
+describe('[GIVEN] the backtesting strategy uses base asset of symbol as currency', () => {
+  const currentDate = new Date('2010-03-04') as ValidDate;
+  const symbol = mockBnbSymbol();
+  const btStrategyId = 'IagebpxnMd' as BtStrategyId;
+  const request = {
+    ...defaultRequest,
+    symbol: symbol.name,
+    exchange: symbol.exchange,
+    capitalCurrency: symbol.baseAsset,
+  };
+
+  describe('[WHEN] add the backtesting strategy', () => {
+    it('[THEN] it will call DAO to get symbol by name and exchange', async () => {
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
+        btStrategyDao: {
+          generateId: () => btStrategyId,
+          add: jest.fn().mockReturnValue(te.right(undefined)),
+        },
+      });
+
+      await executeT(addBtStrategy(deps, request));
+
+      expect(deps.symbolDao.getByNameAndExchange).toHaveBeenCalledExactlyOnceWith(
+        request.symbol,
+        request.exchange,
+      );
     });
-  }
+    it('[THEN] it will call DAO to add the backtesting strategy', async () => {
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
+        btStrategyDao: {
+          generateId: () => btStrategyId,
+          add: jest.fn().mockReturnValue(te.right(undefined)),
+        },
+      });
 
-  it('[THEN] it will call DAO to get symbol by name and exchange', async () => {
-    const { deps, request } = setupScenario();
+      await executeT(addBtStrategy(deps, request));
 
-    await executeT(addBtStrategy(deps, request));
+      expect(deps.btStrategyDao.add).toHaveBeenCalledOnce();
+    });
+    it('[THEN] it will return Right of created backtesting strategy ID and current timestamp', async () => {
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
+        btStrategyDao: {
+          generateId: () => btStrategyId,
+          add: jest.fn().mockReturnValue(te.right(undefined)),
+        },
+      });
 
-    expect(deps.symbolDao.getByNameAndExchange).toHaveBeenCalledExactlyOnceWith(
-      request.symbol,
-      request.exchange,
-    );
-  });
-  it('[THEN] it will call DAO to add the backtesting strategy', async () => {
-    const { deps, request } = setupScenario();
+      const result = await executeT(addBtStrategy(deps, request));
 
-    await executeT(addBtStrategy(deps, request));
-
-    expect(deps.btStrategyDao.add).toHaveBeenCalledOnce();
-  });
-  it('[THEN] it will return Right of created backtesting strategy ID and current timestamp', async () => {
-    const { deps, request } = setupScenario();
-
-    const result = await executeT(addBtStrategy(deps, request));
-
-    expect(result).toEqualRight({
-      id: deps.btStrategyDao.generateId(),
-      createdAt: deps.dateService.getCurrentDate(),
+      expect(result).toEqualRight({ id: btStrategyId, createdAt: currentDate });
     });
   });
 });
 
-describe('[WHEN] add a backtesting strategy that uses quote asset of symbol as currency', () => {
-  function setupScenario() {
-    const symbol = mockSymbol();
-    return mockDepsAndRequest({
-      deps: { symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) } },
-      request: { symbol: symbol.name, exchange: symbol.exchange, currency: symbol.quoteAsset },
+describe('[GIVEN] the backtesting strategy uses quote asset of symbol as currency', () => {
+  describe('[WHEN] add the backtesting strategy', () => {
+    const currentDate = new Date('2010-03-04') as ValidDate;
+    const symbol = mockBnbSymbol();
+    const btStrategyId = 'IagebpxnMd' as BtStrategyId;
+    const request = {
+      ...defaultRequest,
+      symbol: symbol.name,
+      exchange: symbol.exchange,
+      capitalCurrency: symbol.quoteAsset,
+    };
+
+    it('[THEN] it will call DAO to get symbol by name and exchange', async () => {
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
+        btStrategyDao: {
+          generateId: () => btStrategyId,
+          add: jest.fn().mockReturnValue(te.right(undefined)),
+        },
+      });
+
+      await executeT(addBtStrategy(deps, request));
+
+      expect(deps.symbolDao.getByNameAndExchange).toHaveBeenCalledExactlyOnceWith(
+        request.symbol,
+        request.exchange,
+      );
     });
-  }
+    it('[THEN] it will call DAO to add the backtesting strategy', async () => {
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
+        btStrategyDao: {
+          generateId: () => btStrategyId,
+          add: jest.fn().mockReturnValue(te.right(undefined)),
+        },
+      });
 
-  it('[THEN] it will call DAO to get symbol by name and exchange', async () => {
-    const { deps, request } = setupScenario();
+      await executeT(addBtStrategy(deps, request));
 
-    await executeT(addBtStrategy(deps, request));
+      expect(deps.btStrategyDao.add).toHaveBeenCalledOnce();
+    });
+    it('[THEN] it will return Right of created backtesting strategy ID and current timestamp', async () => {
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(symbol)) },
+        btStrategyDao: {
+          generateId: () => btStrategyId,
+          add: jest.fn().mockReturnValue(te.right(undefined)),
+        },
+      });
 
-    expect(deps.symbolDao.getByNameAndExchange).toHaveBeenCalledExactlyOnceWith(
-      request.symbol,
-      request.exchange,
-    );
-  });
-  it('[THEN] it will call DAO to add the backtesting strategy', async () => {
-    const { deps, request } = setupScenario();
+      const result = await executeT(addBtStrategy(deps, request));
 
-    await executeT(addBtStrategy(deps, request));
-
-    expect(deps.btStrategyDao.add).toHaveBeenCalledOnce();
-  });
-  it('[THEN] it will return Right of created backtesting strategy ID and current timestamp', async () => {
-    const { deps, request } = setupScenario();
-
-    const result = await executeT(addBtStrategy(deps, request));
-
-    expect(result).toEqualRight({
-      id: deps.btStrategyDao.generateId(),
-      createdAt: deps.dateService.getCurrentDate(),
+      expect(result).toEqualRight({ id: btStrategyId, createdAt: currentDate });
     });
   });
 });
 
-describe('[WHEN] add the backtesting strategy with not existing symbol', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const error = createSymbolDaoError('NotExist', 'Mock');
-    const { deps, request } = mockDepsAndRequest({
-      deps: { symbolDao: { getByNameAndExchange: () => te.left(error) } },
+describe('[GIVEN] the symbol does not exist', () => {
+  describe('[WHEN] add the backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createSymbolDaoError('NotExist', 'Mock');
+      const deps = mockDeps({ symbolDao: { getByNameAndExchange: () => te.left(error) } });
+      const request = defaultRequest;
+
+      const result = await executeT(addBtStrategy(deps, request));
+
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
     });
-
-    const result = await executeT(addBtStrategy(deps, request));
-
-    expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
   });
 });
 
-describe('[WHEN] add a backtesting strategy with currency that do not match neither base asset nor quote asset of symbol', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const symbol = mockSymbol();
-    const { deps, request } = mockDepsAndRequest({
-      deps: { symbolDao: { getByNameAndExchange: () => te.right(symbol) } },
-      request: { symbol: symbol.name, exchange: symbol.exchange },
+describe('[GIVEN] DAO fails to get symbol', () => {
+  describe('[WHEN] add a backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const error = createSymbolDaoError('GetByNameAndExchangeFailed', 'Mock');
+      const deps = mockDeps({ symbolDao: { getByNameAndExchange: () => te.left(error) } });
+      const request = defaultRequest;
+
+      const result = await executeT(addBtStrategy(deps, request));
+
+      expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
     });
-
-    const result = await executeT(addBtStrategy(deps, request));
-
-    expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
   });
 });
 
-describe('[WHEN] add a backtesting strategy [BUT] DAO fails to get symbol', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const error = createSymbolDaoError('GetByNameAndExchangeFailed', 'Mock');
-    const { deps, request } = mockDepsAndRequest({
-      deps: { symbolDao: { getByNameAndExchange: () => te.left(error) } },
+describe('[GIVEN] the backtesting strategy does not use neither base asset nor quote asset of symbol', () => {
+  describe('[WHEN] add a backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const currentDate = new Date('2010-03-04') as ValidDate;
+      const btStrategyId = 'IagebpxnMd' as BtStrategyId;
+      const symbol = mockBnbSymbol();
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: () => te.right(symbol) },
+        btStrategyDao: { generateId: () => btStrategyId },
+      });
+      const request = {
+        ...defaultRequest,
+        symbol: symbol.name,
+        exchange: symbol.exchange,
+        capitalCurrency: 'ELSE',
+      };
+
+      const result = await executeT(addBtStrategy(deps, request));
+
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
     });
-
-    const result = await executeT(addBtStrategy(deps, request));
-
-    expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
   });
 });
 
-describe('[WHEN] add a backtesting strategy with invalid data', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const { deps, request } = mockDepsAndRequest({ request: { maxNumKlines: 0.1 } });
+describe('[GIVEN] the request is invalid', () => {
+  describe('[WHEN] add a backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const currentDate = new Date('2010-03-04') as ValidDate;
+      const symbol = mockBnbSymbol();
+      const btStrategyId = 'IagebpxnMd' as BtStrategyId;
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: () => te.right(symbol) },
+        btStrategyDao: { generateId: () => btStrategyId },
+      });
+      const request = {
+        ...defaultRequest,
+        symbol: symbol.name,
+        exchange: symbol.exchange,
+        capitalCurrency: symbol.baseAsset,
+        takerFeeRate: 101,
+      };
 
-    const result = await executeT(addBtStrategy(deps, request));
+      const result = await executeT(addBtStrategy(deps, request));
 
-    expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+      expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
+    });
   });
 });
 
-describe('[WHEN] add a backtesting strategy [BUT] DAO fails to add the backtesting strategy', () => {
-  it('[THEN] it will return Left of error', async () => {
-    const error = createBtStrategyDaoError('AddFailed', 'Mock');
-    const { deps, request } = mockDepsAndRequest({
-      deps: { btStrategyDao: { add: () => te.left(error) } },
+describe('[GIVEN] DAO fails to add the backtesting strategy', () => {
+  describe('[WHEN] add a backtesting strategy', () => {
+    it('[THEN] it will return Left of error', async () => {
+      const currentDate = new Date('2010-03-04') as ValidDate;
+      const symbol = mockBnbSymbol();
+      const btStrategyId = 'IagebpxnMd' as BtStrategyId;
+      const error = createBtStrategyDaoError('AddFailed', 'Mock');
+      const deps = mockDeps({
+        dateService: { getCurrentDate: () => currentDate },
+        symbolDao: { getByNameAndExchange: () => te.right(symbol) },
+        btStrategyDao: { generateId: () => btStrategyId, add: () => te.left(error) },
+      });
+      const request = {
+        ...defaultRequest,
+        symbol: symbol.name,
+        exchange: symbol.exchange,
+        capitalCurrency: symbol.baseAsset,
+      };
+
+      const result = await executeT(addBtStrategy(deps, request));
+
+      expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyDaoError));
     });
-
-    const result = await executeT(addBtStrategy(deps, request));
-
-    expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyDaoError));
   });
 });

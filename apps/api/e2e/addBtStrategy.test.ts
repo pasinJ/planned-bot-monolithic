@@ -2,7 +2,7 @@ import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from '#features/
 import { executeIo } from '#shared/utils/fp.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/apis.js';
-import { mockSymbol } from '#test-utils/features/symbols/models.js';
+import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
 import { addBtStrategy } from './commands/btStrategy.js';
@@ -15,10 +15,14 @@ const symbolModel: SymbolMongooseModel = client.models[symbolModelName];
 afterEach(() => symbolModel.deleteMany());
 afterAll(() => client.disconnect());
 
-describe('WHEN user successfully add a backtesting strategy', () => {
-  it('THEN it should return HTTP201 and the created backtesting strategy ID and timestamp', async () => {
+describe('[WHEN] user successfully add a backtesting strategy', () => {
+  it('[THEN] it should return HTTP201 and the created backtesting strategy ID and timestamp', async () => {
     const body = mockValidAddBtStrategyRequestBody();
-    const symbol = mockSymbol({ name: body.symbol, exchange: body.exchange, baseAsset: body.currency });
+    const symbol = mockBnbSymbol({
+      name: body.symbol,
+      exchange: body.exchange,
+      baseAsset: body.capitalCurrency,
+    });
     await symbolModel.create(symbol);
 
     const { response } = await addBtStrategy(body);
@@ -28,12 +32,14 @@ describe('WHEN user successfully add a backtesting strategy', () => {
   });
 });
 
-describe('WHEN user try to add a backtesting strategy with invalid request body', () => {
-  it('THEN it should return HTTP400 and error response body', async () => {
-    const body = { ...mockValidAddBtStrategyRequestBody(), invalid: 'invalid' };
-    const { response } = await addBtStrategy(body);
+describe('[GIVEN] request body is invalid', () => {
+  describe('[WHEN] user try to add a backtesting strategy', () => {
+    it('[THEN] it should return HTTP400 and error response body', async () => {
+      const body = { ...mockValidAddBtStrategyRequestBody(), invalid: 'invalid' };
+      const { response } = await addBtStrategy(body);
 
-    expectHttpStatus(response, 400);
-    expect(response.data).toEqual(toBeHttpErrorResponse);
+      expectHttpStatus(response, 400);
+      expect(response.data).toEqual(toBeHttpErrorResponse);
+    });
   });
 });

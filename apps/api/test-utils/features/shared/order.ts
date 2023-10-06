@@ -1,8 +1,7 @@
-import { faker } from '@faker-js/faker';
 import { mergeDeepRight } from 'ramda';
 import { DeepPartial, Exact } from 'ts-essentials';
 
-import { Price } from '#features/btStrategies/dataModels/kline.js';
+import { Price } from '#features/shared/kline.js';
 import {
   CanceledOrder,
   Fee,
@@ -10,18 +9,12 @@ import {
   OpeningOrder,
   OrderId,
   PendingOrder,
-} from '#features/shared/executorModules/orders.js';
-import { SymbolName } from '#features/symbols/dataModels/symbol.js';
+  RejectedOrder,
+  SubmittedOrder,
+  TriggeredOrder,
+} from '#features/shared/order.js';
 import { ValidDate } from '#shared/utils/date.js';
 import { Unbrand } from '#shared/utils/types.js';
-
-export function randomOrderId() {
-  return faker.string.nanoid() as OrderId;
-}
-
-export function randomOrderSide(): 'ENTRY' | 'EXIT' {
-  return faker.helpers.arrayElement(['ENTRY', 'EXIT']);
-}
 
 type PendingMarketOrder = Extract<PendingOrder, { type: 'MARKET' }>;
 type UnbrandPendingMarketOrder = Unbrand<PendingMarketOrder>;
@@ -31,7 +24,6 @@ export function mockPendingMarketOrder<T extends DeepPartial<UnbrandPendingMarke
   return mergeDeepRight<PendingMarketOrder, DeepPartial<UnbrandPendingMarketOrder>>(
     {
       id: 'KUDZPl2puQ' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'MARKET',
       quantity: 10.1,
@@ -50,7 +42,6 @@ export function mockPendingLimitOrder<T extends DeepPartial<UnbrandPendingLimitO
   return mergeDeepRight<PendingLimitOrder, DeepPartial<UnbrandPendingLimitOrder>>(
     {
       id: 'bF91DOBaLt' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'LIMIT',
       quantity: 10.1,
@@ -70,7 +61,6 @@ export function mockPendingStopMarketOrder<T extends DeepPartial<UnbrandPendingS
   return mergeDeepRight<PendingStopMarketOrder, DeepPartial<UnbrandPendingStopMarketOrder>>(
     {
       id: 'QhZeHoys_A' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'STOP_MARKET',
       quantity: 10.1,
@@ -90,7 +80,6 @@ export function mockPendingStopLimitOrder<T extends DeepPartial<UnbrandPendingSt
   return mergeDeepRight<PendingStopLimitOrder, DeepPartial<UnbrandPendingStopLimitOrder>>(
     {
       id: 'tgaPs969ne' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'STOP_LIMIT',
       quantity: 10.1,
@@ -111,7 +100,6 @@ export function mockPendingCancelOrder(
   return mergeDeepRight<PendingCancelOrder, DeepPartial<UnbrandPendingCancelOrder>>(
     {
       id: '6YxM79Ya_J' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       type: 'CANCEL',
       orderIdToCancel: 'gJkkHUwhnl' as OrderId,
       status: 'PENDING',
@@ -119,6 +107,21 @@ export function mockPendingCancelOrder(
     },
     overrides ?? {},
   ) as PendingCancelOrder;
+}
+
+type UnbrandSubmittedOrder = Unbrand<SubmittedOrder>;
+export function mockSubmittedCancelOrder(overrides?: DeepPartial<UnbrandSubmittedOrder>): SubmittedOrder {
+  return mergeDeepRight<SubmittedOrder, DeepPartial<UnbrandSubmittedOrder>>(
+    {
+      id: '6YxM79Ya_J' as OrderId,
+      type: 'CANCEL',
+      orderIdToCancel: 'gJkkHUwhnl' as OrderId,
+      status: 'SUBMITTED',
+      createdAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+      submittedAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+    },
+    overrides ?? {},
+  ) as SubmittedOrder;
 }
 
 type OpeningLimitOrder = Extract<OpeningOrder, { type: 'LIMIT' }>;
@@ -129,7 +132,6 @@ export function mockOpeningLimitOrder<T extends DeepPartial<UnbrandOpeningLimitO
   return mergeDeepRight<OpeningLimitOrder, DeepPartial<UnbrandOpeningLimitOrder>>(
     {
       id: '4o3AjHrwtA' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'LIMIT',
       quantity: 10.1,
@@ -150,7 +152,6 @@ export function mockOpeningStopMarketOrder<T extends DeepPartial<UnbrandOpeningS
   return mergeDeepRight<OpeningStopMarketOrder, DeepPartial<UnbrandOpeningStopMarketOrder>>(
     {
       id: 'NJF_icRMDP' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'STOP_MARKET',
       quantity: 10.1,
@@ -171,7 +172,6 @@ export function mockOpeningStopLimitOrder<T extends DeepPartial<UnbrandOpeningSt
   return mergeDeepRight<OpeningStopLimitOrder, DeepPartial<UnbrandOpeningStopLimitOrder>>(
     {
       id: 't9g990KVMk' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'STOP_LIMIT',
       quantity: 10.1,
@@ -185,6 +185,24 @@ export function mockOpeningStopLimitOrder<T extends DeepPartial<UnbrandOpeningSt
   ) as OpeningStopLimitOrder & Pick<T, 'orderSide'>;
 }
 
+type UnbrandTriggeredOrder = Unbrand<TriggeredOrder>;
+export function mockTriggeredOrder(overrides?: DeepPartial<UnbrandTriggeredOrder>): TriggeredOrder {
+  return mergeDeepRight<TriggeredOrder, DeepPartial<UnbrandTriggeredOrder>>(
+    {
+      id: '6_VuAoSiX0' as OrderId,
+      orderSide: 'ENTRY',
+      type: 'STOP_LIMIT',
+      quantity: 10.1,
+      stopPrice: 1.1,
+      limitPrice: 1.1,
+      status: 'TRIGGERED',
+      createdAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+      submittedAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+    },
+    overrides ?? {},
+  ) as TriggeredOrder;
+}
+
 type FilledMarketOrder = Extract<FilledOrder, { type: 'MARKET' }>;
 type UnbrandFilledMarketOrder = Unbrand<FilledMarketOrder>;
 export function mockFilledMarketOrder<T extends DeepPartial<UnbrandFilledMarketOrder>>(
@@ -193,7 +211,6 @@ export function mockFilledMarketOrder<T extends DeepPartial<UnbrandFilledMarketO
   return mergeDeepRight<FilledMarketOrder, DeepPartial<UnbrandFilledMarketOrder>>(
     {
       id: 'Rnf23hJNmm' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'MARKET',
       quantity: 10.1,
@@ -208,6 +225,76 @@ export function mockFilledMarketOrder<T extends DeepPartial<UnbrandFilledMarketO
   ) as FilledMarketOrder & Pick<T, 'orderSide'>;
 }
 
+type FilledLimitOrder = Extract<FilledOrder, { type: 'LIMIT' }>;
+type UnbrandFilledLimitOrder = Unbrand<FilledLimitOrder>;
+export function mockFilledLimitOrder<T extends DeepPartial<UnbrandFilledLimitOrder>>(
+  overrides?: Exact<T, DeepPartial<UnbrandFilledLimitOrder>>,
+): FilledLimitOrder & Pick<T, 'orderSide'> {
+  return mergeDeepRight<FilledLimitOrder, DeepPartial<UnbrandFilledLimitOrder>>(
+    {
+      id: 'lz8dPcvNcv' as OrderId,
+      orderSide: 'ENTRY',
+      type: 'LIMIT',
+      quantity: 10.1,
+      limitPrice: 7.7,
+      status: 'FILLED',
+      filledPrice: 1.1 as Price,
+      fee: { amount: 0.1, currency: 'USDT' } as Fee,
+      createdAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+      submittedAt: new Date('2022-05-05T13:00:00Z') as ValidDate,
+      filledAt: new Date('2022-05-05T13:00:00Z') as ValidDate,
+    },
+    overrides ?? {},
+  ) as FilledLimitOrder & Pick<T, 'orderSide'>;
+}
+
+type FilledStopMarketOrder = Extract<FilledOrder, { type: 'STOP_MARKET' }>;
+type UnbrandFilledStopMarketOrder = Unbrand<FilledStopMarketOrder>;
+export function mockFilledStopMarketOrder<T extends DeepPartial<UnbrandFilledStopMarketOrder>>(
+  overrides?: Exact<T, DeepPartial<UnbrandFilledStopMarketOrder>>,
+): FilledStopMarketOrder & Pick<T, 'orderSide'> {
+  return mergeDeepRight<FilledStopMarketOrder, DeepPartial<UnbrandFilledStopMarketOrder>>(
+    {
+      id: 'JQatXqJF8d' as OrderId,
+      orderSide: 'ENTRY',
+      type: 'STOP_MARKET',
+      quantity: 10.1,
+      stopPrice: 7.7,
+      status: 'FILLED',
+      filledPrice: 1.1 as Price,
+      fee: { amount: 0.1, currency: 'USDT' } as Fee,
+      createdAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+      submittedAt: new Date('2022-05-05T13:00:00Z') as ValidDate,
+      filledAt: new Date('2022-05-05T13:00:00Z') as ValidDate,
+    },
+    overrides ?? {},
+  ) as FilledStopMarketOrder & Pick<T, 'orderSide'>;
+}
+
+type FilledStopLimitOrder = Extract<FilledOrder, { type: 'STOP_LIMIT' }>;
+type UnbrandFilledStopLimitOrder = Unbrand<FilledStopLimitOrder>;
+export function mockFilledStopLimitOrder<T extends DeepPartial<UnbrandFilledStopLimitOrder>>(
+  overrides?: Exact<T, DeepPartial<UnbrandFilledStopLimitOrder>>,
+): FilledStopLimitOrder & Pick<T, 'orderSide'> {
+  return mergeDeepRight<FilledStopLimitOrder, DeepPartial<UnbrandFilledStopLimitOrder>>(
+    {
+      id: 'ENM7nTJLv4' as OrderId,
+      orderSide: 'ENTRY',
+      type: 'STOP_LIMIT',
+      quantity: 10.1,
+      stopPrice: 7.7,
+      limitPrice: 8.8,
+      status: 'FILLED',
+      filledPrice: 1.1 as Price,
+      fee: { amount: 0.1, currency: 'USDT' } as Fee,
+      createdAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+      submittedAt: new Date('2022-05-05T13:00:00Z') as ValidDate,
+      filledAt: new Date('2022-05-05T13:00:00Z') as ValidDate,
+    },
+    overrides ?? {},
+  ) as FilledStopLimitOrder & Pick<T, 'orderSide'>;
+}
+
 type CanceledLimitOrder = Extract<CanceledOrder, { type: 'LIMIT' }>;
 type UnbrandCanceledLimitOrder = Unbrand<CanceledLimitOrder>;
 export function mockCanceledLimitOrder<T extends DeepPartial<UnbrandCanceledLimitOrder>>(
@@ -216,7 +303,6 @@ export function mockCanceledLimitOrder<T extends DeepPartial<UnbrandCanceledLimi
   return mergeDeepRight<CanceledLimitOrder, DeepPartial<UnbrandCanceledLimitOrder>>(
     {
       id: 'imWo1snCfF' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'LIMIT',
       quantity: 10.1,
@@ -238,7 +324,6 @@ export function mockCanceledStopMarketOrder<T extends DeepPartial<UnbrandCancele
   return mergeDeepRight<CanceledStopMarketOrder, DeepPartial<UnbrandCanceledStopMarketOrder>>(
     {
       id: '5aJQgFVUMu' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'STOP_MARKET',
       quantity: 10.1,
@@ -260,7 +345,6 @@ export function mockCanceledStopLimitOrder<T extends DeepPartial<UnbrandCanceled
   return mergeDeepRight<CanceledStopLimitOrder, DeepPartial<UnbrandCanceledStopLimitOrder>>(
     {
       id: 'qM-ugAOSEz' as OrderId,
-      symbol: 'BTCUSDT' as SymbolName,
       orderSide: 'ENTRY',
       type: 'STOP_LIMIT',
       quantity: 10.1,
@@ -273,4 +357,24 @@ export function mockCanceledStopLimitOrder<T extends DeepPartial<UnbrandCanceled
     },
     overrides ?? {},
   ) as CanceledStopLimitOrder & Pick<T, 'orderSide'>;
+}
+
+type RejectedMarketOrder = Extract<RejectedOrder, { type: 'MARKET' }>;
+type UnbrandRejectedMarketOrder = Unbrand<RejectedMarketOrder>;
+export function mockRejectedMarket<T extends DeepPartial<UnbrandRejectedMarketOrder>>(
+  overrides?: Exact<T, DeepPartial<UnbrandRejectedMarketOrder>>,
+): RejectedMarketOrder & Pick<T, 'orderSide'> {
+  return mergeDeepRight<RejectedMarketOrder, DeepPartial<UnbrandRejectedMarketOrder>>(
+    {
+      id: 'KUDZPl2puQ' as OrderId,
+      orderSide: 'ENTRY',
+      type: 'MARKET',
+      quantity: 10.1,
+      status: 'REJECTED',
+      reason: 'Error',
+      createdAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+      submittedAt: new Date('2022-05-05T12:00:00Z') as ValidDate,
+    },
+    overrides ?? {},
+  ) as RejectedMarketOrder & Pick<T, 'orderSide'>;
 }

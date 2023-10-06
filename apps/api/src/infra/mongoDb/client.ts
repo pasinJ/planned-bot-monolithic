@@ -1,20 +1,22 @@
+import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import mongoose, { Mongoose } from 'mongoose';
 
 import { LoggerIo } from '#infra/logging.js';
-import { getMongoDbConfig } from '#infra/mongoDb/config.js';
+import { MongoDbUri } from '#infra/mongoDb/config.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
 import { MongoDbClientError, createMongoDbClientError } from './client.error.js';
 
 export function buildMongoDbClient(
   logger: LoggerIo,
+  getMongoDbConfig: io.IO<{ URI: MongoDbUri }>,
 ): te.TaskEither<MongoDbClientError<'BuildClientFailed'>, Mongoose> {
-  const { URI } = getMongoDbConfig();
   return pipe(
     te.fromIO(logger.infoIo('MongoDB client start connecting to MongoDB')),
-    te.chain(() =>
+    te.chainIOK(() => getMongoDbConfig),
+    te.chain(({ URI }) =>
       te.tryCatch(
         () => mongoose.connect(URI),
         createErrorFromUnknown(

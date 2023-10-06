@@ -4,12 +4,9 @@ import { mkdir, rmdir } from 'fs/promises';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import path from 'path';
-import { zipObj } from 'ramda';
 import { z } from 'zod';
 
 import { executeT } from '#shared/utils/fp.js';
-import { generateArrayOf } from '#test-utils/faker/helper.js';
-import { randomString } from '#test-utils/faker/string.js';
 import { mockLoggerIo } from '#test-utils/services.js';
 
 import { HTTP_ERRORS } from './client.constant.js';
@@ -37,22 +34,13 @@ beforeAll(() =>
 afterAll(() => msw.close());
 
 describe('UUT: Axios HTTP client send request', () => {
-  function randomUrl(prefix = '/echo') {
-    return prefix + '/' + faker.word.noun();
-  }
-  function randomObject() {
-    return zipObj(
-      generateArrayOf(() => faker.word.noun(), 3),
-      generateArrayOf(() => faker.word.noun(), 3),
-    );
-  }
   function createSendRequestOptions(overrides?: Partial<Parameters<HttpClient['sendRequest']>[0]>) {
     return {
       method: faker.internet.httpMethod(),
-      url: randomUrl(),
-      headers: randomObject(),
-      params: randomObject(),
-      body: randomObject(),
+      url: '/echo/' + 'any',
+      headers: { header1: '1', header2: 2 },
+      params: { param1: '1', param2: 2 },
+      body: { a: 1, b: 2, c: { d: 3 } },
       responseSchema: z.any(),
       ...overrides,
     } as const;
@@ -88,7 +76,7 @@ describe('UUT: Axios HTTP client send request', () => {
   describe('[WHEN] send request with specific url', () => {
     it('[THEN] HTTP client will also send out request to that url', async () => {
       const httpClient = buildAxiosHttpClient();
-      const url = randomUrl();
+      const url = '/echo/url';
 
       const resp = await executeT(httpClient.sendRequest(createSendRequestOptions({ url })));
 
@@ -121,31 +109,31 @@ describe('UUT: Axios HTTP client send request', () => {
   describe('[WHEN] send request with headers', () => {
     it('[THEN] HTTP client will also send out request with that headers', async () => {
       const httpClient = buildAxiosHttpClient();
-      const headers = randomObject();
+      const headers = { header1: '1', header2: 2 };
 
       const resp = await executeT(httpClient.sendRequest(createSendRequestOptions({ headers })));
 
       expect(resp).toBeRight();
-      expect(resp).toHaveProperty('right.headers', expect.objectContaining(headers));
+      expect(resp).toHaveProperty('right.headers', expect.objectContaining({ header1: '1', header2: '2' }));
     });
   });
 
   describe('[WHEN] send request with params', () => {
     it('[THEN] HTTP client will also send out request with that params', async () => {
       const httpClient = buildAxiosHttpClient();
-      const params = randomObject();
+      const params = { param1: '1', param2: 2 };
 
       const resp = await executeT(httpClient.sendRequest(createSendRequestOptions({ params })));
 
       expect(resp).toBeRight();
-      expect(resp).toHaveProperty('right.params', params);
+      expect(resp).toHaveProperty('right.params', { param1: '1', param2: '2' });
     });
   });
 
   describe('[WHEN] send request with body', () => {
     it('[THEN] HTTP client will also send out request with that body', async () => {
       const httpClient = buildAxiosHttpClient();
-      const body = randomObject();
+      const body = { a: 1, b: 2, c: { d: 3 } };
 
       const resp = await executeT(httpClient.sendRequest(createSendRequestOptions({ body })));
 
@@ -254,7 +242,7 @@ describe('UUT: Axios HTTP client download file', () => {
       const url = '/' + faker.word.noun();
       msw.use(rest.get(`${BASE_URL}${url}`, (_, res, ctx) => res(ctx.status(404))));
 
-      const outputPath = baseOutputPath + '/' + randomString();
+      const outputPath = baseOutputPath + '/' + 'any';
       const result = await executeT(httpClient.downloadFile({ method: 'GET', url, outputPath }));
 
       expect(result).toEqualLeft(expect.toSatisfy(isHttpError));
@@ -265,7 +253,7 @@ describe('UUT: Axios HTTP client download file', () => {
     it('[THEN] it will write file to the output path', async () => {
       const url = '/' + faker.word.noun();
       serverReturnFile(url);
-      const outputPath = baseOutputPath + '/' + randomString();
+      const outputPath = baseOutputPath + '/' + 'any';
 
       await executeT(httpClient.downloadFile({ method: 'GET', url, outputPath }));
 
@@ -274,7 +262,7 @@ describe('UUT: Axios HTTP client download file', () => {
     it('[THEN] it will return Right of undefined', async () => {
       const url = '/' + faker.word.noun();
       serverReturnFile(url);
-      const outputPath = baseOutputPath + '/' + randomString();
+      const outputPath = baseOutputPath + '/' + 'any';
 
       const result = await executeT(httpClient.downloadFile({ method: 'GET', url, outputPath }));
 

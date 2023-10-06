@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createSymbolDaoError, isSymbolDaoError } from './symbol.error.js';
 
 describe.each([
   {
     case: 'validate an error that is a symbol DAO error without cause property',
-    input: createSymbolDaoError(randomString(), randomString()),
+    input: createSymbolDaoError('name', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a symbol DAO error with cause property',
-    input: createSymbolDaoError(randomString(), randomString(), new Error()),
+    input: createSymbolDaoError('name', 'message', new Error()),
     expected: true,
   },
   {

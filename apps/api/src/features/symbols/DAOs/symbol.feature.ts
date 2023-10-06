@@ -2,15 +2,15 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { includes, isNotNil, omit, pathOr } from 'ramda';
 
-import { ExchangeName } from '#features/shared/domain/exchange.js';
+import { ExchangeName } from '#features/shared/exchange.js';
+import { Symbol } from '#features/shared/symbol.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { SymbolModel } from '../dataModels/symbol.js';
 import { SymbolDaoError, createSymbolDaoError } from './symbol.error.js';
 import { SymbolMongooseModel } from './symbol.js';
 
 export function addSymbolModels({ mongooseModel }: { mongooseModel: SymbolMongooseModel }) {
-  return (symbols: SymbolModel | readonly SymbolModel[]): te.TaskEither<SymbolDaoError<'AddFailed'>, void> =>
+  return (symbols: Symbol | readonly Symbol[]): te.TaskEither<SymbolDaoError<'AddFailed'>, void> =>
     pipe(
       te.tryCatch(
         () => mongooseModel.insertMany(symbols, { ordered: false }),
@@ -29,7 +29,7 @@ export function getAllSymbolModels({
   mongooseModel,
 }: {
   mongooseModel: SymbolMongooseModel;
-}): te.TaskEither<SymbolDaoError<'GetAllFailed'>, readonly SymbolModel[]> {
+}): te.TaskEither<SymbolDaoError<'GetAllFailed'>, readonly Symbol[]> {
   return pipe(
     te.tryCatch(
       () => mongooseModel.find().lean(),
@@ -59,7 +59,7 @@ export function getSymbolModelByNameAndExchange({ mongooseModel }: { mongooseMod
   return (
     name: string,
     exchange: ExchangeName,
-  ): te.TaskEither<SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>, SymbolModel> =>
+  ): te.TaskEither<SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>, Symbol> =>
     pipe(
       te.tryCatch(
         () => mongooseModel.findOne({ name, exchange }).lean(),

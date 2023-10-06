@@ -3,6 +3,7 @@ import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { DeepPartial } from 'ts-essentials';
 
+import { PortNumber } from '#infra/http/server.config.js';
 import { FastifyServer, buildHttpServer } from '#infra/http/server.js';
 import { AppDeps } from '#shared/appDeps.type.js';
 import { executeIo, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
@@ -16,7 +17,9 @@ export function setupTestServer<Deps>(
   mockDeps: (overrides?: DeepPartial<Deps>) => Deps,
 ) {
   return (deps?: DeepPartial<Deps>) => {
-    const httpServer = unsafeUnwrapEitherRight(buildHttpServer(mockMainLogger(), {} as AppDeps));
+    const httpServer = unsafeUnwrapEitherRight(
+      buildHttpServer(mockMainLogger(), () => ({ PORT_NUMBER: 8080 as PortNumber }), {} as AppDeps),
+    );
     const handler = buildHandler(mockDeps(deps));
 
     let fastifyServer: FastifyServer;

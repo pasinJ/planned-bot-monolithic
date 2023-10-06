@@ -10,7 +10,7 @@ import {
 import pretty, { PrettyOptions } from 'pino-pretty';
 import { mergeDeepWith, pick, prop } from 'ramda';
 
-import { AppConfig, LogFilePath, getAppConfig } from '#shared/app.config.js';
+import { AppConfig, LogFilePath } from '#shared/app.config.js';
 import { mergeConcatArray } from '#utils/general.js';
 
 type LogFn = {
@@ -56,8 +56,7 @@ const redactConf: PinoLoggerOptions['redact'] = {
   censor: '** REDACTED **',
 };
 
-export function createMainLogger(): PinoLogger {
-  const appConfig = getAppConfig();
+export function createMainLogger(appConfig: AppConfig): PinoLogger {
   return appConfig.ENV === 'test'
     ? createTestLogger()
     : appConfig.ENV === 'production'

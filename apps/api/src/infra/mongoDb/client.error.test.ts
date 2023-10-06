@@ -1,16 +1,14 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createMongoDbClientError, isMongoDbClientError } from './client.error.js';
 
 describe.each([
   {
     case: 'validate an error that is a MongoDb client error without cause property',
-    input: createMongoDbClientError('BuildClientFailed', randomString()),
+    input: createMongoDbClientError('BuildClientFailed', 'message'),
     expected: true,
   },
   {
     case: 'validate an error that is a MongoDb client error with cause property',
-    input: createMongoDbClientError('DisconnectFailed', randomString(), new Error()),
+    input: createMongoDbClientError('DisconnectFailed', 'message', new Error()),
     expected: true,
   },
   {

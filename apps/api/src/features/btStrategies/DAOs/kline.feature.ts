@@ -6,19 +6,19 @@ import { flow, pipe } from 'fp-ts/lib/function.js';
 import { Cursor, QueryOptions } from 'mongoose';
 import { includes, isNotNil, mergeAll, omit, pathOr, reject } from 'ramda';
 
-import { ExchangeName } from '#features/shared/domain/exchange.js';
-import { Timeframe } from '#features/shared/domain/timeframe.js';
-import { SymbolName } from '#features/symbols/dataModels/symbol.js';
+import { ExchangeName } from '#features/shared/exchange.js';
+import { Kline } from '#features/shared/kline.js';
+import { SymbolName } from '#features/shared/symbol.js';
+import { Timeframe } from '#features/shared/timeframe.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { ValidDate } from '#shared/utils/date.js';
 import { isUndefined } from '#shared/utils/general.js';
 
-import { KlineModel } from '../dataModels/kline.js';
 import { KlineDaoError, createKlineDaoError } from './kline.error.js';
 import { KlineMongooseModel } from './kline.js';
 
-export function addKlineModels({ mongooseModel }: { mongooseModel: KlineMongooseModel }) {
-  return (klines: KlineModel | readonly KlineModel[]): te.TaskEither<KlineDaoError<'AddFailed'>, void> =>
+export function addKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }) {
+  return (klines: Kline | readonly Kline[]): te.TaskEither<KlineDaoError<'AddFailed'>, void> =>
     pipe(
       te.tryCatch(
         () => mongooseModel.insertMany(klines, { ordered: false }),
@@ -33,7 +33,7 @@ export function addKlineModels({ mongooseModel }: { mongooseModel: KlineMongoose
     );
 }
 
-export function iterateThroughKlineModels({ mongooseModel }: { mongooseModel: KlineMongooseModel }) {
+export function iterateThroughKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }) {
   return <E>(
     filter: Partial<{
       exchange: ExchangeName;
@@ -47,12 +47,12 @@ export function iterateThroughKlineModels({ mongooseModel }: { mongooseModel: Kl
       onFinish = () => undefined,
       onError = () => () => undefined,
     }: {
-      onEach?: (klineModel: KlineModel) => te.TaskEither<E, void>;
+      onEach?: (kline: Kline) => te.TaskEither<E, void>;
       onFinish?: io.IO<void>;
       onError?: (error: E | KlineDaoError<'GetNextIteratorItemFailed'>) => io.IO<void>;
     } = {},
   ): ioe.IOEither<KlineDaoError<'CreateIteratorFailed'>, void> => {
-    function cursorLoop(cursor: Cursor<KlineModel, QueryOptions>): t.Task<void> {
+    function cursorLoop(cursor: Cursor<Kline, QueryOptions>): t.Task<void> {
       return pipe(
         te.tryCatch(
           () => cursor.next(),

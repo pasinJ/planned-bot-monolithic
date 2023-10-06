@@ -1,15 +1,26 @@
 import { isBefore, isEqual } from 'date-fns';
 import e from 'fp-ts/lib/Either.js';
+import io from 'fp-ts/lib/IO.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
-import { ExchangeName } from '#features/shared/domain/exchange.js';
-import { Language } from '#features/shared/domain/strategy.js';
-import { Timeframe } from '#features/shared/domain/timeframe.js';
-import { AssetName, SymbolName } from '#features/symbols/dataModels/symbol.js';
+import { ExchangeName } from '#features/shared/exchange.js';
+import {
+  CapitalCurrency,
+  InitialCapital,
+  Language,
+  MakerFeeRate,
+  TakerFeeRate,
+  initialCapitalSchema,
+  makerFeeRateSchema,
+  strategyNameSchema,
+  takerFeeRateSchema,
+} from '#features/shared/strategy.js';
+import { AssetName, SymbolName } from '#features/shared/symbol.js';
+import { Timeframe } from '#features/shared/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate, validDateSchema } from '#shared/utils/date.js';
-import { nonNegativeFloat8DigitsSchema, nonNegativePercentage8DigitsSchema } from '#shared/utils/number.js';
 import { TimezoneString, nonEmptyStringSchema } from '#shared/utils/string.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
@@ -18,9 +29,9 @@ export type BtStrategyModel = Readonly<{
   name: BtStrategyName;
   exchange: ExchangeName;
   symbol: SymbolName;
-  currency: AssetName;
   timeframe: Timeframe;
   initialCapital: InitialCapital;
+  capitalCurrency: CapitalCurrency;
   takerFeeRate: TakerFeeRate;
   makerFeeRate: MakerFeeRate;
   maxNumKlines: MaxNumKlines;
@@ -38,19 +49,7 @@ export type BtStrategyId = z.infer<typeof btIdSchema>;
 const btIdSchema = nonEmptyStringSchema.brand('BtStrategyId');
 
 export type BtStrategyName = z.infer<typeof btNameSchema>;
-const btNameSchema = nonEmptyStringSchema.brand('BtStrategyName');
-
-export type InitialCapital = z.infer<typeof initialCapitalSchema>;
-const initialCapitalSchema = nonNegativeFloat8DigitsSchema.brand('InitialCapital');
-
-export type FeeRate = z.infer<typeof feeRateSchema>;
-const feeRateSchema = nonNegativePercentage8DigitsSchema.brand('FeeRate');
-
-export type TakerFeeRate = z.infer<typeof takerFeeRateSchema>;
-const takerFeeRateSchema = feeRateSchema.brand('TakerFeeRate');
-
-export type MakerFeeRate = z.infer<typeof makerFeeRateSchema>;
-const makerFeeRateSchema = feeRateSchema.brand('MakerFeeRate');
+const btNameSchema = strategyNameSchema.brand('BtStrategyName');
 
 export type MaxNumKlines = z.infer<typeof maxNumKlinesSchema>;
 const maxNumKlinesSchema = z.number().positive().int().brand('MaxNumKlines');
@@ -64,15 +63,17 @@ const btEndTimestampSchema = validDateSchema.brand('BtStartTimestamp');
 export type BtBody = z.infer<typeof btBodySchema>;
 const btBodySchema = nonEmptyStringSchema.brand('BtBody');
 
+export const generateBtStrategyModelId: io.IO<BtStrategyId> = () => nanoid() as BtStrategyId;
+
 export function createBtStrategyModel(
   data: {
-    id: string;
+    id: BtStrategyId;
     name: string;
     exchange: ExchangeName;
     symbol: SymbolName;
-    currency: AssetName;
     timeframe: Timeframe;
     initialCapital: number;
+    capitalCurrency: AssetName;
     takerFeeRate: number;
     makerFeeRate: number;
     maxNumKlines: number;
@@ -90,9 +91,9 @@ export function createBtStrategyModel(
       name: btNameSchema,
       exchange: z.any(),
       symbol: z.any(),
-      currency: z.any(),
       timeframe: z.any(),
       initialCapital: initialCapitalSchema,
+      capitalCurrency: z.any(),
       takerFeeRate: takerFeeRateSchema,
       makerFeeRate: makerFeeRateSchema,
       maxNumKlines: maxNumKlinesSchema,

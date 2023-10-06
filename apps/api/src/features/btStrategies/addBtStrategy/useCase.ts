@@ -3,11 +3,11 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { DeepReadonly } from 'ts-essentials';
 
-import { ExchangeName } from '#features/shared/domain/exchange.js';
-import { Language } from '#features/shared/domain/strategy.js';
-import { Timeframe } from '#features/shared/domain/timeframe.js';
+import { ExchangeName } from '#features/shared/exchange.js';
+import { Language } from '#features/shared/strategy.js';
+import { AssetName, Symbol } from '#features/shared/symbol.js';
+import { Timeframe } from '#features/shared/timeframe.js';
 import { SymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
-import { AssetName, SymbolModel } from '#features/symbols/dataModels/symbol.js';
 import { DateService } from '#infra/services/date/service.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate } from '#shared/utils/date.js';
@@ -22,7 +22,7 @@ export type AddBtStrategyDeps = DeepReadonly<{
     getByNameAndExchange: (
       name: string,
       exchange: ExchangeName,
-    ) => te.TaskEither<SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>, SymbolModel>;
+    ) => te.TaskEither<SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>, Symbol>;
   };
   btStrategyDao: {
     generateId: io.IO<BtStrategyId>;
@@ -33,7 +33,7 @@ export type AddBtStrategyRequest = Readonly<{
   name: string;
   exchange: ExchangeName;
   symbol: string;
-  currency: string;
+  capitalCurrency: string;
   timeframe: Timeframe;
   maxNumKlines: number;
   initialCapital: number;
@@ -56,12 +56,13 @@ export function addBtStrategy(
   Readonly<{ id: BtStrategyId; createdAt: ValidDate }>
 > {
   const { dateService, btStrategyDao, symbolDao } = dep;
+  const { symbol, exchange, capitalCurrency } = request;
 
   return pipe(
-    symbolDao.getByNameAndExchange(request.symbol, request.exchange),
+    symbolDao.getByNameAndExchange(symbol, exchange),
     te.bindW('symbol', (symbol) => {
-      return request.currency === symbol.baseAsset || request.currency === symbol.quoteAsset
-        ? te.right({ name: symbol.name, currency: request.currency as AssetName })
+      return capitalCurrency === symbol.baseAsset || capitalCurrency === symbol.quoteAsset
+        ? te.right({ name: symbol.name, capitalCurrency: capitalCurrency as AssetName })
         : te.left(
             createGeneralError(
               'InvalidCurrency',
@@ -71,8 +72,8 @@ export function addBtStrategy(
     }),
     te.let('id', () => btStrategyDao.generateId()),
     te.let('currentDate', () => dateService.getCurrentDate()),
-    te.bindW('btStrategy', ({ symbol: { name, currency }, id, currentDate }) =>
-      te.fromEither(createBtStrategyModel({ ...request, id, symbol: name, currency }, currentDate)),
+    te.bindW('btStrategy', ({ symbol: { name, capitalCurrency }, id, currentDate }) =>
+      te.fromEither(createBtStrategyModel({ ...request, id, symbol: name, capitalCurrency }, currentDate)),
     ),
     te.chainFirstW(({ btStrategy }) => btStrategyDao.add(btStrategy)),
     te.map(({ btStrategy }) => ({ id: btStrategy.id, createdAt: btStrategy.createdAt })),

@@ -3,13 +3,9 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { __, dissoc, filter, includes, map, pick, prop, propEq, propSatisfies } from 'ramda';
 
-import { exchangeNameEnum } from '#features/shared/domain/exchange.js';
-import {
-  CreateSymbolModelError,
-  SymbolModel,
-  createSymbolModel,
-} from '#features/symbols/dataModels/symbol.js';
+import { BnbSymbol, createBnbSymbol } from '#features/shared/bnbSymbol.js';
 import { HttpClient } from '#infra/http/client.type.js';
+import { GeneralError } from '#shared/errors/generalError.js';
 
 import { BNB_ENDPOINTS } from '../constants.js';
 import { createBnbServiceError } from '../error.js';
@@ -36,7 +32,7 @@ export function getSpotSymbolsList({ httpClient }: { httpClient: Pick<HttpClient
 
 function transformExchangeInfoToSymbols(
   exchangeInfo: ExchangeInfoResp,
-): ioe.IOEither<CreateSymbolModelError, readonly SymbolModel[]> {
+): ioe.IOEither<GeneralError<'CreateSymbolFailed'>, readonly BnbSymbol[]> {
   return pipe(
     prop('symbols', exchangeInfo),
     filter(propEq('TRADING', 'status')),
@@ -50,10 +46,9 @@ function transformExchangeInfoToSymbols(
     })),
     ioe.of,
     ioe.chainW((symbols) =>
-      ioe.sequenceArray(
-        symbols.map((symbol) =>
-          ioe.fromEither(createSymbolModel({ ...symbol, exchange: exchangeNameEnum.BINANCE })),
-        ),
+      pipe(
+        symbols.map((symbol) => ioe.fromEither(createBnbSymbol(symbol))),
+        ioe.sequenceArray,
       ),
     ),
   );
@@ -78,10 +73,14 @@ function pickSymbolProps(symbol: ExchangeInfoResp['symbols'][number]): SymbolWit
 }
 
 type RenameSymbolProp<S extends Record<string, unknown>> = {
-  [K in keyof S as K extends 'symbol' ? 'name' : K]: S[K];
+  [K in keyof S as K extends 'symbol' ? 'name' : K extends 'orderTypes' ? 'bnbOrderTypes' : K]: S[K];
 };
 function renameSymbolProp<S extends Record<string, unknown>>(symbol: S): RenameSymbolProp<S> {
-  return dissoc('symbol', { ...symbol, name: symbol.symbol }) as unknown as RenameSymbolProp<S>;
+  return dissoc('symbol', {
+    ...symbol,
+    name: symbol.symbol,
+    bnbOrderTypes: symbol.orderTypes,
+  }) as unknown as RenameSymbolProp<S>;
 }
 
 type RenameFilterProp<F extends Record<string, unknown>> = {

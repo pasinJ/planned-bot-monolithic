@@ -1,4 +1,4 @@
-import { Agenda, DefineOptions, Processor } from 'agenda';
+import { Agenda, Processor } from 'agenda';
 import type { fork } from 'child_process';
 import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
@@ -21,7 +21,7 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { ValidDate } from '#shared/utils/date.js';
 
 import { BtStrategyId } from '../dataModels/btStrategy.js';
-import { BtJobTimeout, BtWorkerModulePath, getBtJobConfig } from './backtesting.job.config.js';
+import { BtJobConfig, BtJobTimeout, BtWorkerModulePath } from './backtesting.job.config.js';
 
 export type BtJobRecord = JobRecord<BtJobName, BtJobData, BtJobResult>;
 type BtJobName = typeof btJobName;
@@ -29,7 +29,7 @@ export const btJobName = 'backtesting';
 export type BtJobData = { id: BtExecutionId; btStrategyId: BtStrategyId; status: BtExecutionStatus };
 export type BtJobResult = { logs: string[] };
 
-export type BtJobDeps = DeepReadonly<{ fork: typeof fork }>;
+export type BtJobDeps = DeepReadonly<{ fork: typeof fork; getBtJobConfig: io.IO<BtJobConfig> }>;
 export function defineBtJob(deps: BtJobDeps) {
   return ({
     agenda,
@@ -38,22 +38,20 @@ export function defineBtJob(deps: BtJobDeps) {
     agenda: Agenda;
     loggerIo: LoggerIo;
   }): ioe.IOEither<JobSchedulerError<'DefineJobFailed'>, void> => {
-    const { JOB_CONCURRENCY, JOB_TIMEOUT_MS, JOB_WORKER_MODULE_PATH } = getBtJobConfig();
-    const jobOptions: DefineOptions = {
-      concurrency: JOB_CONCURRENCY,
-      lockLimit: JOB_CONCURRENCY,
-      shouldSaveResult: true,
-    };
-
     return pipe(
-      ioe.tryCatch(
-        () =>
-          agenda.define(
-            btJobName,
-            jobOptions,
-            buildBtJobProcessor(deps.fork, JOB_WORKER_MODULE_PATH, JOB_TIMEOUT_MS),
+      ioe.fromIO(deps.getBtJobConfig),
+      ioe.chain(({ JOB_CONCURRENCY, JOB_TIMEOUT_MS, JOB_WORKER_MODULE_PATH }) =>
+        ioe.tryCatch(
+          () =>
+            agenda.define(
+              btJobName,
+              { concurrency: JOB_CONCURRENCY, lockLimit: JOB_CONCURRENCY, shouldSaveResult: true },
+              buildBtJobProcessor(deps.fork, JOB_WORKER_MODULE_PATH, JOB_TIMEOUT_MS),
+            ),
+          createErrorFromUnknown(
+            createJobSchedulerError('DefineJobFailed', 'Defining backtesting job failed'),
           ),
-        createErrorFromUnknown(createJobSchedulerError('DefineJobFailed', 'Defining backtesting job failed')),
+        ),
       ),
       ioe.chainFirstIOK(() => loggerIo.infoIo('Backtesting job was defined to a job scheduler instance')),
     );

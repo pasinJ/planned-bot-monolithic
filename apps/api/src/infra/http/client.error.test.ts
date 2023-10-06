@@ -1,11 +1,9 @@
-import { randomString } from '#test-utils/faker/string.js';
-
 import { createHttpError, isHttpError } from './client.error.js';
 
 describe.each([
   {
     case: 'validate an error that is a HTTP error with cause property',
-    input: createHttpError('InvalidRequest', randomString(), new Error()),
+    input: createHttpError('InvalidRequest', 'message', new Error()),
     expected: true,
   },
   {
