@@ -5,7 +5,7 @@ import { implementZodSchema } from '#shared/errors/utils.js';
 
 export type BnbServiceError<Type extends string = string> = AppError<BnbServiceErrorName, Type>;
 
-type BnbServiceErrorName = (typeof bnbServiceErrorName)[number];
+type BnbServiceErrorName = typeof bnbServiceErrorName;
 const bnbServiceErrorName = 'BnbServiceError' as const;
 
 export function createBnbServiceError<Type extends BnbServiceError['type']>(
