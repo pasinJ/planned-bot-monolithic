@@ -16,27 +16,28 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { GeneralError } from '#shared/errors/generalError.js';
 import { DateRange } from '#shared/utils/date.js';
 
-export type GetKlinesByDailyDeps = Readonly<{ bnbClient: BnbClient }>;
-export type GetKlinesByDailyRequest = Readonly<{
+export type GetKlinesByApi = (
+  request: GetKlinesByApiRequest,
+) => te.TaskEither<GetKlinesByApiError, readonly Kline[]>;
+export type GetKlinesByApiDeps = Readonly<{ bnbClient: BnbClient }>;
+export type GetKlinesByApiRequest = Readonly<{
   symbol: SymbolName;
   timeframe: Timeframe;
   dateRange: DateRange;
 }>;
+export type GetKlinesByApiError = BnbServiceError<'GetKlinesByApiFailed'>;
 
 const MAX_KLINES_LIMIT = 1000;
 
-export function getKlinesByDaily(deps: GetKlinesByDailyDeps) {
-  return (
-    request: GetKlinesByDailyRequest,
-  ): te.TaskEither<BnbServiceError<'GetKlinesByDailyFailed'>, readonly Kline[]> =>
-    getKlinesRecursive(deps.bnbClient, request, []);
+export function getKlinesByApi(deps: GetKlinesByApiDeps): GetKlinesByApi {
+  return (request) => getKlinesRecursive(deps.bnbClient, request, []);
 }
 
 function getKlinesRecursive(
   bnbClient: BnbClient,
-  request: GetKlinesByDailyRequest,
+  request: GetKlinesByApiRequest,
   accKlines: readonly Kline[],
-): te.TaskEither<BnbServiceError<'GetKlinesByDailyFailed'>, readonly Kline[]> {
+): te.TaskEither<BnbServiceError<'GetKlinesByApiFailed'>, readonly Kline[]> {
   const { symbol, timeframe, dateRange } = request;
 
   return pipe(
@@ -47,7 +48,7 @@ function getKlinesRecursive(
         e.sequenceArray,
         e.mapLeft((error) =>
           createBnbServiceError(
-            'GetKlinesByDailyFailed',
+            'GetKlinesByApiFailed',
             'Error happend when try to create Kline models from returned data',
             error,
           ),
@@ -80,7 +81,7 @@ function getKlinesFromBnbServer(
   symbol: SymbolName,
   timeframe: Timeframe,
   dateRange: DateRange,
-): te.TaskEither<BnbServiceError<'GetKlinesByDailyFailed'>, CandleChartResult[]> {
+): te.TaskEither<BnbServiceError<'GetKlinesByApiFailed'>, CandleChartResult[]> {
   return te.tryCatch(
     () =>
       bnbClient.candles({
@@ -92,7 +93,7 @@ function getKlinesFromBnbServer(
         limit: MAX_KLINES_LIMIT,
       }),
     createErrorFromUnknown(
-      createBnbServiceError('GetKlinesByDailyFailed', 'Getting klines from Binance server failed'),
+      createBnbServiceError('GetKlinesByApiFailed', 'Getting klines from Binance server failed'),
     ),
   );
 }

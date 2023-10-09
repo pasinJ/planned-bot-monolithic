@@ -31,34 +31,25 @@ import { Kline } from '#features/shared/kline.js';
 import { SymbolName } from '#features/shared/symbol.js';
 import { Timeframe } from '#features/shared/timeframe.js';
 import { BnbServiceError, createBnbServiceError } from '#infra/services/binance/error.js';
-import { FileServiceError } from '#infra/services/file/error.js';
 import { DateRange, ValidDate } from '#shared/utils/date.js';
 
+import { CreateDirectory, CreateDirectoryError } from '../file/createDirectory.js';
+import { RemoveDirectory } from '../file/removeDirectory.js';
+import { GetKlinesByApi, GetKlinesByApiError } from './getKlinesByApi.js';
+import { GetKlinesByDailyFiles, GetKlinesByDailyFilesError } from './getKlinesByDailyFiles.js';
+import { GetKlinesByMonthlyFiles, GetKlinesByMonthlyFilesError } from './getKlinesByMonthlyFiles.js';
+
+export type GetKlinesForBt = (
+  request: GetKlinesForBtRequest,
+) => te.TaskEither<GetKlinesForBtError, readonly Kline[]>;
 export type GetKlinesForBtDeps = DeepReadonly<{
   bnbService: {
     getConfig: io.IO<{ DOWNLOAD_OUTPUT_PATH: string }>;
-    getKlinesFromMonthlyFiles: (request: {
-      executionId: BtExecutionId;
-      symbol: SymbolName;
-      timeframe: Timeframe;
-      dateRange: DateRange;
-    }) => te.TaskEither<BnbServiceError<'GetKlinesFromMonthlyFilesFailed'>, readonly Kline[]>;
-    getKlinesFromDailyFiles: (request: {
-      executionId: BtExecutionId;
-      symbol: SymbolName;
-      timeframe: Timeframe;
-      dateRange: DateRange;
-    }) => te.TaskEither<BnbServiceError<'GetKlinesFromDailyFilesFailed'>, readonly Kline[]>;
-    getKlinesFromApi: (request: {
-      symbol: SymbolName;
-      timeframe: Timeframe;
-      dateRange: DateRange;
-    }) => te.TaskEither<BnbServiceError<'GetKlinesFromApiFailed'>, readonly Kline[]>;
+    getKlinesByMonthlyFiles: GetKlinesByMonthlyFiles;
+    getKlinesByDailyFiles: GetKlinesByDailyFiles;
+    getKlinesByApi: GetKlinesByApi;
   };
-  fileService: {
-    createDirectory: (dirPath: string) => te.TaskEither<FileServiceError<'CreateDirFailed'>, void>;
-    removeDirectory: (dirPath: string) => te.TaskEither<FileServiceError<'RemoveDirFailed'>, void>;
-  };
+  fileService: { createDirectory: CreateDirectory; removeDirectory: RemoveDirectory };
 }>;
 export type GetKlinesForBtRequest = Readonly<{
   executionId: BtExecutionId;
@@ -68,15 +59,14 @@ export type GetKlinesForBtRequest = Readonly<{
   startTimestamp: BtStartTimestamp;
   endTimestamp: BtEndTimestamp;
 }>;
+export type GetKlinesForBtError = BnbServiceError<'GetKlinesForBtFailed'>;
 
-export function getKlinesForBt(deps: GetKlinesForBtDeps) {
-  return (request: GetKlinesForBtRequest) => {
+export function getKlinesForBt(deps: GetKlinesForBtDeps): GetKlinesForBt {
+  return (request) => {
     const { bnbService, fileService } = deps;
     const { executionId, symbol, timeframe, maxKlinesNum, startTimestamp, endTimestamp } = request;
 
-    type GetKlinesErrors = BnbServiceError<
-      'GetKlinesFromApiFailed' | 'GetKlinesFromDailyFilesFailed' | 'GetKlinesFromMonthlyFilesFailed'
-    >;
+    type GetKlinesErrors = GetKlinesByApiError | GetKlinesByDailyFilesError | GetKlinesByMonthlyFilesError;
 
     return pipe(
       te.Do,
@@ -98,20 +88,20 @@ export function getKlinesForBt(deps: GetKlinesForBtDeps) {
         ({
           dateRange,
           tempDirPath,
-        }): te.TaskEither<GetKlinesErrors | FileServiceError<'CreateDirFailed'>, readonly Kline[]> => {
+        }): te.TaskEither<GetKlinesErrors | CreateDirectoryError, readonly Kline[]> => {
           const method = chooseGetKlinesMethod(timeframe, dateRange);
           return method === 'API'
-            ? bnbService.getKlinesFromApi({ symbol, timeframe, dateRange })
+            ? bnbService.getKlinesByApi({ symbol, timeframe, dateRange })
             : method === 'DAILY'
             ? createTempDirAndRemoveAfterFinish(
                 fileService,
                 tempDirPath,
-                bnbService.getKlinesFromDailyFiles({ executionId, symbol, timeframe, dateRange }),
+                bnbService.getKlinesByDailyFiles({ executionId, symbol, timeframe, dateRange }),
               )
             : createTempDirAndRemoveAfterFinish(
                 fileService,
                 tempDirPath,
-                bnbService.getKlinesFromMonthlyFiles({ executionId, symbol, timeframe, dateRange }),
+                bnbService.getKlinesByMonthlyFiles({ executionId, symbol, timeframe, dateRange }),
               );
         },
       ),

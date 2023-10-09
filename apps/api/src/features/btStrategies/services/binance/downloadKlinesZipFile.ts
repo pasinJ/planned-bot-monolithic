@@ -13,17 +13,13 @@ import { GeneralError } from '#shared/errors/generalError.js';
 import { DayString, MonthString, YearString } from '#shared/utils/date.js';
 
 import { BtExecutionId } from '../../dataModels/btExecution.js';
+import { ExtractZipFile } from '../file/extractZipFile.js';
 
 export type CsvFilePath = string & z.BRAND<'CsvFilePath'>;
 
 export type DownloadMonthlyKlinesZipFileDeps = DeepReadonly<{
   httpClient: Pick<HttpClient, 'downloadFile'>;
-  fileService: {
-    extractZipFile: (
-      zipFilePath: string,
-      outputFilePath: string,
-    ) => te.TaskEither<FileServiceError<'ExtractFileFailed'>, void>;
-  };
+  fileService: { extractZipFile: ExtractZipFile };
   bnbService: { getConfig: io.IO<{ PUBLIC_DATA_BASE_URL: string; DOWNLOAD_OUTPUT_PATH: string }> };
 }>;
 export type DownloadMonthlyKlinesZipFileRequest = Readonly<{
@@ -37,7 +33,7 @@ export function downloadMonthlyKlinesZipFile(
   deps: DownloadMonthlyKlinesZipFileDeps,
   request: DownloadMonthlyKlinesZipFileRequest,
 ): te.TaskEither<
-  HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractFileFailed'>,
+  HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractZipFileFailed'>,
   CsvFilePath
 > {
   const { httpClient, fileService, bnbService } = deps;
@@ -85,12 +81,7 @@ function formMonthlyFileUrl(
 
 export type DownloadDailyKlinesZipFileDeps = DeepReadonly<{
   httpClient: Pick<HttpClient, 'downloadFile'>;
-  fileService: {
-    extractZipFile: (
-      zipFilePath: string,
-      outputFilePath: string,
-    ) => te.TaskEither<FileServiceError<'ExtractFileFailed'>, void>;
-  };
+  fileService: { extractZipFile: ExtractZipFile };
   bnbService: { getConfig: io.IO<{ PUBLIC_DATA_BASE_URL: string; DOWNLOAD_OUTPUT_PATH: string }> };
 }>;
 export type DownloadDailyKlinesZipFileRequest = Readonly<{
@@ -105,7 +96,7 @@ export function downloadDailyKlinesZipFile(
   deps: DownloadDailyKlinesZipFileDeps,
   request: DownloadDailyKlinesZipFileRequest,
 ): te.TaskEither<
-  HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractFileFailed'>,
+  HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractZipFileFailed'>,
   CsvFilePath
 > {
   const { httpClient, fileService, bnbService } = deps;

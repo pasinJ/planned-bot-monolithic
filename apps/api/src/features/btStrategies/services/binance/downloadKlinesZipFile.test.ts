@@ -20,7 +20,7 @@ import {
 const baseUrl = 'https://binance.com';
 const downloadOutputPath = './output';
 const httpError = createHttpError('ServerSideError', 'Mock', new Error());
-const extractFailedError = createFileServiceError('ExtractFileFailed', 'Mock');
+const extractFailedError = createFileServiceError('ExtractZipFileFailed', 'Mock');
 
 describe('UUT: Download monthly klines zip file', () => {
   function mockDeps(

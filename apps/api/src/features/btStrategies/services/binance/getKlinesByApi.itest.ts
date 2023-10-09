@@ -13,7 +13,7 @@ import { DateRange } from '#shared/utils/date.js';
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { mockMainLogger } from '#test-utils/services.js';
 
-import { getKlinesByDaily } from './getKlinesByApi.js';
+import { getKlinesByApi } from './getKlinesByApi.js';
 
 const { HTTP_BASE_URL } = getBnbConfig();
 const klinesPath = `${HTTP_BASE_URL}${BNB_ENDPOINTS.KLINES}`;
@@ -52,7 +52,7 @@ const klineModel = (symbol: string, timeframe: string) => ({
 const bnbService = unsafeUnwrapEitherRight(
   executeIo(buildBnbService({ mainLogger: mockMainLogger(), getBnbConfig })),
 );
-const getKlinesFn = bnbService.composeWith(getKlinesByDaily);
+const getKlinesFn = bnbService.composeWith(getKlinesByApi);
 const defaultRequest = {
   symbol: 'BTCUSDT' as SymbolName,
   timeframe: timeframeEnum['1d'],
@@ -176,7 +176,7 @@ describe('[GIVEN] server return 1000 klines and the end timestamp of the last kl
         }),
       );
 
-      const result = await executeT(bnbService.composeWith(getKlinesByDaily)(request));
+      const result = await executeT(bnbService.composeWith(getKlinesByApi)(request));
 
       const expected = repeat(klineModel(request.symbol, request.timeframe), 1005);
       expect(result).toEqualRight(expected);

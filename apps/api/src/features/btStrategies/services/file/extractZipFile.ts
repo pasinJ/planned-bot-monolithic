@@ -5,10 +5,14 @@ import unzipper from 'unzipper';
 import { FileServiceError, createFileServiceError } from '#infra/services/file/error.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-export function extractZipFile(
+export type ExtractZipFile = (
   zipFilePath: string,
   outputFilePath: string,
-): te.TaskEither<FileServiceError<'ExtractZipFileFailed'>, void> {
+) => te.TaskEither<ExtractZipFileError, void>;
+export type ExtractZipFileError = FileServiceError<'ExtractZipFileFailed'>;
+export function extractZipFile(
+  ...[zipFilePath, outputFilePath]: Parameters<ExtractZipFile>
+): ReturnType<ExtractZipFile> {
   return te.tryCatch(
     () =>
       new Promise((resolve, reject) =>

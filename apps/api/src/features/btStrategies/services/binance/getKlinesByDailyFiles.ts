@@ -19,25 +19,21 @@ import { FileServiceError } from '#infra/services/file/error.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { DateRange, DayString, MonthString, YearString } from '#shared/utils/date.js';
 
+import { ExtractZipFile } from '../file/extractZipFile.js';
+import { ReadCsvFile } from '../file/readCsvFile.js';
 import { downloadDailyKlinesZipFile } from './downloadKlinesZipFile.js';
+import { GetKlinesByApi } from './getKlinesByApi.js';
 import { transformCsvRowToKline } from './transformCsvRowToKline.js';
 
+export type GetKlinesByDailyFiles = (
+  request: GetKlinesByDailyFilesRequest,
+) => te.TaskEither<GetKlinesByDailyFilesError, readonly Kline[]>;
 export type GetKlinesByDailyFilesDeps = DeepReadonly<{
   httpClient: Pick<HttpClient, 'downloadFile'>;
-  fileService: {
-    extractZipFile: (
-      zipFilePath: string,
-      outputFilePath: string,
-    ) => te.TaskEither<FileServiceError<'ExtractFileFailed'>, void>;
-    readCsvFile: (filePath: string) => te.TaskEither<FileServiceError<'ReadCsvFileFailed'>, string[][]>;
-  };
+  fileService: { extractZipFile: ExtractZipFile; readCsvFile: ReadCsvFile };
   bnbService: {
     getConfig: io.IO<{ PUBLIC_DATA_BASE_URL: string; DOWNLOAD_OUTPUT_PATH: string }>;
-    getKlinesFromApi: (request: {
-      symbol: SymbolName;
-      timeframe: Timeframe;
-      dateRange: DateRange;
-    }) => te.TaskEither<BnbServiceError<'GetKlinesFromApiFailed'>, readonly Kline[]>;
+    getKlinesByApi: GetKlinesByApi;
   };
 }>;
 export type GetKlinesByDailyFilesRequest = Readonly<{
@@ -46,11 +42,10 @@ export type GetKlinesByDailyFilesRequest = Readonly<{
   timeframe: Timeframe;
   dateRange: DateRange;
 }>;
+export type GetKlinesByDailyFilesError = BnbServiceError<'GetKlinesByDailyFilesFailed'>;
 
-export function getKlinesByDailyFiles(deps: GetKlinesByDailyFilesDeps) {
-  return (
-    request: GetKlinesByDailyFilesRequest,
-  ): te.TaskEither<BnbServiceError<'GetKlinesByDailyFilesFailed'>, readonly Kline[]> => {
+export function getKlinesByDailyFiles(deps: GetKlinesByDailyFilesDeps): GetKlinesByDailyFiles {
+  return (request) => {
     const { fileService, bnbService } = deps;
     const { dateRange, ...rest } = request;
     const { symbol, timeframe } = request;
@@ -71,7 +66,7 @@ export function getKlinesByDailyFiles(deps: GetKlinesByDailyFilesDeps) {
 
         return isNil(fallbackDateRange)
           ? te.right([])
-          : bnbService.getKlinesFromApi({ symbol, timeframe, dateRange: fallbackDateRange });
+          : bnbService.getKlinesByApi({ symbol, timeframe, dateRange: fallbackDateRange });
       }),
       te.bindW('csvKlines', ({ csvFilePath }) =>
         pipe(
@@ -108,13 +103,13 @@ export function getListOfDays(
 function separateCsvFilePathAndFallbackList(
   listOfDays: readonly Readonly<{ year: YearString; month: MonthString; day: DayString }>[],
   results: readonly e.Either<
-    HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractFileFailed'>,
+    HttpError | GeneralError<'WriteFileFailed'> | FileServiceError<'ExtractZipFileFailed'>,
     string
   >[],
 ): e.Either<
   | HttpError
   | GeneralError<'WriteFileFailed'>
-  | FileServiceError<'ExtractFileFailed'>
+  | FileServiceError<'ExtractZipFileFailed'>
   | GeneralError<'FileMissing'>,
   {
     fallback: readonly Readonly<{ year: YearString; month: MonthString; day: DayString }>[];
@@ -129,7 +124,7 @@ function separateCsvFilePathAndFallbackList(
       prev: e.Either<
         | HttpError
         | GeneralError<'WriteFileFailed'>
-        | FileServiceError<'ExtractFileFailed'>
+        | FileServiceError<'ExtractZipFileFailed'>
         | GeneralError<'FileMissing'>,
         { fallback: { year: YearString; month: MonthString; day: DayString }[]; csvFilePath: string[] }
       >,

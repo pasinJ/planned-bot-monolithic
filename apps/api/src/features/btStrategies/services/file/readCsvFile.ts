@@ -5,9 +5,9 @@ import { createReadStream } from 'fs';
 import { FileServiceError, createFileServiceError } from '#infra/services/file/error.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-export function readCsvFile(
-  csvFilePath: string,
-): te.TaskEither<FileServiceError<'ReadCsvFileFailed'>, string[][]> {
+export type ReadCsvFile = (csvFilePath: string) => te.TaskEither<ReadCsvFileError, string[][]>;
+export type ReadCsvFileError = FileServiceError<'ReadCsvFileFailed'>;
+export function readCsvFile(...[csvFilePath]: Parameters<ReadCsvFile>): ReturnType<ReadCsvFile> {
   const records: string[][] = [];
 
   return te.tryCatch(

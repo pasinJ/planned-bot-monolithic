@@ -8,7 +8,7 @@ import { exchangeNameEnum } from '#features/shared/exchange.js';
 import { SymbolName } from '#features/shared/symbol.js';
 import { timeframeEnum } from '#features/shared/timeframe.js';
 import { createHttpError } from '#infra/http/client.error.js';
-import { isBnbServiceError } from '#infra/services/binance/error.js';
+import { createBnbServiceError, isBnbServiceError } from '#infra/services/binance/error.js';
 import { createGeneralError } from '#shared/errors/generalError.js';
 import { DateRange } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
@@ -46,7 +46,7 @@ describe('UUT: Get klines by daily files', () => {
         },
         bnbService: {
           getConfig: () => ({ PUBLIC_DATA_BASE_URL: baseUrl, DOWNLOAD_OUTPUT_PATH: downloadOutputPath }),
-          getKlinesFromApi: jest.fn().mockReturnValue(te.right([])),
+          getKlinesByApi: jest.fn().mockReturnValue(te.right([])),
         },
       },
       overrides ?? {},
@@ -58,7 +58,7 @@ describe('UUT: Get klines by daily files', () => {
   const readCsvError = createGeneralError('ReadCsvFileFailed', 'Mock');
   const httpError = createHttpError('ServerSideError', 'Mock', new Error());
   const notFoundError = createHttpError('NotFound', 'Mock', new Error());
-  const getKlinesApiError = createGeneralError('GetKlinesFromApiFailed', 'Mock', new Error());
+  const getKlinesApiError = createBnbServiceError('GetKlinesByApiFailed', 'Mock', new Error());
   const csvFileContent = [
     [
       '1694649600000',
@@ -202,7 +202,7 @@ describe('UUT: Get klines by daily files', () => {
             .mockReturnValueOnce(te.left(notFoundError)),
         },
         fileService: { readCsvFile: jest.fn().mockReturnValue(te.right(csvFileContent)) },
-        bnbService: { getKlinesFromApi: jest.fn().mockReturnValue(te.right(fallbackKlines)) },
+        bnbService: { getKlinesByApi: jest.fn().mockReturnValue(te.right(fallbackKlines)) },
       });
     });
 
@@ -210,7 +210,7 @@ describe('UUT: Get klines by daily files', () => {
       it('[THEN] it will call daily fallback method with date range from start of the failed downloading to the end of date range input', async () => {
         await executeT(getKlinesByDailyFiles(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromApi).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByApi).toHaveBeenCalledExactlyOnceWith({
           symbol: request.symbol,
           timeframe: request.timeframe,
           dateRange: { start: startOfDay(request.dateRange.end), end: request.dateRange.end },
@@ -243,7 +243,7 @@ describe('UUT: Get klines by daily files', () => {
             .mockReturnValueOnce(te.right(undefined))
             .mockReturnValueOnce(te.left(notFoundError)),
         },
-        bnbService: { getKlinesFromApi: () => te.left(getKlinesApiError) },
+        bnbService: { getKlinesByApi: () => te.left(getKlinesApiError) },
       });
       const request = {
         ...defaultRequest,

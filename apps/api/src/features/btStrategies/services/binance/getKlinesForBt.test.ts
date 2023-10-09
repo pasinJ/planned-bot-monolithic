@@ -35,9 +35,9 @@ describe('UUT: Get klines for backtesting', () => {
         },
         bnbService: {
           getConfig: () => ({ DOWNLOAD_OUTPUT_PATH: downloadOutputPath }),
-          getKlinesFromMonthlyFiles: jest.fn().mockReturnValue(te.right([])),
-          getKlinesFromDailyFiles: jest.fn().mockReturnValue(te.right([])),
-          getKlinesFromApi: jest.fn().mockReturnValue(te.right([])),
+          getKlinesByMonthlyFiles: jest.fn().mockReturnValue(te.right([])),
+          getKlinesByDailyFiles: jest.fn().mockReturnValue(te.right([])),
+          getKlinesByApi: jest.fn().mockReturnValue(te.right([])),
         },
       },
       override ?? {},
@@ -45,7 +45,7 @@ describe('UUT: Get klines for backtesting', () => {
   }
 
   const downloadOutputPath = './output';
-  const getApiError = createBnbServiceError('GetKlinesFromApiFailed', 'Mock');
+  const getApiError = createBnbServiceError('GetKlinesByApiFailed', 'Mock');
 
   describe('[GIVEN] timeframe is one of 1M, 1w, 3d, 1d, 12h, 8h, or 6h', () => {
     let deps: GetKlinesForBtDeps;
@@ -60,14 +60,14 @@ describe('UUT: Get klines for backtesting', () => {
     const klines = generateArrayOf(mockKline, 3);
 
     beforeEach(() => {
-      deps = mockDeps({ bnbService: { getKlinesFromApi: jest.fn().mockReturnValue(te.right(klines)) } });
+      deps = mockDeps({ bnbService: { getKlinesByApi: jest.fn().mockReturnValue(te.right(klines)) } });
     });
 
     describe('[WHEN] get klines for backtesting', () => {
       it('[THEN] it will get klines from API', async () => {
         await executeT(getKlinesForBt(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromApi).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByApi).toHaveBeenCalledExactlyOnceWith({
           symbol: request.symbol,
           timeframe: request.timeframe,
           dateRange: {
@@ -84,7 +84,7 @@ describe('UUT: Get klines for backtesting', () => {
     });
   });
   describe('[GIVEN] timeframe is one of 1M, 1w, 3d, 1d, 12h, 8h, or 6h [AND] server return error', () => {
-    const deps = mockDeps({ bnbService: { getKlinesFromApi: () => te.left(getApiError) } });
+    const deps = mockDeps({ bnbService: { getKlinesByApi: () => te.left(getApiError) } });
     const request = {
       executionId: 'noygKGDOSD' as BtExecutionId,
       symbol: 'ETHUSDT' as SymbolName,
@@ -116,14 +116,14 @@ describe('UUT: Get klines for backtesting', () => {
     const klines = generateArrayOf(mockKline, 3);
 
     beforeEach(() => {
-      deps = mockDeps({ bnbService: { getKlinesFromApi: jest.fn().mockReturnValue(te.right(klines)) } });
+      deps = mockDeps({ bnbService: { getKlinesByApi: jest.fn().mockReturnValue(te.right(klines)) } });
     });
 
     describe('[WHEN] get klines for backtesting', () => {
       it('[THEN] it will get klines from API', async () => {
         await executeT(getKlinesForBt(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromApi).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByApi).toHaveBeenCalledExactlyOnceWith({
           symbol: request.symbol,
           timeframe: request.timeframe,
           dateRange: {
@@ -153,7 +153,7 @@ describe('UUT: Get klines for backtesting', () => {
 
     beforeEach(() => {
       deps = mockDeps({
-        bnbService: { getKlinesFromMonthlyFiles: jest.fn().mockReturnValue(te.right(klines)) },
+        bnbService: { getKlinesByMonthlyFiles: jest.fn().mockReturnValue(te.right(klines)) },
       });
     });
 
@@ -168,7 +168,7 @@ describe('UUT: Get klines for backtesting', () => {
       it('[THEN] it will get klines from monthly files', async () => {
         await executeT(getKlinesForBt(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromMonthlyFiles).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByMonthlyFiles).toHaveBeenCalledExactlyOnceWith({
           executionId: request.executionId,
           symbol: request.symbol,
           timeframe: request.timeframe,
@@ -207,7 +207,7 @@ describe('UUT: Get klines for backtesting', () => {
 
     beforeEach(() => {
       deps = mockDeps({
-        bnbService: { getKlinesFromApi: jest.fn().mockReturnValue(te.right(klines)) },
+        bnbService: { getKlinesByApi: jest.fn().mockReturnValue(te.right(klines)) },
       });
     });
 
@@ -215,7 +215,7 @@ describe('UUT: Get klines for backtesting', () => {
       it('[THEN] it will get klines from API', async () => {
         await executeT(getKlinesForBt(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromApi).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByApi).toHaveBeenCalledExactlyOnceWith({
           symbol: request.symbol,
           timeframe: request.timeframe,
           dateRange: {
@@ -245,7 +245,7 @@ describe('UUT: Get klines for backtesting', () => {
 
     beforeEach(() => {
       deps = mockDeps({
-        bnbService: { getKlinesFromDailyFiles: jest.fn().mockReturnValue(te.right(klines)) },
+        bnbService: { getKlinesByDailyFiles: jest.fn().mockReturnValue(te.right(klines)) },
       });
     });
 
@@ -260,7 +260,7 @@ describe('UUT: Get klines for backtesting', () => {
       it('[THEN] it will get klines from daily files', async () => {
         await executeT(getKlinesForBt(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromDailyFiles).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByDailyFiles).toHaveBeenCalledExactlyOnceWith({
           executionId: request.executionId,
           symbol: request.symbol,
           timeframe: request.timeframe,
@@ -298,7 +298,7 @@ describe('UUT: Get klines for backtesting', () => {
 
     beforeEach(() => {
       deps = mockDeps({
-        bnbService: { getKlinesFromMonthlyFiles: jest.fn().mockReturnValue(te.right(klines)) },
+        bnbService: { getKlinesByMonthlyFiles: jest.fn().mockReturnValue(te.right(klines)) },
       });
     });
 
@@ -313,7 +313,7 @@ describe('UUT: Get klines for backtesting', () => {
       it('[THEN] it will get klines from monthly files', async () => {
         await executeT(getKlinesForBt(deps)(request));
 
-        expect(deps.bnbService.getKlinesFromMonthlyFiles).toHaveBeenCalledExactlyOnceWith({
+        expect(deps.bnbService.getKlinesByMonthlyFiles).toHaveBeenCalledExactlyOnceWith({
           executionId: request.executionId,
           symbol: request.symbol,
           timeframe: request.timeframe,
