@@ -9,7 +9,7 @@ import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.j
 import { mockKline } from '#test-utils/features/shared/kline.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
-import { addKlines, iterateThroughKlines } from './kline.feature.js';
+import { addKlines, getKlinesBefore, iterateThroughKlines } from './kline.feature.js';
 import { KlineMongooseModel, buildKlineDao, klineModelName } from './kline.js';
 
 const client = await createMongoClient();
@@ -286,6 +286,51 @@ describe('UUT: Iterate through klines', () => {
       });
 
       expect(onEach).toHaveBeenCalledExactlyOnceWith(matchKline);
+    });
+  });
+});
+
+describe('UUT: Get klines before the specific date', () => {
+  const exchange = exchangeNameEnum.BINANCE;
+  const symbol = 'BNBUSDT' as SymbolName;
+  const timeframe = timeframeEnum['1d'];
+  const base = { exchange, symbol, timeframe };
+  const kline1 = mockKline({ ...base, closeTimestamp: new Date('2021-10-01T23:59:59.999Z') });
+  const kline2 = mockKline({ ...base, closeTimestamp: new Date('2021-10-02T23:59:59.999Z') });
+  const kline3 = mockKline({ ...base, closeTimestamp: new Date('2021-10-03T23:59:59.999Z') });
+  const kline4 = mockKline({ ...base, closeTimestamp: new Date('2021-10-04T23:59:59.999Z') });
+
+  const getBeforeFn = klineDao.composeWith(getKlinesBefore);
+
+  describe('[GIVEN] there are klines before the specific date more than limit', () => {
+    describe('[WHEN] get klines before the specific date', () => {
+      it('[THEN] it will return Right of limit number of klines in ascending order', async () => {
+        const klines = [kline1, kline2, kline3, kline4];
+        await klineModel.insertMany(klines);
+
+        const filter = { ...base, start: new Date('2021-10-04T06:00:00.000Z') as ValidDate };
+        const limit = 2;
+
+        const result = await executeT(getBeforeFn(filter, limit));
+
+        expect(result).toEqualRight([kline2, kline3]);
+      });
+    });
+  });
+
+  describe('[GIVEN] there are klines before the specific date less than limit', () => {
+    describe('[WHEN] get klines before the specific date', () => {
+      it('[THEN] it will return Right of all klines in ascending order', async () => {
+        const klines = [kline1, kline2, kline3, kline4];
+        await klineModel.insertMany(klines);
+
+        const filter = { ...base, start: new Date('2021-10-04T06:00:00.000Z') as ValidDate };
+        const limit = 5;
+
+        const result = await executeT(getBeforeFn(filter, limit));
+
+        expect(result).toEqualRight([kline1, kline2, kline3]);
+      });
     });
   });
 });

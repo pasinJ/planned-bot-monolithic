@@ -4,7 +4,7 @@ import t from 'fp-ts/lib/Task.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { flow, pipe } from 'fp-ts/lib/function.js';
 import { Cursor, QueryOptions } from 'mongoose';
-import { includes, isNotNil, mergeAll, omit, pathOr, reject } from 'ramda';
+import { ascend, includes, isNotNil, mergeAll, omit, pathOr, prop, reject } from 'ramda';
 
 import { ExchangeName } from '#features/shared/exchange.js';
 import { Kline } from '#features/shared/kline.js';
@@ -17,8 +17,10 @@ import { isUndefined } from '#shared/utils/general.js';
 import { KlineDaoError, createKlineDaoError } from './kline.error.js';
 import { KlineMongooseModel } from './kline.js';
 
-export function addKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }) {
-  return (klines: Kline | readonly Kline[]): te.TaskEither<KlineDaoError<'AddFailed'>, void> =>
+export type AddKlines = (klines: Kline | readonly Kline[]) => te.TaskEither<AddKlinesError, void>;
+export type AddKlinesError = KlineDaoError<'AddFailed'>;
+export function addKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }): AddKlines {
+  return (klines) =>
     pipe(
       te.tryCatch(
         () => mongooseModel.insertMany(klines, { ordered: false }),
@@ -33,32 +35,36 @@ export function addKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel
     );
 }
 
-export function iterateThroughKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }) {
-  return <E>(
-    filter: Partial<{
-      exchange: ExchangeName;
-      symbol: SymbolName;
-      timeframe: Timeframe;
-      start: ValidDate;
-      end: ValidDate;
-    }>,
-    {
-      onEach = () => te.right(undefined),
-      onFinish = () => undefined,
-      onError = () => () => undefined,
-    }: {
-      onEach?: (kline: Kline) => te.TaskEither<E, void>;
-      onFinish?: io.IO<void>;
-      onError?: (error: E | KlineDaoError<'GetNextIteratorItemFailed'>) => io.IO<void>;
-    } = {},
-  ): ioe.IOEither<KlineDaoError<'CreateIteratorFailed'>, void> => {
+export type IterateThroughKlines = <E>(
+  filter: Partial<{
+    exchange: ExchangeName;
+    symbol: SymbolName;
+    timeframe: Timeframe;
+    start: ValidDate;
+    end: ValidDate;
+  }>,
+  callbackFns?: {
+    onEach?: (kline: Kline) => te.TaskEither<E, void>;
+    onFinish?: io.IO<void>;
+    onError?: (error: E | GetNextKlineIterationError) => io.IO<void>;
+  },
+) => ioe.IOEither<CreateKlinesIteratorError, void>;
+export type CreateKlinesIteratorError = KlineDaoError<'CreateIteratorFailed'>;
+export type GetNextKlineIterationError = KlineDaoError<'GetNextIterationFailed'>;
+export function iterateThroughKlines({
+  mongooseModel,
+}: {
+  mongooseModel: KlineMongooseModel;
+}): IterateThroughKlines {
+  return (
+    filter,
+    { onEach = () => te.right(undefined), onFinish = () => undefined, onError = () => () => undefined } = {},
+  ) => {
     function cursorLoop(cursor: Cursor<Kline, QueryOptions>): t.Task<void> {
       return pipe(
         te.tryCatch(
           () => cursor.next(),
-          createErrorFromUnknown(
-            createKlineDaoError('GetNextIteratorItemFailed', 'Cursor.next() return error'),
-          ),
+          createErrorFromUnknown(createKlineDaoError('GetNextIterationFailed', 'Cursor.next() return error')),
         ),
         te.chainW(
           flow(
@@ -99,4 +105,35 @@ export function iterateThroughKlines({ mongooseModel }: { mongooseModel: KlineMo
       ioe.asUnit,
     );
   };
+}
+
+export type GetKlinesBefore = (
+  filter: { exchange: ExchangeName; symbol: string; timeframe: Timeframe; start: ValidDate },
+  limit: number,
+) => te.TaskEither<GetKlinesBeforeError, readonly Kline[]>;
+export type GetKlinesBeforeError = KlineDaoError<'GetBeforeFailed'>;
+export function getKlinesBefore({ mongooseModel }: { mongooseModel: KlineMongooseModel }): GetKlinesBefore {
+  return (filter, limit) =>
+    pipe(
+      te.tryCatch(
+        () =>
+          mongooseModel
+            .find({
+              exchange: filter.exchange,
+              symbol: filter.symbol,
+              timeframe: filter.timeframe,
+              closeTimestamp: { $lte: filter.start },
+            })
+            .limit(limit)
+            .sort({ closeTimestamp: 'desc' })
+            .lean(),
+        createErrorFromUnknown(
+          createKlineDaoError(
+            'GetBeforeFailed',
+            `Getting klines before ${filter.start.toISOString()} failed`,
+          ),
+        ),
+      ),
+      te.map((docs) => docs.map(omit(['_id', '__v'])).sort(ascend(prop('closeTimestamp')))),
+    );
 }
