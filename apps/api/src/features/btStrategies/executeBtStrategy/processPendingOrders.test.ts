@@ -14,6 +14,7 @@ import {
   mockPendingMarketOrder,
   mockPendingStopLimitOrder,
   mockPendingStopMarketOrder,
+  mockTriggeredOrder,
 } from '#test-utils/features/shared/order.js';
 import { mockStrategyModule } from '#test-utils/features/shared/strategyModule.js';
 import { mockOpeningTrade } from '#test-utils/features/shared/trades.js';
@@ -1976,6 +1977,7 @@ describe('UUT: Process pending CANCEL order', () => {
     const cancelOrder = mockPendingCancelOrder({ orderIdToCancel: openingOrder.id });
     const orders = {
       openingOrders: [openingOrder],
+      triggeredOrders: [],
       submittedOrders: [],
       canceledOrders: [],
       rejectedOrders: [],
@@ -2005,10 +2007,11 @@ describe('UUT: Process pending CANCEL order', () => {
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return unchanged rejected orders list', () => {
+      it('[THEN] it will return unchanged triggered and rejected orders lists', () => {
         const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
 
         expect(result.orders.rejectedOrders).not.toContainEqual(orders.rejectedOrders);
+        expect(result.orders.triggeredOrders).not.toContainEqual(orders.triggeredOrders);
       });
       it('[THEN] it will return updated strategy module', () => {
         const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
@@ -2032,6 +2035,7 @@ describe('UUT: Process pending CANCEL order', () => {
     const cancelOrder = mockPendingCancelOrder({ orderIdToCancel: openingOrder.id });
     const orders = {
       openingOrders: [openingOrder],
+      triggeredOrders: [],
       submittedOrders: [],
       canceledOrders: [],
       rejectedOrders: [],
@@ -2061,9 +2065,131 @@ describe('UUT: Process pending CANCEL order', () => {
           submittedAt: currentDate,
         });
       });
-      it('[THEN] it will return unchanged rejected orders list', () => {
+      it('[THEN] it will return unchanged triggered and rejected orders lists', () => {
         const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
 
+        expect(result.orders.rejectedOrders).not.toContainEqual(orders.rejectedOrders);
+        expect(result.orders.triggeredOrders).not.toContainEqual(orders.triggeredOrders);
+      });
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersAssetQuantity: 7,
+          availableAssetQuantity: 25,
+        });
+      });
+    });
+  });
+
+  describe('[GIVEN] there is a triggered entry order with order ID that matches the cancel order', () => {
+    const currentDate = new Date('2022-06-12') as ValidDate;
+    const deps = { dateService: { getCurrentDate: () => currentDate } };
+
+    const strategyModule = mockStrategyModule({ inOrdersCapital: 200, availableCapital: 500 });
+
+    const triggeredOrder = mockTriggeredOrder({
+      orderSide: 'ENTRY',
+      quantity: 5,
+      limitPrice: 10,
+      stopPrice: 5,
+    });
+    const cancelOrder = mockPendingCancelOrder({ orderIdToCancel: triggeredOrder.id });
+    const orders = {
+      openingOrders: [],
+      triggeredOrders: [triggeredOrder],
+      submittedOrders: [],
+      canceledOrders: [],
+      rejectedOrders: [],
+    };
+
+    describe('[WHEN] process pending CANCEL order', () => {
+      it('[THEN] it will return triggered orders list without the triggered order of that order ID', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.openingOrders).not.toContainEqual(triggeredOrder);
+      });
+      it('[THEN] it will return canceled orders list with the triggered order be canceled', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.canceledOrders).toContainEqual({
+          ...triggeredOrder,
+          status: 'CANCELED',
+          canceledAt: currentDate,
+        });
+      });
+      it('[THEN] it will return submitted orders list with the cancel order be summited', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.submittedOrders).toContainEqual({
+          ...cancelOrder,
+          status: 'SUBMITTED',
+          submittedAt: currentDate,
+        });
+      });
+      it('[THEN] it will return unchanged opening and rejected orders lists', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.openingOrders).not.toContainEqual(orders.openingOrders);
+        expect(result.orders.rejectedOrders).not.toContainEqual(orders.rejectedOrders);
+      });
+      it('[THEN] it will return updated strategy module', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.strategyModule).toEqual({
+          ...strategyModule,
+          inOrdersCapital: 150,
+          availableCapital: 550,
+        });
+      });
+    });
+  });
+
+  describe('[GIVEN] there is a triggered exit order with order ID that matches the cancel order', () => {
+    const currentDate = new Date('2022-06-12') as ValidDate;
+    const deps = { dateService: { getCurrentDate: () => currentDate } };
+
+    const strategyModule = mockStrategyModule({ inOrdersAssetQuantity: 12, availableAssetQuantity: 20 });
+
+    const triggeredOrder = mockTriggeredOrder({ orderSide: 'EXIT', quantity: 5 });
+    const cancelOrder = mockPendingCancelOrder({ orderIdToCancel: triggeredOrder.id });
+    const orders = {
+      openingOrders: [],
+      triggeredOrders: [triggeredOrder],
+      submittedOrders: [],
+      canceledOrders: [],
+      rejectedOrders: [],
+    };
+
+    describe('[WHEN] process pending CANCEL order', () => {
+      it('[THEN] it will return triggered orders list without the triggered order of that order ID', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.openingOrders).not.toContainEqual(triggeredOrder);
+      });
+      it('[THEN] it will return canceled orders list with the triggered order be canceled', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.canceledOrders).toContainEqual({
+          ...triggeredOrder,
+          status: 'CANCELED',
+          canceledAt: currentDate,
+        });
+      });
+      it('[THEN] it will return submitted orders list with the cancel order be summited', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.submittedOrders).toContainEqual({
+          ...cancelOrder,
+          status: 'SUBMITTED',
+          submittedAt: currentDate,
+        });
+      });
+      it('[THEN] it will return unchanged opening and rejected orders lists', () => {
+        const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
+
+        expect(result.orders.openingOrders).not.toContainEqual(orders.openingOrders);
         expect(result.orders.rejectedOrders).not.toContainEqual(orders.rejectedOrders);
       });
       it('[THEN] it will return updated strategy module', () => {
@@ -2085,13 +2211,20 @@ describe('UUT: Process pending CANCEL order', () => {
     const strategyModule = mockStrategyModule();
 
     const cancelOrder = mockPendingCancelOrder();
-    const orders = { openingOrders: [], submittedOrders: [], canceledOrders: [], rejectedOrders: [] };
+    const orders = {
+      openingOrders: [],
+      triggeredOrders: [],
+      submittedOrders: [],
+      canceledOrders: [],
+      rejectedOrders: [],
+    };
 
     describe('[WHEN] process pending CANCEL order', () => {
-      it('[THEN] it will return unchanged opening, submitted, and canceled orders list', () => {
+      it('[THEN] it will return unchanged opening, triggered, submitted, and canceled orders list', () => {
         const result = executeIo(processPendingCancelOrder(deps, strategyModule, orders, cancelOrder));
 
         expect(result.orders.openingOrders).toEqual(orders.openingOrders);
+        expect(result.orders.triggeredOrders).toEqual(orders.triggeredOrders);
         expect(result.orders.submittedOrders).toEqual(orders.submittedOrders);
         expect(result.orders.canceledOrders).toEqual(orders.canceledOrders);
       });
@@ -2129,6 +2262,7 @@ describe('UUT: Process pending orders', () => {
     pendingOrders: [],
     submittedOrders: [],
     openingOrders: [],
+    triggeredOrders: [],
     filledOrders: [],
     canceledOrders: [],
     rejectedOrders: [],

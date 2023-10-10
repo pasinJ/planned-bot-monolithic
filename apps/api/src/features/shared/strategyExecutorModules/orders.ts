@@ -8,6 +8,7 @@ import {
   concat,
   equals,
   filter,
+  find,
   isEmpty,
   isNotNil,
   prop,
@@ -116,7 +117,7 @@ export type OrdersModule = DeepReadonly<{
    */
   cancelAllOrders: (request?: {
     type?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
-    status?: 'PENDING' | 'OPENING' | 'ALL';
+    status?: 'PENDING' | 'OPENING' | 'TRIGGERED' | 'ALL';
   }) => void;
   getPendingOrders: () => readonly PendingOrderRequest[];
   getSubmittedOrders: () => readonly SubmittedOrder[];
@@ -156,8 +157,8 @@ export function buildOrdersModule(
     exitLimit: exitLimit(deps, symbol, pendingOrderRequestsRef),
     exitStopMarket: exitStopMarket(deps, symbol, pendingOrderRequestsRef),
     exitStopLimit: exitStopLimit(deps, symbol, pendingOrderRequestsRef),
-    cancelOrder: cancelOrder(deps, pendingOrderRequestsRef, openingOrders),
-    cancelAllOrders: cancelAllOrders(deps, pendingOrderRequestsRef, openingOrders),
+    cancelOrder: cancelOrder(deps, pendingOrderRequestsRef, openingOrders, triggeredOrders),
+    cancelAllOrders: cancelAllOrders(deps, pendingOrderRequestsRef, openingOrders, triggeredOrders),
     getPendingOrders: () => pendingOrderRequestsRef.read(),
     getSubmittedOrders: () => submittedOrders,
     getOpeningOrders: () => openingOrders,
@@ -376,10 +377,12 @@ function cancelOrder(
   deps: OrdersModuleDeps,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
   openingOrders: readonly OpeningOrder[],
+  triggeredOrders: readonly TriggeredOrder[],
 ) {
   return (orderIdToCancel: OrderId): void =>
     pipe(
-      openingOrders.find(propEq(orderIdToCancel, 'id')),
+      concat<OpeningOrder | TriggeredOrder, TriggeredOrder>(openingOrders, triggeredOrders),
+      find(propEq(orderIdToCancel, 'id')),
       (openingOrder) =>
         isUndefined(openingOrder)
           ? pendingOrderRequestsRef.modify(reject(propEq(orderIdToCancel, 'id')))
@@ -400,6 +403,7 @@ function cancelAllOrders(
   deps: OrdersModuleDeps,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
   openingOrders: readonly OpeningOrder[],
+  triggeredOrders: readonly TriggeredOrder[],
 ) {
   return (
     {
@@ -407,19 +411,31 @@ function cancelAllOrders(
       status = 'ALL',
     }: {
       type?: readonly ('ENTRY' | 'EXIT' | 'CANCEL')[];
-      status?: 'PENDING' | 'OPENING' | 'ALL';
+      status?: 'PENDING' | 'OPENING' | 'TRIGGERED' | 'ALL';
     } = { type: ['ENTRY', 'EXIT', 'CANCEL'], status: 'ALL' },
   ): void => {
+    const openingAndTriggeredOrders = concat<OpeningOrder | TriggeredOrder, TriggeredOrder>(
+      openingOrders,
+      triggeredOrders,
+    );
     const cancelFilter = [
       type.includes('ENTRY') ? propSatisfies(equals('ENTRY'), 'orderSide') : undefined,
       type.includes('EXIT') ? propSatisfies(equals('EXIT'), 'orderSide') : undefined,
       type.includes('CANCEL') ? propSatisfies(equals('CANCEL'), 'type') : undefined,
     ].filter(isNotNil);
     const orderIdsToCancel =
-      status === 'PENDING' ? [] : filter(anyPass(cancelFilter), openingOrders).map(prop('id'));
+      status === 'PENDING'
+        ? []
+        : status === 'OPENING'
+        ? filter(anyPass(cancelFilter), openingOrders).map(prop('id'))
+        : status === 'TRIGGERED'
+        ? filter(anyPass(cancelFilter), triggeredOrders).map(prop('id'))
+        : filter(anyPass(cancelFilter), openingAndTriggeredOrders).map(prop('id'));
 
     return pipe(
-      status !== 'OPENING' ? pendingOrderRequestsRef.modify(reject(anyPass(cancelFilter))) : io.of(undefined),
+      status === 'PENDING' || status === 'ALL'
+        ? pendingOrderRequestsRef.modify(reject(anyPass(cancelFilter)))
+        : io.of(undefined),
       io.chain(() =>
         !isEmpty(orderIdsToCancel)
           ? pipe(

@@ -740,6 +740,34 @@ describe('UUT: Orders module', () => {
         });
       });
     });
+    describe('[GIVEN] there was a triggered order [AND] user canceled the triggered order using order ID', () => {
+      describe('[WHEN] get pending orders', () => {
+        it('[THEN] it will return an array with a new cancel order', () => {
+          const cancelOrderId = 'LsztardtH2' as OrderId;
+          const currentDate = new Date('2022-10-09') as ValidDate;
+          const deps = mockDeps({
+            generateOrderId: () => cancelOrderId,
+            dateService: { getCurrentDate: () => currentDate },
+          });
+          const triggeredOrderId = 'fjiO-5em-x' as OrderId;
+          const triggeredOrders = [mockTriggeredOrder({ id: triggeredOrderId, orderSide: 'ENTRY' })];
+          const orders = { ...defaultOrders, triggeredOrders };
+          const ordersModule = buildOrdersModule(deps, mockBnbSymbol(), orders);
+
+          ordersModule.cancelOrder(triggeredOrderId);
+
+          const result = ordersModule.getPendingOrders();
+
+          expect(result).toContainEqual({
+            id: cancelOrderId,
+            createdAt: currentDate,
+            type: 'CANCEL',
+            orderIdToCancel: triggeredOrderId,
+            status: 'PENDING',
+          });
+        });
+      });
+    });
   });
 
   describe('UUT: Cancel all orders', () => {
@@ -748,6 +776,8 @@ describe('UUT: Orders module', () => {
       const openingEntryOrderId = 'cZ5iarVvKg' as OrderId;
       const openingExitOrderId = 'zg3YDxr0-l' as OrderId;
       const newCancelOrder = 'z9uMERGEm' as OrderId;
+      const triggeredEntryOrderId = 'HRLTKjYPfr' as OrderId;
+      const triggeredExitOrderId = 'lFVX7t68WD' as OrderId;
       const currentDate = new Date('2019-10-12') as ValidDate;
       const deps = mockDeps({
         generateOrderId: () => newCancelOrder,
@@ -758,14 +788,26 @@ describe('UUT: Orders module', () => {
         mockOpeningLimitOrder({ id: openingEntryOrderId, orderSide: 'ENTRY' }),
         mockOpeningLimitOrder({ id: openingExitOrderId, orderSide: 'EXIT' }),
       ];
-      const orders = { ...defaultOrders, openingOrders };
+      const triggeredOrders = [
+        mockTriggeredOrder({ id: triggeredEntryOrderId, orderSide: 'ENTRY' }),
+        mockTriggeredOrder({ id: triggeredExitOrderId, orderSide: 'EXIT' }),
+      ];
+      const orders = { ...defaultOrders, openingOrders, triggeredOrders };
       const ordersModule = buildOrdersModule(deps, mockBnbSymbol(), orders);
 
       ordersModule.enterMarket({ quantity: 1 });
       ordersModule.exitMarket({ quantity: 1 });
       ordersModule.cancelOrder(openingOrderId);
 
-      return { ordersModule, openingEntryOrderId, openingExitOrderId, newCancelOrder, currentDate };
+      return {
+        ordersModule,
+        openingEntryOrderId,
+        openingExitOrderId,
+        triggeredEntryOrderId,
+        triggeredExitOrderId,
+        newCancelOrder,
+        currentDate,
+      };
     }
 
     describe('[WHEN] cancal all orders', () => {
@@ -830,7 +872,7 @@ describe('UUT: Orders module', () => {
       });
     });
 
-    describe("[GIVEN] there were pending entry, exit, and cancel orders [AND] user canceled all orders using type = ['ENTRY', 'EXIT', 'CANCEL'] and status = 'OPENING'", () => {
+    describe("[GIVEN] there were opening entry and exit orders [AND] user canceled all orders using type = ['ENTRY', 'EXIT', 'CANCEL'] and status = 'OPENING'", () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with a new cancel order for both opening entry and exit orders', () => {
           const { ordersModule, newCancelOrder, openingEntryOrderId, openingExitOrderId, currentDate } =
@@ -853,7 +895,7 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe("[GIVEN] there were pending entry, exit, and cancel orders [AND] user canceled all orders using type = ['ENTRY'] and status = 'OPENING'", () => {
+    describe("[GIVEN] there were opening entry and exit orders [AND] user canceled all orders using type = ['ENTRY'] and status = 'OPENING'", () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with a new cancel order for only opening entry order', () => {
           const { ordersModule, newCancelOrder, openingEntryOrderId, currentDate } = setupOrders();
@@ -872,7 +914,7 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe("[GIVEN] there were pending entry, exit, and cancel orders [AND] user canceled all orders using type = ['EXIT'] and status = 'OPENING'", () => {
+    describe("[GIVEN] there were opening entry and exit orders [AND] user canceled all orders using type = ['EXIT'] and status = 'OPENING'", () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array with a new cancel order for only opening entry order', () => {
           const { ordersModule, newCancelOrder, openingExitOrderId, currentDate } = setupOrders();
@@ -891,7 +933,7 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe("[GIVEN] there were pending entry, exit, and cancel orders [AND] user canceled all orders using type = ['CANCEL'] and status = 'OPENING'", () => {
+    describe("[GIVEN] there were opening entry and exit orders [AND] user canceled all orders using type = ['CANCEL'] and status = 'OPENING'", () => {
       describe('[WHEN] get pending orders', () => {
         it('[THEN] it will return an array without any new cancel order', () => {
           const { ordersModule, openingEntryOrderId, openingExitOrderId } = setupOrders();
@@ -902,6 +944,45 @@ describe('UUT: Orders module', () => {
           expect(result).toHaveLength(3);
           expect(result).not.toPartiallyContain({ orderIdToCancel: openingEntryOrderId });
           expect(result).not.toPartiallyContain({ orderIdToCancel: openingExitOrderId });
+        });
+      });
+    });
+
+    describe("[GIVEN] there were a triggered entry order [AND] user canceled all orders using type = ['ENTRY'] and status = 'TRIGGERED'", () => {
+      describe('[WHEN] get pending orders', () => {
+        it('[THEN] it will return an array with a new cancel order for only triggered entry order', () => {
+          const { ordersModule, newCancelOrder, triggeredEntryOrderId, currentDate } = setupOrders();
+          ordersModule.cancelAllOrders({ type: ['ENTRY'], status: 'TRIGGERED' });
+
+          const result = ordersModule.getPendingOrders();
+
+          expect(result).toHaveLength(4);
+          expect(result).toContainEqual({
+            id: newCancelOrder,
+            createdAt: currentDate,
+            type: 'CANCEL',
+            status: 'PENDING',
+            orderIdToCancel: triggeredEntryOrderId,
+          });
+        });
+      });
+    });
+    describe("[GIVEN] there were a triggered exit order [AND] user canceled all orders using type = ['EXIT'] and status = 'TRIGGERED'", () => {
+      describe('[WHEN] get pending orders', () => {
+        it('[THEN] it will return an array with a new cancel order for only triggered exit order', () => {
+          const { ordersModule, newCancelOrder, triggeredExitOrderId, currentDate } = setupOrders();
+          ordersModule.cancelAllOrders({ type: ['EXIT'], status: 'TRIGGERED' });
+
+          const result = ordersModule.getPendingOrders();
+
+          expect(result).toHaveLength(4);
+          expect(result).toContainEqual({
+            id: newCancelOrder,
+            createdAt: currentDate,
+            type: 'CANCEL',
+            status: 'PENDING',
+            orderIdToCancel: triggeredExitOrderId,
+          });
         });
       });
     });

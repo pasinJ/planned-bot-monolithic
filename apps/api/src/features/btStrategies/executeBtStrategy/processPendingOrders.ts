@@ -2,7 +2,7 @@ import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { append, find, identity, isNotNil, propEq, propOr, reject } from 'ramda';
+import { append, concat, find, identity, isNotNil, propEq, propOr, reject } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
 import {
@@ -24,6 +24,7 @@ import {
   PendingOrderRequest,
   RejectedOrder,
   SubmittedOrder,
+  TriggeredOrder,
   createCanceledOrder,
   createFilledOrder,
   createOpeningOrder,
@@ -69,6 +70,7 @@ export function processPendingOrders(
   orders: DeepReadonly<{
     pendingOrders: PendingOrderRequest[];
     openingOrders: OpeningOrder[];
+    triggeredOrders: TriggeredOrder[];
     submittedOrders: SubmittedOrder[];
     filledOrders: FilledOrder[];
     canceledOrders: CanceledOrder[];
@@ -394,6 +396,7 @@ type ProcessPendingCancelOrderResult = DeepReadonly<{
   strategyModule: StrategyModule;
   orders: {
     openingOrders: OpeningOrder[];
+    triggeredOrders: TriggeredOrder[];
     submittedOrders: SubmittedOrder[];
     canceledOrders: CanceledOrder[];
     rejectedOrders: RejectedOrder[];
@@ -404,6 +407,7 @@ export function processPendingCancelOrder(
   strategyModule: StrategyModule,
   orders: DeepReadonly<{
     openingOrders: OpeningOrder[];
+    triggeredOrders: TriggeredOrder[];
     submittedOrders: SubmittedOrder[];
     canceledOrders: CanceledOrder[];
     rejectedOrders: RejectedOrder[];
@@ -411,14 +415,15 @@ export function processPendingCancelOrder(
   cancelOrder: Extract<PendingOrderRequest, { type: 'CANCEL' }>,
 ): io.IO<ProcessPendingCancelOrderResult> {
   const { dateService } = deps;
-  const { openingOrders, submittedOrders, canceledOrders, rejectedOrders } = orders;
+  const { openingOrders, triggeredOrders, submittedOrders, canceledOrders, rejectedOrders } = orders;
   const { orderIdToCancel } = cancelOrder;
 
   return pipe(
     dateService.getCurrentDate,
     io.chain((currentDate) =>
       pipe(
-        find(propEq(orderIdToCancel, 'id'), openingOrders),
+        concat<OpeningOrder | TriggeredOrder, TriggeredOrder>(openingOrders, triggeredOrders),
+        find<OpeningOrder | TriggeredOrder>(propEq(orderIdToCancel, 'id')),
         e.fromPredicate(isNotNil, () => 'No matching opening order'),
         ioe.fromEither,
         ioe.matchW(

@@ -130,7 +130,7 @@ export function createFilledOrder<
 }
 
 export function createCanceledOrder(
-  order: Extract<OpeningOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
+  order: Extract<OpeningOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }> | TriggeredOrder,
   currentDate: ValidDate,
 ): CanceledOrder {
   return { ...order, status: 'CANCELED', canceledAt: currentDate };
