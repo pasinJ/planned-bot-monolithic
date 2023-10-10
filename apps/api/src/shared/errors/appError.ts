@@ -27,6 +27,8 @@ export type AppError<
 }> &
   Readonly<NonNever<undefined extends Type ? { type?: Type } : { type: Type }>>;
 
+const errorSchema = z.custom<'Error'>(isError);
+
 const baseAppErrorSchema = z.object({
   name: z.string(),
   message: z.string(),
@@ -37,7 +39,7 @@ const baseAppErrorSchema = z.object({
 });
 export const appErrorSchema = implementZodSchema<AppError>().with(
   baseAppErrorSchema.extend({
-    cause: z.union([z.string(), z.instanceof(Error), z.lazy(() => baseAppErrorSchema)]).optional(),
+    cause: z.union([z.string(), errorSchema, z.lazy(() => baseAppErrorSchema)]).optional(),
   }),
 );
 

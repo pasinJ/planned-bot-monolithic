@@ -21,7 +21,7 @@ module.exports = {
     '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
     '@typescript-eslint/no-confusing-void-expression': 'off',
     '@typescript-eslint/ban-types': ['error', { types: { Symbol: false }, extendDefaults: true }],
-    '@typescript-eslint/no-base-to-string': ['error', { ignoredTypeNames: ['AppError'] }],
+    '@typescript-eslint/no-base-to-string': ['error', { ignoredTypeNames: ['AppError', 'Error'] }],
   },
   overrides: [
     {
