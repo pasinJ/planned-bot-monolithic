@@ -129,7 +129,7 @@ export function initiateStrategyModule(
   } as StrategyModule;
 }
 
-export function transformStrategyModuleWhenPendingOrderTransitToFilled(
+export function updateStrategyModuleWhenPendingOrderIsFilled(
   strategyModule: StrategyModule,
   filledOrder: Extract<FilledOrder, { type: 'MARKET' | 'LIMIT' }>,
 ): e.Either<string, StrategyModule> {
@@ -203,7 +203,7 @@ export function transformStrategyModuleWhenPendingOrderTransitToFilled(
   }
 }
 
-export function transformStrategyModuleWhenPendingOrderTransitToOpening(
+export function updateStrategyModuleWhenPendingOrderIsOpened(
   strategyModule: StrategyModule,
   openingOrder: OpeningOrder,
 ): e.Either<string, StrategyModule> {
@@ -248,7 +248,7 @@ export function transformStrategyModuleWhenPendingOrderTransitToOpening(
   }
 }
 
-export function transformStrategyModuleWhenOpeningOrderTransitToFilled(
+export function updateStrategyModuleWhenOpeningOrderIsFilled(
   strategyModule: StrategyModule,
   filledOrder: Extract<FilledOrder, { type: 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' }>,
 ): e.Either<string, StrategyModule> {
@@ -334,7 +334,7 @@ export function transformStrategyModuleWhenOpeningOrderTransitToFilled(
   }
 }
 
-export function transformStrategyModuleWhenOrderTransitToCanceled(
+export function updateStrategyModuleWhenOrderIsCanceled(
   strategyModule: StrategyModule,
   order: CanceledOrder,
 ): StrategyModule {
@@ -367,7 +367,7 @@ export function transformStrategyModuleWhenOrderTransitToCanceled(
   }
 }
 
-export function updateStrategyModuleStatsWithTrades(
+export function updateStrategyModuleStats(
   strategyModule: StrategyModule,
   openingTrades: readonly OpeningTrade[],
   closedTrades: readonly ClosedTrade[],

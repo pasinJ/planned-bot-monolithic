@@ -29,11 +29,11 @@ import { timeframeEnum } from '../timeframe.js';
 import { ClosedTrade, OpeningTrade, UnrealizedReturn } from '../trade.js';
 import {
   initiateStrategyModule,
-  transformStrategyModuleWhenOpeningOrderTransitToFilled,
-  transformStrategyModuleWhenOrderTransitToCanceled,
-  transformStrategyModuleWhenPendingOrderTransitToFilled,
-  transformStrategyModuleWhenPendingOrderTransitToOpening,
-  updateStrategyModuleStatsWithTrades,
+  updateStrategyModuleStats,
+  updateStrategyModuleWhenOpeningOrderIsFilled,
+  updateStrategyModuleWhenOrderIsCanceled,
+  updateStrategyModuleWhenPendingOrderIsFilled,
+  updateStrategyModuleWhenPendingOrderIsOpened,
 } from './strategy.js';
 
 describe('UUT: Initiate strategy module', () => {
@@ -75,7 +75,7 @@ describe('UUT: Initiate strategy module', () => {
   });
 });
 
-describe('UUT: Transform strategy module when pending order transit to filled', () => {
+describe('UUT: Update strategy module when pending order is filled', () => {
   describe('[GIVEN] the order is an entry order [AND] the strategy has enough available capital', () => {
     const strategyModule = mockStrategyModule({
       totalCapital: 120,
@@ -91,34 +91,34 @@ describe('UUT: Transform strategy module when pending order transit to filled', 
       fee: { amount: 2, currency: strategyModule.assetCurrency },
     });
 
-    describe('[WHEN] update strategy module when pending order transit to filled', () => {
+    describe('[WHEN] update strategy module when pending order is filled', () => {
       it('[THEN] it will return Right of strategy with updated total capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalCapital: 70 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with updated total asset quantity', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalAssetQuantity: 108 });
       });
       it('[THEN] it will return Right of strategy with updated available asset quantity', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableAssetQuantity: 58 });
       });
       it('[THEN] it will return Right of strategy with updated total fee', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalFees: { inCapitalCurrency: 1, inAssetCurrency: 3 } });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         const unchangedParts = omit(
           ['totalCapital', 'availableCapital', 'totalAssetQuantity', 'availableAssetQuantity', 'totalFees'],
@@ -132,9 +132,9 @@ describe('UUT: Transform strategy module when pending order transit to filled', 
     const strategy = mockStrategyModule({ availableCapital: 30 });
     const filledOrder = mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 10, filledPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to filled', () => {
+    describe('[WHEN] update strategy module when pending order is filled', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategy, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategy, filledOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -156,34 +156,34 @@ describe('UUT: Transform strategy module when pending order transit to filled', 
       fee: { amount: 3, currency: strategyModule.capitalCurrency },
     });
 
-    describe('[WHEN] transform strategy module when pending order transit to filled', () => {
+    describe('[WHEN] update strategy module when pending order is filled', () => {
       it('[THEN] it will return Right of strategy with updated total capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalCapital: 167 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 147 });
       });
       it('[THEN] it will return Right of strategy with updated total asset quantity', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalAssetQuantity: 90 });
       });
       it('[THEN] it will return Right of strategy with updated available asset quantity', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableAssetQuantity: 40 });
       });
       it('[THEN] it will return Right of strategy with updated total fee', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalFees: { inCapitalCurrency: 4, inAssetCurrency: 1 } });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder);
 
         const unchangedParts = omit(
           ['totalCapital', 'availableCapital', 'totalAssetQuantity', 'availableAssetQuantity', 'totalFees'],
@@ -197,9 +197,9 @@ describe('UUT: Transform strategy module when pending order transit to filled', 
     const strategy = mockStrategyModule({ availableAssetQuantity: 30 });
     const filledOrder = mockFilledMarketOrder({ orderSide: 'EXIT', quantity: 50 });
 
-    describe('[WHEN] transform strategy module when pending order transit to filled', () => {
+    describe('[WHEN] update strategy module when pending order is filled', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToFilled(strategy, filledOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsFilled(strategy, filledOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -207,24 +207,24 @@ describe('UUT: Transform strategy module when pending order transit to filled', 
   });
 });
 
-describe('UUT: Transform strategy module when pending order transit to opening', () => {
+describe('UUT: Update strategy module when pending order is opened', () => {
   describe('[GIVEN] the order is an entry LIMIT order [AND] the strategy has enough available capital', () => {
     const strategyModule = mockStrategyModule({ inOrdersCapital: 10, availableCapital: 100 });
     const openingOrder = mockOpeningLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Right of strategy with updated in-orders capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersCapital: 60 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
         expect(result).toSubsetEqualRight(unchangedParts);
@@ -235,9 +235,9 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategy = mockStrategyModule({ availableCapital: 30 });
     const openingOrder = mockOpeningLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategy, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategy, openingOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -248,19 +248,19 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategyModule = mockStrategyModule({ inOrdersCapital: 10, availableCapital: 100 });
     const openingOrder = mockOpeningStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Right of strategy with updated in-orders capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersCapital: 60 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
         expect(result).toSubsetEqualRight(unchangedParts);
@@ -271,9 +271,9 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategy = mockStrategyModule({ availableCapital: 30 });
     const openingOrder = mockOpeningStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategy, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategy, openingOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -284,19 +284,19 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategyModule = mockStrategyModule({ inOrdersCapital: 10, availableCapital: 100 });
     const openingOrder = mockOpeningStopLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Right of strategy with updated in-orders capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersCapital: 60 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
         expect(result).toSubsetEqualRight(unchangedParts);
@@ -307,9 +307,9 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategy = mockStrategyModule({ availableCapital: 30 });
     const openingOrder = mockOpeningStopLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
 
-    describe('[WHEN] update strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategy, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategy, openingOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -320,19 +320,19 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategyModule = mockStrategyModule({ inOrdersAssetQuantity: 5, availableAssetQuantity: 50 });
     const openingOrder = mockOpeningLimitOrder({ orderSide: 'EXIT', quantity: 10 });
 
-    describe('[WHEN] transform strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Right of strategy with updated in-orders asset quantity', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersAssetQuantity: 15 });
       });
       it('[THEN] it will return Right of strategy with updated available asset quantity', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         expect(result).toSubsetEqualRight({ availableAssetQuantity: 40 });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder);
 
         const unchangedParts = omit(['inOrdersAssetQuantity', 'availableAssetQuantity'], strategyModule);
         expect(result).toSubsetEqualRight(unchangedParts);
@@ -343,9 +343,9 @@ describe('UUT: Transform strategy module when pending order transit to opening',
     const strategy = mockStrategyModule({ availableAssetQuantity: 30 });
     const openingOrder = mockOpeningLimitOrder({ orderSide: 'EXIT', quantity: 50 });
 
-    describe('[WHEN] transform strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenPendingOrderTransitToOpening(strategy, openingOrder);
+        const result = updateStrategyModuleWhenPendingOrderIsOpened(strategy, openingOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -353,7 +353,7 @@ describe('UUT: Transform strategy module when pending order transit to opening',
   });
 });
 
-describe('UUT: Transform strategy module when opening order transit to filled', () => {
+describe('UUT: Update strategy module when opening order is filled', () => {
   describe('[GIVEN] the order is an entry LIMIT order [AND] the strategy has enough in-orders capital', () => {
     const strategyModule = mockStrategyModule({
       totalCapital: 1000,
@@ -371,39 +371,39 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
       fee: { amount: 1, currency: strategyModule.assetCurrency },
     });
 
-    describe('[WHEN] update strategy module when opening order transit to filled', () => {
+    describe('[WHEN] update strategy module when opening order is filled', () => {
       it('[THEN] it will return Right of strategy with updated total capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalCapital: 960 });
       });
       it('[THEN] it will return Right of strategy with updated in-orders capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 20 });
       });
       it('[THEN] it will return Right of strategy with updated total asset quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalAssetQuantity: 19 });
       });
       it('[THEN] it will return Right of strategy with updated available quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableAssetQuantity: 14 });
       });
       it('[THEN] it will return Right of strategy with updated total fees', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalFees: { inCapitalCurrency: 1, inAssetCurrency: 2 } });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         const unchangedParts = omit(
           [
@@ -424,9 +424,9 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
     const strategy = mockStrategyModule({ inOrdersCapital: 30 });
     const filledOrder = mockFilledLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
 
-    describe('[WHEN] update strategy module when opening order transit to filled', () => {
+    describe('[WHEN] update strategy module when opening order is filled', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategy, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategy, filledOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -450,39 +450,39 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
       fee: { amount: 1, currency: strategyModule.assetCurrency },
     });
 
-    describe('[WHEN] update strategy module when opening order transit to filled', () => {
+    describe('[WHEN] update strategy module when opening order is filled', () => {
       it('[THEN] it will return Right of strategy with updated total capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalCapital: 960 });
       });
       it('[THEN] it will return Right of strategy with updated in-orders capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 20 });
       });
       it('[THEN] it will return Right of strategy with updated total asset quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalAssetQuantity: 19 });
       });
       it('[THEN] it will return Right of strategy with updated available quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableAssetQuantity: 14 });
       });
       it('[THEN] it will return Right of strategy with updated total fees', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalFees: { inCapitalCurrency: 1, inAssetCurrency: 2 } });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         const unchangedParts = omit(
           [
@@ -503,9 +503,9 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
     const strategy = mockStrategyModule({ inOrdersCapital: 30 });
     const filledOrder = mockFilledStopMarketOrder({ orderSide: 'ENTRY', quantity: 10, stopPrice: 5 });
 
-    describe('[WHEN] update strategy module when opening order transit to filled', () => {
+    describe('[WHEN] update strategy module when opening order is filled', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategy, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategy, filledOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -529,39 +529,39 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
       fee: { amount: 1, currency: strategyModule.assetCurrency },
     });
 
-    describe('[WHEN] update strategy module when opening order transit to filled', () => {
+    describe('[WHEN] update strategy module when opening order is filled', () => {
       it('[THEN] it will return Right of strategy with updated total capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalCapital: 960 });
       });
       it('[THEN] it will return Right of strategy with updated in-orders capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersCapital: 50 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 20 });
       });
       it('[THEN] it will return Right of strategy with updated total asset quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalAssetQuantity: 19 });
       });
       it('[THEN] it will return Right of strategy with updated available quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableAssetQuantity: 14 });
       });
       it('[THEN] it will return Right of strategy with updated total fees', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalFees: { inCapitalCurrency: 1, inAssetCurrency: 2 } });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         const unchangedParts = omit(
           [
@@ -582,9 +582,9 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
     const strategy = mockStrategyModule({ inOrdersCapital: 30 });
     const filledOrder = mockFilledStopLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
 
-    describe('[WHEN] update strategy module when opening order transit to filled', () => {
+    describe('[WHEN] update strategy module when opening order is filled', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategy, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategy, filledOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -606,34 +606,34 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
       fee: { amount: 2, currency: strategyModule.capitalCurrency },
     });
 
-    describe('[WHEN] transform strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Right of strategy with updated total capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalCapital: 1008 });
       });
       it('[THEN] it will return Right of strategy with updated available capital', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ availableCapital: 18 });
       });
       it('[THEN] it will return Right of strategy with updated total asset quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalAssetQuantity: 60 });
       });
       it('[THEN] it will return Right of strategy with updated in-orders asset quantity', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ inOrdersAssetQuantity: 10 });
       });
       it('[THEN] it will return Right of strategy with updated total fees', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         expect(result).toSubsetEqualRight({ totalFees: { inCapitalCurrency: 3, inAssetCurrency: 1 } });
       });
       it('[THEN] it will return Right of strategy with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategyModule, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategyModule, filledOrder);
 
         const unchangedParts = omit(
           ['totalCapital', 'availableCapital', 'totalAssetQuantity', 'inOrdersAssetQuantity', 'totalFees'],
@@ -647,9 +647,9 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
     const strategy = mockStrategyModule({ availableAssetQuantity: 30 });
     const filledOrder = mockFilledLimitOrder({ orderSide: 'EXIT', quantity: 50 });
 
-    describe('[WHEN] transform strategy module when pending order transit to opening', () => {
+    describe('[WHEN] update strategy module when pending order is opened', () => {
       it('[THEN] it will return Left of string', () => {
-        const result = transformStrategyModuleWhenOpeningOrderTransitToFilled(strategy, filledOrder);
+        const result = updateStrategyModuleWhenOpeningOrderIsFilled(strategy, filledOrder);
 
         expect(result).toEqualLeft(expect.toBeString());
       });
@@ -657,24 +657,24 @@ describe('UUT: Transform strategy module when opening order transit to filled', 
   });
 });
 
-describe('UUT: Transform strategy module when order transit to canceled', () => {
+describe('UUT: Update strategy module when order is canceled', () => {
   describe('[GIVEN] the canceled order is an entry LIMIT order', () => {
     const strategyModule = mockStrategyModule({ inOrdersCapital: 100, availableCapital: 100 });
     const canceledOrder = mockCanceledLimitOrder({ orderSide: 'ENTRY', quantity: 5, limitPrice: 10 });
 
     describe('[WHEN] update strategy module with the canceled order', () => {
       it('[THEN] it will return strategy module with in-orders capital property equals to the current value - (order quantity * limit price)', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('inOrdersCapital', 50);
       });
       it('[THEN] it will return strategy module with available capital property equals to the current value + (order quantity * limit price)', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('availableCapital', 150);
       });
       it('[THEN] it will return strategy module with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
         expect(result).toEqual(expect.objectContaining(unchangedParts));
@@ -688,17 +688,17 @@ describe('UUT: Transform strategy module when order transit to canceled', () => 
 
     describe('[WHEN] update strategy module with the canceled order', () => {
       it('[THEN] it will return strategy module with in-orders capital property equals to the current value - (order quantity * stop price)', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('inOrdersCapital', 50);
       });
       it('[THEN] it will return strategy module with available capital property equals to the current value + (order quantity * stop price)', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('availableCapital', 150);
       });
       it('[THEN] it will return strategy module with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
         expect(result).toEqual(expect.objectContaining(unchangedParts));
@@ -712,17 +712,17 @@ describe('UUT: Transform strategy module when order transit to canceled', () => 
 
     describe('[WHEN] update strategy module with the canceled order', () => {
       it('[THEN] it will return strategy module with in-orders capital property equals to the current value - (order quantity * limit price)', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('inOrdersCapital', 50);
       });
       it('[THEN] it will return strategy module with available capital property equals to the current value + (order quantity * limit price)', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('availableCapital', 150);
       });
       it('[THEN] it will return strategy module with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         const unchangedParts = omit(['inOrdersCapital', 'availableCapital'], strategyModule);
         expect(result).toEqual(expect.objectContaining(unchangedParts));
@@ -736,17 +736,17 @@ describe('UUT: Transform strategy module when order transit to canceled', () => 
 
     describe('[WHEN] update strategy module with the canceled order', () => {
       it('[THEN] it will return strategy module with in-orders asset quantity equals to the current value - order quantity', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('inOrdersAssetQuantity', 15);
       });
       it('[THEN] it will return strategy module with available asset quantity equals to the current value + order quantity', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         expect(result).toHaveProperty('availableAssetQuantity', 35);
       });
       it('[THEN] it will return strategy module with the other properties remain unchanged', () => {
-        const result = transformStrategyModuleWhenOrderTransitToCanceled(strategyModule, canceledOrder);
+        const result = updateStrategyModuleWhenOrderIsCanceled(strategyModule, canceledOrder);
 
         const unchangedParts = omit(['inOrdersAssetQuantity', 'availableAssetQuantity'], strategyModule);
         expect(result).toEqual(expect.objectContaining(unchangedParts));
@@ -766,17 +766,17 @@ describe('UUT: Update strategy module stats with trades', () => {
 
     describe('[WHEN] update strategy module stats with trades', () => {
       it('[THEN] it will return strategy module with open return property equals to sum of unrealized return of opening trades', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ openReturn: 15 }));
       });
       it('[THEN] it will return strategy module with net return, net profit, net loss properties equal to 0', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netReturn: 0, netProfit: 0, netLoss: 0 }));
       });
       it('[THEN] it will return strategy module with equity property equal to initial capital plus open return', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ equity: 115 }));
       });
@@ -798,27 +798,27 @@ describe('UUT: Update strategy module stats with trades', () => {
 
     describe('[WHEN] update strategy module stats with trades', () => {
       it('[THEN] it will return strategy module with open return property equals to 0', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ openReturn: 0 }));
       });
       it('[THEN] it will return strategy module with net profit property equal to sum of net return of win trades', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netProfit: 10 }));
       });
       it('[THEN] it will return strategy module with net loss property equal to sum of net return of loss trades', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netLoss: -20 }));
       });
       it('[THEN] it will return strategy module with net return property equal to sum of net profit and net loss', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netReturn: -10 }));
       });
       it('[THEN] it will return strategy module with equity property equal to initial capital plus net return', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ equity: 90 }));
       });
@@ -845,27 +845,27 @@ describe('UUT: Update strategy module stats with trades', () => {
 
     describe('[WHEN] update strategy module stats with trades', () => {
       it('[THEN] it will return strategy module with open return property equals to 0', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ openReturn: 15 }));
       });
       it('[THEN] it will return strategy module with net profit property equal to sum of net return of win trades', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netProfit: 10 }));
       });
       it('[THEN] it will return strategy module with net loss property equal to sum of net return of loss trades', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netLoss: -20 }));
       });
       it('[THEN] it will return strategy module with net return property equal to sum of net profit and net loss', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ netReturn: -10 }));
       });
       it('[THEN] it will return strategy module with equity property equal to initial capital plus open return plus net return', () => {
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ equity: 105 }));
       });
@@ -882,7 +882,7 @@ describe('UUT: Update strategy module stats with trades', () => {
         const openingTrades = [openingTrade1, openingTrade2];
         const closedTrades = [] as ClosedTrade[];
 
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ maxRunup: 15 }));
       });
@@ -899,7 +899,7 @@ describe('UUT: Update strategy module stats with trades', () => {
         const openingTrades = [openingTrade1, openingTrade2];
         const closedTrades = [] as ClosedTrade[];
 
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(expect.objectContaining({ maxDrawdown: -25 }));
       });
@@ -913,7 +913,7 @@ describe('UUT: Update strategy module stats with trades', () => {
         const openingTrades = [] as OpeningTrade[];
         const closedTrades = [] as ClosedTrade[];
 
-        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+        const result = updateStrategyModuleStats(strategyModule, openingTrades, closedTrades);
 
         expect(result).toEqual(strategyModule);
       });
