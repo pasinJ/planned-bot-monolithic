@@ -8,7 +8,7 @@ import { append, dissoc, max, min } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
-import { Price } from './kline.js';
+import { Kline, Price } from './kline.js';
 import { FeeAmount, FilledOrder, OrderQuantity } from './order.js';
 
 export type Trade = OpeningTrade | ClosedTrade;
@@ -291,13 +291,6 @@ function calculateProportionalExitFee({
     .toNumber() as FeeAmount;
 }
 
-// function assignMinMaxPrice<T extends OpeningTrade>(trade: T, currentKline: Kline): T {
-//   const { maxPrice, minPrice } = trade;
-//   const { high, low } = currentKline;
-
-//   return { ...trade, maxPrice: max(maxPrice, high), minPrice: min(minPrice, low) };
-// }
-
 function calculateDrawdown({
   tradeQuantity,
   entryOrder,
@@ -328,4 +321,20 @@ function calculateRunup({
   const maxRunup = highestPoint.minus(cost).toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber();
 
   return max(0, maxRunup) as TradeRunup;
+}
+
+export function updateOpeningTradeStats(openingTrade: OpeningTrade, currentKline: Kline): OpeningTrade {
+  const maxPrice = max(openingTrade.maxPrice, currentKline.high);
+  const maxRunup = calculateRunup({ ...openingTrade, maxPrice });
+
+  const minPrice = min(openingTrade.minPrice, currentKline.low);
+  const maxDrawdown = calculateDrawdown({ ...openingTrade, minPrice });
+
+  const unrealizedReturn = calculateUnrealizedReturns(
+    openingTrade.entryOrder,
+    openingTrade.tradeQuantity,
+    currentKline.close,
+  );
+
+  return { ...openingTrade, maxPrice, maxRunup, minPrice, maxDrawdown, unrealizedReturn };
 }

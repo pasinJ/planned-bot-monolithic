@@ -34,9 +34,9 @@ import {
 } from '#features/shared/order.js';
 import {
   StrategyModule,
-  transformStrategyModuleWhenOrderTransitToCanceled,
-  transformStrategyModuleWhenPendingOrderTransitToFilled,
-  transformStrategyModuleWhenPendingOrderTransitToOpening,
+  updateStrategyModuleWhenOrderIsCanceled,
+  updateStrategyModuleWhenPendingOrderIsFilled,
+  updateStrategyModuleWhenPendingOrderIsOpened,
 } from '#features/shared/strategyExecutorModules/strategy.js';
 import { Symbol } from '#features/shared/symbol.js';
 import {
@@ -177,7 +177,7 @@ function processAsMarketOrder(
           createFilledOrder(pendingOrder, currentDate, currentPrice, feeRates, currencies),
         ),
         ioe.bindW('updatedStrategy', ({ filledOrder }) =>
-          ioe.fromEither(transformStrategyModuleWhenPendingOrderTransitToFilled(strategyModule, filledOrder)),
+          ioe.fromEither(updateStrategyModuleWhenPendingOrderIsFilled(strategyModule, filledOrder)),
         ),
         ioe.chainW(
           ({ filledOrder, updatedStrategy }): ioe.IOEither<string, ProcessPendingMarketOrderResult> => {
@@ -255,7 +255,7 @@ export function processPendingLimitOrder(
       ioe.fromEither(validatePendingRequest),
       ioe.let('openingOrder', (limitOrder) => createOpeningOrder(limitOrder, currentDate)),
       ioe.bindW('updatedStrategy', ({ openingOrder }) =>
-        ioe.fromEither(transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder)),
+        ioe.fromEither(updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder)),
       ),
       ioe.map(({ openingOrder, updatedStrategy }) => ({
         strategyModule: updatedStrategy,
@@ -317,7 +317,7 @@ export function processPendingStopMarketOrder(
         ioe.let('openingOrder', (stopMarketOrder) => createOpeningOrder(stopMarketOrder, currentDate)),
         ioe.bindW('updatedStrategy', ({ openingOrder }) =>
           ioe.fromEither(
-            transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder),
+            updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder),
           ),
         ),
         ioe.map(({ openingOrder, updatedStrategy }) => ({
@@ -372,7 +372,7 @@ export function processPendingStopLimitOrder(
         ioe.let('openingOrder', (stopLimitOrder) => createOpeningOrder(stopLimitOrder, currentDate)),
         ioe.bindW('updatedStrategy', ({ openingOrder }) =>
           ioe.fromEither(
-            transformStrategyModuleWhenPendingOrderTransitToOpening(strategyModule, openingOrder),
+            updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder),
           ),
         ),
         ioe.map(({ openingOrder, updatedStrategy }) => ({
@@ -437,7 +437,7 @@ export function processPendingCancelOrder(
           (orderToBeCanceled) => {
             const canceledOrder = createCanceledOrder(orderToBeCanceled, currentDate);
             const submittedOrder = createSubmittedOrder(cancelOrder, currentDate);
-            const updatedStrategyModule = transformStrategyModuleWhenOrderTransitToCanceled(
+            const updatedStrategyModule = updateStrategyModuleWhenOrderIsCanceled(
               strategyModule,
               canceledOrder,
             );

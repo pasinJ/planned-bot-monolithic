@@ -1,15 +1,19 @@
 import { dissoc } from 'ramda';
 
 import { executeIo } from '#shared/utils/fp.js';
+import { mockKline } from '#test-utils/features/shared/kline.js';
 import { mockFilledMarketOrder } from '#test-utils/features/shared/order.js';
+import { mockOpeningTrade } from '#test-utils/features/shared/trades.js';
 
 import { Price } from './kline.js';
 import {
+  TradeDrawdown,
   TradeId,
   TradeRunup,
   closeTrades,
   createFullOpeningTrade,
   createPartialOpeningTrade,
+  updateOpeningTradeStats,
 } from './trade.js';
 
 describe('UUT: Create a full opening trade', () => {
@@ -286,6 +290,115 @@ describe('UUT: Close trades', () => {
         const result = executeIo(closeTrades(deps, openingTrades, exitOrder));
 
         expect(result).toEqualLeft(expect.toBeString());
+      });
+    });
+  });
+});
+
+describe('UUT: Update opening trade stats', () => {
+  describe('[WHEN] update opening trade stats', () => {
+    it('[THEN] it will return opening trade with unrealized return property based on closed price', () => {
+      const openingTrade = mockOpeningTrade(
+        mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 1, filledPrice: 5, fee: { amount: 0 } }),
+      );
+      const kline = mockKline({ close: 10 });
+
+      const result = updateOpeningTradeStats(openingTrade, kline);
+
+      expect(result).toHaveProperty('unrealizedReturn', 5);
+    });
+  });
+
+  describe('[GIVEN] high price of the current kline is greater than max price of the trade', () => {
+    const openingTrade = {
+      ...mockOpeningTrade(
+        mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 1, filledPrice: 5, fee: { amount: 0 } }),
+      ),
+      maxPrice: 10 as Price,
+      maxRunup: 5 as TradeRunup,
+    };
+    const kline = mockKline({ high: 15 });
+
+    describe('[WHEN] update opening trade stats', () => {
+      it('[THEN] it will return opening trade with max price property equals to the high price', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('maxPrice', kline.high);
+      });
+      it('[THEN] it will return opening trade with updated max runup property', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('maxRunup', 10);
+      });
+    });
+  });
+  describe('[GIVEN] high price of the current kline is less than or equal to max price of the trade', () => {
+    const openingTrade = {
+      ...mockOpeningTrade(
+        mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 1, filledPrice: 5, fee: { amount: 0 } }),
+      ),
+      maxPrice: 10 as Price,
+      maxRunup: 5 as TradeRunup,
+    };
+    const kline = mockKline({ high: 8 });
+
+    describe('[WHEN] update opening trade stats', () => {
+      it('[THEN] it will return opening trade with unchanged max price property', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('maxPrice', openingTrade.maxPrice);
+      });
+      it('[THEN] it will return opening trade with unchanged max runup property', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('maxRunup', openingTrade.maxRunup);
+      });
+    });
+  });
+
+  describe('[GIVEN] low price of the current kline is less than min price of the trade', () => {
+    const openingTrade = {
+      ...mockOpeningTrade(
+        mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 1, filledPrice: 5, fee: { amount: 0 } }),
+      ),
+      minPrice: 3 as Price,
+      maxDrawdown: -2 as TradeDrawdown,
+    };
+    const kline = mockKline({ low: 1 });
+
+    describe('[WHEN] update opening trade stats', () => {
+      it('[THEN] it will return opening trade with min price property equals to the low price', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('minPrice', kline.low);
+      });
+      it('[THEN] it will return opening trade with updated max drawdown property', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('maxDrawdown', -4);
+      });
+    });
+  });
+  describe('[GIVEN] low price of the current kline is greater than or equal to min price of the trade', () => {
+    const openingTrade = {
+      ...mockOpeningTrade(
+        mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 1, filledPrice: 5, fee: { amount: 0 } }),
+      ),
+      minPrice: 3 as Price,
+      maxDrawdown: -2 as TradeDrawdown,
+    };
+    const kline = mockKline({ low: 7 });
+
+    describe('[WHEN] update opening trade stats', () => {
+      it('[THEN] it will return opening trade with unchanged min price property', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('minPrice', openingTrade.minPrice);
+      });
+      it('[THEN] it will return opening trade with unchanged max drawdown property', () => {
+        const result = updateOpeningTradeStats(openingTrade, kline);
+
+        expect(result).toHaveProperty('maxDrawdown', openingTrade.maxDrawdown);
       });
     });
   });
