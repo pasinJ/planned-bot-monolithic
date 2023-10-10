@@ -1,5 +1,6 @@
 import { Decimal } from 'decimal.js';
 import e from 'fp-ts/lib/Either.js';
+import { __, gt, lt, max, min, propSatisfies } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
@@ -15,6 +16,7 @@ import {
 } from '../strategy.js';
 import { Symbol } from '../symbol.js';
 import { Timeframe } from '../timeframe.js';
+import { ClosedTrade, OpeningTrade } from '../trade.js';
 
 export type StrategyModule = DeepReadonly<{
   /** Name of strategy */
@@ -120,7 +122,7 @@ export function initiateStrategyModule(
     openReturn: 0,
     netProfit: 0,
     netLoss: 0,
-    equity: 0,
+    equity: request.initialCapital as number,
     maxDrawdown: 0,
     maxRunup: 0,
     totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
@@ -363,4 +365,40 @@ export function transformStrategyModuleWhenOrderTransitToCanceled(
       availableAssetQuantity: newAvailableAssetQuantity,
     } as StrategyModule;
   }
+}
+
+export function updateStrategyModuleStatsWithTrades(
+  strategyModule: StrategyModule,
+  openingTrades: readonly OpeningTrade[],
+  closedTrades: readonly ClosedTrade[],
+): StrategyModule {
+  const { initialCapital, maxRunup, maxDrawdown } = strategyModule;
+
+  const winTrades = closedTrades.filter(propSatisfies(gt(__, 0), 'netReturn'));
+  const lossTrades = closedTrades.filter(propSatisfies(lt(__, 0), 'netReturn'));
+
+  const newOpenReturn = openingTrades.reduce(
+    (sum, { unrealizedReturn }) => sum.plus(unrealizedReturn),
+    new Decimal(0),
+  );
+
+  const newNetProfit = winTrades.reduce((sum, { netReturn }) => sum.plus(netReturn), new Decimal(0));
+  const newNetLoss = lossTrades.reduce((sum, { netReturn }) => sum.plus(netReturn), new Decimal(0));
+  const newNetReturn = newNetProfit.plus(newNetLoss);
+
+  const newEquity = new Decimal(initialCapital).plus(newOpenReturn).plus(newNetReturn);
+  const equityDiff = newEquity.minus(initialCapital).toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber();
+  const newMaxRunup = max(maxRunup, equityDiff);
+  const newMaxDrawdown = min(maxDrawdown, equityDiff);
+
+  return {
+    ...strategyModule,
+    openReturn: newOpenReturn.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber() as Return,
+    netReturn: newNetReturn.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber() as Return,
+    netProfit: newNetProfit.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber() as Profit,
+    netLoss: newNetLoss.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber() as Loss,
+    equity: newEquity.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber() as Equity,
+    maxDrawdown: newMaxDrawdown as EquityDrawdown,
+    maxRunup: newMaxRunup as EquityRunup,
+  };
 }

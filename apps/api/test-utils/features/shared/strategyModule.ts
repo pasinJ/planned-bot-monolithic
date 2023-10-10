@@ -55,7 +55,7 @@ export function mockStrategyModule(override?: DeepPartial<Unbrand<StrategyModule
       netReturn: 0 as Return,
       netProfit: 0 as Profit,
       netLoss: 0 as Loss,
-      equity: 0 as Equity,
+      equity: 1000 as Equity,
       maxDrawdown: 0 as EquityDrawdown,
       maxRunup: 0 as EquityRunup,
       totalFees: { inCapitalCurrency: 0 as FeeAmount, inAssetCurrency: 0 as FeeAmount },

@@ -14,6 +14,7 @@ import {
   mockOpeningStopMarketOrder,
 } from '#test-utils/features/shared/order.js';
 import { mockStrategyModule } from '#test-utils/features/shared/strategyModule.js';
+import { mockClosedTrade, mockOpeningTrade } from '#test-utils/features/shared/trades.js';
 
 import { exchangeNameEnum } from '../exchange.js';
 import {
@@ -25,12 +26,14 @@ import {
   TakerFeeRate,
 } from '../strategy.js';
 import { timeframeEnum } from '../timeframe.js';
+import { ClosedTrade, OpeningTrade, UnrealizedReturn } from '../trade.js';
 import {
   initiateStrategyModule,
   transformStrategyModuleWhenOpeningOrderTransitToFilled,
   transformStrategyModuleWhenOrderTransitToCanceled,
   transformStrategyModuleWhenPendingOrderTransitToFilled,
   transformStrategyModuleWhenPendingOrderTransitToOpening,
+  updateStrategyModuleStatsWithTrades,
 } from './strategy.js';
 
 describe('UUT: Initiate strategy module', () => {
@@ -63,7 +66,7 @@ describe('UUT: Initiate strategy module', () => {
         netReturn: 0,
         netProfit: 0,
         netLoss: 0,
-        equity: 0,
+        equity: request.initialCapital,
         maxDrawdown: 0,
         maxRunup: 0,
         totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
@@ -747,6 +750,172 @@ describe('UUT: Transform strategy module when order transit to canceled', () => 
 
         const unchangedParts = omit(['inOrdersAssetQuantity', 'availableAssetQuantity'], strategyModule);
         expect(result).toEqual(expect.objectContaining(unchangedParts));
+      });
+    });
+  });
+});
+
+describe('UUT: Update strategy module stats with trades', () => {
+  describe('[GIVEN] there are only opening trades', () => {
+    const strategyModule = mockStrategyModule({ initialCapital: 100 });
+    const openingTradeBase = mockOpeningTrade(mockFilledMarketOrder({ orderSide: 'ENTRY' }));
+    const openingTrade1 = { ...openingTradeBase, unrealizedReturn: 10 as UnrealizedReturn };
+    const openingTrade2 = { ...openingTradeBase, unrealizedReturn: 5 as UnrealizedReturn };
+    const openingTrades = [openingTrade1, openingTrade2];
+    const closedTrades = [] as ClosedTrade[];
+
+    describe('[WHEN] update strategy module stats with trades', () => {
+      it('[THEN] it will return strategy module with open return property equals to sum of unrealized return of opening trades', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ openReturn: 15 }));
+      });
+      it('[THEN] it will return strategy module with net return, net profit, net loss properties equal to 0', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netReturn: 0, netProfit: 0, netLoss: 0 }));
+      });
+      it('[THEN] it will return strategy module with equity property equal to initial capital plus open return', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ equity: 115 }));
+      });
+    });
+  });
+
+  describe('[GIVEN] there are only closed trades', () => {
+    const strategyModule = mockStrategyModule({ initialCapital: 100 });
+    const openingTrades = [] as OpeningTrade[];
+    const closedTrade1 = mockClosedTrade(
+      mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 10, filledPrice: 5, fee: { amount: 0 } }),
+      mockFilledMarketOrder({ orderSide: 'EXIT', quantity: 10, filledPrice: 6, fee: { amount: 0 } }),
+    );
+    const closedTrade2 = mockClosedTrade(
+      mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 10, filledPrice: 10, fee: { amount: 0 } }),
+      mockFilledMarketOrder({ orderSide: 'EXIT', quantity: 10, filledPrice: 8, fee: { amount: 0 } }),
+    );
+    const closedTrades = [closedTrade1, closedTrade2];
+
+    describe('[WHEN] update strategy module stats with trades', () => {
+      it('[THEN] it will return strategy module with open return property equals to 0', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ openReturn: 0 }));
+      });
+      it('[THEN] it will return strategy module with net profit property equal to sum of net return of win trades', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netProfit: 10 }));
+      });
+      it('[THEN] it will return strategy module with net loss property equal to sum of net return of loss trades', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netLoss: -20 }));
+      });
+      it('[THEN] it will return strategy module with net return property equal to sum of net profit and net loss', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netReturn: -10 }));
+      });
+      it('[THEN] it will return strategy module with equity property equal to initial capital plus net return', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ equity: 90 }));
+      });
+    });
+  });
+
+  describe('[GIVEN] there are both opening and closed trades', () => {
+    const strategyModule = mockStrategyModule({ initialCapital: 100 });
+
+    const openingTradeBase = mockOpeningTrade(mockFilledMarketOrder({ orderSide: 'ENTRY' }));
+    const openingTrade1 = { ...openingTradeBase, unrealizedReturn: 10 as UnrealizedReturn };
+    const openingTrade2 = { ...openingTradeBase, unrealizedReturn: 5 as UnrealizedReturn };
+    const openingTrades = [openingTrade1, openingTrade2];
+
+    const closedTrade1 = mockClosedTrade(
+      mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 10, filledPrice: 5, fee: { amount: 0 } }),
+      mockFilledMarketOrder({ orderSide: 'EXIT', quantity: 10, filledPrice: 6, fee: { amount: 0 } }),
+    );
+    const closedTrade2 = mockClosedTrade(
+      mockFilledMarketOrder({ orderSide: 'ENTRY', quantity: 10, filledPrice: 10, fee: { amount: 0 } }),
+      mockFilledMarketOrder({ orderSide: 'EXIT', quantity: 10, filledPrice: 8, fee: { amount: 0 } }),
+    );
+    const closedTrades = [closedTrade1, closedTrade2];
+
+    describe('[WHEN] update strategy module stats with trades', () => {
+      it('[THEN] it will return strategy module with open return property equals to 0', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ openReturn: 15 }));
+      });
+      it('[THEN] it will return strategy module with net profit property equal to sum of net return of win trades', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netProfit: 10 }));
+      });
+      it('[THEN] it will return strategy module with net loss property equal to sum of net return of loss trades', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netLoss: -20 }));
+      });
+      it('[THEN] it will return strategy module with net return property equal to sum of net profit and net loss', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ netReturn: -10 }));
+      });
+      it('[THEN] it will return strategy module with equity property equal to initial capital plus open return plus net return', () => {
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ equity: 105 }));
+      });
+    });
+  });
+
+  describe('[GIVEN] difference between new equity after updating and initial capital is greater than the previous max run-up', () => {
+    describe('[WHEN] update strategy module stats with trades', () => {
+      it('[THEN] it will return strategy module with maxRunup property equals to the difference', () => {
+        const strategyModule = mockStrategyModule({ initialCapital: 100, maxRunup: 5 });
+        const openingTradeBase = mockOpeningTrade(mockFilledMarketOrder({ orderSide: 'ENTRY' }));
+        const openingTrade1 = { ...openingTradeBase, unrealizedReturn: 10 as UnrealizedReturn };
+        const openingTrade2 = { ...openingTradeBase, unrealizedReturn: 5 as UnrealizedReturn };
+        const openingTrades = [openingTrade1, openingTrade2];
+        const closedTrades = [] as ClosedTrade[];
+
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ maxRunup: 15 }));
+      });
+    });
+  });
+
+  describe('[GIVEN] difference between new equity after updating and initial capital is less than the previous max draw-down', () => {
+    describe('[WHEN] update strategy module stats with trades', () => {
+      it('[THEN] it will return strategy module with maxDrawdown property equals to the difference', () => {
+        const strategyModule = mockStrategyModule({ initialCapital: 100, maxDrawdown: -10 });
+        const openingTradeBase = mockOpeningTrade(mockFilledMarketOrder({ orderSide: 'ENTRY' }));
+        const openingTrade1 = { ...openingTradeBase, unrealizedReturn: -10 as UnrealizedReturn };
+        const openingTrade2 = { ...openingTradeBase, unrealizedReturn: -15 as UnrealizedReturn };
+        const openingTrades = [openingTrade1, openingTrade2];
+        const closedTrades = [] as ClosedTrade[];
+
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(expect.objectContaining({ maxDrawdown: -25 }));
+      });
+    });
+  });
+
+  describe('[GIVEN] there is no opening or closed trades', () => {
+    describe('[WHEN] update strategy module stats with trades', () => {
+      it('[THEN] it will return unchanged strategy module', () => {
+        const strategyModule = mockStrategyModule();
+        const openingTrades = [] as OpeningTrade[];
+        const closedTrades = [] as ClosedTrade[];
+
+        const result = updateStrategyModuleStatsWithTrades(strategyModule, openingTrades, closedTrades);
+
+        expect(result).toEqual(strategyModule);
       });
     });
   });
