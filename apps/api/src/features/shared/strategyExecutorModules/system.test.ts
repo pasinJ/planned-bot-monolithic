@@ -6,7 +6,7 @@ import { DeepPartial } from 'ts-essentials';
 import { ValidDate } from '#shared/utils/date.js';
 import { TimezoneString } from '#shared/utils/string.js';
 
-import { SystemModuleDeps, buildSymtemModule } from './system.js';
+import { SystemModuleDeps, buildSystemModule } from './system.js';
 
 function mockDeps(overrides?: DeepPartial<SystemModuleDeps>): SystemModuleDeps {
   return mergeDeepRight(
@@ -19,7 +19,7 @@ describe('UUT: System module', () => {
   const timezone = '-04:00' as TimezoneString;
   const currentDate = new Date('2020-10-02') as ValidDate;
   const localCurrentDate = utcToZonedTime(currentDate, timezone);
-  const systemModule = buildSymtemModule(
+  const systemModule = buildSystemModule(
     mockDeps({ dateService: { getCurrentDate: () => currentDate } }),
     timezone,
   );

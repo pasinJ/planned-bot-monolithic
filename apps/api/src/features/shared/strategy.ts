@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { nonNegativeFloat8DigitsSchema, nonNegativePercentage8DigitsSchema } from '#shared/utils/number.js';
 import { nonEmptyStringSchema } from '#shared/utils/string.js';
 
-import type { AssetName } from './symbol.js';
+import type { AssetName, Symbol } from './symbol.js';
 
 export type StrategyName = z.infer<typeof strategyNameSchema>;
 export const strategyNameSchema = nonEmptyStringSchema.brand('StrategyName');
@@ -27,3 +27,13 @@ export type Language = z.infer<typeof languageSchema>;
 export const languageSchema = z.enum(['javascript', 'typescript']);
 export const languageEnum = languageSchema.enum;
 export const languageList = languageSchema.options;
+
+export type StrategyBody = z.infer<typeof strategyBodySchema>;
+export const strategyBodySchema = nonEmptyStringSchema.brand('StrategyBody');
+
+export function mapCapitalCurrencyToAssetCurrency(
+  capitalCurrency: CapitalCurrency,
+  symbol: Symbol,
+): AssetCurrency {
+  return (capitalCurrency === symbol.baseAsset ? symbol.quoteAsset : symbol.baseAsset) as AssetCurrency;
+}

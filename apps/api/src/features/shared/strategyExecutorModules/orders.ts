@@ -158,7 +158,7 @@ export function buildOrdersModule(
     exitStopLimit: exitStopLimit(deps, symbol, pendingOrderRequestsRef),
     cancelOrder: cancelOrder(deps, pendingOrderRequestsRef, openingOrders),
     cancelAllOrders: cancelAllOrders(deps, pendingOrderRequestsRef, openingOrders),
-    getPendingOrders: pendingOrderRequestsRef.read,
+    getPendingOrders: () => pendingOrderRequestsRef.read(),
     getSubmittedOrders: () => submittedOrders,
     getOpeningOrders: () => openingOrders,
     getTriggeredOrders: () => triggeredOrders,

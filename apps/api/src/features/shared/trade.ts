@@ -3,6 +3,7 @@ import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { nanoid } from 'nanoid';
 import { append, dissoc, max, min } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
@@ -60,6 +61,10 @@ export type UnrealizedReturn = z.infer<typeof unrealizedReturnSchema>;
 const unrealizedReturnSchema = z.number().brand('UnrealizedReturn');
 export type NetReturn = z.infer<typeof netReturnSchema>;
 const netReturnSchema = z.number().brand('NetReturn');
+
+export function generateTradeId(): TradeId {
+  return nanoid() as TradeId;
+}
 
 export function createFullOpeningTrade(
   tradeId: TradeId,

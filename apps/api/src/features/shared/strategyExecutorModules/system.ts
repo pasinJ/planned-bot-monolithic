@@ -19,7 +19,7 @@ import {
 } from '#shared/utils/date.js';
 import { TimezoneString } from '#shared/utils/string.js';
 
-export type SymtemModule = {
+export type SystemModule = {
   // client timezone
   getDate: () => ValidDate;
   getUnixMsTime: () => UnixMs;
@@ -35,7 +35,7 @@ export type SymtemModule = {
 
 export type SystemModuleDeps = DeepReadonly<{ dateService: DateService }>;
 
-export function buildSymtemModule(deps: SystemModuleDeps, timezone: TimezoneString): SymtemModule {
+export function buildSystemModule(deps: SystemModuleDeps, timezone: TimezoneString): SystemModule {
   const { dateService } = deps;
   const getClientLocalDate = pipe(dateService.getCurrentDate, io.map(utcToZonedTime(timezone)));
 

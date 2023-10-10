@@ -1,4 +1,5 @@
 import { Decimal } from 'decimal.js';
+import { nanoid } from 'nanoid';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
@@ -80,6 +81,10 @@ const orderPriceSchema = z.number().positive().brand('OrderPrice');
 export type Fee = Readonly<{ amount: FeeAmount; currency: AssetName }>;
 export type FeeAmount = z.infer<typeof feeAmountSchema>;
 const feeAmountSchema = z.number().nonnegative().brand('FeeAmount');
+
+export function generateOrderId(): OrderId {
+  return nanoid() as OrderId;
+}
 
 export function createPendingOrderRequest(
   request: DeepReadonly<

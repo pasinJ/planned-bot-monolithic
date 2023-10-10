@@ -14,6 +14,7 @@ import {
   TakerFeeRate,
   initialCapitalSchema,
   makerFeeRateSchema,
+  strategyBodySchema,
   strategyNameSchema,
   takerFeeRateSchema,
 } from '#features/shared/strategy.js';
@@ -61,7 +62,7 @@ export type BtEndTimestamp = z.infer<typeof btEndTimestampSchema>;
 const btEndTimestampSchema = validDateSchema.brand('BtStartTimestamp');
 
 export type BtBody = z.infer<typeof btBodySchema>;
-const btBodySchema = nonEmptyStringSchema.brand('BtBody');
+const btBodySchema = strategyBodySchema.brand('BtBody');
 
 export const generateBtStrategyModelId: io.IO<BtStrategyId> = () => nanoid() as BtStrategyId;
 
