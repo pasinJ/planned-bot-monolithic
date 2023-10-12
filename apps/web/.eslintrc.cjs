@@ -29,6 +29,7 @@ module.exports = {
         '@typescript-eslint/consistent-type-definitions': 'off',
       },
     },
+    { files: ['src/**/*.ts?(x)', 'cypress/**/*.ts?(x)', 'test-utils/**/*.ts?(x)'], rules: { 'no-console': 'warn' } },
     {
       files: ['src/**/!(*.*test).ts?(x)'],
       settings: {

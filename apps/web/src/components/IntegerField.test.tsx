@@ -5,7 +5,7 @@ import { path } from 'ramda';
 
 import { byRole } from '#test-utils/uiSelector';
 
-import { IntegerField } from './IntegerField';
+import IntegerField from './IntegerField';
 
 function renderComponent(options?: { value?: string; onChange?: () => void; onBlur?: () => void }) {
   return render(<IntegerField value="" {...options} />);

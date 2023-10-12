@@ -1,21 +1,23 @@
-import { createExternalError } from '#shared/errors/externalError.js';
-import { randomString } from '#test-utils/faker.js';
-
 import { createHttpServerError, isHttpServerError } from './server.error.js';
 
-describe('Validate HTTP server error', () => {
-  describe('WHEN validate an error that is a HTTP server error', () => {
-    it('THEN it should return false', () => {
-      const externalError = createExternalError({ cause: new Error('Mock') });
-      const error = createHttpServerError('UnhandledError', randomString(), externalError);
-
-      expect(isHttpServerError(error)).toBeTrue();
-    });
-  });
-  describe('WHEN validate an error that is not a HTTP server error', () => {
-    it('THEN it should return false', () => {
-      const error = new Error('Mock');
-      expect(isHttpServerError(error)).toBeFalse();
-    });
+describe.each([
+  {
+    case: 'validate an error that is a HTTP server error without cause property',
+    input: createHttpServerError('Unhandled', 'message'),
+    expected: true,
+  },
+  {
+    case: 'validate an error that is a HTTP server error with cause property',
+    input: createHttpServerError('Unhandled', 'message', new Error()),
+    expected: true,
+  },
+  {
+    case: 'validate an error that is not a HTTP server error',
+    input: new Error(),
+    expected: false,
+  },
+])('[WHEN] $case', ({ input, expected }) => {
+  it(`[THEN] it will return ${expected}`, () => {
+    expect(isHttpServerError(input)).toBe(expected);
   });
 });

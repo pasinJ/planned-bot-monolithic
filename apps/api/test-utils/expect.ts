@@ -3,6 +3,6 @@ export const toBeHttpErrorResponse = expect.objectContaining({
     name: expect.toBeString(),
     type: expect.toBeString(),
     message: expect.toBeString(),
-    causes: expect.toBeArray(),
+    causesList: expect.toBeArray(),
   },
 });

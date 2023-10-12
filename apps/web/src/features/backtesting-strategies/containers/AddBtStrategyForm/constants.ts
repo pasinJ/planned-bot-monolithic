@@ -1,4 +1,5 @@
 import { ExchangeName, exchangeNameEnum } from '#features/exchanges/domain/exchange';
+import { Language } from '#shared/domain/language';
 import { Timeframe } from '#shared/domain/timeframe';
 
 export type AddBtStrategyFormValues = {
@@ -13,6 +14,7 @@ export type AddBtStrategyFormValues = {
   makerFeeRate: string;
   startTimestamp: Date;
   endTimestamp: Date;
+  language: Language;
   body: string;
 };
 export const defaultValues: AddBtStrategyFormValues = {
@@ -27,6 +29,7 @@ export const defaultValues: AddBtStrategyFormValues = {
   makerFeeRate: '0.0',
   startTimestamp: new Date(),
   endTimestamp: new Date(),
+  language: 'javascript',
   body: '',
 };
 
@@ -48,3 +51,5 @@ export const timeframeOptions: Record<Timeframe, string> = {
   '1w': '1 week',
   '1M': '1 month',
 };
+
+export const languageOptions: Language[] = ['javascript', 'typescript'];

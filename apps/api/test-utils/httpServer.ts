@@ -1,21 +1,36 @@
 import { HTTPMethods, RouteHandlerMethod } from 'fastify';
+import ioe from 'fp-ts/lib/IOEither.js';
+import { pipe } from 'fp-ts/lib/function.js';
+import { DeepPartial } from 'ts-essentials';
 
-import { buildHttpServer } from '#infra/http/server.js';
-import { createMainLogger } from '#infra/logging.js';
-import { unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
+import { PortNumber } from '#infra/http/server.config.js';
+import { FastifyServer, buildHttpServer } from '#infra/http/server.js';
+import { AppDeps } from '#shared/appDeps.type.js';
+import { executeIo, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
+
+import { mockMainLogger } from './services.js';
 
 export function setupTestServer<Deps>(
   method: HTTPMethods,
   url: string,
   buildHandler: (deps: Deps) => RouteHandlerMethod,
-  mockDeps: (overrides?: Partial<Deps>) => Deps,
+  mockDeps: (overrides?: DeepPartial<Deps>) => Deps,
 ) {
-  return (deps?: Partial<Deps>) => {
-    const httpServer = unsafeUnwrapEitherRight(buildHttpServer(createMainLogger()));
+  return (deps?: DeepPartial<Deps>) => {
+    const httpServer = unsafeUnwrapEitherRight(
+      buildHttpServer(mockMainLogger(), () => ({ PORT_NUMBER: 8080 as PortNumber }), {} as AppDeps),
+    );
     const handler = buildHandler(mockDeps(deps));
 
-    httpServer.route({ method, url, handler });
+    let fastifyServer: FastifyServer;
+    executeIo(
+      httpServer.config((fastify) => {
+        fastifyServer = fastify;
+        return pipe(ioe.right(fastify.route({ method, url, handler })), ioe.asUnit);
+      }),
+    );
 
-    return httpServer;
+    // @ts-expect-error this is okay
+    return fastifyServer;
   };
 }

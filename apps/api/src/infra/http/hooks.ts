@@ -1,15 +1,10 @@
-import { RouteOptions, onSendHookHandler, preValidationHookHandler } from 'fastify';
+import { onSendHookHandler, preValidationHookHandler } from 'fastify';
 import { gte, isNil } from 'ramda';
 
 import { isAppError } from '#shared/errors/appError.js';
-import { createExternalError } from '#shared/errors/externalError.js';
 
-import { FastifyServer } from './server.type.js';
-
-export const commonHooksForAppRoutes: Pick<RouteOptions, 'preValidation' | 'onSend'> = {
-  preValidation: preValidationHook,
-  onSend: onSendHook,
-};
+import { createHttpServerError } from './server.error.js';
+import type { FastifyServer } from './server.js';
 
 export const setNotFoundHandler = (fastify: FastifyServer) => {
   return fastify.setNotFoundHandler((req, reply) => {
@@ -32,12 +27,12 @@ export const setErrorHandler = (fastify: FastifyServer): void => {
       logFn({ error }, error.toString());
       return reply.send({ error });
     } else {
-      const externalError = createExternalError({ message: 'Fastify error happened', cause: error });
-      logFn({ error: externalError }, `Fastify got error (${error.name}${error.message})`);
+      const httpServerError = createHttpServerError('Unhandled', 'Fastify error happened', error);
+      logFn({ error: httpServerError }, `Fastify got unhandled error`);
 
       if (isNil(statusCode) || statusCode === 200) void reply.code(error.statusCode ?? 500);
 
-      return reply.send({ error: externalError });
+      return reply.send({ error: httpServerError });
     }
   });
 };

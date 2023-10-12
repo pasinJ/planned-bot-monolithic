@@ -7,11 +7,19 @@ import {
   ExecutionStatus,
   executionStatusEnum,
 } from '#features/backtesting-strategies/domain/btStrategy.entity';
-import { randomExchangeName, randomTimeframe } from '#test-utils/domain';
+import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain';
 
-import { nonNegativeFloat, randomNonNegativeInt, randomPositiveInt, randomString } from '../../faker';
+import {
+  nonNegativeFloat,
+  randomDateBefore,
+  randomNonNegativeInt,
+  randomPositiveInt,
+  randomString,
+} from '../../faker';
 
 export function mockBtStrategy(overrides?: Partial<BtStrategy>): BtStrategy {
+  const endTimestamp = faker.date.recent();
+  const startTimestamp = randomDateBefore(endTimestamp);
   return {
     id: randomString() as BtStrategyId,
     name: randomString(),
@@ -23,10 +31,11 @@ export function mockBtStrategy(overrides?: Partial<BtStrategy>): BtStrategy {
     takerFeeRate: nonNegativeFloat(),
     makerFeeRate: nonNegativeFloat(),
     maxNumKlines: randomPositiveInt(),
-    startTimestamp: faker.date.soon(),
-    endTimestamp: faker.date.future(),
+    startTimestamp,
+    endTimestamp,
     executionStatus: randomExecutionStatus(),
-    body: randomString(),
+    language: randomLanguage(),
+    body: randomJsCode(),
     version: randomNonNegativeInt(),
     createdAt: faker.date.past(),
     updatedAt: faker.date.recent(),
@@ -36,4 +45,8 @@ export function mockBtStrategy(overrides?: Partial<BtStrategy>): BtStrategy {
 
 export function randomExecutionStatus(): ExecutionStatus {
   return faker.helpers.arrayElement(values(executionStatusEnum));
+}
+
+export function randomJsCode(): string {
+  return `console.log('${randomString()}');`;
 }

@@ -5,17 +5,15 @@ import { z } from 'zod';
 import { ValidationError, fromZodError, isValidationErrorLike } from 'zod-validation-error';
 
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError.js';
-import { defineCauseSchema, implementZodSchema } from '#shared/errors/utils.js';
-
-import { isError } from './typeGuards.js';
+import { implementZodSchema } from '#shared/errors/utils.js';
 
 export type SchemaValidationError<Type extends SchemaValidationErrorType = SchemaValidationErrorType> =
-  AppError<SchemaValidationErrorName, Type, ValidationError | Error>;
+  AppError<SchemaValidationErrorName, Type>;
 
 type SchemaValidationErrorName = typeof schemaValidationErrorName;
 const schemaValidationErrorName = 'SchemaValidationError' as const;
 type SchemaValidationErrorType = (typeof schemaValidationErrorType)[number];
-const schemaValidationErrorType = ['ValidationFailed', 'InvalidInput'] as const;
+const schemaValidationErrorType = ['UnexpectedError', 'InvalidInput'] as const;
 
 export function createSchemaValidationError<Type extends SchemaValidationError['type']>(
   type: Type,
@@ -29,26 +27,26 @@ export function createSchemaValidationError<Type extends SchemaValidationError['
 }
 
 export function isSchemaValidationError(input: unknown): input is SchemaValidationError {
-  const schema = implementZodSchema<SchemaValidationError>().with(
-    appErrorSchema.extend({
-      name: z.literal(schemaValidationErrorName),
-      type: z.enum(schemaValidationErrorType),
-      cause: defineCauseSchema([isError]).optional(),
-    }),
-  );
-  return schema.safeParse(input).success;
+  return implementZodSchema<SchemaValidationError>()
+    .with(
+      appErrorSchema.extend({
+        name: z.literal(schemaValidationErrorName),
+        type: z.enum(schemaValidationErrorType),
+      }),
+    )
+    .safeParse(input).success;
 }
 
-export function parseWithZod<T extends z.ZodTypeAny>(
+export function validateWithZod<T extends z.ZodTypeAny>(
   schema: T,
   errorMessage: string,
 ): (input: unknown) => e.Either<SchemaValidationError, z.output<T>>;
-export function parseWithZod<T extends z.ZodTypeAny>(
+export function validateWithZod<T extends z.ZodTypeAny>(
   schema: T,
   errorMessage: string,
   input: unknown,
 ): e.Either<SchemaValidationError, z.output<T>>;
-export function parseWithZod<T extends z.ZodTypeAny>(schema: T, errorMessage: string, input?: unknown) {
+export function validateWithZod<T extends z.ZodTypeAny>(schema: T, errorMessage: string, input?: unknown) {
   function toValidationError(error: unknown): ValidationError | Error {
     if (error instanceof z.ZodError) return fromZodError(error);
     else if (error instanceof Error) return error;
@@ -63,7 +61,7 @@ export function parseWithZod<T extends z.ZodTypeAny>(schema: T, errorMessage: st
         return isValidationErrorLike(error)
           ? createSchemaValidationError('InvalidInput', errorMessage, error)
           : createSchemaValidationError(
-              'ValidationFailed',
+              'UnexpectedError',
               'Unexpected error happened when try to parse the given input with zod schema',
               error,
             );

@@ -1,10 +1,10 @@
 import { useController, useWatch } from 'react-hook-form';
 
-import { DecimalField } from '#components/DecimalField';
+import DecimalField from '#components/DecimalField';
 
 import type { AddBtStrategyControl } from '.';
 
-export function InitialCapitalField({ control }: { control: AddBtStrategyControl }) {
+export default function InitialCapitalField({ control }: { control: AddBtStrategyControl }) {
   const currency = useWatch({ name: 'currency', control });
   const { field, fieldState } = useController({
     name: 'initialCapital',

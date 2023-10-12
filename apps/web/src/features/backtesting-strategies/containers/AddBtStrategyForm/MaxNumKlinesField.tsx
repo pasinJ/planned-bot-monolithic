@@ -1,10 +1,10 @@
 import { useController } from 'react-hook-form';
 
-import { IntegerField } from '#components/IntegerField';
+import IntegerField from '#components/IntegerField';
 
 import type { AddBtStrategyControl } from '.';
 
-export function MaxNumKlinesField({ control }: { control: AddBtStrategyControl }) {
+export default function MaxNumKlinesField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
     name: 'maxNumKlines',
     control,

@@ -13,7 +13,7 @@ import type { AddBtStrategyControl } from '.';
 const labelId = 'exchange-label';
 const labelText = 'Exchange';
 
-export function ExchangeField({ control }: { control: AddBtStrategyControl }) {
+export default function ExchangeField({ control }: { control: AddBtStrategyControl }) {
   const { field } = useController({ name: 'exchange', control });
 
   return (

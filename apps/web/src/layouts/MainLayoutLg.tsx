@@ -110,8 +110,6 @@ function SideNavItemButton(props: {
 }) {
   const { isOpen, symbol, text, navLinkComponent } = props;
 
-  console.log(isOpen);
-
   return (
     <ListItemButton
       component={navLinkComponent}

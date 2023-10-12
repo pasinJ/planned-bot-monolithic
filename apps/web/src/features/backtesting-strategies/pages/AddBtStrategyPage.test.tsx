@@ -4,6 +4,7 @@ import { SymbolRepo } from '#features/symbols/repositories/symbol.type';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { mockForMonaco, revertMockForMonaco } from '#test-utils/monaco';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole } from '#test-utils/uiSelector';
 
@@ -26,6 +27,9 @@ function renderAddBtStrategyPageSuccess() {
 const ui = {
   form: byRole('form', { name: /add backtesting strategy/i }),
 };
+
+beforeAll(() => mockForMonaco());
+afterEach(() => revertMockForMonaco());
 
 describe('WHEN render', () => {
   it('THEN it should display a add backtesting strategy form', async () => {

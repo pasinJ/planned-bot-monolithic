@@ -4,12 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
-import { clickAutoCompleteDropdown } from '#test-utils/uiEvents';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { clickAutoCompleteDropdown } from '#test-utils/uiEvents';
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { SymbolField } from './SymbolField';
+import SymbolField from './SymbolField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function SymbolFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

@@ -3,21 +3,26 @@ import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { writeFile } from 'fs/promises';
 import { __, allPass, equals, gte, lt } from 'ramda';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { LoggerIo } from '#infra/logging.js';
-import { createExternalError } from '#shared/errors/externalError.js';
-import { parseWithZod } from '#shared/utils/zod.js';
+import { createErrorFromUnknown } from '#shared/errors/appError.js';
+import { createGeneralError } from '#shared/errors/generalError.js';
+import { validateWithZod } from '#shared/utils/zod.js';
 
 import { HTTP_ERRORS } from './client.constant.js';
 import { HttpError, createHttpError } from './client.error.js';
 import { HttpClient } from './client.type.js';
 
-export function createAxiosHttpClient(logger: LoggerIo, config?: CreateAxiosDefaults): HttpClient {
+export function buildAxiosHttpClient(logger: LoggerIo, config?: CreateAxiosDefaults): HttpClient {
   const axiosInstance = axios.create(config);
-  return { sendRequest: sendRequest(axiosInstance, logger) };
+  return {
+    sendRequest: sendRequest(axiosInstance, logger),
+    downloadFile: downloadFile(axiosInstance, logger),
+  };
 }
 
 function sendRequest(axiosInstance: AxiosInstance, logger: LoggerIo): HttpClient['sendRequest'] {
@@ -52,7 +57,7 @@ function validResponseBody<ResponseSchema extends z.ZodTypeAny>(
   const { type, message } = HTTP_ERRORS.InvalidResponse;
   return (body: unknown): ioe.IOEither<HttpError, z.output<ResponseSchema>> =>
     pipe(
-      parseWithZod(responseSchema, 'The received response body is invalid', body),
+      validateWithZod(responseSchema, 'The received response body is invalid', body),
       ioe.fromEither,
       ioe.orElseFirstIOK((error) =>
         logger.errorIo({ error }, 'Error happened when validing HTTP response body'),
@@ -61,14 +66,32 @@ function validResponseBody<ResponseSchema extends z.ZodTypeAny>(
     );
 }
 
+function downloadFile(axiosInstance: AxiosInstance, logger: LoggerIo): HttpClient['downloadFile'] {
+  return (options) => {
+    const { body, outputPath, ...rest } = options;
+    return pipe(
+      te.fromIO(logger.debugIo(`Start download file with options: %j`, options)),
+      te.chain(() =>
+        te.tryCatch(
+          () => axiosInstance.request({ ...rest, data: body, responseType: 'arraybuffer' }),
+          (error) => handleFailedRequest(error as AxiosError),
+        ),
+      ),
+      te.chainW(({ data }: { data: Buffer }) =>
+        te.tryCatch(
+          () => writeFile(outputPath, data),
+          createErrorFromUnknown(
+            createGeneralError('WriteFileFailed', `Writing file to ${outputPath} failed`),
+          ),
+        ),
+      ),
+    );
+  };
+}
+
 function handleFailedRequest(axiosError: AxiosError): HttpError {
   const is4xx = allPass([gte(__, 400), lt(__, 500)]);
   const is5xx = allPass([gte(__, 500), lt(__, 600)]);
-
-  const externalError = createExternalError({
-    message: 'Axios error happen when sending request to external system',
-    cause: axiosError,
-  });
 
   if (axiosError.response) {
     const { type, message } = match(axiosError.response.status)
@@ -82,12 +105,12 @@ function handleFailedRequest(axiosError: AxiosError): HttpError {
       .when(is5xx, () => HTTP_ERRORS.ServerSideError)
       .otherwise(() => HTTP_ERRORS.UnhandledError);
 
-    return createHttpError(type, message, externalError);
+    return createHttpError(type, message, axiosError);
   } else if (axiosError.request) {
     const { type, message } = HTTP_ERRORS.NoResponse;
-    return createHttpError(type, message, externalError);
+    return createHttpError(type, message, axiosError);
   } else {
     const { type, message } = HTTP_ERRORS.SendingFailed;
-    return createHttpError(type, message, externalError);
+    return createHttpError(type, message, axiosError);
   }
 }

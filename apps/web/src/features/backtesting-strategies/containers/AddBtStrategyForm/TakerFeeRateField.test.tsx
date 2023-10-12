@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { TakerFeeRateField } from './TakerFeeRateField';
+import TakerFeeRateField from './TakerFeeRateField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function TakerFeeRateFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

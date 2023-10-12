@@ -1,41 +1,61 @@
+import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { constVoid, pipe } from 'fp-ts/lib/function.js';
 
-import { SymbolRepoError } from '#features/symbols/repositories/symbol.error.js';
-import { SymbolRepo } from '#features/symbols/repositories/symbol.type.js';
+import { ExchangeName, exchangeNameEnum } from '#features/shared/exchange.js';
+import { Symbol } from '#features/shared/symbol.js';
+import { SymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { LoggerIo } from '#infra/logging.js';
 import { BnbServiceError } from '#infra/services/binance/error.js';
-import { BnbService } from '#infra/services/binance/service.type.js';
-import { getAppConfig } from '#shared/config/app.js';
+import { Env } from '#shared/app.config.js';
 
-type StartupProcessDeps = { bnbService: BnbService; symbolRepo: SymbolRepo; logger: LoggerIo };
-type StartupError =
-  | SymbolRepoError<'CountAllSymbolsError' | 'AddSymbolError'>
-  | BnbServiceError<'GetBnbSpotSymbolsError'>;
+export type StartupProcessDeps = {
+  bnbService: {
+    getSpotSymbolsList: te.TaskEither<BnbServiceError<'GetSpotSymbolsFailed'>, readonly Symbol[]>;
+  };
+  symbolDao: {
+    existByExchange: (
+      exchange: ExchangeName,
+    ) => te.TaskEither<SymbolDaoError<'ExistByExchangeFailed'>, boolean>;
+    add: (symbols: Symbol | readonly Symbol[]) => te.TaskEither<SymbolDaoError<'AddFailed'>, void>;
+  };
+  loggerIo: LoggerIo;
+  getAppConfig: io.IO<{ ENV: Env }>;
+};
 
-export function startupProcess(deps: StartupProcessDeps): te.TaskEither<StartupError, void> {
-  const { logger } = deps;
+export function startupProcess(
+  deps: StartupProcessDeps,
+): te.TaskEither<
+  SymbolDaoError<'ExistByExchangeFailed' | 'AddFailed'> | BnbServiceError<'GetSpotSymbolsFailed'>,
+  void
+> {
+  const { loggerIo } = deps;
   return pipe(
-    te.fromIO(logger.infoIo('Starting startup process')),
-    te.chain(() => fetchSpotSymbols(deps)),
-    te.chainFirstIOK(() => logger.infoIo('Startup process done')),
+    te.fromIO(loggerIo.infoIo('Starting startup process')),
+    te.chain(() => fetchSpotBinanceSymbols(deps)),
+    te.chainFirstIOK(() => loggerIo.infoIo('Startup process done')),
   );
 }
 
-function fetchSpotSymbols(deps: StartupProcessDeps) {
-  const { bnbService, symbolRepo, logger } = deps;
-  const { ENV } = getAppConfig();
+function fetchSpotBinanceSymbols(deps: StartupProcessDeps) {
+  const { bnbService, symbolDao, loggerIo } = deps;
 
-  if (ENV.includes('test')) {
-    return te.fromIO(logger.infoIo('Skip fetching SPOT symbols b/c running in test environment'));
-  } else {
-    return pipe(
-      symbolRepo.countAll,
-      te.chainW((existing) =>
-        existing !== 0
-          ? te.rightIO(constVoid)
-          : pipe(bnbService.getSpotSymbols, te.chainW(symbolRepo.add), te.map(constVoid)),
-      ),
-    );
-  }
+  return pipe(
+    deps.getAppConfig,
+    te.fromIO,
+    te.chain(({ ENV }) => {
+      if (ENV.includes('test')) {
+        return te.fromIO(loggerIo.infoIo('Skip fetching SPOT symbols b/c running in test environment'));
+      } else {
+        return pipe(
+          symbolDao.existByExchange(exchangeNameEnum.BINANCE),
+          te.chainW((exist) =>
+            exist
+              ? te.rightIO(constVoid)
+              : pipe(bnbService.getSpotSymbolsList, te.chainW(symbolDao.add), te.map(constVoid)),
+          ),
+        );
+      }
+    }),
+  );
 }

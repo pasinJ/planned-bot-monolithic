@@ -24,6 +24,6 @@ export const random9DigitsPositiveFloatWithRoundUp = (between: [number, number] 
 };
 
 export const invalidDate = new Date('invalid');
-export const randomDateBefore = (date: Date) => faker.date.recent({ refDate: date });
+export const randomDateBefore = (date: Date) => faker.date.past({ refDate: date });
 
 export const generateArrayOf = <T>(fn: () => T, length = 3) => faker.helpers.multiple(fn, { count: length });

@@ -12,7 +12,7 @@ import { timeframeOptions } from './constants';
 const labelId = 'timeframe-label';
 const labelText = 'Timeframe';
 
-export function TimeframeField({ control }: { control: AddBtStrategyControl }) {
+export default function TimeframeField({ control }: { control: AddBtStrategyControl }) {
   const { field, fieldState } = useController({
     name: 'timeframe',
     control,

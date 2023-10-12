@@ -1,54 +1,46 @@
 import { CreateAxiosDefaults } from 'axios';
 import Binance from 'binance-api-node';
-import te from 'fp-ts/lib/TaskEither.js';
+import io from 'fp-ts/lib/IO.js';
+import ioe from 'fp-ts/lib/IOEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 
-import { createAxiosHttpClient } from '#infra/http/client.js';
-import { PinoLogger, createLoggerIo } from '#infra/logging.js';
-import { getBnbConfig } from '#shared/config/binance.js';
-import { createErrorFromUnknown } from '#shared/errors/externalError.js';
+import { buildAxiosHttpClient } from '#infra/http/client.js';
+import { HttpClient } from '#infra/http/client.type.js';
+import { LoggerIo, PinoLogger, createLoggerIo } from '#infra/logging.js';
 
-import { DateService } from '../date.type.js';
-import { IdService } from '../id.type.js';
-import { BnbServiceError, createBnbServiceError } from './error.js';
-import { getSpotSymbols } from './features/getSpotSymbols.js';
-import { BnbService } from './service.type.js';
+import { BnbServiceError } from './error.js';
 
 // @ts-expect-error The exported type of 'binance-api-node' may not support ESM, cannot use default export directly
 const createBnbClient = Binance.default as unknown as typeof Binance;
-type BnbClient = ReturnType<typeof createBnbClient>;
+export type BnbClient = ReturnType<typeof Binance>;
 type BnbClientOptions = Parameters<typeof createBnbClient>[0];
 
-type CreateBnbServiceDeps = { dateService: DateService; idService: IdService; mainLogger: PinoLogger };
-export function createBnbService(
-  deps: CreateBnbServiceDeps,
-): te.TaskEither<BnbServiceError<'CreateBnbServiceError'>, BnbService> {
-  const { HTTP_BASE_URL } = getBnbConfig();
-  const httpClientOptions: CreateAxiosDefaults = { baseURL: HTTP_BASE_URL };
-  const bnbClientOptions: BnbClientOptions = { httpBase: HTTP_BASE_URL };
-  const logger = createLoggerIo('BnbService', deps.mainLogger);
+export type BnbService = Readonly<{
+  composeWith: <R>(
+    fn: (internal: { bnbClient: BnbClient; httpClient: HttpClient; loggerIo: LoggerIo }) => R,
+  ) => R;
+}>;
+
+export type BnbServiceDeps = { mainLogger: PinoLogger; getBnbConfig: io.IO<{ HTTP_BASE_URL: string }> };
+export function buildBnbService(
+  deps: BnbServiceDeps,
+): ioe.IOEither<BnbServiceError<'CreateServiceFailed'>, BnbService> {
+  const loggerIo = createLoggerIo('BnbService', deps.mainLogger);
 
   return pipe(
-    te.Do,
-    te.let('httpClient', () => createAxiosHttpClient(logger, httpClientOptions)),
-    te.let('bnbClient', () => createBnbClient(bnbClientOptions)),
-    te.chainFirst(({ bnbClient }) => testBnbClientConnectivity(bnbClient)),
-    te.let('deps', ({ httpClient, bnbClient }) => ({ ...deps, httpClient, bnbClient })),
-    te.map(({ deps }) => ({ getSpotSymbols: getSpotSymbols(deps) })),
-    te.chainFirstIOK(() => logger.infoIo('Binance service created')),
-  );
-}
+    ioe.fromIO(() => {
+      const { HTTP_BASE_URL } = deps.getBnbConfig();
+      const httpClientOptions: CreateAxiosDefaults = { baseURL: HTTP_BASE_URL };
+      const bnbClientOptions: BnbClientOptions = { httpBase: HTTP_BASE_URL };
 
-function testBnbClientConnectivity(
-  bnbClient: BnbClient,
-): te.TaskEither<BnbServiceError<'CreateBnbServiceError'>, void> {
-  return pipe(
-    te.tryCatch(
-      () => bnbClient.ping(),
-      createErrorFromUnknown(
-        createBnbServiceError('CreateBnbServiceError', 'Testing connectivity to Binance server failed'),
-      ),
+      return { httpClientOptions, bnbClientOptions };
+    }),
+    ioe.let('httpClient', ({ httpClientOptions }) => buildAxiosHttpClient(loggerIo, httpClientOptions)),
+    ioe.let('bnbClient', ({ bnbClientOptions }) => createBnbClient(bnbClientOptions)),
+    ioe.map(
+      ({ httpClient, bnbClient }) =>
+        ({ composeWith: (fn) => fn({ bnbClient, httpClient, loggerIo }) }) as BnbService,
     ),
-    te.asUnit,
+    ioe.chainFirstIOK(() => loggerIo.infoIo('Binance service created')),
   );
 }

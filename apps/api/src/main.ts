@@ -1,63 +1,88 @@
+import { fork } from 'child_process';
+import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
-import { omit } from 'ramda';
 
-import { createBtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy.js';
-import { createSymbolRepo } from '#features/symbols/repositories/symbol.js';
-import { ApplicationDeps } from '#infra/common.type.js';
-import { buildHttpServer, startHttpServer } from '#infra/http/server.js';
-import { FastifyServer } from '#infra/http/server.type.js';
+import { buildBtStrategyDao as buildBtStrategyDaoOrg } from '#features/btStrategies/DAOs/btStrategy.js';
+import { getBtJobConfig } from '#features/btStrategies/executeBtStrategy/backtesting.job.config.js';
+import { defineBtJob } from '#features/btStrategies/executeBtStrategy/backtesting.job.js';
+import { addSymbolModels, existSymbolModelByExchange } from '#features/symbols/DAOs/symbol.feature.js';
+import { buildSymbolDao as buildSymbolDaoOrg } from '#features/symbols/DAOs/symbol.js';
+import { getHttpConfig } from '#infra/http/server.config.js';
+import { HttpServer, addPluginsAndRoutes, buildHttpServer } from '#infra/http/server.js';
 import { createLoggerIo, createMainLogger } from '#infra/logging.js';
-import { createMongoDbClient } from '#infra/mongoDb/client.js';
+import { buildMongoDbClient } from '#infra/mongoDb/client.js';
+import { getMongoDbConfig } from '#infra/mongoDb/config.js';
 import { addGracefulShutdown } from '#infra/process/shutdown.js';
 import { startupProcess } from '#infra/process/startup.js';
-import { createBnbService } from '#infra/services/binance/service.js';
-import { dateService } from '#infra/services/date.js';
-import { idService } from '#infra/services/id.js';
+import { getBnbConfig } from '#infra/services/binance/config.js';
+import { getSpotSymbolsList } from '#infra/services/binance/features/getSpotSymbols.js';
+import { buildBnbService } from '#infra/services/binance/service.js';
+import { dateService } from '#infra/services/date/service.js';
+import { getJobSchedulerConfig } from '#infra/services/jobScheduler/config.js';
+import { buildJobScheduler } from '#infra/services/jobScheduler/service.js';
+import { getAppConfig } from '#shared/app.config.js';
+import { AppDeps } from '#shared/appDeps.type.js';
 import { executeT } from '#utils/fp.js';
 
-const mainLogger = createMainLogger();
+type Deps = Omit<AppDeps, 'dateService'> & { mongoDbClient: Mongoose; httpServer: HttpServer };
+
+function buildSymbolDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(buildSymbolDaoOrg(mongoDbClient));
+}
+function buildBtStrategyDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(buildBtStrategyDaoOrg(mongoDbClient));
+}
+function setupJobScheduler() {
+  return pipe(
+    buildJobScheduler({ mainLogger, getJobSchedulerConfig }),
+    te.chainFirstW((jobScheduler) =>
+      te.fromIOEither(jobScheduler.composeWith(defineBtJob({ fork, getBtJobConfig }))),
+    ),
+  );
+}
+function setupHttpServer(deps: Omit<Deps, 'httpServer'>) {
+  return pipe(
+    ioe.fromEither(buildHttpServer(mainLogger, getHttpConfig, { ...deps, dateService })),
+    ioe.chainFirstW((httpServer) => httpServer.config(addPluginsAndRoutes)),
+    te.fromIOEither,
+  );
+}
+function startup({ bnbService, symbolDao, jobScheduler, httpServer }: Deps) {
+  return pipe(
+    startupProcess({
+      getAppConfig,
+      loggerIo: logger,
+      bnbService: { getSpotSymbolsList: bnbService.composeWith(getSpotSymbolsList) },
+      symbolDao: {
+        existByExchange: symbolDao.composeWith(existSymbolModelByExchange),
+        add: symbolDao.composeWith(addSymbolModels),
+      },
+    }),
+    te.chainW(() => jobScheduler.start),
+    te.chainW(() => httpServer.start),
+  );
+}
+
+const appConfig = getAppConfig();
+const mainLogger = createMainLogger(appConfig);
 const logger = createLoggerIo('Process', mainLogger);
 
 await executeT(
   pipe(
     te.Do,
-    te.bindW('mongoDbClient', () => createMongoDbClient(logger)),
-    te.bindW('bnbService', () => createBnbServiceWithDeps()),
-    te.bindW('symbolRepo', (deps) => createSymbolRepoWithDeps(deps)),
-    te.bindW('btStrategyRepo', (deps) => createBtStrategyRepoWithDeps(deps)),
-    te.bindW('httpServer', () => te.fromEither(buildHttpServer(mainLogger))),
-    te.mapLeft((x) => x),
-    te.chainFirstW((deps) => startupProcessWithDeps(deps)),
-    te.chainFirstW((deps) => startHttpServerWithDeps(deps)),
-    te.chainFirstIOK((deps) => addGracefulShutdown(deps, logger)),
-    te.orElseFirstIOK((error) => logger.errorIo({ error }, 'Starting process failed: %s', error.toString())),
-    te.orElseFirstIOK(() => process.exit(1)),
+    te.bindW('mongoDbClient', () => buildMongoDbClient(logger, getMongoDbConfig)),
+    te.bindW('symbolDao', (deps) => buildSymbolDao(deps)),
+    te.bindW('btStrategyDao', (deps) => buildBtStrategyDao(deps)),
+    te.bindW('bnbService', () => te.fromIOEither(buildBnbService({ mainLogger, getBnbConfig }))),
+    te.bindW('jobScheduler', () => setupJobScheduler()),
+    te.bindW('httpServer', (deps) => setupHttpServer(deps)),
+    te.chainFirstIOK((deps) => addGracefulShutdown({ ...deps, getAppConfig }, logger)),
+    te.chainFirstW((deps) => startup(deps)),
+    te.orElseFirstIOK((error) => () => {
+      logger.error({ error }, 'Starting process failed: %s', error.toString());
+      process.exit(1);
+    }),
   ),
 );
-
-type Deps = Omit<ApplicationDeps, 'dateService' | 'idService'> & {
-  mongoDbClient: Mongoose;
-  httpServer: FastifyServer;
-};
-
-function createBnbServiceWithDeps() {
-  return createBnbService({ dateService, idService, mainLogger });
-}
-function createSymbolRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(createSymbolRepo(mongoDbClient));
-}
-function createBtStrategyRepoWithDeps({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(createBtStrategyRepo(mongoDbClient));
-}
-function startupProcessWithDeps(deps: Pick<Deps, 'bnbService' | 'symbolRepo'>) {
-  return startupProcess({ ...deps, logger: logger });
-}
-function startHttpServerWithDeps(deps: Deps) {
-  return startHttpServer(deps.httpServer, {
-    ...omit(['mongoDbClient', 'server'], deps),
-    dateService,
-    idService,
-  });
-}

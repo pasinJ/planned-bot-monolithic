@@ -3,7 +3,7 @@ import { act, waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither';
 
 import { isSchemaValidationError } from '#shared/utils/zod';
-import { randomExchangeName, randomTimeframe } from '#test-utils/domain';
+import { randomExchangeName, randomLanguage, randomTimeframe } from '#test-utils/domain';
 import { mockHttpError } from '#test-utils/error';
 import { randomString } from '#test-utils/faker';
 import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
@@ -31,6 +31,7 @@ function mockData() {
     makerFeeRate: faker.number.float({ min: 1, max: 10 }).toString(),
     startTimestamp: faker.date.soon(),
     endTimestamp: faker.date.future(),
+    language: randomLanguage(),
     body: randomString(),
   };
 }

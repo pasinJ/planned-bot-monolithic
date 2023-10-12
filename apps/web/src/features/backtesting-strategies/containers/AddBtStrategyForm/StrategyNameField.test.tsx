@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { StrategyNameField } from './StrategyNameField';
+import StrategyNameField from './StrategyNameField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function StrategyNameFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {

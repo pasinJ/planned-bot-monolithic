@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { MakerFeeRateField } from './MakerFeeRateField';
+import MakerFeeRateField from './MakerFeeRateField';
 import { AddBtStrategyFormValues, defaultValues } from './constants';
 
 function MakerFeeRateFieldWrapper({ overrides }: { overrides?: Partial<AddBtStrategyFormValues> }) {
