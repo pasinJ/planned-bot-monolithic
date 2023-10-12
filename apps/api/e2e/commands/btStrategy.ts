@@ -15,3 +15,11 @@ export async function executeBtStrategy(btStrategyId = 'IP3t1OJ5Cd') {
     response: await client.request({ method, url: url.replace(':id', btStrategyId), data: {} }),
   };
 }
+
+export async function getBtExecutionProgressById(executionId = 'n_D65q3SUG') {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_PROGRESS;
+  return {
+    request: { id: executionId },
+    response: await client.request({ method, url: url.replace(':id', executionId), data: {} }),
+  };
+}
