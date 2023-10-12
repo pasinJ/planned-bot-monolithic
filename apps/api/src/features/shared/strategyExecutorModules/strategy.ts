@@ -372,6 +372,8 @@ export function updateStrategyModuleStats(
   openingTrades: readonly OpeningTrade[],
   closedTrades: readonly ClosedTrade[],
 ): StrategyModule {
+  if (openingTrades.length === 0 && closedTrades.length === 0) return strategyModule;
+
   const { initialCapital, maxRunup, maxDrawdown } = strategyModule;
 
   const winTrades = closedTrades.filter(propSatisfies(gt(__, 0), 'netReturn'));

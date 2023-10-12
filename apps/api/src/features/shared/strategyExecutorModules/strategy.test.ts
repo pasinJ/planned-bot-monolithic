@@ -643,8 +643,8 @@ describe('UUT: Update strategy module when opening order is filled', () => {
       });
     });
   });
-  describe('[GIVEN] the order is an exit order [BUT] the strategy does not have enough available asset quantity', () => {
-    const strategy = mockStrategyModule({ availableAssetQuantity: 30 });
+  describe('[GIVEN] the order is an exit order [BUT] the strategy does not have enough available in-orders quantity', () => {
+    const strategy = mockStrategyModule({ inOrdersAssetQuantity: 30 });
     const filledOrder = mockFilledLimitOrder({ orderSide: 'EXIT', quantity: 50 });
 
     describe('[WHEN] update strategy module when pending order is opened', () => {

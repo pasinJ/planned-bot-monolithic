@@ -107,21 +107,21 @@ describe('UUT: Execute strategy', () => {
     });
   });
 
-  describe('[WHEN] execute the strategy body that access ramda module', () => {
-    it("[THEN] it will return Right [AND] the ramda's function will work properly", async () => {
+  describe('[WHEN] execute the strategy body that access lodash module', () => {
+    it("[THEN] it will return Right [AND] the lodash's function will work properly", async () => {
       const { logs, console } = createConsole();
       const deps = { console, loggerIo: wrapLogger(console) };
       const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
 
       const executeFn = strategyExecutor.composeWith(executeStrategy);
-      const body = 'console.log(ramda.add(3,5))' as StrategyBody;
+      const body = 'console.log(lodash.nth([1,2,3],-1))' as StrategyBody;
       const language = defaultLanguage;
       const modules = defaultModule;
 
       const result = await executeT(executeFn(body, language, modules));
 
       expect(result).toBeRight();
-      expect(logs).toContain('8');
+      expect(logs).toContain('3');
     });
   });
 
@@ -303,6 +303,24 @@ describe('UUT: Execute strategy', () => {
     });
   });
 
+  describe('[WHEN] execute the strategy body that uses async/await syntax', () => {
+    it('[THEN] it will return Right [AND] work properly', async () => {
+      const { logs, console } = createConsole();
+      const deps = { console, loggerIo: wrapLogger(console) };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+
+      const executeFn = strategyExecutor.composeWith(executeStrategy);
+      const body = `console.log(await Promise.resolve('Hello'));` as StrategyBody;
+      const language = defaultLanguage;
+      const modules = defaultModule;
+
+      const result = await executeT(executeFn(body, language, modules));
+
+      expect(result).toBeRight();
+      expect(logs).toContain('Hello');
+    });
+  });
+
   describe('[GIVEN] language is typescript', () => {
     describe('[WHEN] execute the strategy body', () => {
       it('[THEN] it will return Right [AND] work properly', async () => {
@@ -319,6 +337,26 @@ describe('UUT: Execute strategy', () => {
 
         expect(result).toBeRight();
         expect(logs).toContain('');
+      });
+    });
+  });
+
+  describe('[GIVEN] language is typescript [AND] strategy body uses async/await syntax', () => {
+    describe('[WHEN] execute the strategy body', () => {
+      it('[THEN] it will return Right [AND] work properly', async () => {
+        const { logs, console } = createConsole();
+        const deps = { console, loggerIo: wrapLogger(console) };
+        const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+
+        const executeFn = strategyExecutor.composeWith(executeStrategy);
+        const body = `console.log(await Promise.resolve('Hello'));` as StrategyBody;
+        const language = languageEnum.typescript;
+        const modules = defaultModule;
+
+        const result = await executeT(executeFn(body, language, modules));
+
+        expect(result).toBeRight();
+        expect(logs).toContain('Hello');
       });
     });
   });

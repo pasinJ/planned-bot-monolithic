@@ -2305,6 +2305,7 @@ describe('UUT: Process pending orders', () => {
       totalAssetQuantity: 60,
       availableAssetQuantity: 30,
       takerFeeRate: 1,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
     });
     const marketOrder = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
     const orders = { ...defaultOrders, pendingOrders: [marketOrder] };
@@ -2362,7 +2363,7 @@ describe('UUT: Process pending orders', () => {
           availableCapital: 50,
           totalAssetQuantity: 69.9,
           availableAssetQuantity: 39.9,
-          totalFees: { ...strategyModule.totalFees, inAssetCurrency: 0.1 },
+          totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0.1 },
         });
       });
     });
@@ -2381,6 +2382,7 @@ describe('UUT: Process pending orders', () => {
       totalAssetQuantity: 60,
       availableAssetQuantity: 30,
       takerFeeRate: 1,
+      totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0 },
     });
     const marketOrder1 = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
     const marketOrder2 = mockPendingMarketOrder({ orderSide: 'ENTRY', quantity: 10 });
@@ -2448,7 +2450,7 @@ describe('UUT: Process pending orders', () => {
           availableCapital: 10,
           totalAssetQuantity: 69.9,
           availableAssetQuantity: 39.9,
-          totalFees: { ...strategyModule.totalFees, inAssetCurrency: 0.1 },
+          totalFees: { inCapitalCurrency: 0, inAssetCurrency: 0.1 },
         });
       });
     });

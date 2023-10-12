@@ -55,7 +55,7 @@ export function buildStrategyExecutor(
 ): te.TaskEither<CreateStrategyExecutorError, StrategyExecutor> {
   const { console, loggerIo } = deps;
 
-  const ramdaBundledFilePath = path.resolve('./src/libs/ramda.cjs');
+  const libsPath = path.resolve('./src/libs');
 
   return pipe(
     te.Do,
@@ -67,8 +67,13 @@ export function buildStrategyExecutor(
 
           await context.global.set('global', context.global.derefInto());
 
-          const ramdaLib = await fs.readFile(ramdaBundledFilePath, 'utf8');
-          await sandbox.compileScript(ramdaLib).then((script) => script.run(context));
+          const libFiles = await fs.readdir(libsPath);
+          await Promise.all(
+            libFiles.map(async (fileName) => {
+              const content = await fs.readFile(path.join(libsPath, fileName), 'utf8');
+              return context.eval(content);
+            }),
+          );
 
           await importObjIntoContext('console', console, context.global);
 

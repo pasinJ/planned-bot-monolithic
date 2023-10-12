@@ -1,15 +1,53 @@
 import { Agenda, Job } from 'agenda';
 import consoleStamp from 'console-stamp';
 import io from 'fp-ts/lib/IO.js';
+import ior from 'fp-ts/lib/IORef.js';
+import t from 'fp-ts/lib/Task.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { levels, pino } from 'pino';
 import { Stream } from 'stream';
 
 import { btExecutionStatusEnum } from '#features/btStrategies/dataModels/btExecution.js';
+import { generateOrderId } from '#features/shared/order.js';
+import { executeStrategy } from '#features/shared/strategyExecutor/executeStrategy.js';
+import {
+  OrdersLists,
+  TradesLists,
+  buildStrategyExecutor,
+} from '#features/shared/strategyExecutor/service.js';
+import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
+import { generateTradeId } from '#features/shared/trade.js';
+import { getSymbolModelByNameAndExchange } from '#features/symbols/DAOs/symbol.feature.js';
+import { buildSymbolDao } from '#features/symbols/DAOs/symbol.js';
 import { wrapLogger } from '#infra/logging.js';
+import { buildMongoDbClient } from '#infra/mongoDb/client.js';
+import { getMongoDbConfig } from '#infra/mongoDb/config.js';
+import { getBnbConfig } from '#infra/services/binance/config.js';
+import { buildBnbService } from '#infra/services/binance/service.js';
 import { getJobSchedulerConfig } from '#infra/services/jobScheduler/config.js';
+import { saveJobThenStopAgenda } from '#infra/services/jobScheduler/service.js';
+import { AppError } from '#shared/errors/appError.js';
 import { executeT } from '#shared/utils/fp.js';
 
+import { getBtStrategyModelById } from '../DAOs/btStrategy.feature.js';
+import { buildBtStrategyDao } from '../DAOs/btStrategy.js';
+import {
+  addKlines,
+  getFirstKlineBefore,
+  getKlinesBefore,
+  iterateThroughKlines,
+} from '../DAOs/kline.feature.js';
+import { buildKlineDao } from '../DAOs/kline.js';
+import { getKlinesByApi } from '../services/binance/getKlinesByApi.js';
+import { getKlinesByDailyFiles } from '../services/binance/getKlinesByDailyFiles.js';
+import { getKlinesByMonthlyFiles } from '../services/binance/getKlinesByMonthlyFiles.js';
+import { getKlinesForBt } from '../services/binance/getKlinesForBt.js';
+import { createDirectory } from '../services/file/createDirectory.js';
+import { extractZipFile } from '../services/file/extractZipFile.js';
+import { readCsvFile } from '../services/file/readCsvFile.js';
+import { removeDirectory } from '../services/file/removeDirectory.js';
+import { BacktestDeps, backtest } from './backtest.js';
 import { BtJobData, btJobName } from './backtesting.job.js';
 
 function startAgenda(): te.TaskEither<void, Agenda> {
@@ -73,39 +111,146 @@ function addProcessSignalHandlers({ job, agenda }: { job: Job<BtJobData>; agenda
     });
   };
 }
-async function saveJobThenStopAgenda({ job, agenda }: { job: Job<BtJobData>; agenda: Agenda }) {
-  const stopAgenda = async () => {
-    await agenda.stop();
-    await agenda.close();
-  };
-
-  return job
-    .save()
-    .then(
-      () => stopAgenda(),
-      () => stopAgenda(),
-    )
-    .finally(() => process.exit(0));
-}
-function handleSuccessfulProcess({ job, agenda }: { job: Job<BtJobData>; agenda: Agenda }) {
-  return te.tryCatch(
-    async () => {
-      loggerIo.info(`Backtesting process done`);
-
-      job.attrs.data.status = btExecutionStatusEnum.FINISHED;
-      job.attrs.result = { logs };
-
-      return saveJobThenStopAgenda({ job, agenda });
-    },
-    () => process.exit(1),
+function prepareBacktestDeps({ job }: { job: Job<BtJobData> }): te.TaskEither<AppError, BacktestDeps> {
+  return pipe(
+    te.Do,
+    te.bindW('bnbService', () => te.fromIOEither(buildBnbService({ getBnbConfig, mainLogger }))),
+    te.bindW('mongoClient', () => buildMongoDbClient(loggerIo, getMongoDbConfig)),
+    te.bindW('btStrategyDao', ({ mongoClient }) => te.fromIOEither(buildBtStrategyDao(mongoClient))),
+    te.bindW('symbolDao', ({ mongoClient }) => te.fromIOEither(buildSymbolDao(mongoClient))),
+    te.bindW('klineDao', ({ mongoClient }) => te.fromIOEither(buildKlineDao(mongoClient))),
+    te.bindW('strategyExecutor', () => buildStrategyExecutor({ console: logger, loggerIo })),
+    te.let('getKlinesFromApi', ({ bnbService }) => bnbService.composeWith(getKlinesByApi)),
+    te.let('getKlinesFromDailyFiles', ({ bnbService, getKlinesFromApi }) =>
+      bnbService.composeWith(({ httpClient }) =>
+        getKlinesByDailyFiles({
+          httpClient,
+          fileService: { extractZipFile, readCsvFile },
+          bnbService: { getConfig: getBnbConfig, getKlinesByApi: getKlinesFromApi },
+        }),
+      ),
+    ),
+    te.let('getKlinesFromMonthlyFiles', ({ bnbService, getKlinesFromApi, getKlinesFromDailyFiles }) =>
+      bnbService.composeWith(({ httpClient }) =>
+        getKlinesByMonthlyFiles({
+          httpClient,
+          fileService: { extractZipFile, readCsvFile },
+          bnbService: {
+            getConfig: getBnbConfig,
+            getKlinesByApi: getKlinesFromApi,
+            getKlinesByDailyFiles: getKlinesFromDailyFiles,
+          },
+        }),
+      ),
+    ),
+    te.map(
+      ({
+        btStrategyDao,
+        symbolDao,
+        klineDao,
+        strategyExecutor,
+        getKlinesFromApi,
+        getKlinesFromDailyFiles,
+        getKlinesFromMonthlyFiles,
+      }) =>
+        ({
+          job,
+          loggerIo,
+          generateOrderId,
+          generateTradeId,
+          btStrategyDao: { getById: btStrategyDao.composeWith(getBtStrategyModelById) },
+          symbolDao: { getByNameAndExchange: symbolDao.composeWith(getSymbolModelByNameAndExchange) },
+          klineDao: {
+            add: klineDao.composeWith(addKlines),
+            getBefore: klineDao.composeWith(getKlinesBefore),
+            getFirstBefore: klineDao.composeWith(getFirstKlineBefore),
+            iterateThroughKlines: klineDao.composeWith(iterateThroughKlines),
+          },
+          bnbService: {
+            getKlinesForBt: getKlinesForBt({
+              bnbService: {
+                getConfig: getBnbConfig,
+                getKlinesByApi: getKlinesFromApi,
+                getKlinesByDailyFiles: getKlinesFromDailyFiles,
+                getKlinesByMonthlyFiles: getKlinesFromMonthlyFiles,
+              },
+              fileService: { createDirectory, removeDirectory },
+            }),
+          },
+          strategyExecutor: {
+            execute: strategyExecutor.composeWith(executeStrategy),
+            stopVm: strategyExecutor.stop,
+          },
+        }) as BacktestDeps,
+    ),
+    te.chainFirstIOK(() => loggerIo.infoIo('Backtesting dependencies created')),
   );
+}
+function handleBacktestSucceeded(deps: {
+  job: Job<BtJobData>;
+  agenda: Agenda;
+  ordersRef: ior.IORef<OrdersLists>;
+  tradesRef: ior.IORef<TradesLists>;
+  strategyModuleRef: ior.IORef<StrategyModule>;
+}): t.Task<void> {
+  return () => {
+    const { job, agenda, ordersRef, tradesRef, strategyModuleRef } = deps;
+
+    loggerIo.info(`Backtesting successfully done`);
+
+    job.attrs.data.status = btExecutionStatusEnum.FINISHED;
+    job.attrs.result = {
+      strategyModule: strategyModuleRef.read(),
+      orders: ordersRef.read(),
+      trades: tradesRef.read(),
+      logs,
+    };
+
+    return saveJobThenStopAgenda({ job, agenda }).catch(() => process.exit(1));
+  };
+}
+function handleBacktestFailed<E extends AppError>(
+  deps: { job: Job<BtJobData>; agenda: Agenda },
+  appError: E,
+): t.Task<void> {
+  return () => {
+    const { job, agenda } = deps;
+
+    loggerIo.info(`Backtesting failed`);
+
+    job.attrs.data.status = btExecutionStatusEnum.FAILED;
+    job.attrs.failReason = appError.toString();
+    job.attrs.result = { logs, error: appError.toJSON() };
+
+    return saveJobThenStopAgenda({ job, agenda }).catch(() => process.exit(1));
+  };
 }
 
 // eslint-disable-next-line no-console
 const logger = new console.Console(new Stream.Writable());
 const logs: string[] = [];
+const mainLogger = pino(
+  {
+    hooks: {
+      logMethod: ([msg], _, levelNum) => {
+        const label = levels.labels[levelNum];
+
+        if (label === 'trace') logger.trace(msg);
+        else if (label === 'debug') logger.debug(msg);
+        else if (label === 'info') logger.info(msg);
+        else if (label === 'warn') logger.warn(msg);
+        else if (label === 'error') logger.error(msg);
+        else if (label === 'fatal') logger.error(msg);
+        else logger.log();
+      },
+    },
+  },
+  pino.destination('/dev/null'),
+);
+const loggerIo = wrapLogger(mainLogger);
 
 consoleStamp.default(logger, {
+  format: ':date(yyyy-mm-dd HH:MM:ss.l o) :label',
   stdout: new Stream.Writable({
     write: (chunk: Buffer, _, cb) => {
       logs.push(chunk.toString().replace(/\n$/, ''));
@@ -115,7 +260,6 @@ consoleStamp.default(logger, {
 });
 
 const executionId = process.argv[2];
-const loggerIo = wrapLogger(logger);
 
 await executeT(
   pipe(
@@ -123,6 +267,15 @@ await executeT(
     te.bindW('agenda', () => startAgenda()),
     te.bindW('job', ({ agenda }) => getCurrentJobById(agenda)),
     te.chainFirstIOK(({ job, agenda }) => addProcessSignalHandlers({ job, agenda })),
-    te.chainW(({ job, agenda }) => handleSuccessfulProcess({ job, agenda })),
+    te.chainTaskK(({ job, agenda }) =>
+      pipe(
+        prepareBacktestDeps({ job }),
+        te.chainW(backtest),
+        te.matchE(
+          (error) => handleBacktestFailed({ job, agenda }, error),
+          (refs) => handleBacktestSucceeded({ job, agenda, ...refs }),
+        ),
+      ),
+    ),
   ),
 );

@@ -110,6 +110,12 @@ export function createOpeningOrder(
   return { ...order, status: 'OPENING', submittedAt: currentDate };
 }
 
+export function createTriggeredOrder(
+  openingOrder: Extract<OpeningOrder, { type: 'STOP_LIMIT' }>,
+): TriggeredOrder {
+  return { ...openingOrder, status: 'TRIGGERED' };
+}
+
 export function createFilledOrder<
   O extends Extract<PendingOrder, { type: 'MARKET' | 'LIMIT' }> | OpeningOrder | TriggeredOrder,
 >(
@@ -150,15 +156,15 @@ export function calculateFee(
   feeRates: { takerFeeRate: TakerFeeRate; makerFeeRate: MakerFeeRate },
   currencies: { capitalCurrency: AssetName; assetCurrency: AssetName },
 ): Fee {
-  const { type, quantity } = order;
+  const { type, quantity, status } = order;
   const { takerFeeRate, makerFeeRate } = feeRates;
   const { capitalCurrency, assetCurrency } = currencies;
 
   const feeCurrency = order.orderSide === 'ENTRY' ? assetCurrency : capitalCurrency;
   const feeRate =
+    (status === 'PENDING' && type === 'LIMIT' && shouldTreatLimitOrderAsMarketOrder(order, filledPrice)) ||
     type === 'MARKET' ||
-    type === 'STOP_MARKET' ||
-    (type === 'LIMIT' && shouldTreatLimitOrderAsMarketOrder(order, filledPrice))
+    type === 'STOP_MARKET'
       ? takerFeeRate
       : makerFeeRate;
   const amountToReceive =

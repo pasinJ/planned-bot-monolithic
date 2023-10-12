@@ -33,15 +33,15 @@ describe('[GIVEN] the backtesting strategy ID does not exist', () => {
 describe('[GIVEN] the backtesting strategy ID already exists', () => {
   describe('[WHEN] user sends a request to execute the backtesting strategy', () => {
     it('[THEN] it should return HTTP202 and response body with id, created timestamp, progress path, and result path', async () => {
-      const createSymbolRequest = mockValidAddBtStrategyRequestBody();
+      const addStrategyRequest = mockValidAddBtStrategyRequestBody();
       const symbol = mockBnbSymbol({
-        name: createSymbolRequest.symbol,
-        exchange: createSymbolRequest.exchange,
-        baseAsset: createSymbolRequest.capitalCurrency,
+        name: addStrategyRequest.symbol,
+        exchange: addStrategyRequest.exchange,
+        baseAsset: addStrategyRequest.capitalCurrency,
       });
       await symbolModel.create(symbol);
 
-      const { response: addResponse } = await addBtStrategy(createSymbolRequest);
+      const { response: addResponse } = await addBtStrategy(addStrategyRequest);
       const btStrategyId = path(['data', 'id'], addResponse) as string;
 
       const { response: executeResponse } = await executeBtStrategy(btStrategyId);

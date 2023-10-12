@@ -13,6 +13,8 @@ import {
   BtExecutionStatus,
   btExecutionStatusEnum,
 } from '#features/btStrategies/dataModels/btExecution.js';
+import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/service.js';
+import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
 import { LoggerIo } from '#infra/logging.js';
 import { DateService } from '#infra/services/date/service.js';
 import { JobSchedulerError, createJobSchedulerError } from '#infra/services/jobScheduler/error.js';
@@ -27,7 +29,12 @@ export type BtJobRecord = JobRecord<BtJobName, BtJobData, BtJobResult>;
 type BtJobName = typeof btJobName;
 export const btJobName = 'backtesting';
 export type BtJobData = { id: BtExecutionId; btStrategyId: BtStrategyId; status: BtExecutionStatus };
-export type BtJobResult = { logs: string[] };
+export type BtJobResult = {
+  logs: string[];
+  strategyModule?: StrategyModule;
+  orders?: OrdersLists;
+  trades?: TradesLists;
+};
 
 export type BtJobDeps = DeepReadonly<{ fork: typeof fork; getBtJobConfig: io.IO<BtJobConfig> }>;
 export function defineBtJob(deps: BtJobDeps) {
@@ -64,18 +71,27 @@ function buildBtJobProcessor(
   timeout: BtJobTimeout,
 ): Processor<BtJobData> {
   return async (job, done) => {
+    const jobId = job.attrs._id;
+    const executionId = job.attrs.data.id;
+
     job.attrs.data.status = btExecutionStatusEnum.RUNNING;
     await job.save();
 
-    const executionId = job.attrs.data.id;
     const worker = fork(workerPath, [executionId], { timeout });
 
     worker.on('close', (exitCode) => {
       if (exitCode !== 0) {
         job.attrs.data.status = btExecutionStatusEnum.FAILED;
+        done();
+      } else {
+        void job.agenda._collection
+          .findOne<{ _id: string; data: BtJobData }>({ _id: jobId }, { projection: { data: 1 } })
+          .then((refreshedJob) => {
+            if (refreshedJob) job.attrs.data = refreshedJob.data;
+            return;
+          })
+          .finally(() => done());
       }
-
-      done();
     });
   };
 }

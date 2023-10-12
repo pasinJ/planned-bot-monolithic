@@ -2,7 +2,7 @@ import { transform } from '@swc/core';
 import { ReadonlyNonEmptyArray } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { Context, Isolate, Reference } from 'isolated-vm';
+import { Context, Reference } from 'isolated-vm';
 import { DeepReadonly } from 'ts-essentials';
 
 import { LoggerIo } from '#infra/logging.js';
@@ -17,17 +17,15 @@ import { KlinesModule } from '../strategyExecutorModules/klines.js';
 import { OrdersModule } from '../strategyExecutorModules/orders.js';
 import { StrategyModule } from '../strategyExecutorModules/strategy.js';
 import { SystemModule } from '../strategyExecutorModules/system.js';
-import { TechnicalAnalysisModule } from '../strategyExecutorModules/technicalAnalysis.js';
 import { TradesModule } from '../strategyExecutorModules/trades.js';
 import { StrategyExecutorError, createStrategyExecutorError } from './error.js';
 import { OrdersLists, StrategyExecutorContext, TradesLists, importObjIntoContext } from './service.js';
 
-export type ExecutorModules = {
+type ExecutorModules = {
   klinesModule: KlinesModule;
   ordersModule: OrdersModule;
   tradesModule: TradesModule;
   strategyModule: StrategyModule;
-  technicalAnalysisModule: TechnicalAnalysisModule;
   systemModule: SystemModule;
 };
 
@@ -46,25 +44,12 @@ export type ExecuteStrategyRequest = {
   timezone: TimezoneString;
 };
 export type ExecuteStrategyError = StrategyExecutorError<'ExecuteFailed'>;
-export function executeStrategy({
-  sandbox,
-  context,
-  loggerIo,
-}: {
-  sandbox: Isolate;
-  context: Context;
-  loggerIo: LoggerIo;
-}): ExecuteStrategy {
+export function executeStrategy({ context }: { context: Context; loggerIo: LoggerIo }): ExecuteStrategy {
   return (body, language, modules) => {
     const swcConfig = { jsc: { parser: { syntax: 'typescript' } }, minify: true } as const;
-    const {
-      klinesModule,
-      ordersModule,
-      tradesModule,
-      strategyModule,
-      technicalAnalysisModule,
-      systemModule,
-    } = modules;
+    const { klinesModule, ordersModule, tradesModule, strategyModule, systemModule } = modules;
+
+    const putInAsyncWrapper = (code: string) => `(async () => { ${code} })()`;
 
     return pipe(
       te.tryCatch(
@@ -74,16 +59,18 @@ export function executeStrategy({
             importObjIntoContext('orders', ordersModule, context.global),
             importObjIntoContext('trades', tradesModule, context.global),
             importObjIntoContext('strategy', strategyModule, context.global),
-            importObjIntoContext('ta', technicalAnalysisModule, context.global),
             importObjIntoContext('system', systemModule, context.global),
-          ]),
+          ]).then(() => context.eval(`global.ta = _ta.buildTechnicalAnalysisModule(klines.getAllRaw());`)),
         createErrorFromUnknown(
           createStrategyExecutorError('ExecuteFailed', 'Adding executor modules to isolated VM failed'),
         ),
       ),
       te.chainW(() =>
         te.tryCatch(
-          async () => (language === 'javascript' ? body : (await transform(body, swcConfig)).code),
+          async () =>
+            language === 'javascript'
+              ? putInAsyncWrapper(body)
+              : (await transform(putInAsyncWrapper(body), swcConfig)).code,
           createErrorFromUnknown(
             createStrategyExecutorError('ExecuteFailed', 'Transforming strategy body failed'),
           ),
@@ -91,14 +78,11 @@ export function executeStrategy({
       ),
       te.chainW((code) =>
         te.tryCatch(
-          () => sandbox.compileScript(code).then((script) => script.run(context)),
+          () => context.eval(code),
           createErrorFromUnknown(
             createStrategyExecutorError('ExecuteFailed', 'Executing strategy body failed'),
           ),
         ),
-      ),
-      te.orElseFirstIOK((error) =>
-        loggerIo.errorIo(`Strategy execution failed with error: ${error.toString()}`),
       ),
       te.chainW(() =>
         te.tryCatch(

@@ -89,11 +89,13 @@ export function processPendingOrders(
   const { pendingOrders, ...restOrders } = orders;
 
   return pendingOrders.reduce(
-    (prevResult, pendingOrder) =>
+    (prev, pendingOrder) =>
       pipe(
-        prevResult,
-        io.chain(
-          ({ strategyModule, orders, trades }): io.IO<ProcessResult> =>
+        io.Do,
+        io.bind('prevResult', () => prev),
+        io.bind(
+          'currentResult',
+          ({ prevResult: { strategyModule, orders, trades } }): io.IO<ProcessResult> =>
             pendingOrder.type === 'MARKET'
               ? processPendingMarketOrder(deps, strategyModule, orders, trades, pendingOrder, currentPrice)
               : pendingOrder.type === 'LIMIT'
@@ -104,10 +106,10 @@ export function processPendingOrders(
               ? processPendingStopLimitOrder(deps, strategyModule, orders, pendingOrder)
               : processPendingCancelOrder(deps, strategyModule, orders, pendingOrder),
         ),
-        io.map((result) => ({
-          strategyModule: result.strategyModule,
-          orders: { ...orders, ...result.orders },
-          trades: propOr(trades, 'trades', result),
+        io.map(({ prevResult, currentResult }) => ({
+          strategyModule: currentResult.strategyModule,
+          orders: { ...prevResult.orders, ...currentResult.orders },
+          trades: propOr(prevResult.trades, 'trades', currentResult),
         })),
       ),
     io.of({ strategyModule, orders: restOrders, trades }),
@@ -145,7 +147,7 @@ function processAsMarketOrder(
   const { dateService, generateTradeId } = deps;
   const { symbol, takerFeeRate, makerFeeRate, capitalCurrency, assetCurrency } = strategyModule;
   const { filledOrders, rejectedOrders } = orders;
-  const { openingTrades } = trades;
+  const { openingTrades, closedTrades } = trades;
 
   const feeRates = { takerFeeRate, makerFeeRate };
   const currencies = { capitalCurrency, assetCurrency };
@@ -195,10 +197,13 @@ function processAsMarketOrder(
             } else {
               return pipe(
                 closeTrades({ generateTradeId }, openingTrades, filledOrder),
-                ioe.map((trades) => ({
+                ioe.map((newTrades) => ({
                   strategyModule: updatedStrategy,
                   orders: { ...orders, filledOrders: append(filledOrder, filledOrders) },
-                  trades,
+                  trades: {
+                    openingTrades: newTrades.openingTrades,
+                    closedTrades: concat(closedTrades, newTrades.closedTrades),
+                  },
                 })),
               );
             }
@@ -316,9 +321,7 @@ export function processPendingStopMarketOrder(
         ioe.fromEither(validatePendingRequest),
         ioe.let('openingOrder', (stopMarketOrder) => createOpeningOrder(stopMarketOrder, currentDate)),
         ioe.bindW('updatedStrategy', ({ openingOrder }) =>
-          ioe.fromEither(
-            updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder),
-          ),
+          ioe.fromEither(updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder)),
         ),
         ioe.map(({ openingOrder, updatedStrategy }) => ({
           strategyModule: updatedStrategy,
@@ -371,9 +374,7 @@ export function processPendingStopLimitOrder(
         ioe.fromEither(validatePendingRequest),
         ioe.let('openingOrder', (stopLimitOrder) => createOpeningOrder(stopLimitOrder, currentDate)),
         ioe.bindW('updatedStrategy', ({ openingOrder }) =>
-          ioe.fromEither(
-            updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder),
-          ),
+          ioe.fromEither(updateStrategyModuleWhenPendingOrderIsOpened(strategyModule, openingOrder)),
         ),
         ioe.map(({ openingOrder, updatedStrategy }) => ({
           strategyModule: updatedStrategy,

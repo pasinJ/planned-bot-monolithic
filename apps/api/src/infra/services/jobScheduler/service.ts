@@ -1,4 +1,4 @@
-import { Agenda } from 'agenda';
+import { Agenda, Job } from 'agenda';
 import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
@@ -74,6 +74,21 @@ function stop({ agenda, loggerIo }: { agenda: Agenda; loggerIo: LoggerIo }): Job
     ),
     te.chainFirstIOK(() => loggerIo.infoIo('Job scheduler stopped')),
   );
+}
+
+export async function saveJobThenStopAgenda({ job, agenda }: { job: Job; agenda: Agenda }): Promise<void> {
+  const stopAgenda = async () => {
+    await agenda.stop();
+    await agenda.close();
+  };
+
+  return job
+    .save()
+    .then(
+      () => stopAgenda(),
+      () => stopAgenda(),
+    )
+    .finally(() => process.exit(0));
 }
 
 export type JobRecord<

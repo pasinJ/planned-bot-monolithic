@@ -19,6 +19,7 @@ import {
   createPendingOrderRequest,
   createRejectedOrder,
   createSubmittedOrder,
+  createTriggeredOrder,
 } from './order.js';
 import { MakerFeeRate, TakerFeeRate } from './strategy.js';
 import { AssetName } from './symbol.js';
@@ -59,6 +60,18 @@ describe('UUT: Create opening order', () => {
       const result = createOpeningOrder(pendingOrder, currentDate);
 
       expect(result).toEqual({ ...pendingOrder, status: 'OPENING', submittedAt: currentDate });
+    });
+  });
+});
+
+describe('UUT: Create triggered order', () => {
+  describe('[WHEN] create triggered order', () => {
+    it('[THEN] it will return a triggered order with status property equals to TRIGGERED', () => {
+      const openingOrder = mockOpeningStopLimitOrder();
+
+      const result = createTriggeredOrder(openingOrder);
+
+      expect(result).toEqual({ ...openingOrder, status: 'TRIGGERED' });
     });
   });
 });
@@ -179,10 +192,10 @@ describe('UUT: Calculate fee', () => {
   });
   describe('[GIVEN] the order is a opening entry LIMIT order [AND] the limit price is greater than or equal to the filled price', () => {
     describe('[WHEN] calculate fee', () => {
-      it('[THEN] it will return fee amount based on quantity and taker fee rate, with asset currency', () => {
+      it('[THEN] it will return fee amount based on quantity and maker fee rate, with asset currency', () => {
         const order = mockOpeningLimitOrder({ orderSide: 'ENTRY', quantity: 10, limitPrice: 5 });
         const filledPrice = 4 as Price;
-        const feeRates = { ...defaultFeeRates, takerFeeRate: 5 as TakerFeeRate };
+        const feeRates = { ...defaultFeeRates, makerFeeRate: 5 as MakerFeeRate };
         const currencies = defaultCurrencies;
 
         const result = calculateFee(order, filledPrice, feeRates, currencies);
@@ -223,10 +236,10 @@ describe('UUT: Calculate fee', () => {
 
   describe('[GIVEN] the order is a opening exit LIMIT order [AND] the limit price is less than the filled price', () => {
     describe('[WHEN] calculate fee', () => {
-      it('[THEN] it will return fee amount based on quantity, price, and taker fee rate, with capital currency', () => {
+      it('[THEN] it will return fee amount based on quantity, price, and maker fee rate, with capital currency', () => {
         const order = mockOpeningLimitOrder({ orderSide: 'EXIT', quantity: 10, limitPrice: 5 });
         const filledPrice = 6 as Price;
-        const feeRates = { ...defaultFeeRates, takerFeeRate: 5 as TakerFeeRate };
+        const feeRates = { ...defaultFeeRates, makerFeeRate: 5 as MakerFeeRate };
         const currencies = defaultCurrencies;
 
         const result = calculateFee(order, filledPrice, feeRates, currencies);

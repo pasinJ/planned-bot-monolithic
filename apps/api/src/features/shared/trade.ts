@@ -20,18 +20,18 @@ export type OpeningTrade = {
   entryOrder: Extract<FilledOrder, { orderSide: 'ENTRY' }>;
   /** Quantity of opening asset in current trade */
   tradeQuantity: TradeQuantity;
-  /** The maximum possible loss during the trade <br/>
-   * Before fee deduction.
-   */
-  maxDrawdown: TradeDrawdown;
   /** Maximum price since the trade was opened */
   maxPrice: Price;
+  /** Minimum price since the trade was opened */
+  minPrice: Price;
   /** The maximum possible profit during the trade <br/>
    * Before fee deduction.
    */
   maxRunup: TradeRunup;
-  /** Minimum price since the trade was opened */
-  minPrice: Price;
+  /** The maximum possible loss during the trade <br/>
+   * Before fee deduction.
+   */
+  maxDrawdown: TradeDrawdown;
   /** Current unrealized return (profit or loss) of this trade in capital currency <br/>
    * Before fee deduction. Losses are expressed as negative values.
    */
@@ -69,20 +69,29 @@ export function generateTradeId(): TradeId {
 export function createFullOpeningTrade(
   tradeId: TradeId,
   entryOrder: Extract<FilledOrder, { orderSide: 'ENTRY' }>,
+  currentKline?: Kline,
 ): OpeningTrade {
   const { quantity, fee, filledPrice } = entryOrder;
 
   const tradeQuantity = new Decimal(quantity).minus(fee.amount).toNumber() as TradeQuantity;
-  const unrealizedReturn = calculateUnrealizedReturns(entryOrder, tradeQuantity, entryOrder.filledPrice);
+
+  const maxPrice = currentKline ? max(filledPrice, currentKline.close) : filledPrice;
+  const minPrice = currentKline ? min(filledPrice, currentKline.close) : filledPrice;
+
+  const maxRunup = calculateRunup({ tradeQuantity, entryOrder, maxPrice });
+  const maxDrawdown = calculateDrawdown({ tradeQuantity, entryOrder, minPrice });
+
+  const currentPrice = currentKline ? currentKline.close : filledPrice;
+  const unrealizedReturn = calculateUnrealizedReturns(entryOrder, tradeQuantity, currentPrice);
 
   return {
     id: tradeId,
     entryOrder: entryOrder,
     tradeQuantity,
-    maxDrawdown: 0 as TradeDrawdown,
-    maxPrice: filledPrice,
-    maxRunup: 0 as TradeRunup,
-    minPrice: filledPrice,
+    maxPrice,
+    minPrice,
+    maxRunup,
+    maxDrawdown,
     unrealizedReturn,
   };
 }
