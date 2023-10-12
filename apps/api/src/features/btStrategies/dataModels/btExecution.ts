@@ -22,7 +22,7 @@ const btExecutionStatus = z.enum([
 export const btExecutionStatusEnum = btExecutionStatus.enum;
 export const btExecutionStatusList = btExecutionStatus.options;
 
-type BtExecutionProgressPercentage = z.infer<typeof btExecutionProgressPercentageSchema>;
+export type BtExecutionProgressPercentage = z.infer<typeof btExecutionProgressPercentageSchema>;
 const btExecutionProgressPercentageSchema = nonNegativePercentage8DigitsSchema.brand(
   'BtExecutionProgressPercentage',
 );
@@ -31,7 +31,7 @@ export type BtExecutionProgress = DeepReadonly<{
   id: BtExecutionId;
   btStrategyId: BtStrategyId;
   status: BtExecutionStatus;
-  progress: BtExecutionProgressPercentage;
+  percentage: BtExecutionProgressPercentage;
   logs: string[];
 }>;
 

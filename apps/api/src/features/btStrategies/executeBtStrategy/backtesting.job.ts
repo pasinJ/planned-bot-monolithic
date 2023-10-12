@@ -10,6 +10,7 @@ import { DeepReadonly } from 'ts-essentials';
 
 import {
   BtExecutionId,
+  BtExecutionProgressPercentage,
   BtExecutionStatus,
   btExecutionStatusEnum,
 } from '#features/btStrategies/dataModels/btExecution.js';
@@ -28,7 +29,12 @@ import { BtJobConfig, BtJobTimeout, BtWorkerModulePath } from './backtesting.job
 export type BtJobRecord = JobRecord<BtJobName, BtJobData, BtJobResult>;
 type BtJobName = typeof btJobName;
 export const btJobName = 'backtesting';
-export type BtJobData = { id: BtExecutionId; btStrategyId: BtStrategyId; status: BtExecutionStatus };
+export type BtJobData = {
+  id: BtExecutionId;
+  btStrategyId: BtStrategyId;
+  status: BtExecutionStatus;
+  percentage: BtExecutionProgressPercentage;
+};
 export type BtJobResult = {
   logs: string[];
   strategyModule?: StrategyModule;
@@ -135,7 +141,12 @@ export function scheduleBtJob(deps: ScheduleBtJobDeps) {
             ),
           ),
         ),
-        te.let('data', () => ({ id: btExecutionDao.generateId(), btStrategyId, status: PENDING })),
+        te.let('data', () => ({
+          id: btExecutionDao.generateId(),
+          btStrategyId,
+          status: PENDING,
+          percentage: 0,
+        })),
         te.chainFirstW(({ data }) =>
           te.tryCatch(
             () => agenda.now(btJobName, data),
