@@ -80,30 +80,22 @@ export async function supertrend(
   );
   const atrSeries = await atr(klines, atrPeriod);
 
-  const upperBandSeries = zipWith(
-    (src, atr) => (isNaN(atr) ? NaN : new Decimal(factor).times(atr).plus(src).toNumber()),
-    hl2Series,
-    atrSeries,
-  );
-  const lowerBandSeries = zipWith(
-    (src, atr) => (isNaN(atr) ? NaN : new Decimal(factor).times(atr).minus(src).toNumber()),
-    hl2Series,
-    atrSeries,
-  );
-
   const { supertrendSeries, directionSeries } = closeSeries.reduce(
-    ({ supertrendSeries, directionSeries }, close, index, closeSeries) => {
-      let upperBand = upperBandSeries[index];
-      let lowerBand = lowerBandSeries[index];
+    ({ upperBandSeries, lowerBandSeries, supertrendSeries, directionSeries }, close, index) => {
+      const atr = atrSeries[index];
+      const src = hl2Series[index];
+
+      let upperBand = isNaN(atr) ? NaN : new Decimal(src).plus(new Decimal(factor).times(atr)).toNumber();
+      let lowerBand = isNaN(atr) ? NaN : new Decimal(src).minus(new Decimal(factor).times(atr)).toNumber();
 
       const prevLowerBand = defaultTo(0, getPrevItem(lowerBandSeries, index));
       const prevUpperBand = defaultTo(0, getPrevItem(upperBandSeries, index));
 
       const prevClose = getPrevItem(closeSeries, index);
       lowerBand =
-        prevClose && (lowerBand > prevLowerBand || prevClose < prevLowerBand) ? lowerBand : prevLowerBand;
+        lowerBand > prevLowerBand || (prevClose && prevClose < prevLowerBand) ? lowerBand : prevLowerBand;
       upperBand =
-        prevClose && (upperBand < prevUpperBand || prevClose > prevUpperBand) ? upperBand : prevUpperBand;
+        upperBand < prevUpperBand || (prevClose && prevClose > prevUpperBand) ? upperBand : prevUpperBand;
 
       let direction: number;
       const prevSupertrend = getPrevItem(supertrendSeries, index);
@@ -120,11 +112,18 @@ export async function supertrend(
       const supertrend = direction === -1 ? lowerBand : upperBand;
 
       return {
+        upperBandSeries: append(upperBand, upperBandSeries),
+        lowerBandSeries: append(lowerBand, lowerBandSeries),
         supertrendSeries: append(supertrend, supertrendSeries),
         directionSeries: append(direction, directionSeries),
       };
     },
-    { supertrendSeries: [] as number[], directionSeries: [] as number[] },
+    {
+      upperBandSeries: [] as number[],
+      lowerBandSeries: [] as number[],
+      supertrendSeries: [] as number[],
+      directionSeries: [] as number[],
+    },
   );
 
   return { supertrend: supertrendSeries, direction: directionSeries };
