@@ -48,6 +48,7 @@ import { extractZipFile } from '../services/file/extractZipFile.js';
 import { readCsvFile } from '../services/file/readCsvFile.js';
 import { removeDirectory } from '../services/file/removeDirectory.js';
 import { BacktestDeps, backtest } from './backtest.js';
+import { getBtJobConfig } from './backtesting.job.config.js';
 import { BtJobData, btJobName } from './backtesting.job.js';
 
 function startAgenda(): te.TaskEither<void, Agenda> {
@@ -178,6 +179,7 @@ function prepareBacktestDeps({ job }: { job: Job<BtJobData> }): te.TaskEither<Ap
             }),
           },
           strategyExecutor: {
+            getConfig: getBtJobConfig,
             execute: strategyExecutor.composeWith(executeStrategy),
             stopVm: strategyExecutor.stop,
           },

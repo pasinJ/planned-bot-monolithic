@@ -46,6 +46,7 @@ import {
 } from '../DAOs/kline.feature.js';
 import { BtStrategyId, BtStrategyModel } from '../dataModels/btStrategy.js';
 import { GetKlinesForBt } from '../services/binance/getKlinesForBt.js';
+import { BtIterationTimeout } from './backtesting.job.config.js';
 import { BtJobData } from './backtesting.job.js';
 import { ProcessOpeningOrdersError, processOpeningOrders } from './processOpeningOrders.js';
 import { processPendingOrders } from './processPendingOrders.js';
@@ -73,7 +74,11 @@ export type BacktestDeps = { job: Job<BtJobData> } & DeepReadonly<{
       exchange: ExchangeName,
     ) => te.TaskEither<SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>, Symbol>;
   };
-  strategyExecutor: { execute: ExecuteStrategy; stopVm: StopStrategyExecutor };
+  strategyExecutor: {
+    execute: ExecuteStrategy;
+    stopVm: StopStrategyExecutor;
+    getConfig: io.IO<{ ITERATION_TIMEOUT_MS: BtIterationTimeout }>;
+  };
 }>;
 export function backtest(deps: BacktestDeps) {
   const {
@@ -238,7 +243,10 @@ export function backtest(deps: BacktestDeps) {
 export type OnEachCallbackDeps = DeepReadonly<{
   generateOrderId: io.IO<OrderId>;
   generateTradeId: io.IO<TradeId>;
-  strategyExecutor: { execute: ExecuteStrategy };
+  strategyExecutor: {
+    execute: ExecuteStrategy;
+    getConfig: io.IO<{ ITERATION_TIMEOUT_MS: BtIterationTimeout }>;
+  };
   klinesRef: ior.IORef<ReadonlyNonEmptyArray<Kline>>;
   ordersRef: ior.IORef<OrdersLists>;
   tradesRef: ior.IORef<TradesLists>;
@@ -375,15 +383,19 @@ export function onEachCallback(deps: OnEachCallbackDeps, btStrategy: BtStrategyM
       ),
       te.chainW(({ klines, request, dateService }) =>
         pipe(
-          {
+          te.Do,
+          te.bindW('config', () => te.fromIO(strategyExecutor.getConfig)),
+          te.let('modules', () => ({
             klinesModule: buildKlinesModule(klines, timezone),
             ordersModule: buildOrdersModule({ dateService, generateOrderId }, symbol, request.orders),
             tradesModule: buildTradesModules(request.trades.openingTrades, request.trades.closedTrades),
             strategyModule: request.strategyModule,
             technicalAnalysisModule: buildTechnicalAnalysisModule(klines),
             systemModule: buildSystemModule({ dateService }, timezone),
-          },
-          (modules) => strategyExecutor.execute(body, language, modules),
+          })),
+          te.chainW(({ config, modules }) =>
+            strategyExecutor.execute(body, language, modules, config.ITERATION_TIMEOUT_MS),
+          ),
           te.chainIOK(_processPendingOrders(dateService, currentKline, request)),
         ),
       ),

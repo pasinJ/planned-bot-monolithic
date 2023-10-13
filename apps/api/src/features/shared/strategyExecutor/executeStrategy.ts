@@ -5,6 +5,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Context, Reference } from 'isolated-vm';
 import { DeepReadonly } from 'ts-essentials';
 
+import { BtIterationTimeout } from '#features/btStrategies/executeBtStrategy/backtesting.job.config.js';
 import { LoggerIo } from '#infra/logging.js';
 import { DateService } from '#infra/services/date/service.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
@@ -33,6 +34,7 @@ export type ExecuteStrategy = (
   body: StrategyBody,
   language: Language,
   modules: ExecutorModules,
+  timeout: BtIterationTimeout,
 ) => te.TaskEither<ExecuteStrategyError, DeepReadonly<readonly PendingOrderRequest[]>>;
 export type ExecuteStrategyRequest = {
   klines: ReadonlyNonEmptyArray<Kline>;
@@ -45,7 +47,7 @@ export type ExecuteStrategyRequest = {
 };
 export type ExecuteStrategyError = StrategyExecutorError<'ExecuteFailed'>;
 export function executeStrategy({ context }: { context: Context; loggerIo: LoggerIo }): ExecuteStrategy {
-  return (body, language, modules) => {
+  return (body, language, modules, timeout) => {
     const swcConfig = { jsc: { parser: { syntax: 'typescript' } }, minify: true } as const;
     const { klinesModule, ordersModule, tradesModule, strategyModule, systemModule } = modules;
 
@@ -78,7 +80,7 @@ export function executeStrategy({ context }: { context: Context; loggerIo: Logge
       ),
       te.chainW((code) =>
         te.tryCatch(
-          () => context.eval(code),
+          () => context.eval(code, { timeout }),
           createErrorFromUnknown(
             createStrategyExecutorError('ExecuteFailed', 'Executing strategy body failed'),
           ),
