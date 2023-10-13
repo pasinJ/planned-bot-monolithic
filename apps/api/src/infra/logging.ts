@@ -8,7 +8,7 @@ import {
   pino,
 } from 'pino';
 import pretty, { PrettyOptions } from 'pino-pretty';
-import { mergeDeepWith, pick, prop } from 'ramda';
+import { mergeDeepWith, prop } from 'ramda';
 
 import { AppConfig, LogFilePath } from '#shared/app.config.js';
 import { mergeConcatArray } from '#utils/general.js';
@@ -74,8 +74,12 @@ export function createLoggerIo(loggerName: string, mainLogger: PinoLogger): Logg
 
 export function wrapLogger(logger: PinoLogger | Console): LoggerIo {
   return {
-    fatal: logger.error, // in case of Console
-    ...pick(['trace', 'debug', 'info', 'warn', 'error', 'fatal'], logger),
+    trace: logger.trace.bind(logger),
+    debug: logger.debug.bind(logger),
+    info: logger.info.bind(logger),
+    warn: logger.warn.bind(logger),
+    error: logger.error.bind(logger),
+    fatal: 'fatal' in logger ? logger.fatal.bind(logger) : logger.error.bind(logger),
     traceIo: ((...args: [msg: string, ...args: unknown[]]) =>
       () =>
         logger.trace(...args)) as LogFnIo,
@@ -92,13 +96,8 @@ export function wrapLogger(logger: PinoLogger | Console): LoggerIo {
       () =>
         logger.error(...args)) as LogFnIo,
     fatalIo: ((...args: [msg: string, ...args: unknown[]]) =>
-      () => {
-        if ('fatal' in logger) {
-          return logger.fatal(...args);
-        } else {
-          return logger.error(...args);
-        }
-      }) as LogFnIo,
+      () =>
+        'fatal' in logger ? logger.fatal(...args) : logger.error(...args)) as LogFnIo,
   };
 }
 

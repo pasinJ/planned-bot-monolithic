@@ -9,11 +9,13 @@ import { equals, propSatisfies } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
 import {
+  BT_PROGRESS_PERCENTAGE_START,
   BtExecutionId,
   BtExecutionStatus,
+  BtProgressPercentage,
   btExecutionStatusEnum,
 } from '#features/btStrategies/dataModels/btExecution.js';
-import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/service.js';
+import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/executeStrategy.js';
 import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
 import { LoggerIo } from '#infra/logging.js';
 import { DateService } from '#infra/services/date/service.js';
@@ -23,51 +25,60 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { ValidDate } from '#shared/utils/date.js';
 
 import { BtStrategyId } from '../dataModels/btStrategy.js';
-import { BtJobConfig, BtJobTimeout, BtWorkerModulePath } from './backtesting.job.config.js';
+import { BtJobConfig, BtJobTimeout, BtWorkerFilePath } from './backtesting.job.config.js';
 
-export type BtJobRecord = JobRecord<BtJobName, BtJobData, BtJobResult>;
+export type BtJobDocument = JobRecord<BtJobName, BtJobData, BtJobResult>;
 type BtJobName = typeof btJobName;
 export const btJobName = 'backtesting';
-export type BtJobData = { id: BtExecutionId; btStrategyId: BtStrategyId; status: BtExecutionStatus };
+export type BtJobData = {
+  id: BtExecutionId;
+  btStrategyId: BtStrategyId;
+  status: BtExecutionStatus;
+  percentage: BtProgressPercentage;
+};
 export type BtJobResult = {
   logs: string[];
   strategyModule?: StrategyModule;
   orders?: OrdersLists;
   trades?: TradesLists;
+  error?: { name: string; type: string; message: string; causesList: string[] };
 };
 
-export type BtJobDeps = DeepReadonly<{ fork: typeof fork; getBtJobConfig: io.IO<BtJobConfig> }>;
+export type BtJobDeps = DeepReadonly<{ getBtJobConfig: io.IO<BtJobConfig>; fork: typeof fork }>;
+export type DefineBtJob = ioe.IOEither<DefineBtJobError, void>;
+export type DefineBtJobError = JobSchedulerError<'DefineJobFailed'>;
 export function defineBtJob(deps: BtJobDeps) {
-  return ({
-    agenda,
-    loggerIo,
-  }: {
-    agenda: Agenda;
-    loggerIo: LoggerIo;
-  }): ioe.IOEither<JobSchedulerError<'DefineJobFailed'>, void> => {
+  return ({ agenda, loggerIo }: { agenda: Agenda; loggerIo: LoggerIo }): DefineBtJob => {
     return pipe(
-      ioe.fromIO(deps.getBtJobConfig),
-      ioe.chain(({ JOB_CONCURRENCY, JOB_TIMEOUT_MS, JOB_WORKER_MODULE_PATH }) =>
+      ioe.Do,
+      ioe.bind('config', () => ioe.fromIO(deps.getBtJobConfig)),
+      ioe.let('agendaOptions', ({ config }) => ({
+        concurrency: config.JOB_CONCURRENCY,
+        lockLimit: config.JOB_CONCURRENCY,
+        shouldSaveResult: true,
+      })),
+      ioe.let('processor', ({ config }) =>
+        buildBtJobProcessor(deps.fork, config.JOB_WORKER_FILE_PATH, config.JOB_TIMEOUT_MS),
+      ),
+      ioe.chain(({ agendaOptions, processor }) =>
         ioe.tryCatch(
-          () =>
-            agenda.define(
-              btJobName,
-              { concurrency: JOB_CONCURRENCY, lockLimit: JOB_CONCURRENCY, shouldSaveResult: true },
-              buildBtJobProcessor(deps.fork, JOB_WORKER_MODULE_PATH, JOB_TIMEOUT_MS),
-            ),
+          () => agenda.define(btJobName, agendaOptions, processor),
           createErrorFromUnknown(
             createJobSchedulerError('DefineJobFailed', 'Defining backtesting job failed'),
           ),
         ),
       ),
       ioe.chainFirstIOK(() => loggerIo.infoIo('Backtesting job was defined to a job scheduler instance')),
+      ioe.orElseFirstIOK(() =>
+        loggerIo.errorIo('Defining backtesting job to a job scheduler instance failed'),
+      ),
     );
   };
 }
 
 function buildBtJobProcessor(
   fork: BtJobDeps['fork'],
-  workerPath: BtWorkerModulePath,
+  workerPath: BtWorkerFilePath,
   timeout: BtJobTimeout,
 ): Processor<BtJobData> {
   return async (job, done) => {
@@ -100,51 +111,57 @@ export type ScheduleBtJobDeps = DeepReadonly<{
   dateService: DateService;
   btExecutionDao: { generateId: io.IO<BtExecutionId> };
 }>;
+export type ScheduleBtJob = (
+  btStrategyId: BtStrategyId,
+) => te.TaskEither<ScheduleBtJobError, Readonly<{ id: BtExecutionId; createdAt: ValidDate }>>;
+export type ScheduleBtJobError = JobSchedulerError<'ScheduleJobFailed' | 'ExceedJobMaxSchedulingLimit'>;
 export function scheduleBtJob(deps: ScheduleBtJobDeps) {
-  const { PENDING, RUNNING } = btExecutionStatusEnum;
-  const { dateService, btExecutionDao } = deps;
+  return ({ agenda }: { agenda: Agenda }): ScheduleBtJob => {
+    const { PENDING, RUNNING } = btExecutionStatusEnum;
+    const { dateService, btExecutionDao } = deps;
 
-  function getPendingOrRunningBtJob(agenda: Agenda, btStrategyId: string) {
-    return te.tryCatch(
-      () =>
-        agenda.jobs({
-          name: btJobName,
-          'data.btStrategyId': btStrategyId,
-          'data.status': { $in: [PENDING, RUNNING] },
-        }),
-      createErrorFromUnknown(
-        createJobSchedulerError('ScheduleJobFailed', 'Getting pending or running job failed'),
+    function getPendingOrRunningBtJob(agenda: Agenda, btStrategyId: string) {
+      return te.tryCatch(
+        () =>
+          agenda.jobs({
+            name: btJobName,
+            'data.btStrategyId': btStrategyId,
+            'data.status': { $in: [PENDING, RUNNING] },
+          }),
+        createErrorFromUnknown(
+          createJobSchedulerError('ScheduleJobFailed', 'Getting pending or running job failed'),
+        ),
+      );
+    }
+    const checkIfThereIsPendingOrRunning = e.fromPredicate(propSatisfies(equals(0), 'length'), () =>
+      createJobSchedulerError(
+        'ExceedJobMaxSchedulingLimit',
+        'Backtesting job can be scheduled only one at a time per strategy',
       ),
     );
-  }
+    function scheduleJob(id: BtExecutionId, btStrategyId: BtStrategyId) {
+      return te.tryCatch(
+        () =>
+          agenda.now(btJobName, {
+            id,
+            btStrategyId,
+            status: PENDING,
+            percentage: BT_PROGRESS_PERCENTAGE_START,
+          }),
+        createErrorFromUnknown(
+          createJobSchedulerError('ScheduleJobFailed', 'Scheduling a backtesting job failed'),
+        ),
+      );
+    }
 
-  return ({ agenda }: { agenda: Agenda }) => {
-    return (
-      btStrategyId: BtStrategyId,
-    ): te.TaskEither<
-      JobSchedulerError<'ScheduleJobFailed' | 'ExceedJobMaxSchedulingLimit'>,
-      Readonly<{ id: BtExecutionId; createdAt: ValidDate }>
-    > =>
+    return (btStrategyId) =>
       pipe(
         getPendingOrRunningBtJob(agenda, btStrategyId),
-        te.chainFirstEitherKW(
-          e.fromPredicate(propSatisfies(equals(0), 'length'), () =>
-            createJobSchedulerError(
-              'ExceedJobMaxSchedulingLimit',
-              'Backtesting job can be scheduled only one at a time per strategy',
-            ),
-          ),
-        ),
-        te.let('data', () => ({ id: btExecutionDao.generateId(), btStrategyId, status: PENDING })),
-        te.chainFirstW(({ data }) =>
-          te.tryCatch(
-            () => agenda.now(btJobName, data),
-            createErrorFromUnknown(
-              createJobSchedulerError('ScheduleJobFailed', 'Adding a backtesting job failed'),
-            ),
-          ),
-        ),
-        te.map(({ data }) => ({ id: data.id, createdAt: dateService.getCurrentDate() })),
+        te.chainFirstEitherKW(checkIfThereIsPendingOrRunning),
+        te.bind('id', () => te.fromIO(btExecutionDao.generateId)),
+        te.bind('currentDate', () => te.fromIO(dateService.getCurrentDate)),
+        te.chainFirstW(({ id }) => scheduleJob(id, btStrategyId)),
+        te.map(({ id, currentDate }) => ({ id, createdAt: currentDate })),
       );
   };
 }

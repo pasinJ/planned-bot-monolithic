@@ -138,18 +138,18 @@ export function getKlinesBefore({ mongooseModel }: { mongooseModel: KlineMongoos
     );
 }
 
-export type GetFirstBefore = (filter: {
+export type GetFirstKlineBefore = (filter: {
   exchange: ExchangeName;
   symbol: string;
   timeframe: Timeframe;
   start: ValidDate;
-}) => te.TaskEither<GetFirstBeforeError, Kline | null>;
-export type GetFirstBeforeError = KlineDaoError<'GetFirstBeforeFailed'>;
+}) => te.TaskEither<GetFirstKlineBeforeError, Kline | null>;
+export type GetFirstKlineBeforeError = KlineDaoError<'GetFirstBeforeFailed'>;
 export function getFirstKlineBefore({
   mongooseModel,
 }: {
   mongooseModel: KlineMongooseModel;
-}): GetFirstBefore {
+}): GetFirstKlineBefore {
   return (filter) =>
     pipe(
       te.tryCatch(

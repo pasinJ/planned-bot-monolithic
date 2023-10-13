@@ -4,6 +4,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 
+import { buildBtExecutionDao as buildBtExecutionDaoOrg } from '#features/btStrategies/DAOs/btExecution.js';
 import { buildBtStrategyDao as buildBtStrategyDaoOrg } from '#features/btStrategies/DAOs/btStrategy.js';
 import { getBtJobConfig } from '#features/btStrategies/executeBtStrategy/backtesting.job.config.js';
 import { defineBtJob } from '#features/btStrategies/executeBtStrategy/backtesting.job.js';
@@ -33,6 +34,14 @@ function buildSymbolDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
 }
 function buildBtStrategyDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return te.fromIOEither(buildBtStrategyDaoOrg(mongoDbClient));
+}
+function buildBtExecutionDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return pipe(
+    te.fromIO(getJobSchedulerConfig),
+    te.chainW(({ COLLECTION_NAME }) =>
+      te.fromIOEither(buildBtExecutionDaoOrg(mongoDbClient, COLLECTION_NAME)),
+    ),
+  );
 }
 function setupJobScheduler() {
   return pipe(
@@ -75,6 +84,7 @@ await executeT(
     te.bindW('mongoDbClient', () => buildMongoDbClient(logger, getMongoDbConfig)),
     te.bindW('symbolDao', (deps) => buildSymbolDao(deps)),
     te.bindW('btStrategyDao', (deps) => buildBtStrategyDao(deps)),
+    te.bindW('btExecutionDao', (deps) => buildBtExecutionDao(deps)),
     te.bindW('bnbService', () => te.fromIOEither(buildBnbService({ mainLogger, getBnbConfig }))),
     te.bindW('jobScheduler', () => setupJobScheduler()),
     te.bindW('httpServer', (deps) => setupHttpServer(deps)),

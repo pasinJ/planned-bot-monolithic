@@ -2,13 +2,13 @@ import { ReadonlyNonEmptyArray } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
 import { Console } from 'node:console';
 import { Stream } from 'stream';
 
-import { wrapLogger } from '#infra/logging.js';
 import { ValidDate } from '#shared/utils/date.js';
 import { executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { TimezoneString } from '#shared/utils/string.js';
 import { mockBtStrategyModel } from '#test-utils/features/btStrategies/btStrategy.js';
 import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import { mockKline } from '#test-utils/features/shared/kline.js';
+import { mockLoggerIo } from '#test-utils/services.js';
 
 import { Kline } from '../kline.js';
 import { OrderId } from '../order.js';
@@ -19,13 +19,13 @@ import { initiateStrategyModule } from '../strategyExecutorModules/strategy.js';
 import { buildSystemModule } from '../strategyExecutorModules/system.js';
 import { buildTechnicalAnalysisModule } from '../strategyExecutorModules/technicalAnalysis.js';
 import { buildTradesModules } from '../strategyExecutorModules/trades.js';
-import { executeStrategy } from './executeStrategy.js';
-import { buildStrategyExecutor } from './service.js';
+import { getStrategyExecutorConfig } from './config.js';
+import { startStrategyExecutor } from './service.js';
 
 describe('UUT: Execute strategy', () => {
   function createConsole() {
     const logs: string[] = [];
-    const console = new Console(
+    const isolatedConsole = new Console(
       new Stream.Writable({
         write: (chunk: Buffer, _, cb) => {
           logs.push(chunk.toString().replace(/\n$/, ''));
@@ -33,12 +33,12 @@ describe('UUT: Execute strategy', () => {
         },
       }),
     );
-    return { logs, console };
+    return { logs, isolatedConsole };
   }
   async function mockStrategyExecutor() {
-    const { console } = createConsole();
-    const deps = { console, loggerIo: wrapLogger(console) };
-    return unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+    const { isolatedConsole } = createConsole();
+    const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+    return unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
   }
   function mockKlinesModule() {
     return buildKlinesModule([mockKline()], '+03:00' as TimezoneString);
@@ -91,16 +91,15 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access console module', () => {
     it('[THEN] it will return Right [AND] we will get log messages in the log array', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = 'console.log("Hello")' as StrategyBody;
       const language = defaultLanguage;
       const modules = defaultModule;
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain('Hello');
@@ -109,16 +108,15 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access lodash module', () => {
     it("[THEN] it will return Right [AND] the lodash's function will work properly", async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = 'console.log(lodash.nth([1,2,3],-1))' as StrategyBody;
       const language = defaultLanguage;
       const modules = defaultModule;
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain('3');
@@ -127,16 +125,15 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access klines module', () => {
     it('[THEN] it will access correct value [AND] return Right', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
       const openPrice = 0.12321;
       const kline = mockKline({ open: openPrice });
       const timezone = 'UTC' as TimezoneString;
       const klinesModule = buildKlinesModule([kline], timezone);
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `
         console.log(klines.open);
         console.log(JSON.stringify(klines.getAllOpen()));
@@ -144,7 +141,7 @@ describe('UUT: Execute strategy', () => {
       const language = defaultLanguage;
       const modules = { ...defaultModule, klinesModule };
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain('0.12321');
@@ -154,9 +151,9 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access orders module', () => {
     it('[THEN] it will return Right [AND] work properly', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
       const ordersModuleDeps = {
         dateService: { getCurrentDate: () => new Date('2022') as ValidDate },
@@ -173,7 +170,6 @@ describe('UUT: Execute strategy', () => {
       };
       const ordersModule = buildOrdersModule(ordersModuleDeps, symbol, orders);
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `
         orders.enterMarket({quantity: 10});
         console.log(JSON.stringify(orders.getPendingOrders()));
@@ -181,7 +177,7 @@ describe('UUT: Execute strategy', () => {
       const language = defaultLanguage;
       const modules = { ...defaultModule, ordersModule };
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain(
@@ -201,14 +197,13 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access trades module', () => {
     it('[THEN] it will return Right [AND] work properly', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
       const trades = { openingTrades: [], closedTrades: [] };
       const tradesModule = buildTradesModules(trades.openingTrades, trades.closedTrades);
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `
         console.log(JSON.stringify(trades.openingTrades));
         console.log(JSON.stringify(trades.winTrades));
@@ -216,7 +211,7 @@ describe('UUT: Execute strategy', () => {
       const language = defaultLanguage;
       const modules = { ...defaultModule, tradesModule };
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain(JSON.stringify([]));
@@ -225,9 +220,9 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access strategy module', () => {
     it('[THEN] it will return Right [AND] work properly', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
       const symbol = mockBnbSymbol();
       const btStrategy = mockBtStrategyModel({ symbol: symbol.name });
@@ -236,7 +231,6 @@ describe('UUT: Execute strategy', () => {
         symbol,
       );
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `
         console.log(strategy.name);
         console.log(strategy.initialCapital);
@@ -244,7 +238,7 @@ describe('UUT: Execute strategy', () => {
       const language = defaultLanguage;
       const modules = { ...defaultModule, strategyModule };
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain(strategyModule.name.toString());
@@ -254,14 +248,13 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access technical analysis module', () => {
     it('[THEN] it will return Right [AND] work properly', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
       const klines = [mockKline()] as ReadonlyNonEmptyArray<Kline>;
       const technicalAnalysisModule = buildTechnicalAnalysisModule(klines);
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `
         console.log(ta.highest([2,1,3,5], 2));
         console.log(JSON.stringify(ta.volume.pvt()));
@@ -269,7 +262,7 @@ describe('UUT: Execute strategy', () => {
       const language = defaultLanguage;
       const modules = { ...defaultModule, technicalAnalysisModule };
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain('5');
@@ -279,15 +272,14 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that access system module', () => {
     it('[THEN] it will return Right [AND] work properly', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
       const dateService = { getCurrentDate: () => new Date('2011-04-03') as ValidDate };
       const timezone = '+02:00' as TimezoneString;
       const systemModule = buildSystemModule({ dateService }, timezone);
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `
         console.log(system.getDay());
         console.log(system.getHours());
@@ -295,7 +287,7 @@ describe('UUT: Execute strategy', () => {
       const language = defaultLanguage;
       const modules = { ...defaultModule, systemModule };
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain('3');
@@ -305,16 +297,15 @@ describe('UUT: Execute strategy', () => {
 
   describe('[WHEN] execute the strategy body that uses async/await syntax', () => {
     it('[THEN] it will return Right [AND] work properly', async () => {
-      const { logs, console } = createConsole();
-      const deps = { console, loggerIo: wrapLogger(console) };
-      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+      const { logs, isolatedConsole } = createConsole();
+      const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+      const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
-      const executeFn = strategyExecutor.composeWith(executeStrategy);
       const body = `console.log(await Promise.resolve('Hello'));` as StrategyBody;
       const language = defaultLanguage;
       const modules = defaultModule;
 
-      const result = await executeT(executeFn(body, language, modules));
+      const result = await executeT(strategyExecutor.execute(body, language, modules));
 
       expect(result).toBeRight();
       expect(logs).toContain('Hello');
@@ -324,16 +315,15 @@ describe('UUT: Execute strategy', () => {
   describe('[GIVEN] language is typescript', () => {
     describe('[WHEN] execute the strategy body', () => {
       it('[THEN] it will return Right [AND] work properly', async () => {
-        const { logs, console } = createConsole();
-        const deps = { console, loggerIo: wrapLogger(console) };
-        const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+        const { logs, isolatedConsole } = createConsole();
+        const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+        const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
-        const executeFn = strategyExecutor.composeWith(executeStrategy);
         const body = 'const a: string = ""; console.log(a);' as StrategyBody;
         const language = languageEnum.typescript;
         const modules = defaultModule;
 
-        const result = await executeT(executeFn(body, language, modules));
+        const result = await executeT(strategyExecutor.execute(body, language, modules));
 
         expect(result).toBeRight();
         expect(logs).toContain('');
@@ -344,16 +334,15 @@ describe('UUT: Execute strategy', () => {
   describe('[GIVEN] language is typescript [AND] strategy body uses async/await syntax', () => {
     describe('[WHEN] execute the strategy body', () => {
       it('[THEN] it will return Right [AND] work properly', async () => {
-        const { logs, console } = createConsole();
-        const deps = { console, loggerIo: wrapLogger(console) };
-        const strategyExecutor = unsafeUnwrapEitherRight(await executeT(buildStrategyExecutor(deps)));
+        const { logs, isolatedConsole } = createConsole();
+        const deps = { isolatedConsole, loggerIo: mockLoggerIo(), getConfig: getStrategyExecutorConfig };
+        const strategyExecutor = unsafeUnwrapEitherRight(await executeT(startStrategyExecutor(deps)));
 
-        const executeFn = strategyExecutor.composeWith(executeStrategy);
         const body = `console.log(await Promise.resolve('Hello'));` as StrategyBody;
         const language = languageEnum.typescript;
         const modules = defaultModule;
 
-        const result = await executeT(executeFn(body, language, modules));
+        const result = await executeT(strategyExecutor.execute(body, language, modules));
 
         expect(result).toBeRight();
         expect(logs).toContain('Hello');
@@ -366,12 +355,11 @@ describe('UUT: Execute strategy', () => {
       it('[THEN] it will return Right of empty array', async () => {
         const strategyExecutor = await mockStrategyExecutor();
 
-        const executeFn = strategyExecutor.composeWith(executeStrategy);
         const body = 'console.log("Hello")' as StrategyBody;
         const language = languageEnum.typescript;
         const modules = defaultModule;
 
-        const result = await executeT(executeFn(body, language, modules));
+        const result = await executeT(strategyExecutor.execute(body, language, modules));
 
         expect(result).toEqualRight([]);
       });
@@ -383,12 +371,11 @@ describe('UUT: Execute strategy', () => {
       it('[THEN] it will return Right of an array that contains the pending order request', async () => {
         const strategyExecutor = await mockStrategyExecutor();
 
-        const executeFn = strategyExecutor.composeWith(executeStrategy);
         const body = 'orders.enterMarket({quantity: 5})' as StrategyBody;
         const language = languageEnum.typescript;
         const modules = defaultModule;
 
-        const result = await executeT(executeFn(body, language, modules));
+        const result = await executeT(strategyExecutor.execute(body, language, modules));
 
         expect(result).toEqualRight([
           {

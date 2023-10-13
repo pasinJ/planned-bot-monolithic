@@ -15,19 +15,12 @@ import { createMongoClient } from '#test-utils/mongoDb.js';
 import { mockMainLogger } from '#test-utils/services.js';
 
 import { BtStrategyId } from '../dataModels/btStrategy.js';
-import { BtJobConcurrency, BtJobTimeout, BtWorkerModulePath } from './backtesting.job.config.js';
+import { getBtJobConfig } from './backtesting.job.config.js';
 import { BtJobDeps, ScheduleBtJobDeps, defineBtJob, scheduleBtJob } from './backtesting.job.js';
 
 function mockBtJobDeps(overrides?: DeepPartial<BtJobDeps>): BtJobDeps {
   return mergeDeepRight<BtJobDeps, DeepPartial<BtJobDeps>>(
-    {
-      fork: jest.fn().mockReturnValue(new EventEmitter()),
-      getBtJobConfig: () => ({
-        JOB_CONCURRENCY: 1 as BtJobConcurrency,
-        JOB_TIMEOUT_MS: 1000 as BtJobTimeout,
-        JOB_WORKER_MODULE_PATH: './path' as BtWorkerModulePath,
-      }),
-    },
+    { fork: jest.fn().mockReturnValue(new EventEmitter()), getBtJobConfig },
     overrides ?? {},
   ) as BtJobDeps;
 }

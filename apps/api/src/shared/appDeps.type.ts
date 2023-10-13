@@ -1,3 +1,4 @@
+import { BtExecutionDao } from '#features/btStrategies/DAOs/btExecution.js';
 import { BtStrategyDao } from '#features/btStrategies/DAOs/btStrategy.js';
 import { SymbolDao } from '#features/symbols/DAOs/symbol.js';
 import { BnbService } from '#infra/services/binance/service.js';
@@ -10,4 +11,5 @@ export type AppDeps = Readonly<{
   jobScheduler: JobScheduler;
   symbolDao: SymbolDao;
   btStrategyDao: BtStrategyDao;
+  btExecutionDao: BtExecutionDao;
 }>;

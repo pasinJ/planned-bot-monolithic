@@ -23,3 +23,13 @@ export function mockLoggerIo(): LoggerIo {
     fatalIo: () => constVoid,
   };
 }
+
+export function mockConsole(): Console {
+  return {
+    trace: () => undefined,
+    debug: () => undefined,
+    info: () => undefined,
+    warn: () => undefined,
+    error: () => undefined,
+  } as unknown as Console;
+}

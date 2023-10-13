@@ -1,22 +1,16 @@
 import { Agenda, Job } from 'agenda';
 import consoleStamp from 'console-stamp';
 import io from 'fp-ts/lib/IO.js';
-import ior from 'fp-ts/lib/IORef.js';
-import t from 'fp-ts/lib/Task.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { levels, pino } from 'pino';
+import { append, assoc } from 'ramda';
 import { Stream } from 'stream';
 
 import { btExecutionStatusEnum } from '#features/btStrategies/dataModels/btExecution.js';
 import { generateOrderId } from '#features/shared/order.js';
-import { executeStrategy } from '#features/shared/strategyExecutor/executeStrategy.js';
-import {
-  OrdersLists,
-  TradesLists,
-  buildStrategyExecutor,
-} from '#features/shared/strategyExecutor/service.js';
-import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
+import { getStrategyExecutorConfig } from '#features/shared/strategyExecutor/config.js';
+import { startStrategyExecutor } from '#features/shared/strategyExecutor/service.js';
 import { generateTradeId } from '#features/shared/trade.js';
 import { getSymbolModelByNameAndExchange } from '#features/symbols/DAOs/symbol.feature.js';
 import { buildSymbolDao } from '#features/symbols/DAOs/symbol.js';
@@ -28,7 +22,7 @@ import { buildBnbService } from '#infra/services/binance/service.js';
 import { getJobSchedulerConfig } from '#infra/services/jobScheduler/config.js';
 import { saveJobThenStopAgenda } from '#infra/services/jobScheduler/service.js';
 import { AppError } from '#shared/errors/appError.js';
-import { executeT } from '#shared/utils/fp.js';
+import { executeIo, executeT } from '#shared/utils/fp.js';
 
 import { getBtStrategyModelById } from '../DAOs/btStrategy.feature.js';
 import { buildBtStrategyDao } from '../DAOs/btStrategy.js';
@@ -47,9 +41,56 @@ import { createDirectory } from '../services/file/createDirectory.js';
 import { extractZipFile } from '../services/file/extractZipFile.js';
 import { readCsvFile } from '../services/file/readCsvFile.js';
 import { removeDirectory } from '../services/file/removeDirectory.js';
-import { BacktestDeps, backtest } from './backtest.js';
+import {
+  BacktestDeps,
+  backtest,
+  handleBacktestFailed,
+  handleBacktestSucceeded,
+  initiateLogsRef,
+  initiateProcessingDateRef,
+  startBtProgressUpdator,
+  updateBtProgress,
+} from './backtest.js';
+import { getBtJobConfig } from './backtesting.job.config.js';
 import { BtJobData, btJobName } from './backtesting.job.js';
 
+function createLoggers() {
+  // eslint-disable-next-line no-console
+  const logger = new console.Console(new Stream.Writable());
+  const mainLogger = pino(
+    {
+      hooks: {
+        logMethod: ([msg], _, levelNum) => {
+          const label = levels.labels[levelNum];
+
+          if (label === 'trace') logger.trace(msg);
+          else if (label === 'debug') logger.debug(msg);
+          else if (label === 'info') logger.info(msg);
+          else if (label === 'warn') logger.warn(msg);
+          else if (label === 'error') logger.error(msg);
+          else if (label === 'fatal') logger.error(msg);
+          else logger.log();
+        },
+      },
+    },
+    pino.destination('/dev/null'),
+  );
+  const loggerIo = wrapLogger(mainLogger);
+
+  consoleStamp.default(logger, {
+    format: ':date(yyyy-mm-dd HH:MM:ss.l o) :label',
+    stdout: new Stream.Writable({
+      write: (chunk: Buffer, _, cb) =>
+        pipe(
+          logsRef.modify(append(chunk.toString().replace(/\n$/, ''))),
+          io.chain(() => cb),
+          executeIo,
+        ),
+    }) as NodeJS.WriteStream,
+  });
+
+  return { logger, mainLogger, loggerIo };
+}
 function startAgenda(): te.TaskEither<void, Agenda> {
   return te.tryCatch(
     async () => {
@@ -75,7 +116,7 @@ function getCurrentJobById(agenda: Agenda): te.TaskEither<void, Job<BtJobData>> 
     () => process.exit(1),
   );
 }
-function addProcessSignalHandlers({ job, agenda }: { job: Job<BtJobData>; agenda: Agenda }): io.IO<void> {
+function addProcessSignalHandlers(job: Job<BtJobData>, agenda: Agenda): io.IO<void> {
   return () => {
     ['SIGTERM', 'SIGINT'].map((s) =>
       process.once(s, (signal) => {
@@ -86,7 +127,7 @@ function addProcessSignalHandlers({ job, agenda }: { job: Job<BtJobData>; agenda
         } else {
           job.attrs.data.status = btExecutionStatusEnum.INTERUPTED;
         }
-        job.attrs.result = { logs };
+        job.attrs.result = assoc('logs', logsRef.read(), job.attrs.result);
 
         void saveJobThenStopAgenda({ job, agenda });
       }),
@@ -96,7 +137,7 @@ function addProcessSignalHandlers({ job, agenda }: { job: Job<BtJobData>; agenda
       logger.error(error);
 
       job.attrs.data.status = btExecutionStatusEnum.FAILED;
-      job.attrs.result = { logs };
+      job.attrs.result = assoc('logs', logsRef.read(), job.attrs.result);
 
       void saveJobThenStopAgenda({ job, agenda });
     });
@@ -105,13 +146,13 @@ function addProcessSignalHandlers({ job, agenda }: { job: Job<BtJobData>; agenda
       logger.error(error);
 
       job.attrs.data.status = btExecutionStatusEnum.FAILED;
-      job.attrs.result = { logs };
+      job.attrs.result = assoc('logs', logsRef.read(), job.attrs.result);
 
       void saveJobThenStopAgenda({ job, agenda });
     });
   };
 }
-function prepareBacktestDeps({ job }: { job: Job<BtJobData> }): te.TaskEither<AppError, BacktestDeps> {
+function prepareBacktestDeps(job: Job<BtJobData>): te.TaskEither<AppError, BacktestDeps> {
   return pipe(
     te.Do,
     te.bindW('bnbService', () => te.fromIOEither(buildBnbService({ getBnbConfig, mainLogger }))),
@@ -119,7 +160,18 @@ function prepareBacktestDeps({ job }: { job: Job<BtJobData> }): te.TaskEither<Ap
     te.bindW('btStrategyDao', ({ mongoClient }) => te.fromIOEither(buildBtStrategyDao(mongoClient))),
     te.bindW('symbolDao', ({ mongoClient }) => te.fromIOEither(buildSymbolDao(mongoClient))),
     te.bindW('klineDao', ({ mongoClient }) => te.fromIOEither(buildKlineDao(mongoClient))),
-    te.bindW('strategyExecutor', () => buildStrategyExecutor({ console: logger, loggerIo })),
+    te.let('startStrategyExecutor', () =>
+      startStrategyExecutor({ isolatedConsole: logger, loggerIo, getConfig: getStrategyExecutorConfig }),
+    ),
+    te.let('startBtProgressUpdator', () =>
+      startBtProgressUpdator({
+        logsRef,
+        processingDateRef,
+        loggerIo,
+        getConfig: getBtJobConfig,
+        updateBtProgress: updateBtProgress(job),
+      }),
+    ),
     te.let('getKlinesFromApi', ({ bnbService }) => bnbService.composeWith(getKlinesByApi)),
     te.let('getKlinesFromDailyFiles', ({ bnbService, getKlinesFromApi }) =>
       bnbService.composeWith(({ httpClient }) =>
@@ -148,7 +200,8 @@ function prepareBacktestDeps({ job }: { job: Job<BtJobData> }): te.TaskEither<Ap
         btStrategyDao,
         symbolDao,
         klineDao,
-        strategyExecutor,
+        startStrategyExecutor,
+        startBtProgressUpdator,
         getKlinesFromApi,
         getKlinesFromDailyFiles,
         getKlinesFromMonthlyFiles,
@@ -177,103 +230,34 @@ function prepareBacktestDeps({ job }: { job: Job<BtJobData> }): te.TaskEither<Ap
               fileService: { createDirectory, removeDirectory },
             }),
           },
-          strategyExecutor: {
-            execute: strategyExecutor.composeWith(executeStrategy),
-            stopVm: strategyExecutor.stop,
-          },
+          startStrategyExecutor,
+          startBtProgressUpdator,
+          processingDateRef,
         }) as BacktestDeps,
     ),
     te.chainFirstIOK(() => loggerIo.infoIo('Backtesting dependencies created')),
   );
 }
-function handleBacktestSucceeded(deps: {
-  job: Job<BtJobData>;
-  agenda: Agenda;
-  ordersRef: ior.IORef<OrdersLists>;
-  tradesRef: ior.IORef<TradesLists>;
-  strategyModuleRef: ior.IORef<StrategyModule>;
-}): t.Task<void> {
-  return () => {
-    const { job, agenda, ordersRef, tradesRef, strategyModuleRef } = deps;
-
-    loggerIo.info(`Backtesting successfully done`);
-
-    job.attrs.data.status = btExecutionStatusEnum.FINISHED;
-    job.attrs.result = {
-      strategyModule: strategyModuleRef.read(),
-      orders: ordersRef.read(),
-      trades: tradesRef.read(),
-      logs,
-    };
-
-    return saveJobThenStopAgenda({ job, agenda }).catch(() => process.exit(1));
-  };
-}
-function handleBacktestFailed<E extends AppError>(
-  deps: { job: Job<BtJobData>; agenda: Agenda },
-  appError: E,
-): t.Task<void> {
-  return () => {
-    const { job, agenda } = deps;
-
-    loggerIo.info(`Backtesting failed`);
-
-    job.attrs.data.status = btExecutionStatusEnum.FAILED;
-    job.attrs.failReason = appError.toString();
-    job.attrs.result = { logs, error: appError.toJSON() };
-
-    return saveJobThenStopAgenda({ job, agenda }).catch(() => process.exit(1));
-  };
-}
-
-// eslint-disable-next-line no-console
-const logger = new console.Console(new Stream.Writable());
-const logs: string[] = [];
-const mainLogger = pino(
-  {
-    hooks: {
-      logMethod: ([msg], _, levelNum) => {
-        const label = levels.labels[levelNum];
-
-        if (label === 'trace') logger.trace(msg);
-        else if (label === 'debug') logger.debug(msg);
-        else if (label === 'info') logger.info(msg);
-        else if (label === 'warn') logger.warn(msg);
-        else if (label === 'error') logger.error(msg);
-        else if (label === 'fatal') logger.error(msg);
-        else logger.log();
-      },
-    },
-  },
-  pino.destination('/dev/null'),
-);
-const loggerIo = wrapLogger(mainLogger);
-
-consoleStamp.default(logger, {
-  format: ':date(yyyy-mm-dd HH:MM:ss.l o) :label',
-  stdout: new Stream.Writable({
-    write: (chunk: Buffer, _, cb) => {
-      logs.push(chunk.toString().replace(/\n$/, ''));
-      cb();
-    },
-  }) as NodeJS.WriteStream,
-});
 
 const executionId = process.argv[2];
+// eslint-disable-next-line no-console
+const { logger, mainLogger, loggerIo } = createLoggers();
+const logsRef = initiateLogsRef();
+const processingDateRef = initiateProcessingDateRef();
 
 await executeT(
   pipe(
     te.fromIO(loggerIo.infoIo(`Worker process for backtesting job (id:${executionId}) started`)),
     te.bindW('agenda', () => startAgenda()),
     te.bindW('job', ({ agenda }) => getCurrentJobById(agenda)),
-    te.chainFirstIOK(({ job, agenda }) => addProcessSignalHandlers({ job, agenda })),
+    te.chainFirstIOK(({ job, agenda }) => addProcessSignalHandlers(job, agenda)),
     te.chainTaskK(({ job, agenda }) =>
       pipe(
-        prepareBacktestDeps({ job }),
+        prepareBacktestDeps(job),
         te.chainW(backtest),
         te.matchE(
-          (error) => handleBacktestFailed({ job, agenda }, error),
-          (refs) => handleBacktestSucceeded({ job, agenda, ...refs }),
+          (error) => handleBacktestFailed({ job, agenda, logsRef, loggerIo }, error),
+          (refs) => handleBacktestSucceeded({ job, agenda, logsRef, loggerIo, ...refs }),
         ),
       ),
     ),
