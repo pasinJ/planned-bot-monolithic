@@ -46,6 +46,46 @@ describe('JOB_TIMEOUT_MS property', () => {
   );
 });
 
+describe('ITERATION_TIMEOUT_MS property', () => {
+  describe.each([
+    { env: '10000', expected: 10000 },
+    { env: '0', expected: 5000 },
+    { env: '-1', expected: 5000 },
+    { env: '0.1', expected: 5000 },
+    { env: ' ', expected: 5000 },
+    { env: undefined, expected: 5000 },
+  ])(
+    '[GIVEN] process.env.BT_ITERATION_TIMEOUT_MS = "$env" [WHEN] get backtesing job configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('BT_ITERATION_TIMEOUT_MS', env));
+
+      it(`[THEN] it will return ITERATION_TIMEOUT_MS property equals to "${expected}"`, () => {
+        expect(getBtJobConfig()).toHaveProperty('ITERATION_TIMEOUT_MS', expected);
+      });
+    },
+  );
+});
+
+describe('PROGRESS_UPDATE_INTERVAL property', () => {
+  describe.each([
+    { env: '100', expected: 100 },
+    { env: '0', expected: 1000 },
+    { env: '-1', expected: 1000 },
+    { env: '0.1', expected: 1000 },
+    { env: ' ', expected: 1000 },
+    { env: undefined, expected: 1000 },
+  ])(
+    '[GIVEN] process.env.BT_PROGRESS_UPDATE_INTERVAL = "$env" [WHEN] get backtesing job configuration',
+    ({ env, expected }) => {
+      beforeEach(setEnvVar('BT_PROGRESS_UPDATE_INTERVAL', env));
+
+      it(`[THEN] it will return PROGRESS_UPDATE_INTERVAL property equals to "${expected}"`, () => {
+        expect(getBtJobConfig()).toHaveProperty('PROGRESS_UPDATE_INTERVAL', expected);
+      });
+    },
+  );
+});
+
 describe('JOB_WORKER_MODULE_PATH property', () => {
   describe.each([
     { env: './test/file', expected: './test/file' },
