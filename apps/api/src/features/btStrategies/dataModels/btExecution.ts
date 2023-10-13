@@ -1,8 +1,12 @@
+import { differenceInMilliseconds, isAfter, isBefore, isEqual } from 'date-fns';
+import { Decimal } from 'decimal.js';
 import io from 'fp-ts/lib/IO.js';
 import { nanoid } from 'nanoid';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
+import { DateRange } from '#features/shared/objectValues/dateRange.js';
+import { ValidDate } from '#shared/utils/date.js';
 import { nonNegativePercentage8DigitsSchema } from '#shared/utils/number.js';
 
 import { BtStrategyId } from './btStrategy.js';
@@ -36,3 +40,23 @@ export type BtExecutionProgress = DeepReadonly<{
 }>;
 
 export const generateBtExecutionId: io.IO<BtExecutionId> = () => nanoid() as BtExecutionId;
+
+export function calculateProgressPercentage(
+  btDateRange: DateRange,
+  processingDate: ValidDate,
+): BtExecutionProgressPercentage {
+  const isAfterOrEqual = (a: Date, b: Date) => isAfter(a, b) || isEqual(a, b);
+  const isBeforeOrEqual = (a: Date, b: Date) => isBefore(a, b) || isEqual(a, b);
+
+  return (
+    isAfterOrEqual(processingDate, btDateRange.end)
+      ? 100
+      : isBeforeOrEqual(processingDate, btDateRange.start)
+      ? 0
+      : new Decimal(differenceInMilliseconds(processingDate, btDateRange.start))
+          .times(100)
+          .dividedBy(differenceInMilliseconds(btDateRange.end, btDateRange.start))
+          .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+          .toNumber()
+  ) as BtExecutionProgressPercentage;
+}
