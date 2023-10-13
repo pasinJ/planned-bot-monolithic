@@ -3,6 +3,7 @@ import { mergeDeepRight } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
+import { mockBtExecutionProgress } from '#test-utils/features/btStrategies/btExecution.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
 import { createBtExecutionDaoError } from '../DAOs/btExecution.error.js';
@@ -15,10 +16,7 @@ function mockDeps(
   return mergeDeepRight<
     GetBtExecutionProgressControllerDeps,
     DeepPartial<GetBtExecutionProgressControllerDeps>
-  >(
-    { btExecutionDao: { getProgressById: () => te.left(createBtExecutionDaoError('NotExist', 'Mock')) } },
-    overrides ?? {},
-  );
+  >({ btExecutionDao: { getProgressById: () => te.right(mockBtExecutionProgress()) } }, overrides ?? {});
 }
 
 const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_PROGRESS;
@@ -65,6 +63,23 @@ describe('[GIVEN] Bt execution DAO fails to get progress from database', () => {
 
       expect(resp.statusCode).toBe(500);
       expect(resp.json()).toEqual(toBeHttpErrorResponse);
+    });
+  });
+});
+
+describe('[GIVEN] the execution ID exists', () => {
+  describe('[WHEN] user send a request to get backtesting execution progress', () => {
+    it('[THEN] it will return HTTP200 and progress information in response body', async () => {
+      const btExecutionProgress = mockBtExecutionProgress();
+      const getProgressUrl = url.replace(':id', btExecutionProgress.id);
+      const httpServer = setupServer({
+        btExecutionDao: { getProgressById: () => te.right(btExecutionProgress) },
+      });
+
+      const resp = await httpServer.inject({ method, url: getProgressUrl });
+
+      expect(resp.statusCode).toBe(200);
+      expect(resp.json()).toEqual(btExecutionProgress);
     });
   });
 });
