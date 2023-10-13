@@ -3,7 +3,7 @@ import { pick } from 'ramda';
 import { SymbolMongooseModel, buildSymbolDao, symbolModelName } from '#features/symbols/DAOs/symbol.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
-import { createMongoClient } from '#test-utils/mongoDb.js';
+import { clearCollections, createMongoClient } from '#test-utils/mongoDb.js';
 
 import { expectHttpStatus } from './commands/expect.js';
 import { getSymbols } from './commands/symbols.js';
@@ -12,7 +12,7 @@ const client = await createMongoClient();
 executeIo(buildSymbolDao(client));
 const symbolModel: SymbolMongooseModel = client.models[symbolModelName];
 
-afterEach(() => symbolModel.deleteMany());
+afterEach(() => clearCollections(client));
 afterAll(() => client.disconnect());
 
 describe('[GIVEN] there is no existing symbols', () => {

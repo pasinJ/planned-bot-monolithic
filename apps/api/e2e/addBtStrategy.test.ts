@@ -3,7 +3,7 @@ import { executeIo } from '#shared/utils/fp.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
 import { mockValidAddBtStrategyRequestBody } from '#test-utils/features/btStrategies/apis.js';
 import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
-import { createMongoClient } from '#test-utils/mongoDb.js';
+import { clearCollections, createMongoClient } from '#test-utils/mongoDb.js';
 
 import { addBtStrategy } from './commands/btStrategy.js';
 import { expectHttpStatus } from './commands/expect.js';
@@ -12,7 +12,7 @@ const client = await createMongoClient();
 executeIo(buildSymbolDao(client));
 const symbolModel: SymbolMongooseModel = client.models[symbolModelName];
 
-afterEach(() => symbolModel.deleteMany());
+afterEach(() => clearCollections(client));
 afterAll(() => client.disconnect());
 
 describe('[WHEN] user successfully add a backtesting strategy', () => {

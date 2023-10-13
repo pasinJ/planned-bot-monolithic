@@ -46,26 +46,6 @@ describe('JOB_TIMEOUT_MS property', () => {
   );
 });
 
-describe('ITERATION_TIMEOUT_MS property', () => {
-  describe.each([
-    { env: '10000', expected: 10000 },
-    { env: '0', expected: 5000 },
-    { env: '-1', expected: 5000 },
-    { env: '0.1', expected: 5000 },
-    { env: ' ', expected: 5000 },
-    { env: undefined, expected: 5000 },
-  ])(
-    '[GIVEN] process.env.BT_ITERATION_TIMEOUT_MS = "$env" [WHEN] get backtesing job configuration',
-    ({ env, expected }) => {
-      beforeEach(setEnvVar('BT_ITERATION_TIMEOUT_MS', env));
-
-      it(`[THEN] it will return ITERATION_TIMEOUT_MS property equals to "${expected}"`, () => {
-        expect(getBtJobConfig()).toHaveProperty('ITERATION_TIMEOUT_MS', expected);
-      });
-    },
-  );
-});
-
 describe('PROGRESS_UPDATE_INTERVAL property', () => {
   describe.each([
     { env: '100', expected: 100 },
@@ -86,19 +66,19 @@ describe('PROGRESS_UPDATE_INTERVAL property', () => {
   );
 });
 
-describe('JOB_WORKER_MODULE_PATH property', () => {
+describe('JOB_WORKER_FILE_PATH property', () => {
   describe.each([
     { env: './test/file', expected: './test/file' },
     { env: '', expected: './worker.ts' },
     { env: ' ', expected: './worker.ts' },
     { env: undefined, expected: './worker.ts' },
   ])(
-    '[GIVEN] process.env.BT_JOB_WORKER_MODULE_PATH = "$env" [WHEN] get backtesing job configuration',
+    '[GIVEN] process.env.BT_JOB_WORKER_FILE_PATH = "$env" [WHEN] get backtesing job configuration',
     ({ env, expected }) => {
-      beforeEach(setEnvVar('BT_JOB_WORKER_MODULE_PATH', env));
+      beforeEach(setEnvVar('BT_JOB_WORKER_FILE_PATH', env));
 
-      it(`[THEN] it will return JOB_WORKER_MODULE_PATH property equals to "${expected}"`, () => {
-        expect(getBtJobConfig()).toHaveProperty('JOB_WORKER_MODULE_PATH', expected);
+      it(`[THEN] it will return JOB_WORKER_FILE_PATH property equals to "${expected}"`, () => {
+        expect(getBtJobConfig()).toHaveProperty('JOB_WORKER_FILE_PATH', expected);
       });
     },
   );

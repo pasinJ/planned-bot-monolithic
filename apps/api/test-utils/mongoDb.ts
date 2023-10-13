@@ -10,3 +10,16 @@ export function createMongoClient(): Promise<Mongoose> {
 export function deleteModel(client: Mongoose, modelName: string) {
   if (isNotNil(client.models[modelName])) client.deleteModel(modelName);
 }
+
+export async function clearCollections(client: Mongoose) {
+  const db = client.connection.db;
+  const collections = await db.listCollections().toArray();
+
+  return Promise.all(
+    collections
+      .map((collection) => collection.name)
+      .map((collectionName) =>
+        collectionName.startsWith('system') ? Promise.resolve(undefined) : db.dropCollection(collectionName),
+      ),
+  );
+}

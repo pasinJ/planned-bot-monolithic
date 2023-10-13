@@ -11,17 +11,11 @@ import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import { BtExecutionId } from '../dataModels/btExecution.js';
 import { BtStrategyId } from '../dataModels/btStrategy.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
+import { ScheduleBtJob } from './backtesting.job.js';
 
 export type ExecuteBtStrategyDeps = DeepReadonly<{
   btStrategyDao: { existById: (id: string) => te.TaskEither<BtStrategyDaoError<'ExistByIdFailed'>, boolean> };
-  btJobScheduler: {
-    scheduleBtJob: (
-      btStrategyId: BtStrategyId,
-    ) => te.TaskEither<
-      JobSchedulerError<'ScheduleJobFailed' | 'ExceedJobMaxSchedulingLimit'>,
-      Readonly<{ id: BtExecutionId; createdAt: ValidDate }>
-    >;
-  };
+  btJobScheduler: { scheduleBtJob: ScheduleBtJob };
 }>;
 export type ExecuteBtStrategyRequest = Readonly<{ btStrategyId: string }>;
 
