@@ -1,6 +1,7 @@
 import { isGeneralError } from '#shared/errors/generalError.js';
+import { unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 
-import { createDateRange } from './dateRange.js';
+import { createDateRange, getDurationString } from './dateRange.js';
 
 describe('UUT: Create date range', () => {
   describe('[GIVEN] start date is invalid', () => {
@@ -61,6 +62,20 @@ describe('UUT: Create date range', () => {
 
         expect(result).toEqualLeft(expect.toSatisfy(isGeneralError));
       });
+    });
+  });
+});
+
+describe('UUT: Get duration in human-readable string', () => {
+  describe('[WHEN] get duration in human-readable string', () => {
+    it('[THEN] it will return a duration in human-readable string', () => {
+      const dateRange = unsafeUnwrapEitherRight(
+        createDateRange(new Date('2011-10-01T12:10:01'), new Date('2011-10-05')),
+      );
+
+      const result = getDurationString(dateRange);
+
+      expect(result).toBe('3 days 11 hours 49 minutes 59 seconds');
     });
   });
 });

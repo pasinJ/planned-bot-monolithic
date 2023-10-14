@@ -1,4 +1,4 @@
-import { isBefore, isEqual } from 'date-fns';
+import { formatDuration, intervalToDuration, isBefore, isEqual } from 'date-fns';
 import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
@@ -26,4 +26,9 @@ export function createDateRange(startDate: Date, endDate: Date): e.Either<Create
     }),
     e.mapLeft((error) => createGeneralError('CraeteDateRangeFailed', 'Creating date range failed', error)),
   );
+}
+
+type DurationString = string & z.BRAND<'DurationString'>;
+export function getDurationString(dateRate: DateRange): DurationString {
+  return formatDuration(intervalToDuration(dateRate)) as DurationString;
 }
