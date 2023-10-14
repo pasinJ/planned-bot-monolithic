@@ -9,7 +9,7 @@ import { to2DigitDecimalNumber, to8DigitDecimalNumber } from '#shared/utils/numb
 import { Kline } from './kline.js';
 import { FilledOrder } from './order.js';
 import { InitialCapital } from './strategy.js';
-import { Return } from './strategyExecutorModules/strategy.js';
+import { Loss, Profit, Return } from './strategyExecutorModules/strategy.js';
 import { ClosedTrade } from './trade.js';
 
 type BuyAndHoldReturn = number & z.BRAND<'BuyAndHoldReturn'>;
@@ -149,4 +149,9 @@ export function calculateWinLossMetrics(closedTrades: readonly ClosedTrade[]): W
     largestProfit,
     largestLoss,
   } as WinLossMetrics;
+}
+
+type ProfitFactor = number & z.BRAND<'ProfitFactor'>;
+export function calculateProfitFactor(netProfit: Profit, netLoss: Loss): ProfitFactor {
+  return to2DigitDecimalNumber(new Decimal(netProfit).dividedBy(netLoss)) as ProfitFactor;
 }

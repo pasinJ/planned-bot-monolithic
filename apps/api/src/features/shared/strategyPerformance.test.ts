@@ -4,9 +4,10 @@ import { mockClosedTrade } from '#test-utils/features/shared/trades.js';
 
 import { FilledOrder } from './order.js';
 import { InitialCapital } from './strategy.js';
-import { Return } from './strategyExecutorModules/strategy.js';
+import { Loss, Profit, Return } from './strategyExecutorModules/strategy.js';
 import {
   calculateBuyAndHoldReturn,
+  calculateProfitFactor,
   calculateRateOfInvestment,
   calculateWinLossMetrics,
   getTotalTradeVolume,
@@ -277,6 +278,19 @@ describe('UUT: Calculate win/loss metrics', () => {
 
         expect(result).toHaveProperty('largestLoss', -20);
       });
+    });
+  });
+});
+
+describe('UUT: Calculate profit factor', () => {
+  describe('[WHEN] calculate profit factor', () => {
+    it('[THEN] it will return correct profit factor', () => {
+      const netProfit = 1 as Profit;
+      const netLoss = 2 as Loss;
+
+      const result = calculateProfitFactor(netProfit, netLoss);
+
+      expect(result).toBe(0.5);
     });
   });
 });
