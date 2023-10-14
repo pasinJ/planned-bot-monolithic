@@ -1,4 +1,5 @@
 import { Decimal } from 'decimal.js';
+import { propEq } from 'ramda';
 import { z } from 'zod';
 
 import { isUndefined } from '#shared/utils/general.js';
@@ -38,4 +39,17 @@ export function calculateRateOfInvestment(
     .dividedBy(initialCapital)
     .toDecimalPlaces(8, Decimal.ROUND_HALF_UP)
     .toNumber() as RateOfInvestment;
+}
+
+type TotalTradeVolume = number & z.BRAND<'TotalTradeVolume'>;
+export function getTotalTradeVolume(filledOrders: readonly FilledOrder[]): TotalTradeVolume {
+  type FilledEntryOrder = Extract<FilledOrder, { orderSide: 'ENTRY' }>;
+  const filledEntryOrders = filledOrders.filter(propEq('ENTRY', 'orderSide')) as FilledEntryOrder[];
+
+  if (filledEntryOrders.length === 0) return 0 as TotalTradeVolume;
+  else
+    return filledEntryOrders
+      .reduce((sum, order) => sum.plus(order.quantity), new Decimal(0))
+      .toDecimalPlaces(8, Decimal.ROUND_HALF_UP)
+      .toNumber() as TotalTradeVolume;
 }
