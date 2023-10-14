@@ -6,7 +6,7 @@ import { append, assoc, isNotNil, pick, pickBy, propOr } from 'ramda';
 import type { NonNever } from 'ts-essentials';
 import { z } from 'zod';
 
-import { Json, isError } from '#shared/utils/general.js';
+import { isError } from '#shared/utils/general.js';
 
 import { implementZodSchema } from './utils.js';
 
@@ -23,7 +23,9 @@ export type AppError<
   cause?: AppError | GeneralCause;
   stack?: string;
   toString: () => string;
-  toJSON: () => Json;
+  toJSON: () => { name: string; message: string; causesList: string[] } & NonNever<
+    undefined extends Type ? { type?: Type } : { type: Type }
+  >;
 }> &
   Readonly<NonNever<undefined extends Type ? { type?: Type } : { type: Type }>>;
 
