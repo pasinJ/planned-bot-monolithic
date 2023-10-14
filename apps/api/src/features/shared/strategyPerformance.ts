@@ -32,16 +32,16 @@ export function calculateBuyAndHoldReturn(
   return buyAndHoldReturn as BuyAndHoldReturn;
 }
 
-type RateOfInvestment = number & z.BRAND<'RateOfInvestment'>;
-export function calculateRateOfInvestment(
+type ReturnOfInvestment = number & z.BRAND<'ReturnOfInvestment'>;
+export function calculateReturnOfInvestment(
   initialCapital: InitialCapital,
   netReturn: Return,
-): RateOfInvestment {
+): ReturnOfInvestment {
   return new Decimal(netReturn)
     .times(100)
     .dividedBy(initialCapital)
     .toDecimalPlaces(8, Decimal.ROUND_HALF_UP)
-    .toNumber() as RateOfInvestment;
+    .toNumber() as ReturnOfInvestment;
 }
 
 type TotalTradeVolume = number & z.BRAND<'TotalTradeVolume'>;

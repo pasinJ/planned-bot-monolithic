@@ -8,7 +8,7 @@ import { Loss, Profit, Return } from './strategyExecutorModules/strategy.js';
 import {
   calculateBuyAndHoldReturn,
   calculateProfitFactor,
-  calculateRateOfInvestment,
+  calculateReturnOfInvestment,
   calculateWinLossMetrics,
   getTotalTradeVolume,
 } from './strategyPerformance.js';
@@ -48,13 +48,13 @@ describe('UUT: Calculate buy and hold return', () => {
   });
 });
 
-describe('UUT: Calculate rate of investment', () => {
-  describe('[WHEN] calculate rate of investment', () => {
-    it('[THEN] it will return correct rate of investment', () => {
+describe('UUT: Calculate return of investment', () => {
+  describe('[WHEN] calculate return of investment', () => {
+    it('[THEN] it will return correct return of investment', () => {
       const initialCapital = 100 as InitialCapital;
       const netReturn = 10 as Return;
 
-      const result = calculateRateOfInvestment(initialCapital, netReturn);
+      const result = calculateReturnOfInvestment(initialCapital, netReturn);
 
       expect(result).toBe(10);
     });
