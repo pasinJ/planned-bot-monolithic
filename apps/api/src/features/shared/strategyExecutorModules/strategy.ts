@@ -4,6 +4,8 @@ import { __, gt, lt, max, min, propSatisfies } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
+import { to8DigitDecimalNumber } from '#shared/utils/number.js';
+
 import { ExchangeName } from '../exchange.js';
 import { CanceledOrder, FeeAmount, FilledOrder, OpeningOrder } from '../order.js';
 import {
@@ -402,5 +404,35 @@ export function updateStrategyModuleStats(
     equity: newEquity.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber() as Equity,
     maxDrawdown: newMaxDrawdown as EquityDrawdown,
     maxRunup: newMaxRunup as EquityRunup,
+  };
+}
+
+export function calculateTotalFeesFromFilledOrders(
+  filledOrders: readonly FilledOrder[],
+  currencies: { capitalCurrency: CapitalCurrency; assetCurrency: AssetCurrency },
+): {
+  inCapitalCurrency: FeeAmount;
+  inAssetCurrency: FeeAmount;
+} {
+  const { inCapitalCurrency, inAssetCurrency } = filledOrders.reduce(
+    (prev, order) => ({
+      inCapitalCurrency:
+        order.fee.currency === currencies.capitalCurrency
+          ? prev.inCapitalCurrency.plus(order.fee.amount)
+          : prev.inCapitalCurrency,
+      inAssetCurrency:
+        order.fee.currency === currencies.assetCurrency
+          ? prev.inAssetCurrency.plus(order.fee.amount)
+          : prev.inAssetCurrency,
+    }),
+    {
+      inCapitalCurrency: new Decimal(0),
+      inAssetCurrency: new Decimal(0),
+    },
+  );
+
+  return {
+    inCapitalCurrency: to8DigitDecimalNumber(inCapitalCurrency) as FeeAmount,
+    inAssetCurrency: to8DigitDecimalNumber(inAssetCurrency) as FeeAmount,
   };
 }

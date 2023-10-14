@@ -12,7 +12,7 @@ import { InitialCapital } from './strategy.js';
 import { Loss, Profit, Return } from './strategyExecutorModules/strategy.js';
 import { ClosedTrade } from './trade.js';
 
-type BuyAndHoldReturn = number & z.BRAND<'BuyAndHoldReturn'>;
+export type BuyAndHoldReturn = number & z.BRAND<'BuyAndHoldReturn'>;
 export function calculateBuyAndHoldReturn(
   initialCapital: InitialCapital,
   firstEntryOrder: Extract<FilledOrder, { orderSide: 'ENTRY' }> | undefined,
@@ -32,7 +32,7 @@ export function calculateBuyAndHoldReturn(
   return buyAndHoldReturn as BuyAndHoldReturn;
 }
 
-type ReturnOfInvestment = number & z.BRAND<'ReturnOfInvestment'>;
+export type ReturnOfInvestment = number & z.BRAND<'ReturnOfInvestment'>;
 export function calculateReturnOfInvestment(
   initialCapital: InitialCapital,
   netReturn: Return,
@@ -44,7 +44,7 @@ export function calculateReturnOfInvestment(
     .toNumber() as ReturnOfInvestment;
 }
 
-type TotalTradeVolume = number & z.BRAND<'TotalTradeVolume'>;
+export type TotalTradeVolume = number & z.BRAND<'TotalTradeVolume'>;
 export function getTotalTradeVolume(filledOrders: readonly FilledOrder[]): TotalTradeVolume {
   type FilledEntryOrder = Extract<FilledOrder, { orderSide: 'ENTRY' }>;
   const filledEntryOrders = filledOrders.filter(propEq('ENTRY', 'orderSide')) as FilledEntryOrder[];
@@ -57,7 +57,7 @@ export function getTotalTradeVolume(filledOrders: readonly FilledOrder[]): Total
       .toNumber() as TotalTradeVolume;
 }
 
-type WinLossMetrics = DeepReadonly<{
+export type WinLossMetrics = DeepReadonly<{
   numOfTotalTrades: NumOfTotalTrades;
   numOfWinningTrades: NumOfWinningTrades;
   numOfLosingTrades: NumOfLosingTrades;
@@ -151,7 +151,7 @@ export function calculateWinLossMetrics(closedTrades: readonly ClosedTrade[]): W
   } as WinLossMetrics;
 }
 
-type ProfitFactor = number & z.BRAND<'ProfitFactor'>;
+export type ProfitFactor = number & z.BRAND<'ProfitFactor'>;
 export function calculateProfitFactor(netProfit: Profit, netLoss: Loss): ProfitFactor {
   return to2DigitDecimalNumber(new Decimal(netProfit).dividedBy(netLoss)) as ProfitFactor;
 }

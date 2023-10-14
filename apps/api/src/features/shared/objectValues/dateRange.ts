@@ -28,7 +28,7 @@ export function createDateRange(startDate: Date, endDate: Date): e.Either<Create
   );
 }
 
-type DurationString = string & z.BRAND<'DurationString'>;
+export type DurationString = string & z.BRAND<'DurationString'>;
 export function getDurationString(dateRate: DateRange): DurationString {
   return formatDuration(intervalToDuration(dateRate)) as DurationString;
 }

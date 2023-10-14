@@ -29,7 +29,7 @@ export function addRoutes(
       addBtStrategyRouteOptions(deps),
       executeBtStrategyRouteOptions(deps),
       getBtExecutionProgressRouteOptions(deps),
-      getBtExecutionResultRouteOptions(),
+      getBtExecutionResultRouteOptions(deps),
       getSymbolsRouteOptions(deps),
     ]),
     ioe.map((routeOptionsList) =>
