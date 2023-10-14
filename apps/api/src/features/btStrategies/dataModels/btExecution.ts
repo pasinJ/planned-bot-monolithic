@@ -45,6 +45,7 @@ export const BT_PROGRESS_PERCENTAGE_FINISHED = 100 as BtProgressPercentage;
 export type BtExecutionResult = BtExecutionSuccessfulResult | BtExecutionFailedResult;
 export type BtExecutionSuccessfulResult = DeepReadonly<{
   id: BtExecutionId;
+  btStrategyId: BtStrategyId;
   status: Extract<BtExecutionStatus, 'FINISHED'>;
   executionTimeMs: Milliseconds;
   logs: string[];
@@ -54,6 +55,7 @@ export type BtExecutionSuccessfulResult = DeepReadonly<{
 }>;
 export type BtExecutionFailedResult = DeepReadonly<{
   id: BtExecutionId;
+  btStrategyId: BtStrategyId;
   status: Extract<BtExecutionStatus, 'TIMEOUT' | 'FAILED' | 'CANCELED' | 'INTERUPTED'>;
   executionTimeMs: Milliseconds;
   logs: string[];

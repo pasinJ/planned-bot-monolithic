@@ -226,6 +226,7 @@ describe('UUT: Get backtesting execution result by ID', () => {
 
         expect(result).toEqualRight({
           id: executionId,
+          btStrategyId,
           status: btExecutionStatusEnum.FINISHED,
           executionTimeMs: expect.toBeNumber(),
           logs,
@@ -287,6 +288,7 @@ describe('UUT: Get backtesting execution result by ID', () => {
 
         expect(result).toEqualRight({
           id: executionId,
+          btStrategyId,
           status: btExecutionStatusEnum.FAILED,
           executionTimeMs: expect.toBeNumber(),
           logs,

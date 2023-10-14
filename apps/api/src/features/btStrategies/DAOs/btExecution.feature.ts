@@ -86,13 +86,20 @@ export function getBtExecutionResultById({
           const result = btExecution.result as BtJobResult<'FINISHED'>;
           return {
             id: data.id,
+            btStrategyId: data.btStrategyId,
             status: data.status,
             executionTimeMs,
             ...result,
           } as BtExecutionSuccessfulResult;
         } else {
           const result = btExecution.result as BtJobResult<'TIMEOUT' | 'INTERUPTED' | 'CANCELED' | 'FAILED'>;
-          return { id: data.id, status: data.status, executionTimeMs, ...result } as BtExecutionFailedResult;
+          return {
+            id: data.id,
+            btStrategyId: data.btStrategyId,
+            status: data.status,
+            executionTimeMs,
+            ...result,
+          } as BtExecutionFailedResult;
         }
       }),
     );
