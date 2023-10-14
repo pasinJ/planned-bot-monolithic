@@ -9,7 +9,13 @@ import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.j
 import { mockKline } from '#test-utils/features/shared/kline.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
-import { addKlines, getFirstKlineBefore, getKlinesBefore, iterateThroughKlines } from './kline.feature.js';
+import {
+  addKlines,
+  getFirstKlineBefore,
+  getKlinesBefore,
+  getLastKlineBefore,
+  iterateThroughKlines,
+} from './kline.feature.js';
 import { KlineMongooseModel, buildKlineDao, klineModelName } from './kline.js';
 
 const client = await createMongoClient();
@@ -335,7 +341,7 @@ describe('UUT: Get klines before the specific date', () => {
   });
 });
 
-describe('UUT: Get first klines before the specific date', () => {
+describe('UUT: Get first kline before the specific date', () => {
   const exchange = exchangeNameEnum.BINANCE;
   const symbol = 'BNBUSDT' as SymbolName;
   const timeframe = timeframeEnum['1d'];
@@ -371,6 +377,49 @@ describe('UUT: Get first klines before the specific date', () => {
         const filter = { ...base, start: new Date('2021-10-01T00:00:00.000Z') as ValidDate };
 
         const result = await executeT(getFirstBeforeFn(filter));
+
+        expect(result).toEqualRight(null);
+      });
+    });
+  });
+});
+
+describe('UUT: Get last kline before the specific date', () => {
+  const exchange = exchangeNameEnum.BINANCE;
+  const symbol = 'BNBUSDT' as SymbolName;
+  const timeframe = timeframeEnum['1d'];
+  const base = { exchange, symbol, timeframe };
+  const kline1 = mockKline({ ...base, closeTimestamp: new Date('2021-10-01T23:59:59.999Z') });
+  const kline2 = mockKline({ ...base, closeTimestamp: new Date('2021-10-02T23:59:59.999Z') });
+  const kline3 = mockKline({ ...base, closeTimestamp: new Date('2021-10-03T23:59:59.999Z') });
+  const kline4 = mockKline({ ...base, closeTimestamp: new Date('2021-10-04T23:59:59.999Z') });
+
+  const getLastBeforeFn = klineDao.composeWith(getLastKlineBefore);
+
+  describe('[GIVEN] there are klines before the specific date', () => {
+    describe('[WHEN] get last kline before the specific date', () => {
+      it('[THEN] it will return Right of the last kline before the specific date', async () => {
+        const klines = [kline1, kline2, kline3, kline4];
+        await klineModel.insertMany(klines);
+
+        const filter = { ...base, start: new Date('2021-10-04T00:00:00.000Z') as ValidDate };
+
+        const result = await executeT(getLastBeforeFn(filter));
+
+        expect(result).toEqualRight(kline3);
+      });
+    });
+  });
+
+  describe('[GIVEN] there is no kline before the specific date', () => {
+    describe('[WHEN] get last kline before the specific date', () => {
+      it('[THEN] it will return Right of null', async () => {
+        const klines = [kline1, kline2, kline3, kline4];
+        await klineModel.insertMany(klines);
+
+        const filter = { ...base, start: new Date('2021-10-01T00:00:00.000Z') as ValidDate };
+
+        const result = await executeT(getLastBeforeFn(filter));
 
         expect(result).toEqualRight(null);
       });
