@@ -3,22 +3,12 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { Model, Mongoose, Schema, SchemaDefinition } from 'mongoose';
 
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
-import { ValidDate } from '#shared/utils/date.js';
 
 import { btExecutionStatusList } from '../dataModels/btExecution.js';
-import { BtJobData, BtJobResult } from '../executeBtStrategy/backtesting.job.js';
+import { BtJobDocument } from '../executeBtStrategy/backtesting.job.js';
 import { BtExecutionDaoError, createBtExecutionDaoError } from './btExecution.error.js';
 
-type BtExecutionDocument = {
-  _id: string;
-  name: string;
-  data: BtJobData;
-  result?: BtJobResult;
-  lastRunAt?: ValidDate;
-  failedReason?: string;
-  lastFinishedAt?: ValidDate;
-  __v: number;
-};
+type BtExecutionDocument = BtJobDocument;
 export type BtExecutionMongooseModel = Model<BtExecutionDocument>;
 export const btExecutionModelName = 'BtExecution';
 
@@ -58,7 +48,7 @@ function createMongooseModel(
       trades: { type: Schema.Types.Mixed },
     },
     lastRunAt: Date,
-    failedReason: String,
+    failReason: String,
     lastFinishedAt: Date,
   };
 

@@ -1,3 +1,4 @@
+import { differenceInMilliseconds } from 'date-fns';
 import { utcToZonedTime as utcToZonedTimeBase } from 'date-fns-tz';
 import { z } from 'zod';
 
@@ -5,6 +6,8 @@ import { TimezoneString } from './string.js';
 
 export type ValidDate = z.infer<typeof validDateSchema>;
 export const validDateSchema = z.date().brand('ValidDate');
+
+export type Milliseconds = number & z.BRAND<'Milliseconds'>;
 
 export type UnixMs = z.infer<typeof unixMsSchema>;
 export const unixMsSchema = z.number().int().brand('UnixMs');
@@ -56,4 +59,8 @@ type EndTimestamp = ValidDate & z.BRAND<'EndTimestamp'>;
 
 export function utcToZonedTime(timezone: TimezoneString) {
   return (date: ValidDate): ValidDate => utcToZonedTimeBase(date, timezone) as ValidDate;
+}
+
+export function getDiffInMs(before: Date, after: Date): Milliseconds {
+  return differenceInMilliseconds(before, after) as Milliseconds;
 }
