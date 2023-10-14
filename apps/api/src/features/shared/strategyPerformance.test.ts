@@ -2,7 +2,8 @@ import { mockKline } from '#test-utils/features/shared/kline.js';
 import { mockFilledMarketOrder } from '#test-utils/features/shared/order.js';
 
 import { InitialCapital } from './strategy.js';
-import { calculateBuyAndHoldReturn } from './strategyPerformance.js';
+import { Return } from './strategyExecutorModules/strategy.js';
+import { calculateBuyAndHoldReturn, calculateRateOfInvestment } from './strategyPerformance.js';
 
 describe('UUT: Calculate buy and hold return', () => {
   describe('[GIVEN] there is no filled entry order', () => {
@@ -34,6 +35,19 @@ describe('UUT: Calculate buy and hold return', () => {
 
         expect(result).toBe(1980);
       });
+    });
+  });
+});
+
+describe('UUT: Calculate rate of investment', () => {
+  describe('[WHEN] calculate rate of investment', () => {
+    it('[THEN] it will return correct rate of investment', () => {
+      const initialCapital = 100 as InitialCapital;
+      const netReturn = 10 as Return;
+
+      const result = calculateRateOfInvestment(initialCapital, netReturn);
+
+      expect(result).toBe(10);
     });
   });
 });
