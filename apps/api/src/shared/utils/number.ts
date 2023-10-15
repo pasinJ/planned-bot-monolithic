@@ -10,3 +10,11 @@ export const nonNegativePercentage8DigitsSchema = float8DigitsSchema.pipe(z.numb
 
 export const positiveIntSchema = z.number().positive().int();
 export const nonNegativeIntSchema = z.number().nonnegative().int();
+
+export function to8DigitDecimalNumber(n: Decimal): number {
+  return n.toDecimalPlaces(8, Decimal.ROUND_HALF_UP).toNumber();
+}
+
+export function to2DigitDecimalNumber(n: Decimal): number {
+  return n.toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
+}

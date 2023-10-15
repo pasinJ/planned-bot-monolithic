@@ -4,12 +4,13 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Mongoose } from 'mongoose';
 
-import { buildBtExecutionDao as buildBtExecutionDaoOrg } from '#features/btStrategies/DAOs/btExecution.js';
-import { buildBtStrategyDao as buildBtStrategyDaoOrg } from '#features/btStrategies/DAOs/btStrategy.js';
+import { buildBtExecutionDao } from '#features/btStrategies/DAOs/btExecution.js';
+import { buildBtStrategyDao } from '#features/btStrategies/DAOs/btStrategy.js';
+import { buildKlineDao } from '#features/btStrategies/DAOs/kline.js';
 import { getBtJobConfig } from '#features/btStrategies/executeBtStrategy/backtesting.job.config.js';
 import { defineBtJob } from '#features/btStrategies/executeBtStrategy/backtesting.job.js';
 import { addSymbolModels, existSymbolModelByExchange } from '#features/symbols/DAOs/symbol.feature.js';
-import { buildSymbolDao as buildSymbolDaoOrg } from '#features/symbols/DAOs/symbol.js';
+import { buildSymbolDao } from '#features/symbols/DAOs/symbol.js';
 import { getHttpConfig } from '#infra/http/server.config.js';
 import { HttpServer, addPluginsAndRoutes, buildHttpServer } from '#infra/http/server.js';
 import { createLoggerIo, createMainLogger } from '#infra/logging.js';
@@ -29,19 +30,20 @@ import { executeT } from '#utils/fp.js';
 
 type Deps = Omit<AppDeps, 'dateService'> & { mongoDbClient: Mongoose; httpServer: HttpServer };
 
-function buildSymbolDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(buildSymbolDaoOrg(mongoDbClient));
+function _buildSymbolDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(buildSymbolDao(mongoDbClient));
 }
-function buildBtStrategyDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
-  return te.fromIOEither(buildBtStrategyDaoOrg(mongoDbClient));
+function _buildBtStrategyDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(buildBtStrategyDao(mongoDbClient));
 }
-function buildBtExecutionDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+function _buildBtExecutionDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
   return pipe(
     te.fromIO(getJobSchedulerConfig),
-    te.chainW(({ COLLECTION_NAME }) =>
-      te.fromIOEither(buildBtExecutionDaoOrg(mongoDbClient, COLLECTION_NAME)),
-    ),
+    te.chainW(({ COLLECTION_NAME }) => te.fromIOEither(buildBtExecutionDao(mongoDbClient, COLLECTION_NAME))),
   );
+}
+function _buildKlineDao({ mongoDbClient }: Pick<Deps, 'mongoDbClient'>) {
+  return te.fromIOEither(buildKlineDao(mongoDbClient));
 }
 function setupJobScheduler() {
   return pipe(
@@ -82,9 +84,10 @@ await executeT(
   pipe(
     te.Do,
     te.bindW('mongoDbClient', () => buildMongoDbClient(logger, getMongoDbConfig)),
-    te.bindW('symbolDao', (deps) => buildSymbolDao(deps)),
-    te.bindW('btStrategyDao', (deps) => buildBtStrategyDao(deps)),
-    te.bindW('btExecutionDao', (deps) => buildBtExecutionDao(deps)),
+    te.bindW('symbolDao', (deps) => _buildSymbolDao(deps)),
+    te.bindW('btStrategyDao', (deps) => _buildBtStrategyDao(deps)),
+    te.bindW('btExecutionDao', (deps) => _buildBtExecutionDao(deps)),
+    te.bindW('klineDao', (deps) => _buildKlineDao(deps)),
     te.bindW('bnbService', () => te.fromIOEither(buildBnbService({ mainLogger, getBnbConfig }))),
     te.bindW('jobScheduler', () => setupJobScheduler()),
     te.bindW('httpServer', (deps) => setupHttpServer(deps)),

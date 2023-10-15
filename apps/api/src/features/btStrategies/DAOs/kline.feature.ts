@@ -173,3 +173,38 @@ export function getFirstKlineBefore({
       te.map((x) => (isNotNil(x) ? omit(['_id', '__v'], x) : x)),
     );
 }
+export type GetLastKlineBefore = (filter: {
+  exchange: ExchangeName;
+  symbol: string;
+  timeframe: Timeframe;
+  start: ValidDate;
+}) => te.TaskEither<GetLastKlineBeforeError, Kline | null>;
+export type GetLastKlineBeforeError = KlineDaoError<'GetLastBeforeFailed'>;
+export function getLastKlineBefore({
+  mongooseModel,
+}: {
+  mongooseModel: KlineMongooseModel;
+}): GetLastKlineBefore {
+  return (filter) =>
+    pipe(
+      te.tryCatch(
+        () =>
+          mongooseModel
+            .findOne({
+              exchange: filter.exchange,
+              symbol: filter.symbol,
+              timeframe: filter.timeframe,
+              closeTimestamp: { $lte: filter.start },
+            })
+            .sort({ closeTimestamp: 'desc' })
+            .lean(),
+        createErrorFromUnknown(
+          createKlineDaoError(
+            'GetLastBeforeFailed',
+            `Getting last kline before ${filter.start.toISOString()} failed`,
+          ),
+        ),
+      ),
+      te.map((x) => (isNotNil(x) ? omit(['_id', '__v'], x) : x)),
+    );
+}

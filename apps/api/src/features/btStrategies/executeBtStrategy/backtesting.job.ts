@@ -27,7 +27,7 @@ import { ValidDate } from '#shared/utils/date.js';
 import { BtStrategyId } from '../dataModels/btStrategy.js';
 import { BtJobConfig, BtJobTimeout, BtWorkerFilePath } from './backtesting.job.config.js';
 
-export type BtJobDocument = JobRecord<BtJobName, BtJobData, BtJobResult>;
+export type BtJobDocument = JobRecord<BtJobName, BtJobData, BtJobResult<BtExecutionStatus>>;
 type BtJobName = typeof btJobName;
 export const btJobName = 'backtesting';
 export type BtJobData = {
@@ -36,13 +36,18 @@ export type BtJobData = {
   status: BtExecutionStatus;
   percentage: BtProgressPercentage;
 };
-export type BtJobResult = {
-  logs: string[];
-  strategyModule?: StrategyModule;
-  orders?: OrdersLists;
-  trades?: TradesLists;
-  error?: { name: string; type: string; message: string; causesList: string[] };
-};
+export type BtJobResult<Status extends BtExecutionStatus> = Status extends 'PENDING'
+  ? undefined
+  : Status extends 'RUNNING' | 'TIMEOUT' | 'CANCELED' | 'INTERUPTED'
+  ? { logs: string[] }
+  : Status extends 'FAILED'
+  ? { logs: string[]; error: { name: string; type: string; message: string; causesList: string[] } }
+  : {
+      logs: string[];
+      strategyModule: StrategyModule;
+      orders: OrdersLists;
+      trades: TradesLists;
+    };
 
 export type BtJobDeps = DeepReadonly<{ getBtJobConfig: io.IO<BtJobConfig>; fork: typeof fork }>;
 export type DefineBtJob = ioe.IOEither<DefineBtJobError, void>;

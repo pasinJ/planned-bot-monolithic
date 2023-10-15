@@ -23,3 +23,11 @@ export async function getBtExecutionProgressById(executionId = 'n_D65q3SUG') {
     response: await client.request({ method, url: url.replace(':id', executionId), data: {} }),
   };
 }
+
+export async function getBtExecutionResultById(executionId = '9IDRGAts6A') {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_RESULT;
+  return {
+    request: { id: executionId },
+    response: await client.request({ method, url: url.replace(':id', executionId), data: {} }),
+  };
+}

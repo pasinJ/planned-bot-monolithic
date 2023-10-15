@@ -6,7 +6,9 @@ import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
 import { DateRange } from '#features/shared/objectValues/dateRange.js';
-import { ValidDate } from '#shared/utils/date.js';
+import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/executeStrategy.js';
+import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
+import { Milliseconds, ValidDate } from '#shared/utils/date.js';
 import { nonNegativePercentage8DigitsSchema } from '#shared/utils/number.js';
 
 import { BtStrategyId } from './btStrategy.js';
@@ -39,6 +41,26 @@ export type BtExecutionProgress = DeepReadonly<{
 
 export const BT_PROGRESS_PERCENTAGE_START = 0 as BtProgressPercentage;
 export const BT_PROGRESS_PERCENTAGE_FINISHED = 100 as BtProgressPercentage;
+
+export type BtExecutionResult = BtExecutionSuccessfulResult | BtExecutionFailedResult;
+export type BtExecutionSuccessfulResult = DeepReadonly<{
+  id: BtExecutionId;
+  btStrategyId: BtStrategyId;
+  status: Extract<BtExecutionStatus, 'FINISHED'>;
+  executionTimeMs: Milliseconds;
+  logs: string[];
+  strategyModule: StrategyModule;
+  orders: OrdersLists;
+  trades: TradesLists;
+}>;
+export type BtExecutionFailedResult = DeepReadonly<{
+  id: BtExecutionId;
+  btStrategyId: BtStrategyId;
+  status: Extract<BtExecutionStatus, 'TIMEOUT' | 'FAILED' | 'CANCELED' | 'INTERUPTED'>;
+  executionTimeMs: Milliseconds;
+  logs: string[];
+  error?: { name: string; type: string; message: string; causesList: string[] };
+}>;
 
 export const generateBtExecutionId: io.IO<BtExecutionId> = () => nanoid() as BtExecutionId;
 

@@ -36,8 +36,14 @@ export function existBtStrategyModelById({ mongooseModel }: { mongooseModel: BtS
     );
 }
 
-export function getBtStrategyModelById({ mongooseModel }: { mongooseModel: BtStrategyMongooseModel }) {
-  return (id: string): te.TaskEither<BtStrategyDaoError<'GetByIdFailed' | 'NotExist'>, BtStrategyModel> =>
+export type GetBtStrategyById = (id: string) => te.TaskEither<GetBtStrategyByIdError, BtStrategyModel>;
+export type GetBtStrategyByIdError = BtStrategyDaoError<'GetByIdFailed' | 'NotExist'>;
+export function getBtStrategyModelById({
+  mongooseModel,
+}: {
+  mongooseModel: BtStrategyMongooseModel;
+}): GetBtStrategyById {
+  return (id) =>
     pipe(
       te.tryCatch(
         () => mongooseModel.findById(id).lean(),
