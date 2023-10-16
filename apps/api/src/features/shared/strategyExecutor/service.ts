@@ -11,12 +11,12 @@ import { DeepReadonly } from 'ts-essentials';
 import { LoggerIo } from '#infra/logging.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { KlinesModule } from '../strategyExecutorModules/klines.js';
-import { OrdersModule } from '../strategyExecutorModules/orders.js';
-import { StrategyModule } from '../strategyExecutorModules/strategy.js';
-import { SystemModule } from '../strategyExecutorModules/system.js';
-import { TechnicalAnalysisModule } from '../strategyExecutorModules/technicalAnalysis.js';
-import { TradesModule } from '../strategyExecutorModules/trades.js';
+import { KlinesModule } from '../strategyExecutorContext/klines.js';
+import { OrdersModule } from '../strategyExecutorContext/orders.js';
+import { StrategyModule } from '../strategyExecutorContext/strategy.js';
+import { SystemModule } from '../strategyExecutorContext/system.js';
+import { TechnicalAnalysisModule } from '../strategyExecutorContext/technicalAnalysis.js';
+import { TradesModule } from '../strategyExecutorContext/trades.js';
 import { StrategyExecutorConfig } from './config.js';
 import { StrategyExecutorError, createStrategyExecutorError } from './error.js';
 import { ExecuteStrategy, executeStrategy } from './executeStrategy.js';

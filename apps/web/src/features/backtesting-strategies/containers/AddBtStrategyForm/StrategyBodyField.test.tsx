@@ -51,6 +51,7 @@ describe('WHEN render', () => {
   it('THEN it should display the field with default value and language', async () => {
     const body = randomString();
     const language = randomLanguage();
+
     renderStrategyBodyField({ body, language });
 
     const editor = await ui.editor.find();

@@ -6,61 +6,32 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { nanoid } from 'nanoid';
 import { append, dissoc, max, min } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
-import { z } from 'zod';
+
+import type {
+  ClosedTrade,
+  NetReturn,
+  OpeningTrade,
+  TradeDrawdown,
+  TradeId,
+  TradeQuantity,
+  TradeRunup,
+  UnrealizedReturn,
+} from '#SECT/Trade.js';
 
 import { Kline, Price } from './kline.js';
 import { FeeAmount, FilledOrder, OrderQuantity } from './order.js';
 
-export type Trade = OpeningTrade | ClosedTrade;
-
-export type OpeningTrade = {
-  /** Trade ID */
-  id: TradeId;
-  /** Entry order information */
-  entryOrder: Extract<FilledOrder, { orderSide: 'ENTRY' }>;
-  /** Quantity of opening asset in current trade */
-  tradeQuantity: TradeQuantity;
-  /** Maximum price since the trade was opened */
-  maxPrice: Price;
-  /** Minimum price since the trade was opened */
-  minPrice: Price;
-  /** The maximum possible profit during the trade <br/>
-   * Before fee deduction.
-   */
-  maxRunup: TradeRunup;
-  /** The maximum possible loss during the trade <br/>
-   * Before fee deduction.
-   */
-  maxDrawdown: TradeDrawdown;
-  /** Current unrealized return (profit or loss) of this trade in capital currency <br/>
-   * Before fee deduction. Losses are expressed as negative values.
-   */
-  unrealizedReturn: UnrealizedReturn;
-};
-
-export type ClosedTrade = Omit<OpeningTrade, 'unrealizedReturn'> & {
-  /** Exit order information */
-  exitOrder: FilledOrder & { orderSide: 'EXIT' };
-  /** Realized net return (profit or loss) of this trade in capital currency <br/>
-   * After entry and exit fees deduction. Losses are expressed as negative values.
-   */
-  netReturn: NetReturn;
-};
-
-export type TradeId = string & z.BRAND<'TradeId'>;
-/** Trade quantity must be positive and less than or equal to <entry quantity> - <entry fee> */
-export type TradeQuantity = z.infer<typeof tradeQuantitySchema>;
-const tradeQuantitySchema = z.number().positive().brand('TradeQuantity');
-/** Trade drawdown must be zero or negative and less than or equal to unrealized return and net return */
-export type TradeDrawdown = z.infer<typeof tradeDrawdownSchema>;
-const tradeDrawdownSchema = z.number().nonpositive().brand('TradeDrawdown');
-/** Trade run-up must be zero or positive and greater than or equal to unrealized return and net return */
-export type TradeRunup = z.infer<typeof tradeRunupSchema>;
-const tradeRunupSchema = z.number().nonnegative().brand('TradeRunup');
-export type UnrealizedReturn = z.infer<typeof unrealizedReturnSchema>;
-const unrealizedReturnSchema = z.number().brand('UnrealizedReturn');
-export type NetReturn = z.infer<typeof netReturnSchema>;
-const netReturnSchema = z.number().brand('NetReturn');
+export type {
+  ClosedTrade,
+  OpeningTrade,
+  Trade,
+  TradeId,
+  TradeQuantity,
+  TradeDrawdown,
+  TradeRunup,
+  UnrealizedReturn,
+  NetReturn,
+} from '#SECT/Trade.js';
 
 export function generateTradeId(): TradeId {
   return nanoid() as TradeId;

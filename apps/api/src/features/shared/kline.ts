@@ -3,8 +3,8 @@ import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { z } from 'zod';
 
+import type { Kline } from '#SECT/Kline.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
-import { ValidDate } from '#shared/utils/date.js';
 import { nonNegativeFloat8DigitsSchema } from '#shared/utils/number.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
@@ -12,30 +12,10 @@ import { ExchangeName } from './exchange.js';
 import { SymbolName } from './symbol.js';
 import { Timeframe } from './timeframe.js';
 
-export type Kline = Readonly<{
-  exchange: ExchangeName;
-  symbol: SymbolName;
-  timeframe: Timeframe;
-  openTimestamp: ValidDate;
-  closeTimestamp: ValidDate;
-  open: Price;
-  high: Price;
-  low: Price;
-  close: Price;
-  volume: Volume;
-  quoteAssetVolume: Volume;
-  takerBuyBaseAssetVolume: Volume;
-  takerBuyQuoteAssetVolume: Volume;
-  numTrades: NumTrades;
-}>;
+export type { Kline, Price, Volume, NumTrades } from '#SECT/Kline.js';
 
-export type Price = z.infer<typeof priceSchema>;
 const priceSchema = nonNegativeFloat8DigitsSchema.brand('Price');
-
-export type Volume = z.infer<typeof volumeSchema>;
 const volumeSchema = nonNegativeFloat8DigitsSchema.brand('Volume');
-
-export type NumTrades = z.infer<typeof numTradesSchema>;
 const numTradesSchema = z.number().nonnegative().int().brand('NumTrades');
 
 export function createKline(data: {

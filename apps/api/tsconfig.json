@@ -14,8 +14,9 @@
       "#shared/*": ["src/shared/*"],
       "#utils/*": ["src/shared/utils/*"],
       "#config/*": ["src/shared/config/*"],
-      "#test-utils/*": ["test-utils/*"]
+      "#test-utils/*": ["test-utils/*"],
+      "#SECT/*": ["../strategyExecutorContextTypes/src/*"]
     }
   },
-  "include": ["src", "types", "test-utils", "jest", "e2e"]
+  "include": ["src", "../strategyExecutorContextTypes/src", "types", "test-utils", "jest", "e2e"]
 }

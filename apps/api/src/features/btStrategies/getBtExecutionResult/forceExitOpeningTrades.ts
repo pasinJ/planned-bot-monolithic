@@ -12,7 +12,7 @@ import {
   StrategyModule,
   calculateTotalFeesFromFilledOrders,
   updateStrategyModuleStats,
-} from '#features/shared/strategyExecutorModules/strategy.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
 import { TradeId, closeTrades } from '#features/shared/trade.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 

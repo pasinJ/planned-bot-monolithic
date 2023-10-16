@@ -27,16 +27,16 @@ import {
   StartStrategyExecutorError,
   StrategyExecutor,
 } from '#features/shared/strategyExecutor/service.js';
-import { buildKlinesModule } from '#features/shared/strategyExecutorModules/klines.js';
-import { buildOrdersModule } from '#features/shared/strategyExecutorModules/orders.js';
+import { buildKlinesModule } from '#features/shared/strategyExecutorContext/klines.js';
+import { buildOrdersModule } from '#features/shared/strategyExecutorContext/orders.js';
 import {
   StrategyModule,
   initiateStrategyModule,
   updateStrategyModuleStats,
-} from '#features/shared/strategyExecutorModules/strategy.js';
-import { buildSystemModule } from '#features/shared/strategyExecutorModules/system.js';
-import { buildTechnicalAnalysisModule } from '#features/shared/strategyExecutorModules/technicalAnalysis.js';
-import { buildTradesModules } from '#features/shared/strategyExecutorModules/trades.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
+import { buildSystemModule } from '#features/shared/strategyExecutorContext/system.js';
+import { buildTechnicalAnalysisModule } from '#features/shared/strategyExecutorContext/technicalAnalysis.js';
+import { buildTradesModules } from '#features/shared/strategyExecutorContext/trades.js';
 import { Symbol, SymbolName } from '#features/shared/symbol.js';
 import { TradeId, updateOpeningTradeStats } from '#features/shared/trade.js';
 import { SymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';

@@ -16,11 +16,11 @@ import {
   TriggeredOrder,
 } from '../order.js';
 import { Language, StrategyBody } from '../strategy.js';
-import { KlinesModule } from '../strategyExecutorModules/klines.js';
-import { OrdersModule } from '../strategyExecutorModules/orders.js';
-import { StrategyModule } from '../strategyExecutorModules/strategy.js';
-import { SystemModule } from '../strategyExecutorModules/system.js';
-import { TradesModule } from '../strategyExecutorModules/trades.js';
+import { KlinesModule } from '../strategyExecutorContext/klines.js';
+import { OrdersModule } from '../strategyExecutorContext/orders.js';
+import { StrategyModule } from '../strategyExecutorContext/strategy.js';
+import { SystemModule } from '../strategyExecutorContext/system.js';
+import { TradesModule } from '../strategyExecutorContext/trades.js';
 import { ClosedTrade, OpeningTrade } from '../trade.js';
 import { ExecuteStrategyTimeout } from './config.js';
 import { StrategyExecutorError, createStrategyExecutorError } from './error.js';

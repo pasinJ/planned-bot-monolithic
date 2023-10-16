@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 import { DateRange } from '#features/shared/objectValues/dateRange.js';
 import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/executeStrategy.js';
-import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
+import { StrategyModule } from '#features/shared/strategyExecutorContext/strategy.js';
 import { Milliseconds, ValidDate } from '#shared/utils/date.js';
 import { nonNegativePercentage8DigitsSchema } from '#shared/utils/number.js';
 

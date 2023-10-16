@@ -1,13 +1,7 @@
-import { utcToZonedTime } from 'date-fns-tz';
-import { ReadonlyNonEmptyArray, last } from 'fp-ts/lib/ReadonlyNonEmptyArray.js';
-import { prop } from 'ramda';
+import { Price, Volume, NumTrades, Kline } from "./Kline.js";
+import { ValidDate } from "./date.js";
 
-import { ValidDate } from '#shared/utils/date.js';
-import { TimezoneString } from '#shared/utils/string.js';
-
-import { Kline, NumTrades, Price, Volume } from '../kline.js';
-
-export type KlinesModule = {
+export type KlinesModule = Readonly<{
   /** Open timestamp of the current kline */
   openTimestamp: ValidDate;
   /** Close timestamp of the current kline */
@@ -52,36 +46,4 @@ export type KlinesModule = {
   getAllNumTrades: () => readonly NumTrades[];
   /** Get array of kline models from oldest to earliest order */
   getAllRaw: () => readonly Kline[];
-};
-
-export function buildKlinesModule(
-  klines: ReadonlyNonEmptyArray<Kline>,
-  timezone: TimezoneString,
-): KlinesModule {
-  const currentKline = last(klines);
-
-  return {
-    openTimestamp: utcToZonedTime(currentKline.openTimestamp, timezone) as ValidDate,
-    closeTimestamp: utcToZonedTime(currentKline.closeTimestamp, timezone) as ValidDate,
-    open: currentKline.open,
-    close: currentKline.close,
-    high: currentKline.high,
-    low: currentKline.low,
-    volume: currentKline.volume,
-    quoteAssetVolume: currentKline.quoteAssetVolume,
-    takerBuyBaseAssetVolume: currentKline.takerBuyBaseAssetVolume,
-    takerBuyQuoteAssetVolume: currentKline.takerBuyQuoteAssetVolume,
-    numTrades: currentKline.numTrades,
-    raw: currentKline,
-    getAllOpen: () => klines.map(prop('open')),
-    getAllClose: () => klines.map(prop('close')),
-    getAllHigh: () => klines.map(prop('high')),
-    getAllLow: () => klines.map(prop('low')),
-    getAllVolume: () => klines.map(prop('volume')),
-    getAllQuoteAssetVolume: () => klines.map(prop('quoteAssetVolume')),
-    getAllTakerBuyBaseAssetVolume: () => klines.map(prop('takerBuyBaseAssetVolume')),
-    getAllTakerBuyQuoteAssetVolume: () => klines.map(prop('takerBuyQuoteAssetVolume')),
-    getAllNumTrades: () => klines.map(prop('numTrades')),
-    getAllRaw: () => klines,
-  };
-}
+}>;

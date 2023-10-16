@@ -3,6 +3,7 @@ import io from 'fp-ts/lib/IO.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { DeepReadonly } from 'ts-essentials';
 
+import type { SystemModule } from '#SECT/SystemModule.js';
 import { DateService } from '#infra/services/date/service.js';
 import {
   Day,
@@ -12,26 +13,13 @@ import {
   Month,
   Second,
   UnixMs,
-  ValidDate,
   WeekOfYear,
   Year,
   utcToZonedTime,
 } from '#shared/utils/date.js';
 import { TimezoneString } from '#shared/utils/string.js';
 
-export type SystemModule = {
-  // client timezone
-  getDate: () => ValidDate;
-  getUnixMsTime: () => UnixMs;
-  getDay: () => Day;
-  getMonth: () => Month;
-  getYear: () => Year;
-  getHours: () => Hour;
-  getMinutes: () => Minute;
-  getSeconds: () => Second;
-  getDayOfWeek: () => DayOfWeekString;
-  getWeekOfYear: () => WeekOfYear;
-};
+export type { SystemModule } from '#SECT/SystemModule.js';
 
 export type SystemModuleDeps = DeepReadonly<{ dateService: DateService }>;
 

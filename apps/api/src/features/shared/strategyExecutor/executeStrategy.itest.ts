@@ -13,12 +13,12 @@ import { mockLoggerIo } from '#test-utils/services.js';
 import { Kline } from '../kline.js';
 import { OrderId } from '../order.js';
 import { AssetCurrency, StrategyBody, languageEnum } from '../strategy.js';
-import { buildKlinesModule } from '../strategyExecutorModules/klines.js';
-import { buildOrdersModule } from '../strategyExecutorModules/orders.js';
-import { initiateStrategyModule } from '../strategyExecutorModules/strategy.js';
-import { buildSystemModule } from '../strategyExecutorModules/system.js';
-import { buildTechnicalAnalysisModule } from '../strategyExecutorModules/technicalAnalysis.js';
-import { buildTradesModules } from '../strategyExecutorModules/trades.js';
+import { buildKlinesModule } from '../strategyExecutorContext/klines.js';
+import { buildOrdersModule } from '../strategyExecutorContext/orders.js';
+import { initiateStrategyModule } from '../strategyExecutorContext/strategy.js';
+import { buildSystemModule } from '../strategyExecutorContext/system.js';
+import { buildTechnicalAnalysisModule } from '../strategyExecutorContext/technicalAnalysis.js';
+import { buildTradesModules } from '../strategyExecutorContext/trades.js';
 import { getStrategyExecutorConfig } from './config.js';
 import { startStrategyExecutor } from './service.js';
 

@@ -25,7 +25,7 @@ import {
   StrategyModule,
   TotalAssetQuantity,
   TotalCapital,
-} from '#features/shared/strategyExecutorModules/strategy.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
 import { timeframeEnum } from '#features/shared/timeframe.js';
 import { Unbrand } from '#shared/utils/types.js';
 

@@ -16,7 +16,7 @@ import {
   btExecutionStatusEnum,
 } from '#features/btStrategies/dataModels/btExecution.js';
 import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/executeStrategy.js';
-import { StrategyModule } from '#features/shared/strategyExecutorModules/strategy.js';
+import { StrategyModule } from '#features/shared/strategyExecutorContext/strategy.js';
 import { LoggerIo } from '#infra/logging.js';
 import { DateService } from '#infra/services/date/service.js';
 import { JobSchedulerError, createJobSchedulerError } from '#infra/services/jobScheduler/error.js';
