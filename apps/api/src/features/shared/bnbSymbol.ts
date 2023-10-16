@@ -2,9 +2,16 @@ import { Decimal } from 'decimal.js';
 import e from 'fp-ts/lib/Either.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { all, collectBy, equals, length, map, prop, propEq, uniq } from 'ramda';
-import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
+import type {
+  BnbSymbol,
+  LotSizeFilter,
+  MarketLotSizeFilter,
+  MinNotionalFilter,
+  NotionalFilter,
+  PriceFilter,
+} from '#SECT/BnbSymbol.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { isUndefined } from '#shared/utils/general.js';
 import {
@@ -18,7 +25,16 @@ import { exchangeNameEnum } from './exchange.js';
 import { OrderType } from './order.js';
 import { Symbol, baseSymbolSchema, roundAsset } from './symbol.js';
 
-export type BnbOrderType = z.infer<typeof bnbOrderTypeSchema>;
+export type {
+  BnbOrderType,
+  LotSizeFilter,
+  MarketLotSizeFilter,
+  MinNotionalFilter,
+  NotionalFilter,
+  PriceFilter,
+  BnbSymbol,
+} from '#SECT/BnbSymbol.js';
+
 const bnbOrderTypeSchema = z.enum([
   'MARKET',
   'LIMIT',
@@ -31,7 +47,6 @@ const bnbOrderTypeSchema = z.enum([
 export const bnbOrderTypeEnum = bnbOrderTypeSchema.enum;
 export const bnbOrderTypeList = bnbOrderTypeSchema.options;
 
-export type LotSizeFilter = Readonly<z.infer<typeof lotSizeFilterSchema>>;
 const lotSizeFilterSchema = z
   .object({
     type: z.literal('LOT_SIZE'),
@@ -47,7 +62,6 @@ const lotSizeFilterSchema = z
     }),
   );
 
-export type MarketLotSizeFilter = Readonly<z.infer<typeof marketLotSizeFilterSchema>>;
 const marketLotSizeFilterSchema = z
   .object({
     type: z.literal('MARKET_LOT_SIZE'),
@@ -63,7 +77,6 @@ const marketLotSizeFilterSchema = z
     }),
   );
 
-export type MinNotionalFilter = Readonly<z.infer<typeof minNotionalFilterSchema>>;
 const minNotionalFilterSchema = z
   .object({
     type: z.literal('MIN_NOTIONAL'),
@@ -73,7 +86,6 @@ const minNotionalFilterSchema = z
   })
   .strict();
 
-export type NotionalFilter = Readonly<z.infer<typeof notionalFilterSchema>>;
 const notionalFilterSchema = z
   .object({
     type: z.literal('NOTIONAL'),
@@ -92,7 +104,6 @@ const notionalFilterSchema = z
     }),
   );
 
-export type PriceFilter = Readonly<z.infer<typeof priceFilterSchema>>;
 const priceFilterSchema = z
   .object({
     type: z.literal('PRICE_FILTER'),
@@ -109,7 +120,6 @@ const priceFilterSchema = z
     }),
   );
 
-export type BnbSymbol = DeepReadonly<z.infer<typeof bnbSymbolSchema>>;
 const bnbSymbolSchema = baseSymbolSchema
   .extend({
     exchange: z.literal(exchangeNameEnum.BINANCE),

@@ -9,7 +9,7 @@ import { FilledOrder, OrderPrice, TriggeredOrder, createFilledOrder } from '#fea
 import {
   StrategyModule,
   updateStrategyModuleWhenOpeningOrderIsFilled,
-} from '#features/shared/strategyExecutorModules/strategy.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
 import {
   ClosedTrade,
   OpeningTrade,

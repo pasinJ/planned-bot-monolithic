@@ -37,7 +37,7 @@ import {
   updateStrategyModuleWhenOrderIsCanceled,
   updateStrategyModuleWhenPendingOrderIsFilled,
   updateStrategyModuleWhenPendingOrderIsOpened,
-} from '#features/shared/strategyExecutorModules/strategy.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
 import { Symbol } from '#features/shared/symbol.js';
 import {
   ClosedTrade,

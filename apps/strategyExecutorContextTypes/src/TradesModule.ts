@@ -1,4 +1,4 @@
-import { ClosedTrade, OpeningTrade } from '../trade.js';
+import { OpeningTrade, ClosedTrade } from "./Trade.js";
 
 export type TradesModule = {
   /** List of current opening trades */
@@ -12,16 +12,3 @@ export type TradesModule = {
   /** List of current profitable closed trades */
   winTrades: readonly ClosedTrade[];
 };
-
-export function buildTradesModules(
-  openingTrades: readonly OpeningTrade[],
-  closedTrades: readonly ClosedTrade[],
-): TradesModule {
-  return {
-    openingTrades,
-    closedTrades,
-    evenTrades: closedTrades.filter((trade) => trade.netReturn === 0),
-    winTrades: closedTrades.filter((trade) => trade.netReturn > 0),
-    lossTrades: closedTrades.filter((trade) => trade.netReturn < 0),
-  };
-}

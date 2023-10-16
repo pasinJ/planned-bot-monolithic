@@ -1,26 +1,28 @@
 import { Decimal } from 'decimal.js';
 import { z } from 'zod';
 
+import type { AssetPrecisionNumber } from '#SECT/Symbol.js';
 import { nonNegativeIntSchema } from '#shared/utils/number.js';
 import { nonEmptyStringSchema } from '#shared/utils/string.js';
 
-import type { BnbSymbol } from './bnbSymbol.js';
 import { exchangeNameSchema } from './exchange.js';
 import { orderTypeSchema } from './order.js';
 
-export type Symbol = BnbSymbol;
+export type {
+  Symbol,
+  SymbolName,
+  AssetName,
+  AssetPrecisionNumber,
+  BaseAssetPrecisionNumber,
+  QuoteAssetPrecisionNumber,
+} from '#SECT/Symbol.js';
 
-export type SymbolName = z.infer<typeof symbolNameSchema>;
 const symbolNameSchema = nonEmptyStringSchema.brand('SymbolName');
 
-export type AssetName = z.infer<typeof assetNameSchema>;
 const assetNameSchema = nonEmptyStringSchema.brand('AssetName');
 
-export type AssetPrecisionNumber = z.infer<typeof assetPrecisionNumberSchema>;
-export type BaseAssetPrecisionNumber = z.infer<typeof baseAssetPrecisionNumberSchema>;
-export type QuoteAssetPrecisionNumber = z.infer<typeof quoteAssetPrecisionNumberSchema>;
 const assetPrecisionNumberSchema = nonNegativeIntSchema.brand('AssetPrecisionNumber');
-const baseAssetPrecisionNumberSchema = assetPrecisionNumberSchema.brand('AssetPrecisionNumber');
+const baseAssetPrecisionNumberSchema = assetPrecisionNumberSchema.brand('BaseAssetPrecisionNumber');
 const quoteAssetPrecisionNumberSchema = assetPrecisionNumberSchema.brand('QuoteAssetPrecisionNumber');
 
 export const baseSymbolSchema = z.object({
@@ -34,5 +36,5 @@ export const baseSymbolSchema = z.object({
 });
 
 export function roundAsset(value: number, precisionNumber: AssetPrecisionNumber) {
-  return new Decimal(value).toDecimalPlaces(precisionNumber, Decimal.ROUND_HALF_UP).toNumber();
+  return new Decimal(value).toDecimalPlaces(precisionNumber as number, Decimal.ROUND_HALF_UP).toNumber();
 }

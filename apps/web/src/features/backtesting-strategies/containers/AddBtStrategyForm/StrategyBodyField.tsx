@@ -1,10 +1,12 @@
-import Editor, { OnValidate } from '@monaco-editor/react';
+import { OnValidate } from '@monaco-editor/react';
 import Box from '@mui/material/Box';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import { MarkerSeverity } from 'monaco-editor';
 import { useController, useWatch } from 'react-hook-form';
+
+import { StrategyEditor } from '#components/StrategyEditor';
 
 import type { AddBtStrategyControl } from '.';
 import StrategyLanguageField from './StrategyLanguageField';
@@ -36,18 +38,10 @@ export default function StrategyBodyField({ control }: { control: AddBtStrategyC
         </Box>
         <StrategyLanguageField control={control} />
       </Box>
-      <Editor
-        theme="vs-dark"
-        height="50vh"
-        defaultLanguage="javascript"
+      <StrategyEditor
         language={selectedLanguageValue}
-        defaultValue=""
         value={field.value}
         wrapperProps={{ 'aria-labelledby': labelId }}
-        options={{
-          ariaLabel: 'strategy body editor',
-          padding: { top: 16, bottom: 16 },
-        }}
         onValidate={handleEditorMarker}
         onChange={field.onChange}
       />

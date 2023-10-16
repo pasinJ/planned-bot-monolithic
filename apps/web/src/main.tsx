@@ -11,11 +11,13 @@ import StyleProvider from '#styles/containers/StyleProvider';
 
 import reportAccessibility from './accessibility';
 
-if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
-if (process.env.MODE === 'standalone') {
-  const { worker } = await import('../mocks/browser');
-  await worker.start({ onUnhandledRequest: 'bypass' });
-}
+void (async () => {
+  if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
+  if (process.env.MODE === 'standalone') {
+    const { worker } = await import('../mocks/browser');
+    await worker.start({ onUnhandledRequest: 'bypass' });
+  }
+})();
 
 const rootElement = document.getElementById('root') ?? createNewRootElementInBody();
 createRoot(rootElement).render(

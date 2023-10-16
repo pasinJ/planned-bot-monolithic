@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export type Timeframe = z.infer<typeof timeframeSchema>;
+export type { Timeframe } from '#SECT/Kline.js';
 export const timeframeSchema = z.enum([
   '1s', // 86_400 | 2_592_000
   '1m', // 1_440  | 43_200

@@ -19,7 +19,7 @@ import {
   Profit,
   Return,
   StrategyModule,
-} from '#features/shared/strategyExecutorModules/strategy.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
 import {
   BuyAndHoldReturn,
   ProfitFactor,

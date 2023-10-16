@@ -38,6 +38,8 @@ module.exports = {
         '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
           '<rootDir>/jest/fileMock.cjs',
         '\\.css$': '<rootDir>/jest/styleMock.cjs',
+        'strategyExecutorContextTypes\\/dist\\/index\\.d\\.cts\\?raw$':
+          '<rootDir>/jest/strategyExecutorContextMock.cjs',
         ...moduleNameMapper,
       },
     },

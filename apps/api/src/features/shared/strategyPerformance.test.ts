@@ -4,7 +4,7 @@ import { mockClosedTrade } from '#test-utils/features/shared/trades.js';
 
 import { FilledOrder } from './order.js';
 import { InitialCapital } from './strategy.js';
-import { Loss, Profit, Return } from './strategyExecutorModules/strategy.js';
+import { Loss, Profit, Return } from './strategyExecutorContext/strategy.js';
 import {
   calculateBuyAndHoldReturn,
   calculateProfitFactor,

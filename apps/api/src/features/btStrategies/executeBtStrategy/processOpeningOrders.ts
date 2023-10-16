@@ -16,7 +16,7 @@ import {
 import {
   StrategyModule,
   updateStrategyModuleWhenOpeningOrderIsFilled,
-} from '#features/shared/strategyExecutorModules/strategy.js';
+} from '#features/shared/strategyExecutorContext/strategy.js';
 import {
   ClosedTrade,
   OpeningTrade,

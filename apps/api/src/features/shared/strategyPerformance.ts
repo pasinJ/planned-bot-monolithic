@@ -9,7 +9,7 @@ import { to2DigitDecimalNumber, to8DigitDecimalNumber } from '#shared/utils/numb
 import { Kline } from './kline.js';
 import { FilledOrder } from './order.js';
 import { InitialCapital } from './strategy.js';
-import { Loss, Profit, Return } from './strategyExecutorModules/strategy.js';
+import { Loss, Profit, Return } from './strategyExecutorContext/strategy.js';
 import { ClosedTrade } from './trade.js';
 
 export type BuyAndHoldReturn = number & z.BRAND<'BuyAndHoldReturn'>;
