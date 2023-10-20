@@ -38,6 +38,11 @@ export type BbSeriesType = 'bb';
 const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
+  lineWidth: 2,
+};
+const defaultMiddleSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+  ...defaultSeriesOptions,
+  lineWidth: 1,
 };
 
 type BbSettings = {
@@ -78,7 +83,7 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
     [hidden, upperLineColor],
   );
   const middleSeriesOptions = useMemo(
-    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color: middleLineColor }),
+    () => ({ ...defaultMiddleSeriesOptions, lineVisible: !hidden, color: middleLineColor }),
     [hidden, middleLineColor],
   );
   const lowerSeriesOptions = useMemo(
@@ -112,8 +117,14 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
       .then((bbData) => {
         setBbData(o.some(bbData));
         return bbData;
-      });
-    //   .then((bbData) => setLegend(formatLegend(bbData.at(-1)?.value)));
+      })
+      .then((bbData) =>
+        setLegend({
+          upper: formatLegend(bbData.upper.at(-1)?.value),
+          middle: formatLegend(bbData.middle.at(-1)?.value),
+          lower: formatLegend(bbData.lower.at(-1)?.value),
+        }),
+      );
   }, [klines, source, period, stddev]);
 
   type BbLegend = { upper: string; middle: string; lower: string };
