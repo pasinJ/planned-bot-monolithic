@@ -23,6 +23,7 @@ import { BbSeries, BbSeriesType } from './BbSeries';
 import { BbwChart, BbwChartType } from './BbwChart';
 import { EmaSeries, EmaSeriesType } from './EmaSeries';
 import { EmvChart, EmvChartType } from './EmvChart';
+import { KcSeries, KcSeriesType } from './KcSeries';
 import { MacdChart, MacdChartType } from './MacdChart';
 import { MfiChart, MfiChartType } from './MfiChart';
 import { MomChart, MomChartType } from './MomChart';
@@ -87,7 +88,8 @@ type IndicatorSeriesType =
   | PsarSeriesType
   | SupertrendSeriesType
   | VwapSeriesType
-  | BbSeriesType;
+  | BbSeriesType
+  | KcSeriesType;
 
 export default function TechnicalChart() {
   const [chartsList, setChartsList] = useState<IndicatorChartType[]>(['price']);
@@ -170,6 +172,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddSeries('supertrend')}>Add Supertrend</Button>
       <Button onClick={() => handleAddSeries('vwap')}>Add VWAP</Button>
       <Button onClick={() => handleAddSeries('bb')}>Add BB</Button>
+      <Button onClick={() => handleAddSeries('kc')}>Add KC</Button>
       {chartsList.map((chartType, index) => {
         const chartProps = {
           key: chartType,
@@ -195,6 +198,7 @@ export default function TechnicalChart() {
                   .with('supertrend', () => <SupertrendSeries {...seriesProps} />)
                   .with('vwap', () => <VwapSeries {...seriesProps} />)
                   .with('bb', () => <BbSeries {...seriesProps} />)
+                  .with('kc', () => <KcSeries {...seriesProps} />)
                   .exhaustive();
               })}
             </PriceChart>
