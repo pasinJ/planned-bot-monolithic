@@ -16,8 +16,8 @@ export default function ChartTitleWithMenus<T extends string>(props: ChartTitleW
   return (
     <div className="group flex items-center space-x-2">
       <Typography className="text-xl font-bold">{title}</Typography>
-      <RemoveButton objKey={chartType} remove={handleRemoveChart} />
       <SettingsButton openSettings={handleOpenSettings} />
+      <RemoveButton objKey={chartType} remove={handleRemoveChart} />
     </div>
   );
 }
