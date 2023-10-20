@@ -27,6 +27,7 @@ import { PvtChart, PvtChartType } from './PvtChart';
 import { SmaSeries, SmaSeriesType } from './SmaSeries';
 import { SupertrendSeries, SupertrendSeriesType } from './SupertrendSeries';
 import { VwmaSeries, VwmaSeriesType } from './VwmaSeries';
+import { WadChart, WadChartType } from './WadChart';
 import { WmaSeries, WmaSeriesType } from './WmaSeries';
 import { ChartObj } from './containers/ChartContainer';
 import { isMouseInDataRange, isMouseOffChart } from './utils';
@@ -56,7 +57,8 @@ type IndicatorChartType =
   | ObvChartType
   | PvtChartType
   | MfiChartType
-  | AdChartType;
+  | AdChartType
+  | WadChartType;
 type SeriesMap = Map<string, IndicatorSeriesType>;
 type IndicatorSeriesType =
   | SmaSeriesType
@@ -132,6 +134,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('pvt')}>Add PVT</Button>
       <Button onClick={() => handleAddChart('mfi')}>Add MFI</Button>
       <Button onClick={() => handleAddChart('ad')}>Add AD</Button>
+      <Button onClick={() => handleAddChart('wad')}>Add WAD</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -168,6 +171,7 @@ export default function TechnicalChart() {
           .with('pvt', () => <PvtChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('mfi', () => <MfiChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('ad', () => <AdChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('wad', () => <WadChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
