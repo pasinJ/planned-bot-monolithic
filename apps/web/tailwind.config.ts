@@ -87,5 +87,5 @@ export default {
       aria: { page: 'current="page"' },
     },
   },
-  plugins: [],
+  plugins: [require('tailwind-scrollbar')],
 } satisfies Config;

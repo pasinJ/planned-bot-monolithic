@@ -22,7 +22,9 @@
     "paths": {
       "#assets/*": ["src/assets/*"],
       "#components/*": ["src/components/*"],
+      "#containers/*": ["src/containers/*"],
       "#features/*": ["src/features/*"],
+      "#hooks/*": ["src/hooks/*"],
       "#infra/*": ["src/infra/*"],
       "#pages/*": ["src/pages/*"],
       "#routes/*": ["src/routes/*"],
@@ -32,5 +34,13 @@
       "#test-utils/*": ["test-utils/*"]
     }
   },
-  "include": ["src", "types", "test-utils", "mocks", "tailwind.config.ts"]
+  "include": [
+    "src",
+    "types",
+    "test-utils",
+    "mocks",
+    "../strategyExecutorContextTypes/src",
+    "../indicators/src",
+    "tailwind.config.ts"
+  ]
 }

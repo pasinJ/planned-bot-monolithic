@@ -21,7 +21,7 @@ function renderTimeframeField(overrides?: Partial<AddBtStrategyFormValues>) {
 
 const ui = {
   field: byLabelText(/timeframe/i, { selector: 'input' }),
-  dropdownButton: byRole('button', { name: /timeframe/i }),
+  dropdownButton: byRole('combobox', { name: /timeframe/i }),
   optionsList: byRole('listbox', { name: /timeframe/i }),
   allOptions: byRole('option'),
   requiredError: byText(/timeframe is required/i),

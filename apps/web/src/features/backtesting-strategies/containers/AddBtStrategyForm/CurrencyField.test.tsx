@@ -23,7 +23,7 @@ function renderCurrencyField(overrides?: Partial<AddBtStrategyFormValues>) {
 const symbols = generateArrayOf(mockSymbol, 3);
 const ui = {
   field: byLabelText(/base currency/i, { selector: 'input' }),
-  dropdownButton: byRole('button', { name: /base currency/i }),
+  dropdownButton: byRole('combobox', { name: /base currency/i }),
   optionsList: byRole('listbox', { name: /base currency/i }),
   allOptions: byRole('option'),
   option: (name: string | RegExp) => byRole('option', { name }),

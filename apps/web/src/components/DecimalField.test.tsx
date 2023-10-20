@@ -3,10 +3,12 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { path } from 'ramda';
 
+import { DecimalString } from '#shared/utils/string';
+
 import DecimalField from './DecimalField';
 
-function renderComponent(options?: { value?: string; onChange?: () => void; onBlur?: () => void }) {
-  return render(<DecimalField value="" {...options} />);
+function renderComponent(options?: { value?: DecimalString; onChange?: () => void; onBlur?: () => void }) {
+  return render(<DecimalField value={'' as DecimalString} {...options} />);
 }
 
 describe('GIVEN parent component passed onChange function to the component WHEN a change event happen', () => {
@@ -32,7 +34,7 @@ describe('GIVEN parent component passed onBlur function to the component WHEN a 
     const onBlurSpy = jest.fn().mockImplementation((e) => {
       targetValue = path(['target', 'value'], e);
     });
-    renderComponent({ value: '1.', onBlur: onBlurSpy });
+    renderComponent({ value: '1.' as DecimalString, onBlur: onBlurSpy });
 
     const user = userEvent.setup();
     await user.click(screen.getByRole('textbox'));

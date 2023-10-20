@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { DecimalString } from '#shared/utils/string';
+
 /**
  * Decimal string that allows leading and trailing zero, and also starting and ending with decimal point.
  *
@@ -7,12 +9,12 @@ import { z } from 'zod';
  */
 export const decimalStringLoose = z.string().regex(/^\d*\.?\d*$/);
 
-export function formatDecimalString(value: string) {
+export function formatDecimalString(value: string): DecimalString {
   let formattedValue = value;
   if (formattedValue.match(/^0+[^.]/)) formattedValue = formattedValue.replace(/^0+/, '');
   if (formattedValue.match(/\.\d+0+$/)) formattedValue = formattedValue.replace(/0+$/, '');
   if (formattedValue.match(/^\./)) formattedValue = '0' + formattedValue;
   if (formattedValue.match(/\.$/)) formattedValue = formattedValue + '0';
 
-  return formattedValue;
+  return formattedValue as DecimalString;
 }

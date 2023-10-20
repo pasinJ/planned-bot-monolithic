@@ -43,7 +43,7 @@ export async function selectOption(
   container: HTMLElement | typeof screen = screen,
 ) {
   const parent = container instanceof HTMLElement ? within(container) : container;
-  const dropdown = await parent.findByRole('button', { name: label });
+  const dropdown = await parent.findByRole('combobox', { name: label });
   await user.click(dropdown);
 
   const optionsList = await screen.findByRole('listbox', { name: label });
