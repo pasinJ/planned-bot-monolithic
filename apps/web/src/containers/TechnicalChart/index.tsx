@@ -27,6 +27,7 @@ import { ObvChart, ObvChartType } from './ObvChart';
 import { PriceChart, PriceChartType } from './PriceChart';
 import { PsarSeries, PsarSeriesType } from './PsarSeries';
 import { PvtChart, PvtChartType } from './PvtChart';
+import { RocChart, RocChartType } from './RocChart';
 import { RsiChart, RsiChartType } from './RsiChart';
 import { SmaSeries, SmaSeriesType } from './SmaSeries';
 import { SupertrendSeries, SupertrendSeriesType } from './SupertrendSeries';
@@ -69,7 +70,8 @@ type IndicatorChartType =
   | EmvChartType
   | MomChartType
   | RsiChartType
-  | AdxChartType;
+  | AdxChartType
+  | RocChartType;
 type IndicatorSeriesType =
   | SmaSeriesType
   | EmaSeriesType
@@ -150,6 +152,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('mom')}>Add Momentum</Button>
       <Button onClick={() => handleAddChart('rsi')}>Add RSI</Button>
       <Button onClick={() => handleAddChart('adx')}>Add ADX</Button>
+      <Button onClick={() => handleAddChart('roc')}>Add ROC</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -193,6 +196,7 @@ export default function TechnicalChart() {
           .with('mom', () => <MomChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('rsi', () => <RsiChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('adx', () => <AdxChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('roc', () => <RocChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
