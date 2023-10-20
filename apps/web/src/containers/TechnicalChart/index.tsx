@@ -27,6 +27,7 @@ import { PsarSeries, PsarSeriesType } from './PsarSeries';
 import { PvtChart, PvtChartType } from './PvtChart';
 import { SmaSeries, SmaSeriesType } from './SmaSeries';
 import { SupertrendSeries, SupertrendSeriesType } from './SupertrendSeries';
+import { VwapSeries, VwapSeriesType } from './VwapSeries';
 import { VwmaSeries, VwmaSeriesType } from './VwmaSeries';
 import { WadChart, WadChartType } from './WadChart';
 import { WmaSeries, WmaSeriesType } from './WmaSeries';
@@ -68,7 +69,8 @@ type IndicatorSeriesType =
   | WmaSeriesType
   | VwmaSeriesType
   | PsarSeriesType
-  | SupertrendSeriesType;
+  | SupertrendSeriesType
+  | VwapSeriesType;
 
 export default function TechnicalChart() {
   const [chartsList, setChartsList] = useState<IndicatorChartType[]>(['price']);
@@ -142,6 +144,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
       <Button onClick={() => handleAddSeries('supertrend')}>Add Supertrend</Button>
+      <Button onClick={() => handleAddSeries('vwap')}>Add VWAP</Button>
       {chartsList.map((chartType, index) => {
         const chartProps = {
           key: chartType,
@@ -165,6 +168,7 @@ export default function TechnicalChart() {
                   .with('vwma', () => <VwmaSeries {...seriesProps} />)
                   .with('psar', () => <PsarSeries {...seriesProps} />)
                   .with('supertrend', () => <SupertrendSeries {...seriesProps} />)
+                  .with('vwap', () => <VwapSeries {...seriesProps} />)
                   .exhaustive();
               })}
             </PriceChart>
