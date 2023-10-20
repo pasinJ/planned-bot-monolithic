@@ -10,9 +10,11 @@ import {
   BaselineStyleOptions,
   CandlestickData,
   CandlestickStyleOptions,
+  CreatePriceLineOptions,
   DeepPartial,
   HistogramData,
   HistogramStyleOptions,
+  IPriceLine,
   ISeriesApi,
   LineData,
   LineStyleOptions,
@@ -67,14 +69,19 @@ export type SeriesProps = PropsWithChildren<
         options?: DeepPartial<LineStyleOptions & SeriesOptionsCommon>;
         data: (LineData | WhitespaceData)[];
       }
-  ) & { priceScaleOptions?: DeepPartial<PriceScaleOptions>; crosshairMoveCb?: MouseEventHandler<Time> }
+  ) & {
+    priceScaleOptions?: DeepPartial<PriceScaleOptions>;
+    crosshairMoveCb?: MouseEventHandler<Time>;
+    priceLinesOptions?: (CreatePriceLineOptions & { id: string })[];
+  }
 >;
 
 export const Series = forwardRef<o.Option<SeriesObj>, SeriesProps>(function Series(props, ref) {
-  const { children, type, options, priceScaleOptions, crosshairMoveCb, data } = props;
+  const { children, type, options, priceScaleOptions, crosshairMoveCb, data, priceLinesOptions } = props;
 
   const _parentChart = useContext(ChartContext);
   const _series = useRef<o.Option<SeriesApi>>(o.none);
+  const _priceLines = useRef<Map<string, IPriceLine>>(new Map());
 
   const seriesObj = useRef<SeriesObj>({
     getSeries() {
@@ -100,6 +107,7 @@ export const Series = forwardRef<o.Option<SeriesObj>, SeriesProps>(function Seri
 
       _parentChart.value.removeSeries(_series.current.value, crosshairMoveCb);
       _series.current = o.none;
+      _priceLines.current = new Map();
     },
   });
   useImperativeHandle(ref, () => o.some(seriesObj.current), []);
@@ -117,6 +125,30 @@ export const Series = forwardRef<o.Option<SeriesObj>, SeriesProps>(function Seri
         o.map((series) => series.applyOptions(options)),
       );
   }, [options]);
+
+  useLayoutEffect(() => {
+    if (priceLinesOptions) {
+      pipe(
+        _series.current,
+        o.map((series) => {
+          const prevPriceLines = _priceLines.current;
+          const newPriceLines = new Map<string, IPriceLine>();
+
+          priceLinesOptions.forEach((options) => {
+            const priceLine = prevPriceLines.get(options.id) ?? series.createPriceLine(options);
+
+            if (prevPriceLines.has(options.id)) priceLine.applyOptions(options);
+
+            newPriceLines.set(options.id, priceLine);
+            prevPriceLines.delete(options.id);
+          });
+          prevPriceLines.forEach((priceLine) => series.removePriceLine(priceLine));
+
+          _priceLines.current = newPriceLines;
+        }),
+      );
+    }
+  }, [priceLinesOptions]);
 
   useLayoutEffect(() => {
     pipe(
