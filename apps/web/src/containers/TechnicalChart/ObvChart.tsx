@@ -117,8 +117,10 @@ export const ObvChart = forwardRef<o.Option<ChartObj>, ObvChartProps>(function O
 });
 
 const obvSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  color: defaultSettings.color,
   lineWidth: 2,
+  color: defaultSettings.color,
+  lastValueVisible: false,
+  priceLineVisible: false,
 };
 const ObvSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
   function ObvSeries(props, ref) {
@@ -127,7 +129,7 @@ const ObvSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: Hex
     const _series = useSeriesObjRef(ref);
     const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
-    const seriesOptions = { ...obvSeriesOptions, color };
+    const seriesOptions = useMemo(() => ({ ...obvSeriesOptions, color }), [color]);
 
     return (
       <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>

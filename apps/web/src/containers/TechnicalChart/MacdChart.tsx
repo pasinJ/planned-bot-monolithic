@@ -4,6 +4,7 @@ import * as o from 'fp-ts/lib/Option';
 import {
   DeepPartial,
   HistogramData,
+  HistogramStyleOptions,
   LineData,
   LineStyleOptions,
   LogicalRangeChangeEventHandler,
@@ -160,8 +161,10 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
 });
 
 const macdSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  color: defaultSettings.macdLineColor,
   lineWidth: 2,
+  color: defaultSettings.macdLineColor,
+  lastValueVisible: false,
+  priceLineVisible: false,
 };
 const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
   function MacdSeries(props, ref) {
@@ -170,7 +173,7 @@ const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: He
     const _series = useSeriesObjRef(ref);
     const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
-    const seriesOptions = { ...macdSeriesOptions, color };
+    const seriesOptions = useMemo(() => ({ ...macdSeriesOptions, color }), [color]);
 
     return (
       <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
@@ -181,8 +184,10 @@ const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: He
 );
 
 const signalSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  color: defaultSettings.signalLineColor,
   lineWidth: 2,
+  color: defaultSettings.signalLineColor,
+  lastValueVisible: false,
+  priceLineVisible: false,
 };
 const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
   function SignalSeries(props, ref) {
@@ -191,7 +196,7 @@ const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: 
     const _series = useSeriesObjRef(ref);
     const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
-    const seriesOptions = { ...signalSeriesOptions, color };
+    const seriesOptions = useMemo(() => ({ ...signalSeriesOptions, color }), [color]);
 
     return (
       <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
@@ -201,6 +206,10 @@ const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: 
   },
 );
 
+const histogramSeriesOptions: DeepPartial<HistogramStyleOptions & SeriesOptionsCommon> = {
+  lastValueVisible: false,
+  priceLineVisible: false,
+};
 const HistogramSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(function HistogramSeries(
   { data },
   ref,
@@ -209,7 +218,13 @@ const HistogramSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] 
   const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
   return (
-    <Series ref={_series} type="Histogram" data={data} crosshairMoveCb={updateLegend}>
+    <Series
+      ref={_series}
+      type="Histogram"
+      data={data}
+      options={histogramSeriesOptions}
+      crosshairMoveCb={updateLegend}
+    >
       <SeriesLegendWithoutMenus name="HISTOGRAM" color="#696969" legend={legend} />
     </Series>
   );

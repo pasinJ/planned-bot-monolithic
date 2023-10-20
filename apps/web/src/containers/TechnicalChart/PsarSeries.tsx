@@ -5,8 +5,8 @@ import { DeepPartial, LineData, LineStyle, LineStyleOptions, SeriesOptionsCommon
 import { mergeDeepRight } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { UseFormProps, useForm } from 'react-hook-form';
-
 import { psar } from 'src/containers/TechnicalChart/indicators';
+
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
@@ -15,9 +15,9 @@ import { DecimalString, HexColor } from '#shared/utils/string';
 import ColorField from './components/ColorField';
 import DecimalConfigField from './components/DecimalConfigField';
 import NameField from './components/NameField';
-import { Series, SeriesObj } from './containers/Series';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
+import { Series, SeriesObj } from './containers/Series';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
@@ -25,8 +25,9 @@ import { dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 export type PsarSeriesType = 'psar';
 
 const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  lastValueVisible: false,
   lineStyle: LineStyle.Dotted,
+  lastValueVisible: false,
+  priceLineVisible: false,
 };
 
 type PsarSettings = { name: string; step: DecimalString; max: DecimalString; color: HexColor };

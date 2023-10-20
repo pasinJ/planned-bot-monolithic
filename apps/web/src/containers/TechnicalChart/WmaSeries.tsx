@@ -4,8 +4,8 @@ import { DeepPartial, LineData, LineStyleOptions, SeriesOptionsCommon } from 'li
 import { mergeDeepRight, prop } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { UseFormProps, useForm } from 'react-hook-form';
-
 import { wma } from 'src/containers/TechnicalChart/indicators';
+
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
@@ -14,17 +14,20 @@ import { HexColor, IntegerString } from '#shared/utils/string';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
-import { Series, SeriesObj } from './containers/Series';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
+import { Series, SeriesObj } from './containers/Series';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { Source, dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
 export type WmaSeriesType = 'wma';
 
-const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = { lastValueVisible: false };
+const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+  lastValueVisible: false,
+  priceLineVisible: false,
+};
 
 type WmaSettings = { name: string; source: Source; period: IntegerString; color: HexColor };
 const defaultSettings: WmaSettings = {

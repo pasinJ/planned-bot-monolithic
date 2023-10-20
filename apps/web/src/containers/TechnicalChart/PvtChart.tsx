@@ -112,8 +112,10 @@ export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function P
 });
 
 const pvtSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  color: defaultSettings.color,
   lineWidth: 2,
+  color: defaultSettings.color,
+  lastValueVisible: false,
+  priceLineVisible: false,
 };
 const PvtSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
   function PvtSeries(props, ref) {
@@ -122,7 +124,7 @@ const PvtSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: Hex
     const _series = useSeriesObjRef(ref);
     const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
-    const seriesOptions = { ...pvtSeriesOptions, color };
+    const seriesOptions = useMemo(() => ({ ...pvtSeriesOptions, color }), [color]);
 
     return (
       <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
