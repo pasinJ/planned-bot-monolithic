@@ -21,6 +21,7 @@ import { MacdChart, MacdChartType } from './MacdChart';
 import { ObvChart, ObvChartType } from './ObvChart';
 import { PriceChart, PriceChartType } from './PriceChart';
 import { PsarSeries, PsarSeriesType } from './PsarSeries';
+import { PvtChart, PvtChartType } from './PvtChart';
 import { SmaSeries, SmaSeriesType } from './SmaSeries';
 import { SupertrendSeries, SupertrendSeriesType } from './SupertrendSeries';
 import { VwmaSeries, VwmaSeriesType } from './VwmaSeries';
@@ -47,7 +48,7 @@ const klines = rawKlines.map(
 );
 
 type ChartObjs = Map<string, ChartObj>;
-type IndicatorChartType = PriceChartType | MacdChartType | ObvChartType;
+type IndicatorChartType = PriceChartType | MacdChartType | ObvChartType | PvtChartType;
 type SeriesMap = Map<string, IndicatorSeriesType>;
 type IndicatorSeriesType =
   | SmaSeriesType
@@ -120,6 +121,7 @@ export default function TechnicalChart() {
     <>
       <Button onClick={() => handleAddChart('macd')}>Add MACD</Button>
       <Button onClick={() => handleAddChart('obv')}>Add OBV</Button>
+      <Button onClick={() => handleAddChart('pvt')}>Add PVT</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -153,6 +155,7 @@ export default function TechnicalChart() {
           ))
           .with('macd', () => <MacdChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('obv', () => <ObvChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('pvt', () => <PvtChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
