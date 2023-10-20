@@ -16,6 +16,7 @@ import { match } from 'ts-pattern';
 import { Kline } from '#features/klines/kline';
 import rawKlines from '#test-utils/klines.json';
 
+import { AdChart, AdChartType } from './AdChart';
 import { EmaSeries, EmaSeriesType } from './EmaSeries';
 import { MacdChart, MacdChartType } from './MacdChart';
 import { MfiChart, MfiChartType } from './MfiChart';
@@ -49,7 +50,13 @@ const klines = rawKlines.map(
 );
 
 type ChartObjs = Map<string, ChartObj>;
-type IndicatorChartType = PriceChartType | MacdChartType | ObvChartType | PvtChartType | MfiChartType;
+type IndicatorChartType =
+  | PriceChartType
+  | MacdChartType
+  | ObvChartType
+  | PvtChartType
+  | MfiChartType
+  | AdChartType;
 type SeriesMap = Map<string, IndicatorSeriesType>;
 type IndicatorSeriesType =
   | SmaSeriesType
@@ -124,6 +131,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('obv')}>Add OBV</Button>
       <Button onClick={() => handleAddChart('pvt')}>Add PVT</Button>
       <Button onClick={() => handleAddChart('mfi')}>Add MFI</Button>
+      <Button onClick={() => handleAddChart('ad')}>Add AD</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -159,6 +167,7 @@ export default function TechnicalChart() {
           .with('obv', () => <ObvChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('pvt', () => <PvtChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('mfi', () => <MfiChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('ad', () => <AdChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
