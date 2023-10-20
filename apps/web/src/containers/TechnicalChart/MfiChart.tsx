@@ -51,7 +51,7 @@ type MfiSettings = {
 const defaultSettings: MfiSettings = {
   period: '14' as IntegerString,
   overboughtLevel: '80' as DecimalString,
-  middleLevel: '40' as DecimalString,
+  middleLevel: '50' as DecimalString,
   oversoldLevel: '20' as DecimalString,
   mfiLineColor: '#7E57C2' as HexColor,
   overboughtLineColor: '#787B86' as HexColor,
