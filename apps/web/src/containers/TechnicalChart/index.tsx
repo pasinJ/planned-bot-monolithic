@@ -18,6 +18,7 @@ import rawKlines from '#test-utils/klines.json';
 
 import { AdChart, AdChartType } from './AdChart';
 import { EmaSeries, EmaSeriesType } from './EmaSeries';
+import { EmvChart, EmvChartType } from './EmvChart';
 import { MacdChart, MacdChartType } from './MacdChart';
 import { MfiChart, MfiChartType } from './MfiChart';
 import { ObvChart, ObvChartType } from './ObvChart';
@@ -58,7 +59,8 @@ type IndicatorChartType =
   | PvtChartType
   | MfiChartType
   | AdChartType
-  | WadChartType;
+  | WadChartType
+  | EmvChartType;
 type SeriesMap = Map<string, IndicatorSeriesType>;
 type IndicatorSeriesType =
   | SmaSeriesType
@@ -135,6 +137,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('mfi')}>Add MFI</Button>
       <Button onClick={() => handleAddChart('ad')}>Add AD</Button>
       <Button onClick={() => handleAddChart('wad')}>Add WAD</Button>
+      <Button onClick={() => handleAddChart('emv')}>Add EMV</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -172,6 +175,7 @@ export default function TechnicalChart() {
           .with('mfi', () => <MfiChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('ad', () => <AdChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('wad', () => <WadChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('emv', () => <EmvChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
