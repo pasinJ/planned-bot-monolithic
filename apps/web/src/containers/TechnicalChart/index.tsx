@@ -17,6 +17,7 @@ import { Kline } from '#features/klines/kline';
 import rawKlines from '#test-utils/klines.json';
 
 import { AdChart, AdChartType } from './AdChart';
+import { AdxChart, AdxChartType } from './AdxChart';
 import { EmaSeries, EmaSeriesType } from './EmaSeries';
 import { EmvChart, EmvChartType } from './EmvChart';
 import { MacdChart, MacdChartType } from './MacdChart';
@@ -55,6 +56,8 @@ const klines = rawKlines.map(
 );
 
 type ChartObjs = Map<string, ChartObj>;
+type SeriesMap = Map<string, IndicatorSeriesType>;
+
 type IndicatorChartType =
   | PriceChartType
   | MacdChartType
@@ -65,8 +68,8 @@ type IndicatorChartType =
   | WadChartType
   | EmvChartType
   | MomChartType
-  | RsiChartType;
-type SeriesMap = Map<string, IndicatorSeriesType>;
+  | RsiChartType
+  | AdxChartType;
 type IndicatorSeriesType =
   | SmaSeriesType
   | EmaSeriesType
@@ -146,6 +149,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('emv')}>Add EMV</Button>
       <Button onClick={() => handleAddChart('mom')}>Add Momentum</Button>
       <Button onClick={() => handleAddChart('rsi')}>Add RSI</Button>
+      <Button onClick={() => handleAddChart('adx')}>Add ADX</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -188,6 +192,7 @@ export default function TechnicalChart() {
           .with('emv', () => <EmvChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('mom', () => <MomChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('rsi', () => <RsiChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('adx', () => <AdxChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
