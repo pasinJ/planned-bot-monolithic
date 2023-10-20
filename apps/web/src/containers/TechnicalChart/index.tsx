@@ -30,6 +30,7 @@ import { PvtChart, PvtChartType } from './PvtChart';
 import { RocChart, RocChartType } from './RocChart';
 import { RsiChart, RsiChartType } from './RsiChart';
 import { SmaSeries, SmaSeriesType } from './SmaSeries';
+import { StochChart, StochChartType } from './StochChart';
 import { SupertrendSeries, SupertrendSeriesType } from './SupertrendSeries';
 import { VwapSeries, VwapSeriesType } from './VwapSeries';
 import { VwmaSeries, VwmaSeriesType } from './VwmaSeries';
@@ -71,7 +72,8 @@ type IndicatorChartType =
   | MomChartType
   | RsiChartType
   | AdxChartType
-  | RocChartType;
+  | RocChartType
+  | StochChartType;
 type IndicatorSeriesType =
   | SmaSeriesType
   | EmaSeriesType
@@ -153,6 +155,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('rsi')}>Add RSI</Button>
       <Button onClick={() => handleAddChart('adx')}>Add ADX</Button>
       <Button onClick={() => handleAddChart('roc')}>Add ROC</Button>
+      <Button onClick={() => handleAddChart('stoch')}>Add Stoch</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -197,6 +200,7 @@ export default function TechnicalChart() {
           .with('rsi', () => <RsiChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('adx', () => <AdxChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('roc', () => <RocChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('stoch', () => <StochChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
