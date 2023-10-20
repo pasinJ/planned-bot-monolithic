@@ -94,7 +94,7 @@ export const AdxChart = forwardRef<o.Option<ChartObj>, AdxChartProps>(function A
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <AdxentumSeries data={adxData.value} color={color} />
+              <AdxSeries data={adxData.value} color={color} />
             </div>
           </div>
         </ChartContainer>
@@ -109,8 +109,8 @@ const adxSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const AdxentumSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function AdxentumSeries(props, ref) {
+const AdxSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function AdxSeries(props, ref) {
     const { data, color } = props;
 
     const _series = useSeriesObjRef(ref);
@@ -134,7 +134,7 @@ function SettingsForm({ control }: { control: Control<AdxSettings> }) {
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">
-        <ColorField label="Adxentum line color" labelId="line-color" name="color" control={control} />
+        <ColorField label="Adx line color" labelId="line-color" name="color" control={control} />
       </div>
     </form>
   );

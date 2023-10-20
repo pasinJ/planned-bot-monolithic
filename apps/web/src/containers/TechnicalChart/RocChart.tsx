@@ -103,7 +103,7 @@ export const RocChart = forwardRef<o.Option<ChartObj>, RocChartProps>(function R
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <RocentumSeries data={rocData.value} color={color} />
+              <RocSeries data={rocData.value} color={color} />
             </div>
           </div>
         </ChartContainer>
@@ -125,8 +125,8 @@ const zeroLineOptions: CreatePriceLineOptions & { id: string } = {
   lineWidth: 2,
   lineStyle: LineStyle.Dashed,
 };
-const RocentumSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function RocentumSeries(props, ref) {
+const RocSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function RocSeries(props, ref) {
     const { data, color } = props;
 
     const _series = useSeriesObjRef(ref);
@@ -158,7 +158,7 @@ function SettingsForm({ control }: { control: Control<RocSettings> }) {
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">
-        <ColorField label="Rocentum line color" labelId="line-color" name="color" control={control} />
+        <ColorField label="Roc line color" labelId="line-color" name="color" control={control} />
       </div>
     </form>
   );

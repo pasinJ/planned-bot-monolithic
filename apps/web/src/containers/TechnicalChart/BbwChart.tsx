@@ -107,7 +107,7 @@ export const BbwChart = forwardRef<o.Option<ChartObj>, BbwChartProps>(function B
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <BbwentumSeries data={bbwData.value} color={color} />
+              <BbwSeries data={bbwData.value} color={color} />
             </div>
           </div>
         </ChartContainer>
@@ -122,8 +122,8 @@ const bbwSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const BbwentumSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function BbwentumSeries(props, ref) {
+const BbwSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function BbwSeries(props, ref) {
     const { data, color } = props;
 
     const _series = useSeriesObjRef(ref);
