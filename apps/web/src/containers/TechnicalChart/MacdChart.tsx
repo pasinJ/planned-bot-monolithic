@@ -15,20 +15,20 @@ import {
 import { mergeDeepRight, prop } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-
 import { macd } from 'src/containers/TechnicalChart/indicators';
+
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
-import { Series, SeriesObj } from './containers/Series';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
+import { ChartContainer, ChartObj } from './containers/ChartContainer';
+import { Series, SeriesObj } from './containers/Series';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
@@ -36,11 +36,7 @@ import { Source, dateToUtcTimestamp, downColor, upColor } from './utils';
 
 export type MacdChartType = 'macd';
 
-const defaultChartOptions: DeepPartial<TimeChartOptions> = {
-  autoSize: true,
-  height: 300,
-  crosshair: { mode: 0 },
-};
+const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
 type MacdSettings = {
   source: Source;
@@ -78,8 +74,16 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
   const { control, getValues, reset } = useForm<MacdSettings>(settingFormOptions);
-  const { source, shortPeriod, longPeriod, signalPeriod, histogramPositiveColor, histogramNegativeColor } =
-    getValues();
+  const {
+    source,
+    shortPeriod,
+    longPeriod,
+    signalPeriod,
+    macdLineColor,
+    signalLineColor,
+    histogramPositiveColor,
+    histogramNegativeColor,
+  } = getValues();
 
   type MacdData = { macd: LineData[]; signal: LineData[]; histogram: HistogramData[] };
   const [macdData, setMacdData] = useState<o.Option<MacdData>>(o.none);
@@ -144,8 +148,8 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <MacdSeries data={transformedMacdData.value.macd} />
-              <SignalSeries data={transformedMacdData.value.signal} />
+              <MacdSeries data={transformedMacdData.value.macd} color={macdLineColor} />
+              <SignalSeries data={transformedMacdData.value.signal} color={signalLineColor} />
               <HistogramSeries data={transformedMacdData.value.histogram} />
             </div>
           </div>
@@ -159,40 +163,43 @@ const macdSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   color: defaultSettings.macdLineColor,
   lineWidth: 2,
 };
-const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[] }>(function MacdSeries({ data }, ref) {
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function MacdSeries(props, ref) {
+    const { data, color } = props;
 
-  return (
-    <Series ref={_series} type="Line" data={data} options={macdSeriesOptions} crosshairMoveCb={updateLegend}>
-      <SeriesLegendWithoutMenus name="MACD" color={macdSeriesOptions.color} legend={legend} />
-    </Series>
-  );
-});
+    const _series = useSeriesObjRef(ref);
+    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+
+    const seriesOptions = { ...macdSeriesOptions, color };
+
+    return (
+      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+        <SeriesLegendWithoutMenus name="MACD" color={seriesOptions.color} legend={legend} />
+      </Series>
+    );
+  },
+);
 
 const signalSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   color: defaultSettings.signalLineColor,
   lineWidth: 2,
 };
-const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[] }>(function SignalSeries(
-  { data },
-  ref,
-) {
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function SignalSeries(props, ref) {
+    const { data, color } = props;
 
-  return (
-    <Series
-      ref={_series}
-      type="Line"
-      data={data}
-      options={signalSeriesOptions}
-      crosshairMoveCb={updateLegend}
-    >
-      <SeriesLegendWithoutMenus name="SIGNAL" color={signalSeriesOptions.color} legend={legend} />
-    </Series>
-  );
-});
+    const _series = useSeriesObjRef(ref);
+    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+
+    const seriesOptions = { ...signalSeriesOptions, color };
+
+    return (
+      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+        <SeriesLegendWithoutMenus name="SIGNAL" color={seriesOptions.color} legend={legend} />
+      </Series>
+    );
+  },
+);
 
 const HistogramSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(function HistogramSeries(
   { data },

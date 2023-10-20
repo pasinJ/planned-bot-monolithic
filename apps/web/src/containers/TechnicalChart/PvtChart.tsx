@@ -102,7 +102,7 @@ export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function P
               </form>
             </SettingsModal>
             <div className="flex flex-col">
-              <PvtSeries data={pvtData} options={getValues()} />
+              <PvtSeries data={pvtData} color={getValues().color} />
             </div>
           </div>
         </ChartContainer>
@@ -115,20 +115,19 @@ const pvtSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   color: defaultSettings.color,
   lineWidth: 2,
 };
-const PvtSeries = forwardRef<
-  o.Option<SeriesObj>,
-  { data: LineData[]; options: DeepPartial<LineStyleOptions & SeriesOptionsCommon> }
->(function PvtSeries(props, ref) {
-  const { data, options } = props;
+const PvtSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function PvtSeries(props, ref) {
+    const { data, color } = props;
 
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+    const _series = useSeriesObjRef(ref);
+    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
-  const seriesOptions = mergeDeepRight(pvtSeriesOptions, options);
+    const seriesOptions = { ...pvtSeriesOptions, color };
 
-  return (
-    <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-      <SeriesLegendWithoutMenus name="PVT" color={seriesOptions.color} legend={legend} />
-    </Series>
-  );
-});
+    return (
+      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+        <SeriesLegendWithoutMenus name="PVT" color={seriesOptions.color} legend={legend} />
+      </Series>
+    );
+  },
+);

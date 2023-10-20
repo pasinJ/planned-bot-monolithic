@@ -55,7 +55,7 @@ export const ObvChart = forwardRef<o.Option<ChartObj>, ObvChartProps>(function O
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
   const settingFormOptions = useMemo(
-    () => mergeDeepRight(defaultSettingFormOptions, { color: randomHexColor() }),
+    () => mergeDeepRight(defaultSettingFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
   const { control, getValues, reset } = useForm<ObvSettings>(settingFormOptions);
@@ -107,7 +107,7 @@ export const ObvChart = forwardRef<o.Option<ChartObj>, ObvChartProps>(function O
               </form>
             </SettingsModal>
             <div className="flex flex-col">
-              <ObvSeries data={obvData.value} />
+              <ObvSeries data={obvData.value} color={getValues().color} />
             </div>
           </div>
         </ChartContainer>
@@ -120,13 +120,19 @@ const obvSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   color: defaultSettings.color,
   lineWidth: 2,
 };
-const ObvSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[] }>(function ObvSeries({ data }, ref) {
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+const ObvSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
+  function ObvSeries(props, ref) {
+    const { data, color } = props;
 
-  return (
-    <Series ref={_series} type="Line" data={data} options={obvSeriesOptions} crosshairMoveCb={updateLegend}>
-      <SeriesLegendWithoutMenus name="OBV" color={obvSeriesOptions.color} legend={legend} />
-    </Series>
-  );
-});
+    const _series = useSeriesObjRef(ref);
+    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+
+    const seriesOptions = { ...obvSeriesOptions, color };
+
+    return (
+      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+        <SeriesLegendWithoutMenus name="OBV" color={seriesOptions.color} legend={legend} />
+      </Series>
+    );
+  },
+);
