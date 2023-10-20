@@ -21,6 +21,7 @@ import { EmaSeries, EmaSeriesType } from './EmaSeries';
 import { EmvChart, EmvChartType } from './EmvChart';
 import { MacdChart, MacdChartType } from './MacdChart';
 import { MfiChart, MfiChartType } from './MfiChart';
+import { MomChart, MomChartType } from './MomChart';
 import { ObvChart, ObvChartType } from './ObvChart';
 import { PriceChart, PriceChartType } from './PriceChart';
 import { PsarSeries, PsarSeriesType } from './PsarSeries';
@@ -61,7 +62,8 @@ type IndicatorChartType =
   | MfiChartType
   | AdChartType
   | WadChartType
-  | EmvChartType;
+  | EmvChartType
+  | MomChartType;
 type SeriesMap = Map<string, IndicatorSeriesType>;
 type IndicatorSeriesType =
   | SmaSeriesType
@@ -140,6 +142,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('ad')}>Add AD</Button>
       <Button onClick={() => handleAddChart('wad')}>Add WAD</Button>
       <Button onClick={() => handleAddChart('emv')}>Add EMV</Button>
+      <Button onClick={() => handleAddChart('mom')}>Add Momentum</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -180,6 +183,7 @@ export default function TechnicalChart() {
           .with('ad', () => <AdChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('wad', () => <WadChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('emv', () => <EmvChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('mom', () => <MomChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
