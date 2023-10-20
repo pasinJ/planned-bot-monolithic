@@ -22,8 +22,8 @@ import { PropsWithChildren, forwardRef, useCallback, useMemo, useState } from 'r
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 
-import { ChartContainer, ChartObj } from './components/ChartContainer';
-import { Series, SeriesObj } from './components/Series';
+import { ChartContainer, ChartObj } from './containers/ChartContainer';
+import { Series, SeriesObj } from './containers/Series';
 import VisibilityButton from './components/VisibilityButton';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';

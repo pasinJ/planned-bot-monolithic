@@ -24,7 +24,7 @@ import { SmaSeries, SmaSeriesType } from './SmaSeries';
 import { SupertrendSeries, SupertrendSeriesType } from './SupertrendSeries';
 import { VwmaSeries, VwmaSeriesType } from './VwmaSeries';
 import { WmaSeries, WmaSeriesType } from './WmaSeries';
-import { ChartObj } from './components/ChartContainer';
+import { ChartObj } from './containers/ChartContainer';
 import { isMouseInDataRange, isMouseOffChart } from './utils';
 
 const klines = rawKlines.map(

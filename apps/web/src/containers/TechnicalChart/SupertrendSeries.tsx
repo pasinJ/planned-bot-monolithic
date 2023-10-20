@@ -16,7 +16,7 @@ import ColorField from './components/ColorField';
 import DecimalConfigField from './components/DecimalConfigField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
-import { Series, SeriesObj } from './components/Series';
+import { Series, SeriesObj } from './containers/Series';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import useSeriesLegend from './hooks/useSeriesLegend';

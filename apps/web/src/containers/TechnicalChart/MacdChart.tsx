@@ -21,11 +21,11 @@ import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
-import { ChartContainer, ChartObj } from './components/ChartContainer';
+import { ChartContainer, ChartObj } from './containers/ChartContainer';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
-import { Series, SeriesObj } from './components/Series';
+import { Series, SeriesObj } from './containers/Series';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';

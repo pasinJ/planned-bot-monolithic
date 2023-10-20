@@ -3,7 +3,7 @@ import * as o from 'fp-ts/lib/Option';
 import { AreaData, BaselineData, HistogramData, LineData, MouseEventHandler, Time } from 'lightweight-charts';
 import { MutableRefObject, useCallback, useState } from 'react';
 
-import { SeriesObj } from '../components/Series';
+import { SeriesObj } from '../containers/Series';
 import { formatLegend, isMouseInDataRange, isMouseOffChart } from '../utils';
 
 type SeriesData = LineData[] | AreaData[] | HistogramData[] | BaselineData[];

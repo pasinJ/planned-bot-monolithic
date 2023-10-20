@@ -15,7 +15,7 @@ import { DecimalString, HexColor } from '#shared/utils/string';
 import ColorField from './components/ColorField';
 import DecimalConfigField from './components/DecimalConfigField';
 import NameField from './components/NameField';
-import { Series, SeriesObj } from './components/Series';
+import { Series, SeriesObj } from './containers/Series';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import useSeriesLegend from './hooks/useSeriesLegend';
