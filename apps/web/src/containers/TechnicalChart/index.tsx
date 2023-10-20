@@ -19,6 +19,7 @@ import rawKlines from '#test-utils/klines.json';
 import { AdChart, AdChartType } from './AdChart';
 import { AdxChart, AdxChartType } from './AdxChart';
 import { BbSeries, BbSeriesType } from './BbSeries';
+import { BbwChart, BbwChartType } from './BbwChart';
 import { EmaSeries, EmaSeriesType } from './EmaSeries';
 import { EmvChart, EmvChartType } from './EmvChart';
 import { MacdChart, MacdChartType } from './MacdChart';
@@ -74,7 +75,8 @@ type IndicatorChartType =
   | RsiChartType
   | AdxChartType
   | RocChartType
-  | StochChartType;
+  | StochChartType
+  | BbwChartType;
 type IndicatorSeriesType =
   | SmaSeriesType
   | EmaSeriesType
@@ -158,6 +160,7 @@ export default function TechnicalChart() {
       <Button onClick={() => handleAddChart('adx')}>Add ADX</Button>
       <Button onClick={() => handleAddChart('roc')}>Add ROC</Button>
       <Button onClick={() => handleAddChart('stoch')}>Add Stoch</Button>
+      <Button onClick={() => handleAddChart('bbw')}>Add BBW</Button>
       <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
       <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
       <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
@@ -205,6 +208,7 @@ export default function TechnicalChart() {
           .with('adx', () => <AdxChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('roc', () => <RocChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .with('stoch', () => <StochChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
+          .with('bbw', () => <BbwChart {...chartProps} handleRemoveChart={handleRemoveChart} />)
           .exhaustive();
       })}
     </>
