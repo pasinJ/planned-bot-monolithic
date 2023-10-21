@@ -1,4 +1,12 @@
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import Zoom from '@mui/material/Zoom';
 import * as o from 'fp-ts/lib/Option';
 import { flow } from 'fp-ts/lib/function';
 import {
@@ -9,11 +17,13 @@ import {
   Time,
 } from 'lightweight-charts';
 import { nanoid } from 'nanoid';
-import { append, equals, reject, uniq } from 'ramda';
+import { append, equals, includes, reject, uniq } from 'ramda';
 import { useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import MaterialSymbol from '#components/MaterialSymbol';
 import { Kline } from '#features/klines/kline';
+import useOpenPopover from '#hooks/useOpenPopover';
 import rawKlines from '#test-utils/klines.json';
 
 import { AdChart, AdChartType } from './AdChart';
@@ -91,13 +101,16 @@ type IndicatorSeriesType =
   | BbSeriesType
   | KcSeriesType;
 
+type AddSeries = (seriesType: IndicatorSeriesType) => void;
+type AddChart = (chartType: IndicatorChartType) => void;
+
 export default function TechnicalChart() {
   const [chartsList, setChartsList] = useState<IndicatorChartType[]>(['price']);
-  const handleAddChart = (chartType: IndicatorChartType) => setChartsList(flow(append(chartType), uniq));
+  const handleAddChart: AddChart = (chartType) => setChartsList(flow(append(chartType), uniq));
   const handleRemoveChart = (chartType: IndicatorChartType) => setChartsList(reject(equals(chartType)));
 
   const [seriesMap, setSeriesMap] = useState<SeriesMap>(new Map([[nanoid(), 'sma']]));
-  const handleAddSeries = (seriesType: IndicatorSeriesType) => {
+  const handleAddSeries: AddSeries = (seriesType) => {
     setSeriesMap((prevSeriesMap) => {
       const newSeriesmap = new Map(prevSeriesMap);
       newSeriesmap.set(nanoid(), seriesType);
@@ -152,27 +165,11 @@ export default function TechnicalChart() {
 
   return (
     <>
-      <Button onClick={() => handleAddChart('macd')}>Add MACD</Button>
-      <Button onClick={() => handleAddChart('obv')}>Add OBV</Button>
-      <Button onClick={() => handleAddChart('pvt')}>Add PVT</Button>
-      <Button onClick={() => handleAddChart('mfi')}>Add MFI</Button>
-      <Button onClick={() => handleAddChart('ad')}>Add AD</Button>
-      <Button onClick={() => handleAddChart('wad')}>Add WAD</Button>
-      <Button onClick={() => handleAddChart('emv')}>Add EMV</Button>
-      <Button onClick={() => handleAddChart('mom')}>Add Momentum</Button>
-      <Button onClick={() => handleAddChart('rsi')}>Add RSI</Button>
-      <Button onClick={() => handleAddChart('adx')}>Add ADX</Button>
-      <Button onClick={() => handleAddChart('roc')}>Add ROC</Button>
-      <Button onClick={() => handleAddChart('stoch')}>Add Stoch</Button>
-      <Button onClick={() => handleAddChart('bbw')}>Add BBW</Button>
-      <Button onClick={() => handleAddChart('atr')}>Add ATR</Button>
-      <Button onClick={() => handleAddSeries('sma')}>Add SMA</Button>
-      <Button onClick={() => handleAddSeries('ema')}>Add EMA</Button>
-      <Button onClick={() => handleAddSeries('psar')}>Add PSAR</Button>
-      <Button onClick={() => handleAddSeries('supertrend')}>Add Supertrend</Button>
-      <Button onClick={() => handleAddSeries('vwap')}>Add VWAP</Button>
-      <Button onClick={() => handleAddSeries('bb')}>Add BB</Button>
-      <Button onClick={() => handleAddSeries('kc')}>Add KC</Button>
+      <TopBar
+        selectedChartsList={chartsList}
+        handleAddSeries={handleAddSeries}
+        handleAddChart={handleAddChart}
+      />
       {chartsList.map((chartType, index) => {
         const chartProps = {
           key: chartType,
@@ -220,5 +217,270 @@ export default function TechnicalChart() {
           .exhaustive();
       })}
     </>
+  );
+}
+
+function TopBar(props: {
+  selectedChartsList: IndicatorChartType[];
+  handleAddSeries: AddSeries;
+  handleAddChart: AddChart;
+}) {
+  return (
+    <div className="flex justify-end bg-surface-3">
+      <IndicatorsMenu {...props} />
+    </div>
+  );
+}
+
+function IndicatorsMenu(props: {
+  selectedChartsList: IndicatorChartType[];
+  handleAddSeries: AddSeries;
+  handleAddChart: AddChart;
+}) {
+  const { selectedChartsList, handleAddSeries, handleAddChart } = props;
+
+  const [open, anchorElement, handleOpenMenu, handleCloseMenu] = useOpenPopover();
+
+  return (
+    <>
+      <Button
+        className="px-6 py-3"
+        startIcon={<MaterialSymbol className="pb-0.5" symbol="add" />}
+        onClick={handleOpenMenu}
+      >
+        Indicators
+      </Button>
+      <Menu
+        open={open}
+        anchorEl={anchorElement}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { className: 'max-h-48' } }}
+        onClose={handleCloseMenu}
+      >
+        <div className="flex">
+          <div className="min-w-[8rem]">
+            <Typography variant="body1" className="px-4 py-2 font-bold">
+              Series
+            </Typography>
+            <SeriesMenuItem
+              menuText="SMA"
+              title="Simple Moving Average"
+              seriesType="sma"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="EMA"
+              title="Exponential Moving Average"
+              seriesType="ema"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="WMA"
+              title="Weighted Moving Average"
+              seriesType="wma"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="VWMA"
+              title="Volume Weighted Moving Average"
+              seriesType="vwma"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="PSAR"
+              title="Parabolic SAR"
+              seriesType="psar"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="Supertrend"
+              title="Supertrend"
+              seriesType="supertrend"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="VWAP"
+              title="Volume-Weighted Average Price"
+              seriesType="vwap"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="BB"
+              title="Bollinger Bands"
+              seriesType="bb"
+              handleAddSeries={handleAddSeries}
+            />
+            <SeriesMenuItem
+              menuText="KC"
+              title="Keltner Channels"
+              seriesType="kc"
+              handleAddSeries={handleAddSeries}
+            />
+          </div>
+          <Divider orientation="vertical" variant="middle" flexItem />
+          <div className="min-w-[8rem]">
+            <Typography variant="body1" className="px-4 py-2 font-bold">
+              Charts
+            </Typography>
+            <ChartMenuItem
+              menuText="MACD"
+              title="Moving Average Convergence Divergence"
+              chartType="macd"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="RSI"
+              title="Relative Strength Index"
+              chartType="rsi"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="Stoch"
+              title="Stochastic Oscillator"
+              chartType="stoch"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="OBV"
+              title="On-Balance Volume"
+              chartType="obv"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="PVT"
+              title="Price Volume Trend"
+              chartType="pvt"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="MFI"
+              title="Money Flow Index"
+              chartType="mfi"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="A/D"
+              title="Accumulation/Distribution"
+              chartType="ad"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="W A/D"
+              title="Williams Accumulation/Distribution"
+              chartType="wad"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="EMV"
+              title="Ease of Movement"
+              chartType="emv"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="Momentum"
+              title="Momentum"
+              chartType="mom"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="ADX"
+              title="Average Directional Index"
+              chartType="adx"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="ROC"
+              title="Rate of Change"
+              chartType="roc"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="BBW"
+              title="Bollinger Bands Width"
+              chartType="bbw"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+            <ChartMenuItem
+              menuText="ATR"
+              title="Average True Range"
+              chartType="atr"
+              selectedChartsList={selectedChartsList}
+              handleAddChart={handleAddChart}
+            />
+          </div>
+        </div>
+      </Menu>
+    </>
+  );
+}
+
+function SeriesMenuItem(props: {
+  title: string;
+  menuText: string;
+  seriesType: IndicatorSeriesType;
+  handleAddSeries: AddSeries;
+}) {
+  const { title, menuText, seriesType, handleAddSeries } = props;
+
+  return (
+    <Tooltip
+      title={title}
+      TransitionComponent={Zoom}
+      followCursor
+      enterDelay={500}
+      enterNextDelay={500}
+      slotProps={{ tooltip: { className: 'text-lg' } }}
+    >
+      <MenuItem onClick={() => handleAddSeries(seriesType)}>
+        <ListItemText>{menuText}</ListItemText>
+        <ListItemIcon className="min-w-fit">
+          <MaterialSymbol className="text-primary" symbol="add" />
+        </ListItemIcon>
+      </MenuItem>
+    </Tooltip>
+  );
+}
+
+function ChartMenuItem(props: {
+  title: string;
+  menuText: string;
+  chartType: IndicatorChartType;
+  selectedChartsList: IndicatorChartType[];
+  handleAddChart: AddChart;
+}) {
+  const { title, menuText, chartType, selectedChartsList, handleAddChart } = props;
+
+  const isChartSelected = includes(chartType, selectedChartsList);
+
+  return (
+    <Tooltip
+      title={title}
+      TransitionComponent={Zoom}
+      followCursor
+      enterDelay={500}
+      enterNextDelay={500}
+      slotProps={{ tooltip: { className: 'text-lg' } }}
+    >
+      <MenuItem className={isChartSelected ? 'bg-surface' : ''} onClick={() => handleAddChart(chartType)}>
+        <ListItemText>{menuText}</ListItemText>
+        <ListItemIcon className={`min-w-fit ${isChartSelected ? '' : 'hidden'}`}>
+          <MaterialSymbol className="text-primary" symbol="check" />
+        </ListItemIcon>
+      </MenuItem>
+    </Tooltip>
   );
 }
