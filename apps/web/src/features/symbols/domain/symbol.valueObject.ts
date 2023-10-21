@@ -20,3 +20,5 @@ export const symbolSchema = z
     path: ['quoteAsset'],
   });
 export type Symbol = z.infer<typeof symbolSchema>;
+
+export type SymbolName = string & z.BRAND<'SymbolName'>;

@@ -1,10 +1,12 @@
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 import { ChangeEventHandler, FocusEventHandler } from 'react';
 
+import { IntegerString } from '#shared/utils/string';
+
 import { formatIntegerString, integerStringLoose, nonNegativeIntegerStringLoose } from './IntegerField.util';
 
 export default function IntegerField(
-  props: Omit<TextFieldProps, 'value'> & { value: string; allowNegative?: boolean },
+  props: Omit<TextFieldProps, 'value'> & { value: IntegerString; allowNegative?: boolean },
 ) {
   const { value, onChange, onBlur, allowNegative, ...restProps } = props;
 

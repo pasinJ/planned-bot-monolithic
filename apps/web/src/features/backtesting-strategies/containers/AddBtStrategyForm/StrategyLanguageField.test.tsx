@@ -20,7 +20,7 @@ function renderStrategyLanguageField(overrides?: Partial<AddBtStrategyFormValues
 
 const ui = {
   field: byLabelText(/language/i, { selector: 'input' }),
-  dropdownButton: byRole('button', { name: /language/i }),
+  dropdownButton: byRole('combobox', { name: /language/i }),
   optionsList: byRole('listbox', { name: /language/i }),
   allOptions: byRole('option'),
 };

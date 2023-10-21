@@ -3,12 +3,13 @@ import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { path } from 'ramda';
 
+import { IntegerString } from '#shared/utils/string';
 import { byRole } from '#test-utils/uiSelector';
 
 import IntegerField from './IntegerField';
 
-function renderComponent(options?: { value?: string; onChange?: () => void; onBlur?: () => void }) {
-  return render(<IntegerField value="" {...options} />);
+function renderComponent(options?: { value?: IntegerString; onChange?: () => void; onBlur?: () => void }) {
+  return render(<IntegerField value={'' as IntegerString} {...options} />);
 }
 
 const ui = {
@@ -38,7 +39,7 @@ describe('GIVEN parent component passed onBlur function to the component WHEN a 
     const onBlurSpy = jest.fn().mockImplementation((e) => {
       targetValue = path(['target', 'value'], e);
     });
-    renderComponent({ value: '01', onBlur: onBlurSpy });
+    renderComponent({ value: '01' as IntegerString, onBlur: onBlurSpy });
 
     const user = userEvent.setup();
     await user.click(ui.field.get());

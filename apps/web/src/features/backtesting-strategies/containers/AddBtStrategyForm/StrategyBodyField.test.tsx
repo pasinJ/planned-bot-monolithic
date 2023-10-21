@@ -29,7 +29,7 @@ const ui = {
   languageField: byLabelText(/language/i, { selector: 'input' }),
   // eslint-disable-next-line testing-library/no-node-access
   languageValue: (language: string) => document.querySelector(`div[data-mode-id="${language}"]`),
-  languageDropdownButton: byRole('button', { name: /language/i }),
+  languageDropdownButton: byRole('combobox', { name: /language/i }),
   languageOptionsList: byRole('listbox', { name: /language/i }),
   allLangaugeOptions: byRole('option'),
   requiredError: byText(/strategy body is required/i),

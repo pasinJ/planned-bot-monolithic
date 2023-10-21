@@ -1,6 +1,7 @@
 import { ExchangeName, exchangeNameEnum } from '#features/exchanges/domain/exchange';
 import { Language } from '#shared/domain/language';
 import { Timeframe } from '#shared/domain/timeframe';
+import { DecimalString, IntegerString } from '#shared/utils/string';
 
 export type AddBtStrategyFormValues = {
   name: string;
@@ -8,10 +9,10 @@ export type AddBtStrategyFormValues = {
   symbol: string | null;
   currency: string;
   timeframe: Timeframe | '';
-  maxNumKlines: string;
-  initialCapital: string;
-  takerFeeRate: string;
-  makerFeeRate: string;
+  maxNumKlines: IntegerString;
+  initialCapital: DecimalString;
+  takerFeeRate: DecimalString;
+  makerFeeRate: DecimalString;
   startTimestamp: Date;
   endTimestamp: Date;
   language: Language;
@@ -23,10 +24,10 @@ export const defaultValues: AddBtStrategyFormValues = {
   symbol: null,
   currency: '',
   timeframe: '',
-  maxNumKlines: '100',
-  initialCapital: '0',
-  takerFeeRate: '0.0',
-  makerFeeRate: '0.0',
+  maxNumKlines: '100' as IntegerString,
+  initialCapital: '0' as DecimalString,
+  takerFeeRate: '0.0' as DecimalString,
+  makerFeeRate: '0.0' as DecimalString,
   startTimestamp: new Date(),
   endTimestamp: new Date(),
   language: 'javascript',
