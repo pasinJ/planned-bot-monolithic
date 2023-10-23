@@ -1,5 +1,5 @@
 import { ExchangeName } from '#features/exchanges/domain/exchange';
-import { SymbolName } from '#features/symbols/domain/symbol';
+import { SymbolName } from '#features/symbols/symbol';
 import { Timeframe } from '#shared/domain/timeframe';
 import { IntegerString } from '#shared/utils/string';
 

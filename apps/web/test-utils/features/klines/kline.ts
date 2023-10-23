@@ -1,6 +1,6 @@
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange';
 import { Kline, NumTrades, Price, Volume, timeframeEnum } from '#features/klines/kline';
-import { SymbolName } from '#features/symbols/domain/symbol';
+import { SymbolName } from '#features/symbols/symbol';
 import { ValidDate } from '#shared/utils/date';
 
 export function mockKline(): Kline {

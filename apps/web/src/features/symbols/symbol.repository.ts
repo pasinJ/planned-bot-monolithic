@@ -3,11 +3,9 @@ import { pipe } from 'fp-ts/lib/function';
 
 import { HttpClient } from '#infra/httpClient.type';
 
-import { Symbol } from '../domain/symbol';
+import { Symbol } from './symbol';
 import { API_ENDPOINTS } from './symbol.constant';
-import { SymbolRepoError, createSymbolRepoError } from './symbol.error';
-
-const { GET_SYMBOLS } = API_ENDPOINTS;
+import { SymbolRepoError, createSymbolRepoError } from './symbol.repository.error';
 
 export type SymbolRepo = { getSymbols: GetSymbols };
 export function createSymbolRepo({ httpClient }: { httpClient: HttpClient }): SymbolRepo {
@@ -15,13 +13,12 @@ export function createSymbolRepo({ httpClient }: { httpClient: HttpClient }): Sy
 }
 
 type GetSymbols = te.TaskEither<GetSymbolsError, readonly Symbol[]>;
-export type GetSymbolsError = SymbolRepoError<'GetSymbolsError'>;
+export type GetSymbolsError = SymbolRepoError<'GetSymbolsFailed'>;
 function getSymbols({ httpClient }: { httpClient: HttpClient }): GetSymbols {
-  const { method, url, responseSchema } = GET_SYMBOLS;
   return pipe(
-    httpClient.sendRequest({ method, url, responseSchema }),
+    httpClient.sendRequest({ ...API_ENDPOINTS.GET_SYMBOLS }),
     te.mapLeft((error) =>
-      createSymbolRepoError('GetSymbolsError', 'Getting symbols from backend failed', error),
+      createSymbolRepoError('GetSymbolsFailed', 'Getting symbols from backend failed', error),
     ),
   );
 }

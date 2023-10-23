@@ -1,6 +1,6 @@
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { SymbolRepo } from '#features/symbols/repositories/symbol';
+import { SymbolRepo } from '#features/symbols/symbol.repository';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockSymbol } from '#test-utils/features/symbols/domain';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';

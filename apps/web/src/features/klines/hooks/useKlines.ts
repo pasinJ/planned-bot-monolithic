@@ -3,7 +3,7 @@ import { values } from 'ramda';
 import { useContext } from 'react';
 
 import { ExchangeName } from '#features/exchanges/domain/exchange';
-import { SymbolName } from '#features/symbols/domain/symbol';
+import { SymbolName } from '#features/symbols/symbol';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { ValidDate } from '#shared/utils/date';
 import { executeTeToPromise } from '#shared/utils/fp';

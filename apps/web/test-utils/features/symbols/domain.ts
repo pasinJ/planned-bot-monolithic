@@ -1,4 +1,4 @@
-import { Symbol } from '#features/symbols/domain/symbol';
+import { Symbol } from '#features/symbols/symbol';
 import { randomExchangeName } from '#test-utils/domain';
 
 import { randomString } from '../../faker';

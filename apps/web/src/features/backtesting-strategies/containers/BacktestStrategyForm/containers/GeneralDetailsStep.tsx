@@ -15,8 +15,8 @@ import FetchingFailed from '#components/FetchingFailed';
 import IntegerField from '#components/IntegerField';
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange';
 import { Timeframe } from '#features/klines/kline';
-import { Symbol } from '#features/symbols/domain/symbol';
 import useSymbols from '#features/symbols/hooks/useSymbols';
+import { Symbol } from '#features/symbols/symbol';
 
 import { BacktestForm } from '../types';
 

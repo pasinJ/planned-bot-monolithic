@@ -2,7 +2,7 @@ import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 
 import { ExchangeName } from '#features/exchanges/domain/exchange';
-import { SymbolName } from '#features/symbols/domain/symbol';
+import { SymbolName } from '#features/symbols/symbol';
 import { HttpClient } from '#infra/httpClient.type';
 import { ValidDate } from '#shared/utils/date';
 

@@ -4,19 +4,21 @@ import { useContext } from 'react';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { executeTeToPromise } from '#shared/utils/fp';
 
-import { Symbol } from '../domain/symbol';
-import { GetSymbolsError } from '../repositories/symbol';
+import { Symbol } from '../symbol';
+import { GetSymbolsError } from '../symbol.repository';
 
 const symbolsQueryKey = ['symbols'];
-const symbolsStaleTimeMs = 5 * 60000;
+const staleTimeMs = 5 * 60000;
 
-export default function useSymbols(enabled: boolean): UseQueryResult<readonly Symbol[], GetSymbolsError> {
+export default function useSymbols(
+  autoFetchEnabled: boolean,
+): UseQueryResult<readonly Symbol[], GetSymbolsError> {
   const { symbolRepo } = useContext(InfraContext);
 
   return useQuery<readonly Symbol[], GetSymbolsError>({
     queryKey: symbolsQueryKey,
     queryFn: () => executeTeToPromise(symbolRepo.getSymbols),
-    staleTime: symbolsStaleTimeMs,
-    enabled,
+    staleTime: staleTimeMs,
+    enabled: autoFetchEnabled,
   });
 }

@@ -1,7 +1,7 @@
 import { rest, setupWorker } from 'msw';
 
 import { API_ENDPOINTS as BACKTEST_API_ENDPOINTS } from '#features/backtesting-strategies/repositories/btStrategy.constant';
-import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/repositories/symbol.constant';
+import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/symbol.constant';
 import { API_BASE_URL } from '#infra/httpClient.constant';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';

@@ -11,7 +11,7 @@ const symbolRepoErrorName = 'SymbolRepoError';
 export function createSymbolRepoError<Type extends string>(
   type: Type,
   message: string,
-  cause: SymbolRepoError['cause'],
+  cause?: SymbolRepoError['cause'],
 ): SymbolRepoError<Type> {
   return createAppError({ name: symbolRepoErrorName, type, message, cause }, createSymbolRepoError);
 }
