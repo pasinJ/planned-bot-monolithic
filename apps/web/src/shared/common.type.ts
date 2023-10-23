@@ -13,4 +13,4 @@ export const nonNegativePercentage8Digits = z
   .max(100)
   .transform((val) => new Decimal(val).toDecimalPlaces(8, Decimal.ROUND_UP).toNumber());
 
-export const stringDatetimeToDate = z.string().datetime().pipe(z.coerce.date());
+export const stringDatetimeToDate = z.string().datetime().pipe(z.coerce.date()).brand('ValidDate');

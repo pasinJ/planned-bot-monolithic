@@ -6,6 +6,7 @@ import { includes } from 'ramda';
 import { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { RouteObject, RouterProvider, createMemoryRouter } from 'react-router-dom';
+import { DeepPartial } from 'ts-essentials';
 
 import LocalizationDateProvider from '#components/LocalizationDateProvider';
 import InfraProvider, { InfraContextValue } from '#infra/InfraProvider.context';
@@ -19,7 +20,7 @@ export function renderWithContexts(
   layers: Layer[],
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
+    infraContext?: DeepPartial<InfraContextValue>;
     routes?: RouteObject[];
   } = {},
 ) {
@@ -31,7 +32,7 @@ export function renderHookWithContexts<R>(
   layers: Layer[],
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
+    infraContext?: DeepPartial<InfraContextValue>;
     routes?: RouteObject[];
   } = {},
 ) {
@@ -42,7 +43,7 @@ export function renderWithAppContext(
   ui: ReactElement,
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
+    infraContext?: DeepPartial<InfraContextValue>;
     routes?: RouteObject[];
   } = {},
 ) {
@@ -63,7 +64,7 @@ function ContextWrapper(
   layers: Layer[],
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
+    infraContext?: DeepPartial<InfraContextValue>;
     routes?: RouteObject[];
   } = {},
 ) {
@@ -81,7 +82,7 @@ function ContextWrapper(
   };
 }
 
-function InfraWrapper(infraContext?: Partial<InfraContextValue>) {
+function InfraWrapper(infraContext?: DeepPartial<InfraContextValue>) {
   return (ui: ReactNode) => <InfraProvider overrides={infraContext}>{ui}</InfraProvider>;
 }
 function ClientStateWrapper(state?: PreloadedState<RootState>) {

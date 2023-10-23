@@ -2,8 +2,7 @@ import * as te from 'fp-ts/lib/TaskEither';
 
 import { SymbolRepo } from '#features/symbols/symbol.repository';
 import { generateArrayOf } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/features/symbols/domain';
-import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
+import { mockSymbol } from '#test-utils/features/symbols/symbol';
 import { mockForMonaco, revertMockForMonaco } from '#test-utils/monaco';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole } from '#test-utils/uiSelector';
@@ -17,7 +16,7 @@ function renderBacktestStrategyPage(overrides: { symbolRepo: SymbolRepo }) {
 }
 function renderBacktestStrategyPageSuccess() {
   const symbols = generateArrayOf(mockSymbol, 4);
-  const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.right(symbols)) });
+  const symbolRepo = { getSymbols: jest.fn(te.right(symbols)) };
 
   renderBacktestStrategyPage({ symbolRepo });
 

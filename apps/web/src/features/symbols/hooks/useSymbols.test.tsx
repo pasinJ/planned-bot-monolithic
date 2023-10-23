@@ -2,7 +2,7 @@ import { waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither';
 
 import { generateArrayOf } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/features/symbols/domain';
+import { mockSymbol } from '#test-utils/features/symbols/symbol';
 import { renderHookWithContexts } from '#test-utils/render';
 
 import { SymbolRepo } from '../symbol.repository';

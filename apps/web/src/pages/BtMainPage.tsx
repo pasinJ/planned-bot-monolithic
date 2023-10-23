@@ -6,7 +6,7 @@ import { isEmpty } from 'ramda';
 import { MouseEventHandler, useState } from 'react';
 
 import FetchingFailed from '#components/FetchingFailed';
-import useBtStrategies from '#features/backtesting-strategies/hooks/useBtStrategies';
+import useBtStrategies from '#features/btStrategies/hooks/useBtStrategies';
 import { AddBtStrategyPageLink } from '#routes/components/pageLinks';
 
 export default function BtMainPage() {

@@ -1,7 +1,7 @@
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
-import { ExchangeName, exchangeNameSchema } from '#features/exchanges/domain/exchange';
+import { ExchangeName, exchangeNameSchema } from '#features/exchanges/exchange';
 import { schemaForType } from '#shared/utils/zod';
 
 export type SymbolName = string & z.BRAND<'SymbolName'>;

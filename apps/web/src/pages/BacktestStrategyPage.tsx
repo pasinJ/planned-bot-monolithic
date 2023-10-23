@@ -7,7 +7,7 @@ import Stepper from '@mui/material/Stepper';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
-import BacktestStrategyForm from '#features/backtesting-strategies/containers/BacktestStrategyForm';
+import BacktestStrategyForm from '#features/btStrategies/containers/BacktestStrategyForm';
 
 const steps = ['General datails', 'Strategy details', 'Backtesting result'];
 

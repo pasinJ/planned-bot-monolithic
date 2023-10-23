@@ -38,6 +38,7 @@
     "@types/material-colors": "^1.2.2",
     "axios": "^1.4.0",
     "date-fns": "^2.30.0",
+    "date-fns-tz": "^2.0.0",
     "decimal.js": "^10.4.3",
     "fp-ts": "^2.16.1",
     "fp-ts-std": "^0.17.1",

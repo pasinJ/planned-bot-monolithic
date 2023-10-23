@@ -2,7 +2,7 @@ import { UseQueryResult, useQuery } from '@tanstack/react-query';
 import { values } from 'ramda';
 import { useContext } from 'react';
 
-import { ExchangeName } from '#features/exchanges/domain/exchange';
+import { ExchangeName } from '#features/exchanges/exchange';
 import { SymbolName } from '#features/symbols/symbol';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { ValidDate } from '#shared/utils/date';

@@ -1,13 +1,13 @@
 import { rest, setupWorker } from 'msw';
 
-import { API_ENDPOINTS as BACKTEST_API_ENDPOINTS } from '#features/backtesting-strategies/repositories/btStrategy.constant';
-import { API_ENDPOINTS as KLINE_API_ENDPOINTS } from '#features/klines/kline.constant';
-import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/symbol.constant';
+import { API_ENDPOINTS as BACKTEST_API_ENDPOINTS } from '#features/btStrategies/endpoints';
+import { API_ENDPOINTS as KLINE_API_ENDPOINTS } from '#features/klines/endpoints';
+import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/endpoints';
 import { API_BASE_URL } from '#infra/httpClient.constant';
 import { generateArrayOf } from '#test-utils/faker';
-import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
+import { mockBtStrategy } from '#test-utils/features/btStrategies/btStrategy';
 import { mockKline } from '#test-utils/features/klines/kline';
-import { mockSymbol } from '#test-utils/features/symbols/domain';
+import { mockSymbol } from '#test-utils/features/symbols/symbol';
 
 const { GET_SYMBOLS } = SYMBOL_API_ENDPOINTS;
 const { ADD_BT_STRATEGY: CREATE_BACKTESTING_STRATEGY } = BACKTEST_API_ENDPOINTS;

@@ -4,7 +4,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { HttpClient } from '#infra/httpClient.type';
 
 import { Symbol } from './symbol';
-import { API_ENDPOINTS } from './symbol.constant';
+import { API_ENDPOINTS } from './endpoints';
 import { SymbolRepoError, createSymbolRepoError } from './symbol.repository.error';
 
 export type SymbolRepo = { getSymbols: GetSymbols };

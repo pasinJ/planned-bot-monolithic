@@ -1,20 +1,19 @@
 import userEvent from '@testing-library/user-event';
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { BtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy';
+import { BtStrategyRepo } from '#features/btStrategies/btStrategy.repository';
 import { mockHttpError } from '#test-utils/error';
 import { generateArrayOf, randomString } from '#test-utils/faker';
-import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
-import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/repositories';
+import { mockBtStrategy } from '#test-utils/features/btStrategies/btStrategy';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { createBtStrategyRepoError } from '../features/backtesting-strategies/repositories/btStrategy.error';
+import { createBtStrategyRepoError } from '../features/btStrategies/btStrategy.repository.error';
 import BtMainPage from './BtMainPage';
 
 function renderBtMainPage(overrides: { btStrategyRepo: Partial<BtStrategyRepo> }) {
   return renderWithContexts(<BtMainPage />, ['Infra', 'ServerState', 'Routes'], {
-    infraContext: { btStrategyRepo: mockBtStrategyRepo(overrides.btStrategyRepo) },
+    infraContext: overrides,
   });
 }
 function renderBtMainPageWithNoStrategy() {
@@ -31,7 +30,7 @@ function renderBtMainPageWithStrategy() {
   return { strategies, btStrategyRepo };
 }
 function renderBtMainPageWithFetchingError() {
-  const error = createBtStrategyRepoError('GetStrategiesError', randomString(), mockHttpError());
+  const error = createBtStrategyRepoError('GetBtStrategiesFailed', randomString(), mockHttpError());
   const btStrategyRepo = { getBtStrategies: jest.fn(te.left(error)) };
   renderBtMainPage({ btStrategyRepo });
 

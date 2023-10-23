@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ExchangeName, exchangeNameSchema } from '#features/exchanges/domain/exchange';
+import { ExchangeName, exchangeNameSchema } from '#features/exchanges/exchange';
 import { SymbolName, symbolNameSchema } from '#features/symbols/symbol';
 import { ValidDate, validDateSchema } from '#shared/utils/date';
 import { schemaForType } from '#shared/utils/zod';

@@ -1,13 +1,13 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 
-import { ExchangeName } from '#features/exchanges/domain/exchange';
+import { ExchangeName } from '#features/exchanges/exchange';
 import { SymbolName } from '#features/symbols/symbol';
 import { HttpClient } from '#infra/httpClient.type';
 import { ValidDate } from '#shared/utils/date';
 
 import { Kline, Timeframe } from './kline';
-import { API_ENDPOINTS } from './kline.constant';
+import { API_ENDPOINTS } from './endpoints';
 import { KlineRepoError, createKlineRepoError } from './kline.repository.error';
 
 export type KlineRepo = { getKlines: GetKlines };
