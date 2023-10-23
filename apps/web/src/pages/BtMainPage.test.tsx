@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event';
 import * as te from 'fp-ts/lib/TaskEither';
 
+import { BtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy';
 import { mockHttpError } from '#test-utils/error';
 import { generateArrayOf, randomString } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
@@ -8,8 +9,7 @@ import { mockBtStrategyRepo } from '#test-utils/features/backtesting-strategies/
 import { renderWithContexts } from '#test-utils/render';
 import { byRole, byText } from '#test-utils/uiSelector';
 
-import { createBtStrategyRepoError } from '../repositories/btStrategy.error';
-import { BtStrategyRepo } from '../repositories/btStrategy.type';
+import { createBtStrategyRepoError } from '../features/backtesting-strategies/repositories/btStrategy.error';
 import BtMainPage from './BtMainPage';
 
 function renderBtMainPage(overrides: { btStrategyRepo: Partial<BtStrategyRepo> }) {

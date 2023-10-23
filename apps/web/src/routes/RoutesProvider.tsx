@@ -3,12 +3,12 @@ import MainLayout from 'src/layouts/MainLayout';
 
 import LazyWrapper from '#components/LazyWrapper';
 
-import { ADD_BT_STRATEGY_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE, BT_MAIN_ROUTE } from './routes.constant';
+import { BACKTEST_STRATEGY_ROUTE, BT_MAIN_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE } from './routes.constant';
 
 const HomePage = () => import('#pages/HomePage');
 const DashboardPage = () => import('#pages/DashboardPage');
-const BtMainPage = () => import('#features/backtesting-strategies/pages/BtMainPage');
-const AddBtStrategyPage = () => import('#features/backtesting-strategies/pages/AddBtStrategyPage');
+const BtMainPage = () => import('#pages/BtMainPage');
+const BacktestStrategyPage = () => import('#pages/BacktestStrategyPage');
 
 const router = createBrowserRouter([
   {
@@ -18,7 +18,7 @@ const router = createBrowserRouter([
       { path: HOME_ROUTE, element: <LazyWrapper component={HomePage} /> },
       { path: DASHBOARD_ROUTE, element: <LazyWrapper component={DashboardPage} /> },
       { path: BT_MAIN_ROUTE, element: <LazyWrapper component={BtMainPage} /> },
-      { path: ADD_BT_STRATEGY_ROUTE, element: <LazyWrapper component={AddBtStrategyPage} /> },
+      { path: BACKTEST_STRATEGY_ROUTE, element: <LazyWrapper component={BacktestStrategyPage} /> },
     ],
   },
   { path: '*', element: 'empty' },

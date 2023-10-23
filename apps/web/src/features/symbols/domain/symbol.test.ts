@@ -1,9 +1,9 @@
 import { assoc, dissoc } from 'ramda';
 
 import { randomString } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { mockSymbol } from '#test-utils/features/symbols/domain';
 
-import { symbolSchema } from './symbol.valueObject';
+import { symbolSchema } from './symbol';
 
 const validSymbol = mockSymbol();
 

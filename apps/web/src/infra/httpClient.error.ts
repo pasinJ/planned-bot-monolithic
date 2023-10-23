@@ -1,15 +1,9 @@
 import { z } from 'zod';
 
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError';
-import { ExternalError, isExternalError } from '#shared/errors/externalError';
-import { defineCauseSchema, implementZodSchema } from '#shared/errors/utils';
-import { SchemaValidationError, isSchemaValidationError } from '#shared/utils/zod';
+import { implementZodSchema } from '#shared/errors/utils';
 
-export type HttpError<Type extends HttpErrorType = HttpErrorType> = AppError<
-  HttpErrorName,
-  Type,
-  HttpErrorCause
->;
+export type HttpError<Type extends HttpErrorType = HttpErrorType> = AppError<HttpErrorName, Type>;
 
 type HttpErrorName = typeof httpErrorName;
 const httpErrorName = 'HttpError';
@@ -28,7 +22,6 @@ const httpErrorType = [
   'InvalidResponse',
   'UnhandledError',
 ] as const;
-type HttpErrorCause = SchemaValidationError | ExternalError;
 
 export function createHttpError<Type extends HttpError['type']>(
   type: Type,
@@ -40,12 +33,6 @@ export function createHttpError<Type extends HttpError['type']>(
 
 export function isHttpError(input: unknown): input is HttpError {
   return implementZodSchema<HttpError>()
-    .with(
-      appErrorSchema.extend({
-        name: z.literal(httpErrorName),
-        type: z.enum(httpErrorType),
-        cause: defineCauseSchema([isSchemaValidationError, isExternalError]),
-      }),
-    )
+    .with(appErrorSchema.extend({ name: z.literal(httpErrorName), type: z.enum(httpErrorType) }))
     .safeParse(input).success;
 }

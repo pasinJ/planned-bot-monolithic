@@ -3,7 +3,7 @@ import { setupServer } from 'msw/node';
 import { createAxiosHttpClient } from '#infra/axiosHttpClient';
 import { executeT } from '#shared/utils/fp';
 import { generateArrayOf } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { mockSymbol } from '#test-utils/features/symbols/domain';
 import { addRestRoute, createApiPath } from '#test-utils/msw';
 
 import { createSymbolRepo } from './symbol';

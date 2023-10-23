@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { constVoid } from 'fp-ts/lib/function';
 import { MouseEventHandler } from 'react';
 
+import { AppError } from '#shared/errors/appError';
+import { createGeneralError } from '#shared/errors/generalError';
 import { byRole, byText } from '#test-utils/uiSelector';
 
 import FetchingFailed from './FetchingFailed';
 
-function renderComponent(isFetchingFailed: boolean, onRetry: MouseEventHandler) {
-  return render(<FetchingFailed isFetchingFailed={isFetchingFailed} onRetry={onRetry} />);
+function renderComponent(error: AppError | null, onRetry: MouseEventHandler) {
+  return render(<FetchingFailed error={error} onRetry={onRetry} />);
 }
 
 const ui = {
@@ -17,8 +19,10 @@ const ui = {
 };
 
 describe('GIVEN fetching was failed WHEN render', () => {
+  const error = createGeneralError('Error', 'Mock');
+
   it('THEN it should display an informative message and retry button', async () => {
-    renderComponent(true, constVoid);
+    renderComponent(error, constVoid);
 
     await expect(ui.fetchingFailedMsg.find()).resolves.toBeVisible();
     await expect(ui.retryButton.find()).resolves.toBeVisible();
@@ -26,7 +30,7 @@ describe('GIVEN fetching was failed WHEN render', () => {
   describe('WHEN click on the retry button', () => {
     it('THEN it should call onRetry function', async () => {
       const onRetry = jest.fn();
-      renderComponent(true, onRetry);
+      renderComponent(error, onRetry);
 
       const retryButton = await ui.retryButton.find();
       const user = userEvent.setup();
@@ -39,7 +43,7 @@ describe('GIVEN fetching was failed WHEN render', () => {
 
 describe('GIVEN fetching was not failed WHEN render', () => {
   it('THEN it should not display an informative message and retry button', () => {
-    renderComponent(false, constVoid);
+    renderComponent(null, constVoid);
 
     expect(ui.fetchingFailedMsg.query()).not.toBeInTheDocument();
     expect(ui.retryButton.query()).not.toBeInTheDocument();

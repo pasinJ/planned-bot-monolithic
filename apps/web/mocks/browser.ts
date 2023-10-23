@@ -5,7 +5,7 @@ import { API_ENDPOINTS as SYMBOL_API_ENDPOINTS } from '#features/symbols/reposit
 import { API_BASE_URL } from '#infra/httpClient.constant';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/backtesting-strategies/entities';
-import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { mockSymbol } from '#test-utils/features/symbols/domain';
 
 const { GET_SYMBOLS } = SYMBOL_API_ENDPOINTS;
 const { ADD_BT_STRATEGY: CREATE_BACKTESTING_STRATEGY } = BACKTEST_API_ENDPOINTS;

@@ -3,17 +3,20 @@ import { pipe } from 'fp-ts/lib/function';
 
 import { HttpClient } from '#infra/httpClient.type';
 
+import { Symbol } from '../domain/symbol';
 import { API_ENDPOINTS } from './symbol.constant';
-import { createSymbolRepoError } from './symbol.error';
-import { SymbolRepo } from './symbol.type';
+import { SymbolRepoError, createSymbolRepoError } from './symbol.error';
 
 const { GET_SYMBOLS } = API_ENDPOINTS;
 
+export type SymbolRepo = { getSymbols: GetSymbols };
 export function createSymbolRepo({ httpClient }: { httpClient: HttpClient }): SymbolRepo {
   return { getSymbols: getSymbols({ httpClient }) };
 }
 
-function getSymbols({ httpClient }: { httpClient: HttpClient }): SymbolRepo['getSymbols'] {
+type GetSymbols = te.TaskEither<GetSymbolsError, readonly Symbol[]>;
+export type GetSymbolsError = SymbolRepoError<'GetSymbolsError'>;
+function getSymbols({ httpClient }: { httpClient: HttpClient }): GetSymbols {
   const { method, url, responseSchema } = GET_SYMBOLS;
   return pipe(
     httpClient.sendRequest({ method, url, responseSchema }),

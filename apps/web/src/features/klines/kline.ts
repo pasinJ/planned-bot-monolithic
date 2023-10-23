@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { ExchangeName } from '#features/exchanges/domain/exchange.js';
-import { SymbolName } from '#features/symbols/domain/symbol.valueObject.js';
+import { SymbolName } from '#features/symbols/domain/symbol.js';
 import { ValidDate } from '#shared/utils/date';
 
 export type Kline = Readonly<{

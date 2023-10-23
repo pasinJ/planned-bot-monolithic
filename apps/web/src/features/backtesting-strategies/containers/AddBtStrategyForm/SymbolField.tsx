@@ -3,7 +3,7 @@ import TextField from '@mui/material/TextField';
 import { omit, prop } from 'ramda';
 import { useController } from 'react-hook-form';
 
-import { Symbol } from '#features/symbols/domain/symbol.valueObject';
+import { Symbol } from '#features/symbols/domain/symbol';
 
 import type { AddBtStrategyControl } from '.';
 

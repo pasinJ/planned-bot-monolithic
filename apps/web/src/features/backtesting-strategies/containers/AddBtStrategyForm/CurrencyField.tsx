@@ -6,7 +6,7 @@ import Select from '@mui/material/Select';
 import { dissoc, propEq, props } from 'ramda';
 import { useController, useWatch } from 'react-hook-form';
 
-import { Symbol } from '#features/symbols/domain/symbol.valueObject';
+import { Symbol } from '#features/symbols/domain/symbol';
 
 import type { AddBtStrategyControl } from '.';
 

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { symbolSchema } from '../domain/symbol.valueObject';
+import { symbolSchema } from '../domain/symbol';
 
 export const API_ENDPOINTS = {
   GET_SYMBOLS: {

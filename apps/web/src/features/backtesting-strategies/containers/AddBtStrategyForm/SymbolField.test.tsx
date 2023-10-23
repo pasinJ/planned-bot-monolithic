@@ -5,7 +5,7 @@ import { mergeRight } from 'ramda';
 import { useForm } from 'react-hook-form';
 
 import { generateArrayOf } from '#test-utils/faker';
-import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
+import { mockSymbol } from '#test-utils/features/symbols/domain';
 import { clickAutoCompleteDropdown } from '#test-utils/uiEvents';
 import { byRole, byText } from '#test-utils/uiSelector';
 

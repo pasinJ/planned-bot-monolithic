@@ -22,7 +22,7 @@ export default function BtMainPage() {
       {btStrategies.isLoading ? (
         <Spinner />
       ) : btStrategies.isError ? (
-        <FetchingFailed isFetchingFailed={btStrategies.isError} onRetry={handleRetry} />
+        <FetchingFailed error={btStrategies.error} onRetry={handleRetry} />
       ) : isEmpty(btStrategies.data) ? (
         <>
           <Typography>You have no existing strategy.</Typography>

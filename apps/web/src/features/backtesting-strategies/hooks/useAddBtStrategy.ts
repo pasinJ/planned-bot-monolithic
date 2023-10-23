@@ -7,11 +7,11 @@ import { z } from 'zod';
 
 import { InfraContext } from '#infra/InfraProvider.context';
 import { executeTeToPromise } from '#shared/utils/fp';
-import { SchemaValidationError, parseWithZod } from '#shared/utils/zod';
+import { SchemaValidationError, validateWithZod } from '#shared/utils/zod';
 
 import { AddBtStrategyFormValues } from '../containers/AddBtStrategyForm/constants';
+import { AddBtStrategyData } from '../repositories/btStrategy';
 import { BtStrategyRepoError } from '../repositories/btStrategy.error';
-import { AddBtStrategyData } from '../repositories/btStrategy.type';
 
 export default function useAddBtStrategy(): UseMutationResult<
   void,
@@ -34,7 +34,7 @@ export default function useAddBtStrategy(): UseMutationResult<
 function parseMutationData(
   data: AddBtStrategyFormValues,
 ): e.Either<SchemaValidationError, AddBtStrategyData> {
-  return parseWithZod(
+  return validateWithZod(
     z
       .object({
         maxNumKlines: z.coerce.number(),

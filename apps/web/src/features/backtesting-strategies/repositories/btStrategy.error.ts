@@ -1,23 +1,14 @@
 import { z } from 'zod';
 
-import { HttpError, isHttpError } from '#infra/httpClient.error';
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError';
-import { defineCauseSchema, implementZodSchema } from '#shared/errors/utils';
-import { SchemaValidationError, isSchemaValidationError } from '#shared/utils/zod';
+import { implementZodSchema } from '#shared/errors/utils';
 
-export type BtStrategyRepoError<Type extends BtStrategyRepoErrorType = BtStrategyRepoErrorType> = AppError<
-  BtStrategyRepoErrorName,
-  Type,
-  BtStrategyRepoErrorCause
->;
+export type BtStrategyRepoError<Type extends string = string> = AppError<BtStrategyRepoErrorName, Type>;
 
 type BtStrategyRepoErrorName = typeof btStrategyRepoErrorName;
 const btStrategyRepoErrorName = 'BtStrategyRepoError';
-type BtStrategyRepoErrorType = (typeof btStrategyRepoErrorType)[number];
-const btStrategyRepoErrorType = ['GetStrategiesError', 'AddBtStrategyError'] as const;
-type BtStrategyRepoErrorCause = HttpError | SchemaValidationError;
 
-export function createBtStrategyRepoError<Type extends BtStrategyRepoErrorType>(
+export function createBtStrategyRepoError<Type extends string>(
   type: Type,
   message: string,
   cause: BtStrategyRepoError['cause'],
@@ -27,12 +18,6 @@ export function createBtStrategyRepoError<Type extends BtStrategyRepoErrorType>(
 
 export function isBtStrategyRepoError(input: unknown): input is BtStrategyRepoError {
   return implementZodSchema<BtStrategyRepoError>()
-    .with(
-      appErrorSchema.extend({
-        name: z.literal(btStrategyRepoErrorName),
-        type: z.enum(btStrategyRepoErrorType),
-        cause: defineCauseSchema([isHttpError, isSchemaValidationError]),
-      }),
-    )
+    .with(appErrorSchema.extend({ name: z.literal(btStrategyRepoErrorName), type: z.string() }))
     .safeParse(input).success;
 }

@@ -1,39 +1,39 @@
 import * as te from 'fp-ts/lib/TaskEither';
 
-import { SymbolRepo } from '#features/symbols/repositories/symbol.type';
+import { SymbolRepo } from '#features/symbols/repositories/symbol';
 import { generateArrayOf } from '#test-utils/faker';
+import { mockSymbol } from '#test-utils/features/symbols/domain';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
-import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { mockForMonaco, revertMockForMonaco } from '#test-utils/monaco';
 import { renderWithContexts } from '#test-utils/render';
 import { byRole } from '#test-utils/uiSelector';
 
-import AddBtStrategyPage from './AddBtStrategyPage';
+import BacktestStrategyPage from './BacktestStrategyPage';
 
-function renderAddBtStrategyPage(overrides: { symbolRepo: SymbolRepo }) {
-  return renderWithContexts(<AddBtStrategyPage />, ['Infra', 'ServerState', 'Date'], {
+function renderBacktestStrategyPage(overrides: { symbolRepo: SymbolRepo }) {
+  return renderWithContexts(<BacktestStrategyPage />, ['Infra', 'ServerState', 'Date'], {
     infraContext: overrides,
   });
 }
-function renderAddBtStrategyPageSuccess() {
+function renderBacktestStrategyPageSuccess() {
   const symbols = generateArrayOf(mockSymbol, 4);
   const symbolRepo = mockSymbolRepo({ getSymbols: jest.fn(te.right(symbols)) });
 
-  renderAddBtStrategyPage({ symbolRepo });
+  renderBacktestStrategyPage({ symbolRepo });
 
   return { symbolRepo, symbols };
 }
 
 const ui = {
-  form: byRole('form', { name: /add backtesting strategy/i }),
+  form: byRole('form', { name: /backtest strategy/i }),
 };
 
 beforeAll(() => mockForMonaco());
 afterEach(() => revertMockForMonaco());
 
 describe('WHEN render', () => {
-  it('THEN it should display a add backtesting strategy form', async () => {
-    renderAddBtStrategyPageSuccess();
+  it('THEN it should display a backtest strategy form', async () => {
+    renderBacktestStrategyPageSuccess();
 
     const form = await ui.form.find();
     expect(form).toBeVisible();

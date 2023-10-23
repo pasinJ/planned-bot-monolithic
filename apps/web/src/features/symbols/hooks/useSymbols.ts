@@ -4,20 +4,19 @@ import { useContext } from 'react';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { executeTeToPromise } from '#shared/utils/fp';
 
-import { Symbol } from '../domain/symbol.valueObject';
-import { SymbolRepoError } from '../repositories/symbol.error';
+import { Symbol } from '../domain/symbol';
+import { GetSymbolsError } from '../repositories/symbol';
 
-export default function useSymbols(
-  enabled: boolean,
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
-): UseQueryResult<readonly Symbol[], SymbolRepoError<'GetSymbolsError'>> {
+const symbolsQueryKey = ['symbols'];
+const symbolsStaleTimeMs = 5 * 60000;
+
+export default function useSymbols(enabled: boolean): UseQueryResult<readonly Symbol[], GetSymbolsError> {
   const { symbolRepo } = useContext(InfraContext);
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
-  return useQuery<readonly Symbol[], SymbolRepoError<'GetSymbolsError'>>({
-    queryKey: ['symbols'],
+  return useQuery<readonly Symbol[], GetSymbolsError>({
+    queryKey: symbolsQueryKey,
     queryFn: () => executeTeToPromise(symbolRepo.getSymbols),
-    staleTime: 5 * 60000,
+    staleTime: symbolsStaleTimeMs,
     enabled,
   });
 }

@@ -3,12 +3,12 @@ import * as te from 'fp-ts/lib/TaskEither';
 
 import { mockHttpError } from '#test-utils/error';
 import { generateArrayOf, randomString } from '#test-utils/faker';
+import { mockSymbol } from '#test-utils/features/symbols/domain';
 import { mockSymbolRepo } from '#test-utils/features/symbols/repositories';
-import { mockSymbol } from '#test-utils/features/symbols/valueObjects';
 import { renderHookWithContexts } from '#test-utils/render';
 
+import { SymbolRepo } from '../repositories/symbol';
 import { createSymbolRepoError, isSymbolRepoError } from '../repositories/symbol.error';
-import { SymbolRepo } from '../repositories/symbol.type';
 import useSymbols from './useSymbols';
 
 function renderUseSymbols(enabled: boolean, overrides: { symbolRepo: SymbolRepo }) {

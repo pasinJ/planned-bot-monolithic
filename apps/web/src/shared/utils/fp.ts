@@ -1,3 +1,4 @@
+import { pass } from 'fp-ts-std/IO';
 import { execute as executeT } from 'fp-ts-std/Task';
 import * as e from 'fp-ts/lib/Either';
 import * as te from 'fp-ts/lib/TaskEither';
@@ -13,3 +14,5 @@ export async function executeTeToPromise<E, A>(input: te.TaskEither<E, A>): Prom
     else return Promise.reject(result.left);
   }
 }
+
+export const ioVoid = pass;
