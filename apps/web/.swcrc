@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/swcrc",
   "test": ".tsx?$",
   "jsc": {
     "parser": { "syntax": "typescript", "tsx": true },

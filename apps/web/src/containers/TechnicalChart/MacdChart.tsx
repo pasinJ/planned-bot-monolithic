@@ -16,7 +16,6 @@ import {
 import { mergeDeepRight, prop } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { macd } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
@@ -33,6 +32,7 @@ import { Series, SeriesObj } from './containers/Series';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { macd } from './indicators';
 import { Source, dateToUtcTimestamp, downColor, upColor } from './utils';
 
 export type MacdChartType = 'macd';

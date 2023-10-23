@@ -13,7 +13,6 @@ import {
 } from 'lightweight-charts';
 import { MouseEventHandler, forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { kc } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
@@ -29,6 +28,7 @@ import SettingsModal from './components/SettingsModal';
 import VisibilityButton from './components/VisibilityButton';
 import { Series, SeriesObj } from './containers/Series';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { kc } from './indicators';
 import { dateToUtcTimestamp, formatLegend, isMouseInDataRange, isMouseOffChart } from './utils';
 
 export type KcSeriesType = 'kc';

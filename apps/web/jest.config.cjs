@@ -1,7 +1,7 @@
 const { compilerOptions } = require('./tsconfig.json');
 const { map, concat, toPairs, pipe, replace, fromPairs } = require('ramda');
 
-// const esModules = ['date-fns'].join('|');
+const esModules = ['nanoid'].join('|');
 
 const transformKey = replace(/\*/g, '(.*)');
 const transformValue = pipe(replace(/\/\*$/, '/$1'), concat('<rootDir>/'));
@@ -10,13 +10,14 @@ const transformModuleMapper = pipe(
   map(([key, vals]) => [transformKey(key), map(transformValue, vals)]),
   fromPairs,
 );
-const moduleNameMapper = transformModuleMapper(compilerOptions.paths);
+const moduleNameMapper = { ...transformModuleMapper(compilerOptions.paths) };
 
 const setupFilesAfterEnv = ['jest-extended/all', '@relmify/jest-fp-ts', 'dotenv/config'];
 
 /** @type {import('jest').Config} */
 const common = {
   transform: { '^.+\\.(t|j)sx?$': '@swc/jest' },
+  transformIgnorePatterns: [`/node_modules/(?!${esModules})`],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   watchPathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/node_modules/'],
   modulePaths: ['<rootDir>/src/'],

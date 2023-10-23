@@ -15,7 +15,6 @@ import {
 import { mergeDeepRight } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { stoch } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
@@ -32,6 +31,7 @@ import { Series, SeriesObj } from './containers/Series';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { stoch } from './indicators';
 import { dateToUtcTimestamp } from './utils';
 
 export type StochChartType = 'stoch';

@@ -1,7 +1,7 @@
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
-import MainLayout from 'src/layouts/MainLayout';
 
 import LazyWrapper from '#components/LazyWrapper';
+import MainLayout from '#layouts/MainLayout';
 
 import { BACKTEST_STRATEGY_ROUTE, BT_MAIN_ROUTE, DASHBOARD_ROUTE, HOME_ROUTE } from './routes.constant';
 

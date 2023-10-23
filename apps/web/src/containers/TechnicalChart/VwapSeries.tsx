@@ -4,7 +4,6 @@ import { DeepPartial, LineData, LineStyleOptions, SeriesOptionsCommon } from 'li
 import { mergeDeepRight } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { UseFormProps, useForm } from 'react-hook-form';
-import { vwap } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
@@ -19,6 +18,7 @@ import SettingsModal from './components/SettingsModal';
 import { Series, SeriesObj } from './containers/Series';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { vwap } from './indicators';
 import { dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
 export type VwapSeriesType = 'vwap';

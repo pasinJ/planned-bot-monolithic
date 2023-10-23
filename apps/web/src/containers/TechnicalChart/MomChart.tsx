@@ -13,7 +13,6 @@ import {
 import { mergeDeepRight, prop } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { momentum } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
@@ -30,6 +29,7 @@ import { Series, SeriesObj } from './containers/Series';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { momentum } from './indicators';
 import { Source, dateToUtcTimestamp } from './utils';
 
 export type MomChartType = 'mom';

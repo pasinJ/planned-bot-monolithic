@@ -14,7 +14,6 @@ import {
 import { prop } from 'ramda';
 import { MouseEventHandler, forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { bb } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
@@ -31,6 +30,7 @@ import SourceField from './components/SourceField';
 import VisibilityButton from './components/VisibilityButton';
 import { Series, SeriesObj } from './containers/Series';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { bb } from './indicators';
 import { Source, dateToUtcTimestamp, formatLegend, isMouseInDataRange, isMouseOffChart } from './utils';
 
 export type BbSeriesType = 'bb';

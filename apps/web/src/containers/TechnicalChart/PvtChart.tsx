@@ -13,7 +13,6 @@ import {
 import { mergeDeepRight } from 'ramda';
 import { forwardRef, useMemo } from 'react';
 import { UseFormProps, useForm } from 'react-hook-form';
-import { pvt } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
@@ -28,6 +27,7 @@ import { Series, SeriesObj } from './containers/Series';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { pvt } from './indicators';
 import { dateToUtcTimestamp, randomHexColor } from './utils';
 
 export type PvtChartType = 'pvt';

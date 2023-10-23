@@ -4,7 +4,6 @@ import { DeepPartial, LineData, LineStyleOptions, SeriesOptionsCommon } from 'li
 import { mergeDeepRight, prop } from 'ramda';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { UseFormProps, useForm } from 'react-hook-form';
-import { sma } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
@@ -20,6 +19,7 @@ import SourceField from './components/SourceField';
 import { Series, SeriesObj } from './containers/Series';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
+import { sma } from './indicators';
 import { Source, dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
 export type SmaSeriesType = 'sma';

@@ -5,6 +5,7 @@ import { exchangeNameSchema } from '#features/exchanges/domain/exchange';
 import { nonEmptyString, nonNegativeFloat8Digits, nonNegativePercentage8Digits } from '#shared/common.type';
 import { languageSchema } from '#shared/domain/language';
 import { timeframeSchema } from '#shared/domain/timeframe';
+import { schemaForType } from '#shared/utils/zod';
 
 export type BtStrategyId = z.infer<typeof idSchema>;
 const idSchema = nonEmptyString.brand('BtStrategyId');
@@ -12,6 +13,18 @@ const idSchema = nonEmptyString.brand('BtStrategyId');
 export type ExecutionStatus = z.infer<typeof executionStatusSchema>;
 const executionStatusSchema = z.enum(['IDLE']);
 export const executionStatusEnum = executionStatusSchema.enum;
+
+export type StrategyLanguage = 'javascript' | 'typescript';
+export const strategyLanguageSchama = schemaForType<StrategyLanguage>().with(
+  z.enum(['javascript', 'typescript']),
+);
+export const strategyLanguageEnum = strategyLanguageSchama.enum;
+export const strategyLanguageOptions = strategyLanguageSchama.options;
+
+export type StrategyBody = string & z.BRAND<'StrategyBody'>;
+export const strategyBodySchema = schemaForType<StrategyBody>().with(
+  z.string().trim().min(1).brand('StrategyBody'),
+);
 
 export type BtStrategy = z.infer<typeof btStrategySchema>;
 export const btStrategySchema = z

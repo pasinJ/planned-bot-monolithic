@@ -1,5 +1,4 @@
 import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -9,59 +8,59 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { UseQueryResult } from '@tanstack/react-query';
 import { isAfter, isBefore, isFuture } from 'date-fns';
 import { flow } from 'fp-ts/lib/function';
 import { prop, toPairs } from 'ramda';
-import { MouseEventHandler, useState } from 'react';
+import { PropsWithChildren } from 'react';
 import { Control, useController } from 'react-hook-form';
 
-import FetchingFailed from '#components/FetchingFailed';
 import IntegerField from '#components/IntegerField';
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange';
 import { Timeframe } from '#features/klines/kline';
-import useSymbols from '#features/symbols/hooks/useSymbols';
 import { Symbol } from '#features/symbols/symbol';
+import { GetSymbolsError } from '#features/symbols/symbol.repository';
 
 import { BacktestForm } from '../types';
 
-type GeneralDetailsStepProps = { control: Control<BacktestForm> };
+type GeneralDetailsStepProps = PropsWithChildren<{
+  control: Control<BacktestForm>;
+  querySymbolsResult: UseQueryResult<readonly Symbol[], GetSymbolsError>;
+}>;
 export default function GeneralDetailsStep(props: GeneralDetailsStepProps) {
-  const { control } = props;
-
-  const [autoFetchingSymbols, setAutoFetchingSymbols] = useState(true);
-  const symbols = useSymbols(autoFetchingSymbols);
-
-  if (symbols.isError && autoFetchingSymbols) setAutoFetchingSymbols(false);
-  const handleRetryFetchSymbols: MouseEventHandler<HTMLButtonElement> = () => setAutoFetchingSymbols(true);
+  const { control, querySymbolsResult, children } = props;
 
   return (
-    <div className="relative flex min-w-fit flex-col">
-      {symbols.isInitialLoading ? <CircularProgress className="abs-center" /> : undefined}
-      <FetchingFailed className="abs-center" error={symbols.error} onRetry={handleRetryFetchSymbols} />
-      <div className={symbols.data === undefined ? 'invisible' : ''}>
-        <StrategyNameField control={control} />
-        <Divider textAlign="center" className="mb-4">
-          Symbol information
-        </Divider>
-        <div className="mb-2 flex flex-wrap gap-x-6 gap-y-2">
-          <ExchangeField control={control} />
-          <SymbolField control={control} symbols={symbols.data ?? []} />
-        </div>
-        <div className="mb-2 flex flex-wrap gap-x-6 gap-y-2">
-          <TimeframeField control={control} />
-          <MaxNumKlinesField control={control} />
-        </div>
-        <Divider textAlign="center">Backtest period</Divider>
-        <div className="mb-4 flex justify-center">
-          <Typography variant="subtitle2" className="text-gray-500">
-            (Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone})
-          </Typography>
-        </div>
-        <div className="flex gap-x-6">
-          <StartTimestampField control={control} />
-          <EndTimestampField control={control} />
-        </div>
+    <div
+      className={
+        querySymbolsResult.data === undefined
+          ? 'invisible'
+          : 'flex max-w-fit flex-col rounded-xl bg-background p-4 shadow-2 lg:mt-6 lg:p-10'
+      }
+    >
+      <StrategyNameField control={control} />
+      <Divider textAlign="center" className="mb-4">
+        Symbol information
+      </Divider>
+      <div className="mb-2 flex flex-wrap gap-x-6 gap-y-2">
+        <ExchangeField control={control} />
+        <SymbolField control={control} symbols={querySymbolsResult.data ?? []} />
       </div>
+      <div className="mb-2 flex flex-wrap gap-x-6 gap-y-2">
+        <TimeframeField control={control} />
+        <MaxNumKlinesField control={control} />
+      </div>
+      <Divider textAlign="center">Backtest period</Divider>
+      <div className="mb-4 flex justify-center">
+        <Typography variant="subtitle2" className="text-gray-500">
+          (Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone})
+        </Typography>
+      </div>
+      <div className="flex gap-x-6">
+        <StartTimestampField control={control} />
+        <EndTimestampField control={control} />
+      </div>
+      {children}
     </div>
   );
 }
