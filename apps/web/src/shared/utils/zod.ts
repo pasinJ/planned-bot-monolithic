@@ -70,3 +70,12 @@ export function validateWithZod<T extends z.ZodTypeAny>(schema: T, errorMessage:
 
   return isNotNil(input) ? validationPipeline(input) : validationPipeline;
 }
+
+export const schemaForType = <T>() => {
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    with: <S extends z.ZodType<T, any, any>>(arg: S) => {
+      return arg;
+    },
+  };
+};

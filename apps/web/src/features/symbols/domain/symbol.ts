@@ -1,24 +1,29 @@
+import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
-import { exchangeNameSchema } from '#features/exchanges/domain/exchange';
-import { nonEmptyString } from '#shared/common.type';
-
-export const symbolSchema = z
-  .object({
-    name: nonEmptyString,
-    exchange: exchangeNameSchema,
-    baseAsset: nonEmptyString,
-    quoteAsset: nonEmptyString,
-  })
-  .strict()
-  .refine((obj) => obj.name.includes(obj.baseAsset), {
-    message: 'baseAsset property must be substring of symbol name',
-    path: ['baseAsset'],
-  })
-  .refine((obj) => obj.name.includes(obj.quoteAsset), {
-    message: 'quoteAsset property must be substring of symbol name',
-    path: ['quoteAsset'],
-  });
-export type Symbol = z.infer<typeof symbolSchema>;
+import { ExchangeName, exchangeNameSchema } from '#features/exchanges/domain/exchange';
+import { schemaForType } from '#shared/utils/zod';
 
 export type SymbolName = string & z.BRAND<'SymbolName'>;
+export const symbolNameSchema = schemaForType<SymbolName>().with(z.string().brand('SymbolName'));
+
+export type BaseAsset = string & z.BRAND<'BaseAsset'>;
+export const baseAssetSchema = schemaForType<BaseAsset>().with(z.string().brand('BaseAsset'));
+
+export type QuoteAsset = string & z.BRAND<'QuoteAsset'>;
+export const quoteAssetschema = schemaForType<QuoteAsset>().with(z.string().brand('QuoteAsset'));
+
+export type Symbol = DeepReadonly<{
+  exchange: ExchangeName;
+  name: SymbolName;
+  baseAsset: BaseAsset;
+  quoteAsset: QuoteAsset;
+}>;
+export const symbolSchema = schemaForType<Symbol>().with(
+  z.object({
+    name: symbolNameSchema,
+    exchange: exchangeNameSchema,
+    baseAsset: baseAssetSchema,
+    quoteAsset: quoteAssetschema,
+  }),
+);
