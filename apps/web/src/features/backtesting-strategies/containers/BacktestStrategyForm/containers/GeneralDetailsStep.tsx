@@ -7,6 +7,10 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { isAfter, isBefore, isFuture } from 'date-fns';
+import { flow } from 'fp-ts/lib/function';
 import { prop, toPairs } from 'ramda';
 import { MouseEventHandler, useState } from 'react';
 import { Control, useController } from 'react-hook-form';
@@ -46,6 +50,16 @@ export default function GeneralDetailsStep(props: GeneralDetailsStepProps) {
         <div className="mb-2 flex flex-wrap gap-x-6 gap-y-2">
           <TimeframeField control={control} />
           <MaxNumKlinesField control={control} />
+        </div>
+        <Divider textAlign="center">Backtest period</Divider>
+        <div className="mb-4 flex justify-center">
+          <Typography variant="subtitle2" className="text-gray-500">
+            (Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone})
+          </Typography>
+        </div>
+        <div className="flex gap-x-6">
+          <StartTimestampField control={control} />
+          <EndTimestampField control={control} />
         </div>
       </div>
     </div>
@@ -198,7 +212,7 @@ function TimeframeField({ control }: { control: Control<BacktestForm> }) {
 
 function MaxNumKlinesField({ control }: { control: Control<BacktestForm> }) {
   const {
-    field: { ref, onChange, ...restFieldProps },
+    field: { ref, onChange, onBlur, ...restFieldProps },
     fieldState,
   } = useController({
     name: 'maxNumKlines',
@@ -219,7 +233,81 @@ function MaxNumKlinesField({ control }: { control: Control<BacktestForm> }) {
       {...restFieldProps}
       inputRef={ref}
       onChange={onChange}
-      onBlur={onChange}
+      onBlur={flow(onChange, onBlur)}
+    />
+  );
+}
+
+function StartTimestampField({ control }: { control: Control<BacktestForm> }) {
+  const {
+    field: { ref, ...restFieldProps },
+    fieldState,
+  } = useController({
+    name: 'startTimestamp',
+    control,
+    rules: {
+      required: 'Start timestamp is required',
+      validate: (startTimestamp, { endTimestamp }) =>
+        isAfter(startTimestamp, endTimestamp)
+          ? 'Start timestamp must be before end timestamp'
+          : isFuture(startTimestamp)
+          ? 'Start timestamp must not be in the future'
+          : undefined,
+    },
+  });
+
+  return (
+    <DateTimePicker
+      label="Start timestamp"
+      className="min-w-[8rem] flex-grow"
+      ampm={false}
+      disableFuture
+      slotProps={{
+        textField: {
+          error: fieldState.invalid,
+          helperText: fieldState.error?.message ?? ' ',
+          required: true,
+          inputRef: ref,
+          ...restFieldProps,
+        },
+      }}
+    />
+  );
+}
+
+function EndTimestampField({ control }: { control: Control<BacktestForm> }) {
+  const {
+    field: { ref, ...restFieldProps },
+    fieldState,
+  } = useController({
+    name: 'endTimestamp',
+    control,
+    rules: {
+      required: 'End timestamp is required',
+      validate: (endTimestamp, { startTimestamp }) =>
+        isBefore(endTimestamp, startTimestamp)
+          ? 'End timestamp must be after start timestamp'
+          : isFuture(endTimestamp)
+          ? 'End timestamp must not be in the future'
+          : undefined,
+    },
+  });
+
+  return (
+    <DateTimePicker
+      label="End timestamp"
+      className="min-w-[8rem] flex-grow"
+      ampm={false}
+      disableFuture
+      slotProps={{
+        textField: {
+          error: fieldState.invalid,
+          helperText: fieldState.error?.message ?? ' ',
+          required: true,
+        },
+      }}
+      {...restFieldProps}
+      inputRef={ref}
     />
   );
 }

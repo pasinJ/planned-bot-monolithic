@@ -7,6 +7,7 @@ import { MouseEventHandler } from 'react';
 import { UseFormProps, useForm } from 'react-hook-form';
 
 import { exchangeNameEnum } from '#features/exchanges/domain/exchange';
+import { ValidDate } from '#shared/utils/date';
 import { executeT, ioVoid } from '#shared/utils/fp';
 import { IntegerString } from '#shared/utils/string';
 
@@ -21,8 +22,10 @@ const defaultFormValues: BacktestForm = {
   symbol: null,
   timeframe: '1d',
   maxNumKlines: '100' as IntegerString,
+  startTimestamp: new Date() as ValidDate,
+  endTimestamp: new Date() as ValidDate,
 };
-const formOptions: UseFormProps<BacktestForm> = { defaultValues: defaultFormValues, mode: 'onBlur' };
+const formOptions: UseFormProps<BacktestForm> = { defaultValues: defaultFormValues, mode: 'all' };
 
 type BacktestStrategyFormProps = {
   activeStep: number;
