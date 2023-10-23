@@ -15,7 +15,7 @@ export function createKlineRepo({ httpClient }: { httpClient: HttpClient }): Kli
   return { getKlines: getKlines(httpClient) };
 }
 
-type GetKlines = (request: GetKlinesRequest) => te.TaskEither<getKlinesError, readonly Kline[]>;
+type GetKlines = (request: GetKlinesRequest) => te.TaskEither<GetKlinesError, readonly Kline[]>;
 export type GetKlinesRequest = {
   exchange: ExchangeName;
   symbol: SymbolName;
@@ -23,7 +23,7 @@ export type GetKlinesRequest = {
   startTimestamp: ValidDate;
   endTimestamp: ValidDate;
 };
-export type getKlinesError = KlineRepoError<'GetKlinesFailed'>;
+export type GetKlinesError = KlineRepoError<'GetKlinesFailed'>;
 function getKlines(httpClient: HttpClient): GetKlines {
   const { GET_KLINES } = API_ENDPOINTS;
   return (request) =>

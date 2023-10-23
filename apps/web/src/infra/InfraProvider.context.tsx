@@ -1,6 +1,7 @@
 import { PropsWithChildren, createContext } from 'react';
 
 import { createBtStrategyRepo } from '#features/backtesting-strategies/repositories/btStrategy';
+import { createKlineRepo } from '#features/klines/kline.repository';
 import { createSymbolRepo } from '#features/symbols/repositories/symbol';
 
 import { createAxiosHttpClient } from './axiosHttpClient';
@@ -12,6 +13,7 @@ const defaultContext = {
   eventEmitter: new EventTarget(),
   symbolRepo: createSymbolRepo({ httpClient }),
   btStrategyRepo: createBtStrategyRepo({ httpClient }),
+  klineRepo: createKlineRepo({ httpClient }),
 };
 
 export type InfraContextValue = typeof defaultContext;

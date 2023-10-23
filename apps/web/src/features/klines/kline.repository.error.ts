@@ -11,7 +11,7 @@ const klineRepoErrorName = 'KlineRepoError';
 export function createKlineRepoError<Type extends string>(
   type: Type,
   message: string,
-  cause: KlineRepoError['cause'],
+  cause?: KlineRepoError['cause'],
 ): KlineRepoError<Type> {
   return createAppError({ name: klineRepoErrorName, type, message, cause }, createKlineRepoError);
 }
