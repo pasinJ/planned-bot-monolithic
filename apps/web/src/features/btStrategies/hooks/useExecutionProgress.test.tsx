@@ -1,5 +1,6 @@
 import { waitFor } from '@testing-library/react';
 import * as te from 'fp-ts/lib/TaskEither.js';
+import { act } from 'react-dom/test-utils';
 import { generatePath } from 'react-router-dom';
 
 import { BACKTEST_STRATEGY_ROUTE } from '#routes/routes.constant';
@@ -122,7 +123,7 @@ describe('[GIVEN] the returned progress is not final', () => {
 
       renderUseExecutionProgress(btExecutionId, { btStrategyRepo }, path);
 
-      await jest.advanceTimersByTimeAsync(10000);
+      await act(() => jest.advanceTimersByTimeAsync(10000));
 
       await waitFor(() => expect(btStrategyRepo.getExecutionProgress).toHaveBeenCalledTimes(3));
     });
