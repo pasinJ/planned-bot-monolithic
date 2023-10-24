@@ -82,7 +82,7 @@ export const StochChart = forwardRef<o.Option<ChartObj>, StochChartProps>(functi
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<StochSettings>(defaultSettingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<StochSettings>(defaultSettingFormOptions);
   const { kPeriod, kSlow, dPeriod, dLineColor } = getValues();
 
   type StochData = { kLine: LineData[]; dLine: LineData[] };
@@ -128,6 +128,7 @@ export const StochChart = forwardRef<o.Option<ChartObj>, StochChartProps>(functi
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

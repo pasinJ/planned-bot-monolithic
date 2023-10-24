@@ -54,7 +54,7 @@ export const EmvChart = forwardRef<o.Option<ChartObj>, EmvChartProps>(function E
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<EmvSettings>(defaultSettingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<EmvSettings>(defaultSettingFormOptions);
 
   const [emvData, setEmvData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -94,6 +94,7 @@ export const EmvChart = forwardRef<o.Option<ChartObj>, EmvChartProps>(function E
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <form className="flex flex-col py-6">
                 <Divider>Style</Divider>

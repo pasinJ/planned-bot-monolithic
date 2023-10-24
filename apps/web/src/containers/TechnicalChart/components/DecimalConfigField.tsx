@@ -1,3 +1,4 @@
+import { flow } from 'fp-ts/lib/function';
 import { Control, Path, useController } from 'react-hook-form';
 
 import DecimalField from '#components/DecimalField';
@@ -11,12 +12,14 @@ export default function DecimalConfidField<T extends Record<N, DecimalString>, N
 }) {
   const { id, name, label, control } = props;
 
-  const { field, fieldState } = useController({
+  const {
+    field: { value, ref: inputRef, onChange, onBlur, ...restProps },
+    fieldState,
+  } = useController({
     name: name as unknown as Path<T>,
     control,
     rules: { required: `${label} is required` },
   });
-  const { value, ref: inputRef, onChange, ...restProps } = field;
 
   return (
     <DecimalField
@@ -26,7 +29,7 @@ export default function DecimalConfidField<T extends Record<N, DecimalString>, N
       value={value as DecimalString}
       {...restProps}
       onChange={onChange}
-      onBlur={onChange}
+      onBlur={flow(onChange, onBlur)}
       inputRef={inputRef}
       error={fieldState.invalid}
       helperText={fieldState.error?.message ?? ' '}

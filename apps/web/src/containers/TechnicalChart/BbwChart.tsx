@@ -63,7 +63,7 @@ export const BbwChart = forwardRef<o.Option<ChartObj>, BbwChartProps>(function B
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<BbwSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<BbwSettings>(settingFormOptions);
   const { source, period, stddev, color } = getValues();
 
   const [bbwData, setBbwData] = useState<o.Option<LineData[]>>(o.none);
@@ -103,6 +103,7 @@ export const BbwChart = forwardRef<o.Option<ChartObj>, BbwChartProps>(function B
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

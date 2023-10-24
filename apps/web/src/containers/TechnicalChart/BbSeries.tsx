@@ -75,7 +75,7 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
 
-  const { control, getValues, reset } = useForm<BbSettings>(defaultSettingsFormOptions);
+  const { control, getValues, reset, trigger } = useForm<BbSettings>(defaultSettingsFormOptions);
   const { name, source, period, stddev, upperLineColor, middleLineColor, lowerLineColor } = getValues();
 
   const upperSeriesOptions = useMemo(
@@ -203,7 +203,13 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
         handleRemoveSeries={handleRemoveSeries}
         handleSettingOpen={handleSettingOpen}
       />
-      <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
+      <SettingsModal
+        open={settingOpen}
+        onClose={handleClose}
+        reset={reset}
+        prevValue={getValues()}
+        validSettings={trigger}
+      >
         <SettingsForm control={control} />
       </SettingsModal>
     </>

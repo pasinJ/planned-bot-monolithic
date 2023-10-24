@@ -58,7 +58,7 @@ export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function P
     () => mergeDeepRight(defaultSettingFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<PvtSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<PvtSettings>(settingFormOptions);
 
   const pvtData: LineData[] = useMemo(
     () =>
@@ -93,6 +93,7 @@ export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function P
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <form className="flex flex-col py-6">
                 <Divider>Style</Divider>

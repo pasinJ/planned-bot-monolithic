@@ -60,7 +60,7 @@ export const RocChart = forwardRef<o.Option<ChartObj>, RocChartProps>(function R
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<RocSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<RocSettings>(settingFormOptions);
   const { source, period, color } = getValues();
 
   const [rocData, setRocData] = useState<o.Option<LineData[]>>(o.none);
@@ -99,6 +99,7 @@ export const RocChart = forwardRef<o.Option<ChartObj>, RocChartProps>(function R
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

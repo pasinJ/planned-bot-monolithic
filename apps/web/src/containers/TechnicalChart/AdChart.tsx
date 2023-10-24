@@ -54,7 +54,7 @@ export const AdChart = forwardRef<o.Option<ChartObj>, AdChartProps>(function AdC
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<AdSettings>(defaultSettingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<AdSettings>(defaultSettingFormOptions);
 
   const [adData, setAdData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -94,6 +94,7 @@ export const AdChart = forwardRef<o.Option<ChartObj>, AdChartProps>(function AdC
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <form className="flex flex-col py-6">
                 <Divider>Style</Divider>

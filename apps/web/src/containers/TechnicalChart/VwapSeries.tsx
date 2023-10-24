@@ -50,7 +50,7 @@ export const VwapSeries = forwardRef<o.Option<SeriesObj>, VwapSeriesProps>(funct
     () => mergeDeepRight(defaultSettingsFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<VwapSettings>(formOptions);
+  const { control, getValues, reset, trigger } = useForm<VwapSettings>(formOptions);
   const { name, period, color } = getValues();
 
   const seriesOptions = useMemo(
@@ -97,7 +97,13 @@ export const VwapSeries = forwardRef<o.Option<SeriesObj>, VwapSeriesProps>(funct
         handleSettingOpen={handleSettingOpen}
         handleRemoveSeries={handleRemoveSeries}
       >
-        <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
+        <SettingsModal
+          open={settingOpen}
+          onClose={handleClose}
+          reset={reset}
+          prevValue={getValues()}
+          validSettings={trigger}
+        >
           <form className="flex flex-col space-y-2 py-6">
             <div className="flex flex-col space-y-2">
               <NameField control={control} />

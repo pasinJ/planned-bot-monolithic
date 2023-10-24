@@ -52,7 +52,7 @@ export const EmaSeries = forwardRef<o.Option<SeriesObj>, EmaSeriesProps>(functio
     () => mergeDeepRight(defaultSettingsFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<EmaSettings>(formOptions);
+  const { control, getValues, reset, trigger } = useForm<EmaSettings>(formOptions);
   const { name, source, period, color } = getValues();
 
   const seriesOptions = useMemo(
@@ -100,7 +100,13 @@ export const EmaSeries = forwardRef<o.Option<SeriesObj>, EmaSeriesProps>(functio
         handleSettingOpen={handleSettingOpen}
         handleRemoveSeries={handleRemoveSeries}
       >
-        <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
+        <SettingsModal
+          open={settingOpen}
+          onClose={handleClose}
+          reset={reset}
+          prevValue={getValues()}
+          validSettings={trigger}
+        >
           <form className="flex flex-col space-y-2 py-6">
             <div className="flex flex-col space-y-2">
               <NameField control={control} />

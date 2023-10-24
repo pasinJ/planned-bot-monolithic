@@ -58,7 +58,7 @@ export const ObvChart = forwardRef<o.Option<ChartObj>, ObvChartProps>(function O
     () => mergeDeepRight(defaultSettingFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<ObvSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<ObvSettings>(settingFormOptions);
 
   const [obvData, setObvData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -98,6 +98,7 @@ export const ObvChart = forwardRef<o.Option<ChartObj>, ObvChartProps>(function O
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <form className="flex flex-col py-6">
                 <Divider>Style</Divider>

@@ -57,7 +57,7 @@ export const MomChart = forwardRef<o.Option<ChartObj>, MomChartProps>(function M
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<MomSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<MomSettings>(settingFormOptions);
   const { source, period, color } = getValues();
 
   const [momData, setMomData] = useState<o.Option<LineData[]>>(o.none);
@@ -96,6 +96,7 @@ export const MomChart = forwardRef<o.Option<ChartObj>, MomChartProps>(function M
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

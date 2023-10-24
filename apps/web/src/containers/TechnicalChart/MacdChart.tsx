@@ -74,7 +74,7 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<MacdSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<MacdSettings>(settingFormOptions);
   const {
     source,
     shortPeriod,
@@ -145,6 +145,7 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

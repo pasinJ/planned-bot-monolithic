@@ -1,3 +1,4 @@
+import { flow } from 'fp-ts/lib/function';
 import { Control, Path, useController } from 'react-hook-form';
 
 import IntegerField from '#components/IntegerField';
@@ -11,12 +12,17 @@ export default function IntegerConfidField<T extends Record<N, IntegerString>, N
 }) {
   const { id, name, label, control } = props;
 
-  const { field, fieldState } = useController({
+  const {
+    field: { value, ref: inputRef, onChange, onBlur, ...restProps },
+    fieldState,
+  } = useController({
     name: name as unknown as Path<T>,
     control,
-    rules: { required: `${label} is required` },
+    rules: {
+      required: `${label} is required`,
+      validate: (value) => (Number(value) <= 0 ? `${label} must be greater than 0` : true),
+    },
   });
-  const { value, ref: inputRef, onChange, ...restProps } = field;
 
   return (
     <IntegerField
@@ -26,7 +32,7 @@ export default function IntegerConfidField<T extends Record<N, IntegerString>, N
       value={value as IntegerString}
       {...restProps}
       onChange={onChange}
-      onBlur={onChange}
+      onBlur={flow(onChange, onBlur)}
       inputRef={inputRef}
       allowNegative={false}
       error={fieldState.invalid}

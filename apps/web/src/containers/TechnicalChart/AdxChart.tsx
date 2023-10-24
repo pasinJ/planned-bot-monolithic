@@ -52,7 +52,7 @@ export const AdxChart = forwardRef<o.Option<ChartObj>, AdxChartProps>(function A
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<AdxSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<AdxSettings>(settingFormOptions);
   const { period, color } = getValues();
 
   const [adxData, setAdxData] = useState<o.Option<LineData[]>>(o.none);
@@ -90,6 +90,7 @@ export const AdxChart = forwardRef<o.Option<ChartObj>, AdxChartProps>(function A
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

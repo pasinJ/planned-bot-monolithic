@@ -78,7 +78,7 @@ export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function R
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<RsiSettings>(defaultSettingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<RsiSettings>(defaultSettingFormOptions);
   const { source, period } = getValues();
 
   const [rsiData, setRsiData] = useState<o.Option<LineData[]>>(o.none);
@@ -120,6 +120,7 @@ export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function R
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

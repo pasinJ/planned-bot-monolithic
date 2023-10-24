@@ -71,7 +71,7 @@ export const KcSeries = forwardRef<o.Option<SeriesObj>, KcSeriesProps>(function 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
 
-  const { control, getValues, reset } = useForm<KcSettings>(defaultSettingsFormOptions);
+  const { control, getValues, reset, trigger } = useForm<KcSettings>(defaultSettingsFormOptions);
   const { name, period, stddev, upperLineColor, middleLineColor, lowerLineColor } = getValues();
 
   const upperSeriesOptions = useMemo(
@@ -198,7 +198,13 @@ export const KcSeries = forwardRef<o.Option<SeriesObj>, KcSeriesProps>(function 
         handleRemoveSeries={handleRemoveSeries}
         handleSettingOpen={handleSettingOpen}
       />
-      <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
+      <SettingsModal
+        open={settingOpen}
+        onClose={handleClose}
+        reset={reset}
+        prevValue={getValues()}
+        validSettings={trigger}
+      >
         <SettingsForm control={control} />
       </SettingsModal>
     </>

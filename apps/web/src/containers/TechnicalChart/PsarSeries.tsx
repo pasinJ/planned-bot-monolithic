@@ -53,7 +53,7 @@ export const PsarSeries = forwardRef<o.Option<SeriesObj>, PsarSeriesProps>(funct
     () => mergeDeepRight(defaultSettingsFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<PsarSettings>(formOptions);
+  const { control, getValues, reset, trigger } = useForm<PsarSettings>(formOptions);
   const { name, step, max, color } = getValues();
 
   const seriesOptions = useMemo(
@@ -118,7 +118,13 @@ export const PsarSeries = forwardRef<o.Option<SeriesObj>, PsarSeriesProps>(funct
         handleSettingOpen={handleSettingOpen}
         handleRemoveSeries={handleRemoveSeries}
       >
-        <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
+        <SettingsModal
+          open={settingOpen}
+          onClose={handleClose}
+          reset={reset}
+          prevValue={getValues()}
+          validSettings={trigger}
+        >
           <form className="flex flex-col space-y-2 py-6">
             <div className="flex flex-col space-y-2">
               <NameField control={control} />

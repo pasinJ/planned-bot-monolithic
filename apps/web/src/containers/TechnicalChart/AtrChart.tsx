@@ -52,7 +52,7 @@ export const AtrChart = forwardRef<o.Option<ChartObj>, AtrChartProps>(function A
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<AtrSettings>(settingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<AtrSettings>(settingFormOptions);
   const { period, color } = getValues();
 
   const [atrData, setAtrData] = useState<o.Option<LineData[]>>(o.none);
@@ -90,6 +90,7 @@ export const AtrChart = forwardRef<o.Option<ChartObj>, AtrChartProps>(function A
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>

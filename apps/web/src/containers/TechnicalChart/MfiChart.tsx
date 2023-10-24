@@ -76,7 +76,7 @@ export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function M
   const { container, handleContainerRef } = useChartContainer();
   const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
 
-  const { control, getValues, reset } = useForm<MfiSettings>(defaultSettingFormOptions);
+  const { control, getValues, reset, trigger } = useForm<MfiSettings>(defaultSettingFormOptions);
   const { period } = getValues();
 
   const [mfiData, setMfiData] = useState<o.Option<LineData[]>>(o.none);
@@ -117,6 +117,7 @@ export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function M
               onClose={handleCloseSettings}
               reset={reset}
               prevValue={getValues()}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>
