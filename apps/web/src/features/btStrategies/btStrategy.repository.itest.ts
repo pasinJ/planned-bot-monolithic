@@ -226,3 +226,65 @@ describe('UUT: Update backtesting strategy', () => {
     });
   });
 });
+
+describe('UUT: Execute backtesting strategy', () => {
+  const { method, url } = API_ENDPOINTS.EXECUTE_BT_STRATEGY;
+
+  describe('[WHEN] execute backtesting strategy', () => {
+    it('THEN it will send a request to the server', async () => {
+      const btStrategyId = 'G100BRff4j' as BtStrategyId;
+      const btExecutionId = 'htWiFAzgeV';
+      const btExecutionCreation = new Date('2020-10-11');
+
+      let serverHasBeenCalled = false;
+      server.use(
+        addRestRoute(method, createApiPath(url.replace(':id', btStrategyId)), (_, res, ctx) => {
+          serverHasBeenCalled = true;
+          return res(ctx.status(202), ctx.json({ id: btExecutionId, createdAt: btExecutionCreation }));
+        }),
+      );
+
+      await executeT(btStrategyRepo.executeBtStrategy(btStrategyId));
+
+      expect(serverHasBeenCalled).toBe(true);
+    });
+  });
+
+  describe('[GIVEN] the server responds with successful response of execution ID and creation timestamp', () => {
+    describe('[WHEN] execute backtesting strategy', () => {
+      it('[THEN] it will return Right of the execution ID and creation timestamp', async () => {
+        const btStrategyId = 'G100BRff4j' as BtStrategyId;
+        const btExecutionId = 'htWiFAzgeV';
+        const btExecutionCreation = new Date('2020-10-11');
+
+        server.use(
+          addRestRoute(method, createApiPath(url.replace(':id', btStrategyId)), (_, res, ctx) =>
+            res(ctx.status(202), ctx.json({ id: btExecutionId, createdAt: btExecutionCreation })),
+          ),
+        );
+
+        const result = await executeT(btStrategyRepo.executeBtStrategy(btStrategyId));
+
+        expect(result).toEqualRight({ id: btExecutionId, createdAt: btExecutionCreation });
+      });
+    });
+  });
+
+  describe('[GIVEN] the server responds with HTTP error', () => {
+    describe('[WHEN] execute backtesting strategy', () => {
+      it('[THEN] it will return Left of error', async () => {
+        const btStrategyId = 'G100BRff4j' as BtStrategyId;
+
+        server.use(
+          addRestRoute(method, createApiPath(url.replace(':id', btStrategyId)), (_, res, ctx) =>
+            res(ctx.status(400)),
+          ),
+        );
+
+        const result = await executeT(btStrategyRepo.executeBtStrategy(btStrategyId));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
+      });
+    });
+  });
+});

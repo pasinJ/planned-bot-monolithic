@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { stringDatetimeToDate } from '#shared/common.type';
 
+import { btExecutionId } from './btExecution';
 import { btStrategyIdSchema, btStrategySchema } from './btStrategy';
 
 export const API_ENDPOINTS = {
@@ -25,9 +26,10 @@ export const API_ENDPOINTS = {
     url: '/v1/backtesting-strategies',
     responseSchema: z.object({ id: btStrategyIdSchema, createdAt: stringDatetimeToDate }),
   },
-  UPDATE_BT_STRATEGY: {
-    method: 'PUT',
-    url: '/v1/backtesting-strategies/:id',
-    responseSchema: z.any(),
+  UPDATE_BT_STRATEGY: { method: 'PUT', url: '/v1/backtesting-strategies/:id', responseSchema: z.any() },
+  EXECUTE_BT_STRATEGY: {
+    method: 'POST',
+    url: '/v1/backtesting-strategies/:id/execute',
+    responseSchema: z.object({ id: btExecutionId, createdAt: stringDatetimeToDate }),
   },
 } as const;

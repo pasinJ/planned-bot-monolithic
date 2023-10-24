@@ -9,6 +9,7 @@ import { HttpClient } from '#infra/httpClient.type';
 import { ValidDate } from '#shared/utils/date';
 import { TimezoneString } from '#shared/utils/string';
 
+import { BtExecutionId } from './btExecution';
 import { BtStrategy, BtStrategyId } from './btStrategy';
 import { BtStrategyRepoError, createBtStrategyRepoError } from './btStrategy.repository.error';
 import { API_ENDPOINTS } from './endpoints';
@@ -17,12 +18,14 @@ export type BtStrategyRepo = {
   getBtStrategies: GetBtStrategies;
   addBtStrategy: AddBtStrategy;
   updateBtStrategy: UpdateBtStrategy;
+  executeBtStrategy: ExecuteBtStrategy;
 };
 export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo {
   return {
     getBtStrategies: getBtStrategies({ httpClient }),
     addBtStrategy: addBtStrategy({ httpClient }),
     updateBtStrategy: updateBtStrategy({ httpClient }),
+    executeBtStrategy: executeBtStrategy({ httpClient }),
   };
 }
 
@@ -109,5 +112,25 @@ function updateBtStrategy({ httpClient }: { httpClient: HttpClient }): UpdateBtS
         createBtStrategyRepoError('UpdateBtStrategyFailed', 'Updating backtesting strategy failed', error),
       ),
       te.asUnit,
+    );
+}
+
+type ExecuteBtStrategy = (
+  btStrategyId: BtStrategyId,
+) => te.TaskEither<ExecuteBtStrategyError, ExecuteBtStrategyResult>;
+export type ExecuteBtStrategyError = BtStrategyRepoError<'ExecuteBtStrategyFailed'>;
+export type ExecuteBtStrategyResult = { id: BtExecutionId; createdAt: ValidDate };
+function executeBtStrategy({ httpClient }: { httpClient: HttpClient }): ExecuteBtStrategy {
+  const { method, url, responseSchema } = API_ENDPOINTS.EXECUTE_BT_STRATEGY;
+  return (btStrategyId) =>
+    pipe(
+      httpClient.sendRequest({ method, url: url.replace(':id', btStrategyId), responseSchema }),
+      te.mapLeft((error) =>
+        createBtStrategyRepoError(
+          'ExecuteBtStrategyFailed',
+          'Start execution of backtesting strategy failed',
+          error,
+        ),
+      ),
     );
 }
