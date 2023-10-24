@@ -1,18 +1,46 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 import { dissoc } from 'ramda';
+import { DeepReadonly } from 'ts-essentials';
 
 import { ExchangeName } from '#features/exchanges/exchange';
 import { Timeframe } from '#features/klines/kline';
 import { BaseAsset, QuoteAsset, SymbolName } from '#features/symbols/symbol';
 import { HttpClient } from '#infra/httpClient.type';
 import { ValidDate } from '#shared/utils/date';
-import { TimezoneString } from '#shared/utils/string';
+import { DurationString, TimezoneString } from '#shared/utils/string';
 
-import { BtExecutionId, BtExecutionStatus, ExecutionLogs, ProgressPercentage } from './btExecution';
+import {
+  BtExecutionId,
+  BtExecutionStatus,
+  ExecutionLogs,
+  ExecutionTime,
+  ProgressPercentage,
+} from './btExecution';
 import { BtStrategy, BtStrategyId } from './btStrategy';
 import { BtStrategyRepoError, createBtStrategyRepoError } from './btStrategy.repository.error';
 import { API_ENDPOINTS } from './endpoints';
+import {
+  CanceledOrder,
+  FilledOrder,
+  OpeningOrder,
+  RejectedOrder,
+  SubmittedOrder,
+  TriggeredOrder,
+} from './order';
+import {
+  BuyAndHoldReturn,
+  MaxEquityDrawdown,
+  MaxEquityRunup,
+  NetLoss,
+  NetProfit,
+  ProfitFactor,
+  ReturnOfInvestment,
+  TotalFees,
+  TotalTradeVolume,
+  WinLossMetrics,
+} from './performance';
+import { ClosedTrade, NetReturn, OpeningTrade } from './trade';
 
 export type BtStrategyRepo = {
   getBtStrategies: GetBtStrategies;
@@ -20,6 +48,7 @@ export type BtStrategyRepo = {
   updateBtStrategy: UpdateBtStrategy;
   executeBtStrategy: ExecuteBtStrategy;
   getExecutionProgress: GetExecutionProgress;
+  getExecutionResult: GetExecutionResult;
 };
 export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo {
   return {
@@ -28,6 +57,7 @@ export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient })
     updateBtStrategy: updateBtStrategy({ httpClient }),
     executeBtStrategy: executeBtStrategy({ httpClient }),
     getExecutionProgress: getExecutionProgress({ httpClient }),
+    getExecutionResult: getExecutionResult({ httpClient }),
   };
 }
 
@@ -158,6 +188,54 @@ function getExecutionProgress({ httpClient }: { httpClient: HttpClient }): GetEx
       }),
       te.mapLeft((error) =>
         createBtStrategyRepoError('GetExecutionProgressFailed', 'Getting execution progress failed', error),
+      ),
+    );
+}
+
+type GetExecutionResult = (
+  btStrategyId: BtStrategyId,
+  btExecutionId: BtExecutionId,
+) => te.TaskEither<GetExecutionResultError, GetExecutionResultResp>;
+export type GetExecutionResultError = BtStrategyRepoError<'GetExecutionResultFailed'>;
+export type GetExecutionResultResp = DeepReadonly<{
+  status: 'FINISHED';
+  executionTimeMs: ExecutionTime;
+  logs: ExecutionLogs;
+  orders: {
+    openingOrders: OpeningOrder[];
+    submittedOrders: SubmittedOrder[];
+    triggeredOrders: TriggeredOrder[];
+    filledOrders: FilledOrder[];
+    canceledOrders: CanceledOrder[];
+    rejectedOrders: RejectedOrder[];
+  };
+  trades: { openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] };
+  performance: {
+    netReturn: NetReturn;
+    netProfit: NetProfit;
+    netLoss: NetLoss;
+    buyAndHoldReturn: BuyAndHoldReturn;
+    maxDrawdown: MaxEquityDrawdown;
+    maxRunup: MaxEquityRunup;
+    returnOfInvestment: ReturnOfInvestment;
+    profitFactor: ProfitFactor;
+    totalTradeVolume: TotalTradeVolume;
+    totalFees: TotalFees;
+    backtestDuration: DurationString;
+    winLossMetrics: WinLossMetrics;
+  };
+}>;
+function getExecutionResult({ httpClient }: { httpClient: HttpClient }): GetExecutionResult {
+  const { method, url, responseSchema } = API_ENDPOINTS.GET_EXECUTION_RESULT;
+  return (btStrategyId, btExecutionId) =>
+    pipe(
+      httpClient.sendRequest({
+        method,
+        url: url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', btExecutionId),
+        responseSchema,
+      }),
+      te.mapLeft((error) =>
+        createBtStrategyRepoError('GetExecutionResultFailed', 'Getting execution result failed', error),
       ),
     );
 }

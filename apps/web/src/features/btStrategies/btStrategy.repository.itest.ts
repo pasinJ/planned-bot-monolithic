@@ -11,7 +11,7 @@ import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/btStrategy';
 import { addRestRoute, createApiPath } from '#test-utils/msw';
 
-import { BtExecutionId } from './btExecution';
+import { BtExecutionId, btExecutionStatusEnum } from './btExecution';
 import { BtStrategyId } from './btStrategy';
 import { AddBtStrategyRequest, UpdateBtStrategyRequest, createBtStrategyRepo } from './btStrategy.repository';
 import { isBtStrategyRepoError } from './btStrategy.repository.error';
@@ -357,6 +357,114 @@ describe('UUT: Get execution progress', () => {
         );
 
         const result = await executeT(btStrategyRepo.getExecutionProgress(btStrategyId, btExecutionId));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
+      });
+    });
+  });
+});
+
+describe('UUT: Get execution result', () => {
+  const { method, url } = API_ENDPOINTS.GET_EXECUTION_RESULT;
+  const response = {
+    status: btExecutionStatusEnum.FINISHED,
+    executionTimeMs: 10000,
+    logs: ['log1'],
+    orders: {
+      openingOrders: [],
+      submittedOrders: [],
+      triggeredOrders: [],
+      filledOrders: [],
+      canceledOrders: [],
+      rejectedOrders: [],
+    },
+    trades: { openingTrades: [], closedTrades: [] },
+    performance: {
+      netReturn: 99,
+      netProfit: 99,
+      netLoss: 99,
+      buyAndHoldReturn: 99,
+      maxDrawdown: 999,
+      maxRunup: 999,
+      returnOfInvestment: 99,
+      profitFactor: 99,
+      totalTradeVolume: 99,
+      totalFees: { inCapitalCurrency: 9, inAssetCurrency: 9 },
+      backtestDuration: '1 days',
+      winLossMetrics: {
+        numOfTotalTrades: 19,
+        numOfWinningTrades: 19,
+        numOfLosingTrades: 19,
+        numOfEvenTrades: 19,
+        winRate: 9.9,
+        lossRate: 9.9,
+        evenRate: 9.9,
+        avgProfit: 9.9,
+        avgLoss: 9.9,
+        largestProfit: 9.9,
+        largestLoss: 9.9,
+      },
+    },
+  };
+
+  describe('[WHEN] get execution result', () => {
+    it('[THEN] it will send a request to the server', async () => {
+      const btStrategyId = '8szSkrNS4N' as BtStrategyId;
+      const btExecutionId = 'SJ-jRbgW0Z' as BtExecutionId;
+      const transformedUrl = url
+        .replace(':btStrategyId', btStrategyId)
+        .replace(':btExecutionId', btExecutionId);
+
+      let serverHasBeenCalled = false;
+      server.use(
+        addRestRoute(method, createApiPath(transformedUrl), (_, res, ctx) => {
+          serverHasBeenCalled = true;
+          return res(ctx.status(200), ctx.json(response));
+        }),
+      );
+
+      await executeT(btStrategyRepo.getExecutionResult(btStrategyId, btExecutionId));
+
+      expect(serverHasBeenCalled).toBe(true);
+    });
+  });
+
+  describe('[GIVEN] the server responds successful response', () => {
+    describe('[WHEN] get execution result', () => {
+      it('[THEN] it will return Right of the response', async () => {
+        const btStrategyId = '8szSkrNS4N' as BtStrategyId;
+        const btExecutionId = 'SJ-jRbgW0Z' as BtExecutionId;
+        const transformedUrl = url
+          .replace(':btStrategyId', btStrategyId)
+          .replace(':btExecutionId', btExecutionId);
+
+        server.use(
+          addRestRoute(method, createApiPath(transformedUrl), (_, res, ctx) =>
+            res(ctx.status(200), ctx.json(response)),
+          ),
+        );
+
+        const result = await executeT(btStrategyRepo.getExecutionResult(btStrategyId, btExecutionId));
+
+        expect(result).toEqualRight(response);
+      });
+    });
+  });
+
+  describe('[GIVEN] the server responds HTTP error', () => {
+    describe('[WHEN] get execution result', () => {
+      it('[THEN] it will return Left of error', async () => {
+        const btStrategyId = '8szSkrNS4N' as BtStrategyId;
+        const btExecutionId = 'SJ-jRbgW0Z' as BtExecutionId;
+        const transformedUrl = url
+          .replace(':btStrategyId', btStrategyId)
+          .replace(':btExecutionId', btExecutionId);
+
+        server.use(
+          addRestRoute(method, createApiPath(transformedUrl), (_, res, ctx) => res(ctx.status(404))),
+        );
+
+        const result = await executeT(btStrategyRepo.getExecutionResult(btStrategyId, btExecutionId));
 
         expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
       });

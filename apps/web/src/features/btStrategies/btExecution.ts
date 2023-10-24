@@ -25,3 +25,6 @@ export const progressPercentageSchema = schemaForType<ProgressPercentage>().with
 
 export type ExecutionLogs = readonly string[];
 export const executionLogsSchema = schemaForType<ExecutionLogs>().with(z.array(z.string()));
+
+export type ExecutionTime = number & z.BRAND<'ExecutionTime'>;
+export const executionTimeSchema = schemaForType<ExecutionTime>().with(z.number().brand('ExecutionTime'));
