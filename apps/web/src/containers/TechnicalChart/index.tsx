@@ -24,7 +24,6 @@ import { match } from 'ts-pattern';
 import MaterialSymbol from '#components/MaterialSymbol';
 import { Kline } from '#features/klines/kline';
 import useOpenPopover from '#hooks/useOpenPopover';
-import rawKlines from '#test-utils/klines.json';
 
 import { AdChart, AdChartType } from './AdChart';
 import { AdxChart, AdxChartType } from './AdxChart';
@@ -52,24 +51,6 @@ import { WadChart, WadChartType } from './WadChart';
 import { WmaSeries, WmaSeriesType } from './WmaSeries';
 import { ChartObj } from './containers/ChartContainer';
 import { isMouseInDataRange, isMouseOffChart } from './utils';
-
-const klines = rawKlines.map(
-  ([openTimestamp, open, high, low, close, volume, closeTimestamp, quoteAssetVolume, numOfTrades]) =>
-    ({
-      exchange: 'BINANCE',
-      symbol: 'BTCUSDT',
-      timeframe: '1h',
-      openTimestamp: new Date(openTimestamp),
-      open: Number(open),
-      high: Number(high),
-      low: Number(low),
-      close: Number(close),
-      volume: Number(volume),
-      closeTimestamp: new Date(closeTimestamp),
-      quoteAssetVolume: Number(quoteAssetVolume),
-      numTradests: Number(numOfTrades),
-    }) as unknown as Kline,
-);
 
 type ChartObjs = Map<string, ChartObj>;
 type SeriesMap = Map<string, IndicatorSeriesType>;
@@ -104,7 +85,10 @@ type IndicatorSeriesType =
 type AddSeries = (seriesType: IndicatorSeriesType) => void;
 type AddChart = (chartType: IndicatorChartType) => void;
 
-export default function TechnicalChart() {
+type TechnicalChartProps = { klines: readonly Kline[] };
+export default function TechnicalChart(props: TechnicalChartProps) {
+  const { klines } = props;
+
   const [chartsList, setChartsList] = useState<IndicatorChartType[]>(['price']);
   const handleAddChart: AddChart = (chartType) => setChartsList(flow(append(chartType), uniq));
   const handleRemoveChart = (chartType: IndicatorChartType) => setChartsList(reject(equals(chartType)));

@@ -55,7 +55,7 @@ export default function StrategyDetailsStep(props: StrategyDetailsStepProps) {
             Technical chart
           </AccordionSummary>
           <AccordionDetails>
-            <TechnicalChart />
+            <TechnicalChart klines={queryKlinesResult.data ?? []} />
           </AccordionDetails>
         </Accordion>
         <div className="mt-4 flex gap-x-6">
