@@ -25,4 +25,9 @@ export const API_ENDPOINTS = {
     url: '/v1/backtesting-strategies',
     responseSchema: z.object({ id: btStrategyIdSchema, createdAt: stringDatetimeToDate }),
   },
+  UPDATE_BT_STRATEGY: {
+    method: 'PUT',
+    url: '/v1/backtesting-strategies/:id',
+    responseSchema: z.any(),
+  },
 } as const;

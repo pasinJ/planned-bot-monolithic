@@ -21,7 +21,7 @@ export function renderWithContexts(
   contexts: {
     clientState?: PreloadedState<RootState>;
     infraContext?: DeepPartial<InfraContextValue>;
-    routes?: RouteObject[];
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return render(ui, { wrapper: ContextWrapper(layers, contexts) });
@@ -33,7 +33,7 @@ export function renderHookWithContexts<R>(
   contexts: {
     clientState?: PreloadedState<RootState>;
     infraContext?: DeepPartial<InfraContextValue>;
-    routes?: RouteObject[];
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return renderHook(() => hook(), { wrapper: ContextWrapper(layers, contexts) });
@@ -44,13 +44,13 @@ export function renderWithAppContext(
   contexts: {
     clientState?: PreloadedState<RootState>;
     infraContext?: DeepPartial<InfraContextValue>;
-    routes?: RouteObject[];
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return render(ui, {
     wrapper: ({ children }: PropsWithChildren) =>
       flow(
-        RoutesWrapper(contexts.routes),
+        RoutesWrapper(contexts.routes?.uiPath, contexts.routes?.currentPath, contexts.routes?.routes),
         DateWrapper,
         StyleWrapper,
         ServerStateWrapper,
@@ -65,13 +65,18 @@ function ContextWrapper(
   contexts: {
     clientState?: PreloadedState<RootState>;
     infraContext?: DeepPartial<InfraContextValue>;
-    routes?: RouteObject[];
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return ({ children }: PropsWithChildren) => {
     let element = children;
 
-    if (includes('Routes', layers)) element = RoutesWrapper(contexts.routes)(element);
+    if (includes('Routes', layers))
+      element = RoutesWrapper(
+        contexts.routes?.uiPath,
+        contexts.routes?.currentPath,
+        contexts.routes?.routes,
+      )(element);
     if (includes('Date', layers)) element = DateWrapper(element);
     if (includes('Style', layers)) element = StyleWrapper(element);
     if (includes('ServerState', layers)) element = ServerStateWrapper(element);
@@ -98,12 +103,11 @@ function ServerStateWrapper(ui: ReactNode) {
 function StyleWrapper(ui: ReactNode) {
   return <StyleProvider rootElem={document.body}>{ui}</StyleProvider>;
 }
-function RoutesWrapper(routes: RouteObject[] = []) {
+function RoutesWrapper(uiPath = '/', currentPath = '/', routes: RouteObject[] = []) {
   return (ui: ReactNode) => {
-    const options = { element: ui, path: '/' };
+    const options = { element: ui, path: uiPath };
     const router = createMemoryRouter([options, ...routes], {
-      initialEntries: [options.path],
-      initialIndex: 1,
+      initialEntries: [currentPath],
     });
     return <RouterProvider router={router} />;
   };
