@@ -9,7 +9,7 @@ import { HttpClient } from '#infra/httpClient.type';
 import { ValidDate } from '#shared/utils/date';
 import { TimezoneString } from '#shared/utils/string';
 
-import { BtExecutionId } from './btExecution';
+import { BtExecutionId, BtExecutionStatus, ExecutionLogs, ProgressPercentage } from './btExecution';
 import { BtStrategy, BtStrategyId } from './btStrategy';
 import { BtStrategyRepoError, createBtStrategyRepoError } from './btStrategy.repository.error';
 import { API_ENDPOINTS } from './endpoints';
@@ -19,6 +19,7 @@ export type BtStrategyRepo = {
   addBtStrategy: AddBtStrategy;
   updateBtStrategy: UpdateBtStrategy;
   executeBtStrategy: ExecuteBtStrategy;
+  getExecutionProgress: GetExecutionProgress;
 };
 export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo {
   return {
@@ -26,6 +27,7 @@ export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient })
     addBtStrategy: addBtStrategy({ httpClient }),
     updateBtStrategy: updateBtStrategy({ httpClient }),
     executeBtStrategy: executeBtStrategy({ httpClient }),
+    getExecutionProgress: getExecutionProgress({ httpClient }),
   };
 }
 
@@ -131,6 +133,31 @@ function executeBtStrategy({ httpClient }: { httpClient: HttpClient }): ExecuteB
           'Start execution of backtesting strategy failed',
           error,
         ),
+      ),
+    );
+}
+
+type GetExecutionProgress = (
+  btStrategyId: BtStrategyId,
+  btExecutionId: BtExecutionId,
+) => te.TaskEither<GetExecutionProgressError, GetExecutionProgressResult>;
+export type GetExecutionProgressError = BtStrategyRepoError<'GetExecutionProgressFailed'>;
+export type GetExecutionProgressResult = {
+  status: BtExecutionStatus;
+  percentage: ProgressPercentage;
+  logs: ExecutionLogs;
+};
+function getExecutionProgress({ httpClient }: { httpClient: HttpClient }): GetExecutionProgress {
+  const { method, url, responseSchema } = API_ENDPOINTS.GET_EXECUTION_PROGRESS;
+  return (btStrategyId, btExecutionId) =>
+    pipe(
+      httpClient.sendRequest({
+        method,
+        url: url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', btExecutionId),
+        responseSchema,
+      }),
+      te.mapLeft((error) =>
+        createBtStrategyRepoError('GetExecutionProgressFailed', 'Getting execution progress failed', error),
       ),
     );
 }
