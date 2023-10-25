@@ -18,6 +18,7 @@ import type { StrategyModule } from "./StrategyModule.js";
 import type { TechnicalAnalysisModule } from "./TechnicalAnalysisModule.js";
 import type { SystemModule } from "./SystemModule.js";
 import { LodashModule } from "./LodashModule.js";
+import { Console } from "./Console.js";
 
 declare global {
   var klines: KlinesModule;
@@ -27,6 +28,7 @@ declare global {
   var ta: TechnicalAnalysisModule;
   var system: SystemModule;
   var lodash: LodashModule;
+  var console: Console;
 }
 
 export {
