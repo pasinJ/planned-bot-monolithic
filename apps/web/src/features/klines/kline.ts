@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { ExchangeName, exchangeNameSchema } from '#features/exchanges/exchange';
 import { SymbolName, symbolNameSchema } from '#features/symbols/symbol';
-import { ValidDate, utcToZonedTime, validDateSchema } from '#shared/utils/date';
+import { ValidDate, applyTimezoneOffsetToUnix, validDateSchema } from '#shared/utils/date';
 import { TimezoneString } from '#shared/utils/string';
 import { schemaForType } from '#shared/utils/zod';
 
@@ -14,6 +14,7 @@ export type NumTrades = number & z.BRAND<'NumTrades'>;
 export const numTradesSchema = schemaForType<NumTrades>().with(z.number().brand('NumTrades'));
 
 export type Timeframe = z.infer<typeof timeframeSchema>;
+type IntraDayTimeframe = '1s' | '1m' | '3m' | '5m' | '15m' | '30m' | '1h' | '4h' | '6h' | '8h' | '12h';
 export const timeframeSchema = z.enum([
   '1s',
   '1m',
@@ -75,8 +76,12 @@ export function formatKlineTimestamps(kline: Kline, timezone: TimezoneString): K
   return timezone !== 'UTC'
     ? {
         ...kline,
-        openTimestamp: utcToZonedTime(kline.openTimestamp, timezone),
-        closeTimestamp: utcToZonedTime(kline.closeTimestamp, timezone),
+        openTimestamp: applyTimezoneOffsetToUnix(kline.openTimestamp, timezone),
+        closeTimestamp: applyTimezoneOffsetToUnix(kline.closeTimestamp, timezone),
       }
     : kline;
+}
+
+export function isIntraDayTimeframe(timeframe: Timeframe): timeframe is IntraDayTimeframe {
+  return ['1s', '1m', '3m', '5m', '15m', '30m', '1h', '4h', '6h', '8h', '12h'].includes(timeframe);
 }
