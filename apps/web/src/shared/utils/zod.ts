@@ -1,9 +1,10 @@
 import * as e from 'fp-ts/lib/Either';
 import { pipe } from 'fp-ts/lib/function';
-import { isNotNil } from 'ramda';
-import { z } from 'zod';
+import { isNotNil, mapObjIndexed } from 'ramda';
+import { ZodDiscriminatedUnionOption, ZodRawShape, z } from 'zod';
 import { ValidationError, fromZodError, isValidationErrorLike } from 'zod-validation-error';
 
+import { StringDatetimeToDateSchema, stringDatetimeToDate } from '#shared/common.type';
 import { AppError, appErrorSchema, createAppError } from '#shared/errors/appError';
 import { implementZodSchema } from '#shared/errors/utils';
 
@@ -71,11 +72,68 @@ export function validateWithZod<T extends z.ZodTypeAny>(schema: T, errorMessage:
   return isNotNil(input) ? validationPipeline(input) : validationPipeline;
 }
 
-export const schemaForType = <T>() => {
+export function schemaForType<T>() {
   return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     with: <S extends z.ZodType<T, any, any>>(arg: S) => {
       return arg;
     },
   };
-};
+}
+
+type ReplaceDateSchemaWithStringToDate<T extends z.ZodTypeAny> = T extends z.ZodDate
+  ? z.ZodPipeline<StringDatetimeToDateSchema, T>
+  : T extends z.ZodArray<infer E>
+  ? z.ZodPipeline<z.ZodArray<ReplaceDateSchemaWithStringToDate<E>>, T>
+  : T extends z.ZodObject<infer A>
+  ? ReplaceObjWithDateSchemaWithStringToDate<A>
+  : T;
+type ReplaceObjWithDateSchemaWithStringToDate<A extends ZodRawShape> = z.ZodObject<{
+  [K in keyof A]: ReplaceDateSchemaWithStringToDate<A[K]>;
+}>;
+export function replaceDateSchemaWithStringToDate<T extends z.ZodTypeAny>(
+  schema: T,
+): ReplaceDateSchemaWithStringToDate<T> {
+  function replaceDateSchema<T extends z.ZodTypeAny>(schema: T): ReplaceDateSchemaWithStringToDate<T> {
+    /* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+    return schema._def.typeName === 'ZodDate'
+      ? stringDatetimeToDate.pipe(schema)
+      : schema._def.typeName === 'ZodBranded'
+      ? replaceDateSchema(schema._def.type).pipe(schema)
+      : schema._def.typeName === 'ZodReadonly'
+      ? replaceDateSchemaInObject(schema._def.innerType)
+      : schema._def.typeName === 'ZodPipeline'
+      ? replaceDateSchema(schema._def.in).pipe(schema)
+      : schema._def.typeName === 'ZodArray'
+      ? replaceDateSchema(schema._def.type).array().pipe(schema)
+      : schema._def.typeName === 'ZodObject'
+      ? replaceDateSchemaInObject(schema as unknown as z.ZodObject<ZodRawShape>)
+      : schema._def.typeName === 'ZodDiscriminatedUnion'
+      ? replaceDateSchemaInDiscriminatedUnion(
+          schema as unknown as z.ZodDiscriminatedUnion<string, ZodDiscriminatedUnionOption<string>[]>,
+        )
+      : schema;
+    /* eslint-enable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+  }
+  function replaceDateSchemaInObject<A extends ZodRawShape, T extends z.ZodObject<A>>(
+    schema: T,
+  ): ReplaceObjWithDateSchemaWithStringToDate<A> {
+    const newObjSchema = mapObjIndexed((fieldSchema) => replaceDateSchema(fieldSchema), schema._def.shape());
+    return schema.extend(newObjSchema) as ReplaceObjWithDateSchemaWithStringToDate<A>;
+  }
+  function replaceDateSchemaInDiscriminatedUnion<
+    N extends string,
+    O extends z.ZodDiscriminatedUnionOption<N>[],
+    T extends z.ZodDiscriminatedUnion<N, O>,
+  >(schema: T) {
+    return z.discriminatedUnion(
+      schema._def.discriminator,
+      schema._def.options.map((unionSchema) => replaceDateSchemaInObject(unionSchema)) as unknown as [
+        ZodDiscriminatedUnionOption<N>,
+        ...ZodDiscriminatedUnionOption<N>[],
+      ],
+    );
+  }
+
+  return replaceDateSchema(schema);
+}
