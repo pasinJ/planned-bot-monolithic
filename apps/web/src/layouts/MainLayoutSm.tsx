@@ -26,7 +26,7 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
       <SideNav isDrawerOpening={isDrawerOpening} toggleDrawer={toggleDrawer} />
       <Box component="main" className="flex w-full flex-col">
         <Toolbar />
-        <Box className="h-full w-full bg-gray-100 px-4 py-6">{children}</Box>
+        <Box className="relative h-full w-full bg-gray-100 px-4 py-6">{children}</Box>
       </Box>
     </Box>
   );
