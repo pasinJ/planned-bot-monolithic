@@ -26,7 +26,7 @@ export default function useSeriesLegend(props: {
         if (isMouseInDataRange(param.time)) {
           const currentBar = param.seriesData.get(series.right) as LineData | null;
           setLegend(formatLegend(currentBar?.value));
-        } else if (isMouseOffChart(param)) {
+        } else if (isMouseOffChart(param.point)) {
           setLegend(formatLegend(data?.at(-1)?.value));
         } else {
           setLegend('n/a');

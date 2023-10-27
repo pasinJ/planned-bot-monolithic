@@ -22,6 +22,7 @@ import { useContext, useMemo, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import MaterialSymbol from '#components/MaterialSymbol';
+import { Order, formatOrderTimestamp } from '#features/btStrategies/order';
 import { Kline, formatKlineTimestamps, isIntraDayTimeframe } from '#features/klines/kline';
 import useOpenPopover from '#hooks/useOpenPopover';
 import { InfraContext } from '#infra/InfraProvider.context';
@@ -86,15 +87,19 @@ type IndicatorSeriesType =
 type AddSeries = (seriesType: IndicatorSeriesType) => void;
 type AddChart = (chartType: IndicatorChartType) => void;
 
-type TechnicalChartProps = { klines: readonly Kline[] };
+type TechnicalChartProps = { klines: readonly Kline[]; orders?: readonly Order[] };
 export default function TechnicalChart(props: TechnicalChartProps) {
-  const { klines } = props;
+  const { klines, orders } = props;
 
   const { dateService } = useContext(InfraContext);
   const timezone = dateService.getTimezone();
   const localKlines = useMemo(
     () => klines.map((kline) => formatKlineTimestamps(kline, timezone)),
     [klines, timezone],
+  );
+  const localOrders = useMemo(
+    () => orders?.map((order) => formatOrderTimestamp(order, timezone)),
+    [orders, timezone],
   );
 
   const [chartsList, setChartsList] = useState<IndicatorChartType[]>(['price']);
@@ -154,7 +159,7 @@ export default function TechnicalChart(props: TechnicalChartProps) {
             if (mainSeries === undefined) return;
 
             chartObj.getChart().setCrosshairPosition(Infinity, param.time, mainSeries);
-          } else if (isMouseOffChart(param)) {
+          } else if (isMouseOffChart(param.point)) {
             chartObj.getChart().clearCrosshairPosition();
           }
         }
@@ -174,6 +179,7 @@ export default function TechnicalChart(props: TechnicalChartProps) {
           key: chartType,
           ref: handleChartRef(chartType),
           klines: localKlines,
+          orders: localOrders,
           options: chartOptions(index),
           crosshairMoveCb: handleSyncVerticalCrosshair(chartType),
           logicalRangeChangeCb: handleSyncTimeScale(chartType),

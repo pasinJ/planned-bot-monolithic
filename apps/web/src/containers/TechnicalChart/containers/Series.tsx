@@ -20,6 +20,7 @@ import {
   LineStyleOptions,
   MouseEventHandler,
   PriceScaleOptions,
+  SeriesMarker,
   SeriesOptionsCommon,
   Time,
   WhitespaceData,
@@ -73,11 +74,13 @@ export type SeriesProps = PropsWithChildren<
     priceScaleOptions?: DeepPartial<PriceScaleOptions>;
     crosshairMoveCb?: MouseEventHandler<Time>;
     priceLinesOptions?: (CreatePriceLineOptions & { id: string })[];
+    markers?: SeriesMarker<Time>[];
   }
 >;
 
 export const Series = forwardRef<o.Option<SeriesObj>, SeriesProps>(function Series(props, ref) {
-  const { children, type, options, priceScaleOptions, crosshairMoveCb, data, priceLinesOptions } = props;
+  const { children, type, options, priceScaleOptions, crosshairMoveCb, data, priceLinesOptions, markers } =
+    props;
 
   const _parentChart = useContext(ChartContext);
   const _series = useRef<o.Option<SeriesApi>>(o.none);
@@ -149,6 +152,15 @@ export const Series = forwardRef<o.Option<SeriesObj>, SeriesProps>(function Seri
       );
     }
   }, [priceLinesOptions]);
+
+  useLayoutEffect(() => {
+    if (markers) {
+      pipe(
+        _series.current,
+        o.map((series) => series.setMarkers(markers)),
+      );
+    }
+  }, [markers]);
 
   useLayoutEffect(() => {
     pipe(

@@ -1,9 +1,11 @@
+import { pathEq } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
 import { Price, priceSchema } from '#features/klines/kline';
 import { BaseAsset, QuoteAsset, baseAssetSchema, quoteAssetschema } from '#features/symbols/symbol';
-import { ValidDate, validDateSchema } from '#shared/utils/date';
+import { ValidDate, applyTimezoneOffsetToUnix, validDateSchema } from '#shared/utils/date';
+import { TimezoneString } from '#shared/utils/string';
 import { schemaForType } from '#shared/utils/zod';
 
 export type OrderId = string & z.BRAND<'OrderId'>;
@@ -69,6 +71,22 @@ export type Filled = {
 };
 export type Canceled = { status: 'CANCELED'; submittedAt: ValidDate; canceledAt: ValidDate };
 export type Rejected = { status: 'REJECTED'; submittedAt: ValidDate; reason: string };
+
+export type Order =
+  | SubmittedOrder
+  | OpeningOrder
+  | TriggeredOrder
+  | FilledOrder
+  | CanceledOrder
+  | RejectedOrder;
+export type OrdersLists = DeepReadonly<{
+  openingOrders: OpeningOrder[];
+  submittedOrders: SubmittedOrder[];
+  triggeredOrders: TriggeredOrder[];
+  filledOrders: FilledOrder[];
+  canceledOrders: CanceledOrder[];
+  rejectedOrders: RejectedOrder[];
+}>;
 
 export type SubmittedOrder = DeepReadonly<Cancel & Submitted>;
 export const submittedOrderSchema = schemaForType<SubmittedOrder>().with(
@@ -241,6 +259,16 @@ export const rejectedOrderSchema = schemaForType<RejectedOrder>().with(
   z.discriminatedUnion('type', [
     z.object({
       id: orderIdSchema,
+      type: z.literal(orderTypeEnum.MARKET),
+      orderSide: orderSideSchema,
+      quantity: orderQuantitySchema,
+      status: z.literal(orderStatusEnum.REJECTED),
+      reason: z.string(),
+      createdAt: validDateSchema,
+      submittedAt: validDateSchema,
+    }),
+    z.object({
+      id: orderIdSchema,
       type: z.literal(orderTypeEnum.LIMIT),
       orderSide: orderSideSchema,
       quantity: orderQuantitySchema,
@@ -273,16 +301,45 @@ export const rejectedOrderSchema = schemaForType<RejectedOrder>().with(
       createdAt: validDateSchema,
       submittedAt: validDateSchema,
     }),
+    z.object({
+      id: orderIdSchema,
+      type: z.literal(orderTypeEnum.CANCEL),
+      orderIdToCancel: orderIdSchema,
+      status: z.literal(orderStatusEnum.REJECTED),
+      reason: z.string(),
+      createdAt: validDateSchema,
+      submittedAt: validDateSchema,
+    }),
   ]),
 );
 
 export type FilledEntryOrder = Extract<FilledOrder, { orderSide: 'ENTRY' }>;
-export const filledEntryOrderSchema = z.custom<FilledEntryOrder>((value) => {
-  const validateFilledOrder = filledOrderSchema.safeParse(value);
-  return validateFilledOrder.success && validateFilledOrder.data.orderSide === 'ENTRY';
-});
+export const filledEntryOrderSchema = filledOrderSchema.pipe(
+  z.custom<FilledEntryOrder>((value) => pathEq('ENTRY', ['orderSide'], value)),
+);
 export type FilledExitOrder = Extract<FilledOrder, { orderSide: 'EXIT' }>;
-export const filledExitOrderSchema = z.custom<FilledExitOrder>((value) => {
-  const validateFilledOrder = filledOrderSchema.safeParse(value);
-  return validateFilledOrder.success && validateFilledOrder.data.orderSide === 'EXIT';
-});
+export const filledExitOrderSchema = filledOrderSchema.pipe(
+  z.custom<FilledExitOrder>((value) => pathEq('EXIT', ['orderSide'], value)),
+);
+
+export function formatOrderTimestamp<T extends Order>(order: T, timezone: TimezoneString): T {
+  return order.status === 'CANCELED'
+    ? {
+        ...order,
+        createdAt: applyTimezoneOffsetToUnix(order.createdAt, timezone),
+        submittedAt: applyTimezoneOffsetToUnix(order.submittedAt, timezone),
+        canceledAt: applyTimezoneOffsetToUnix(order.canceledAt, timezone),
+      }
+    : order.status === 'FILLED'
+    ? {
+        ...order,
+        createdAt: applyTimezoneOffsetToUnix(order.createdAt, timezone),
+        submittedAt: applyTimezoneOffsetToUnix(order.submittedAt, timezone),
+        filledAt: applyTimezoneOffsetToUnix(order.filledAt, timezone),
+      }
+    : {
+        ...order,
+        createdAt: applyTimezoneOffsetToUnix(order.createdAt, timezone),
+        submittedAt: applyTimezoneOffsetToUnix(order.submittedAt, timezone),
+      };
+}

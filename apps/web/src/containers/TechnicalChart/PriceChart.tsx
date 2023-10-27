@@ -11,6 +11,7 @@ import {
   LogicalRangeChangeEventHandler,
   MouseEventHandler,
   PriceScaleOptions,
+  SeriesMarker,
   SeriesOptionsCommon,
   Time,
   TimeChartOptions,
@@ -19,16 +20,25 @@ import {
 import { mergeDeepRight } from 'ramda';
 import { PropsWithChildren, forwardRef, useCallback, useMemo, useState } from 'react';
 
+import { Order } from '#features/btStrategies/order';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
 import VisibilityButton from './components/VisibilityButton';
+import { ChartContainer, ChartObj } from './containers/ChartContainer';
+import ChartTooltip from './containers/ChartTooltip';
+import { Series, SeriesObj } from './containers/Series';
 import useChartContainer from './hooks/useChartContainer';
 import useSeriesLegend from './hooks/useSeriesLegend';
 import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { downColor, formatLegend, isMouseInDataRange, isMouseOffChart, upColor } from './utils';
+import {
+  downColor,
+  formatLegend,
+  isMouseInDataRange,
+  isMouseOffChart,
+  ordersToMarkersAndEvents,
+  upColor,
+} from './utils';
 
 export type PriceChartType = 'price';
 
@@ -36,12 +46,13 @@ const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 500 };
 
 type PriceChartProps = PropsWithChildren<{
   klines: readonly Kline[];
+  orders?: readonly Order[];
   options?: DeepPartial<TimeChartOptions>;
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
 }>;
 export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(function PriceChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, children } = props;
+  const { klines, orders, options, crosshairMoveCb, logicalRangeChangeCb, children } = props;
 
   const { container, handleContainerRef } = useChartContainer();
 
@@ -58,6 +69,10 @@ export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(functi
     value: volume,
     color: open > close ? downColor : upColor,
   }));
+  const { markers, events } = useMemo(
+    () => (orders ? ordersToMarkersAndEvents(klines, orders) : { markers: undefined, events: undefined }),
+    [klines, orders],
+  );
 
   const chartOptions: DeepPartial<TimeChartOptions> = useMemo(
     () => mergeDeepRight(defaultChartOptions, options ?? {}),
@@ -78,7 +93,7 @@ export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(functi
             <div className=" flex w-fit space-x-6">
               <Typography className="text-2xl font-medium">{symbol}</Typography>
               <div className="flex flex-col">
-                <PriceSeries data={prices} />
+                <PriceSeries data={prices} markers={markers} />
                 <VolumeSeries data={volumes} />
               </div>
             </div>
@@ -86,6 +101,7 @@ export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(functi
               {children}
             </div>
           </div>
+          {events ? <ChartTooltip events={events} /> : undefined}
         </ChartContainer>
       )}
     </div>
@@ -96,10 +112,10 @@ const priceSeriesOption: DeepPartial<CandlestickStyleOptions & SeriesOptionsComm
 const priceScaleOptionsOfPriceSeries: DeepPartial<PriceScaleOptions> = {
   scaleMargins: { top: 0.1, bottom: 0.4 },
 };
-const PriceSeries = forwardRef<o.Option<SeriesObj>, { data: CandlestickData[] }>(function PriceSeries(
-  { data },
-  ref,
-) {
+type PriceSeriesProps = { data: CandlestickData[]; markers?: SeriesMarker<UTCTimestamp>[] };
+const PriceSeries = forwardRef<o.Option<SeriesObj>, PriceSeriesProps>(function PriceSeries(props, ref) {
+  const { data, markers } = props;
+
   const _series = useSeriesObjRef(ref);
   const [hidden, handleToggleHidden] = useClickToggle(false);
 
@@ -132,7 +148,7 @@ const PriceSeries = forwardRef<o.Option<SeriesObj>, { data: CandlestickData[] }>
             low: formatLegend(priceBar.low),
             close: formatLegend(priceBar.close),
           });
-        } else if (isMouseOffChart(param)) {
+        } else if (isMouseOffChart(param.point)) {
           setLegend(lastBarLegend);
         } else {
           setLegend({ open: 'n/a', high: 'n/a', low: 'n/a', close: 'n/a' });
@@ -152,6 +168,7 @@ const PriceSeries = forwardRef<o.Option<SeriesObj>, { data: CandlestickData[] }>
       ref={_series}
       type="Candlestick"
       data={data}
+      markers={markers}
       options={seriesOptions}
       priceScaleOptions={priceScaleOptionsOfPriceSeries}
       crosshairMoveCb={updateLegend}

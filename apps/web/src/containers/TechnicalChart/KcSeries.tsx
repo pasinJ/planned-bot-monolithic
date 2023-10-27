@@ -162,7 +162,7 @@ export const KcSeries = forwardRef<o.Option<SeriesObj>, KcSeriesProps>(function 
           middle: formatLegend(currentMiddleBar?.value),
           lower: formatLegend(currentLowerBar?.value),
         });
-      } else if (isMouseOffChart(param) && o.isSome(kcData)) {
+      } else if (isMouseOffChart(param.point) && o.isSome(kcData)) {
         setLegend({
           upper: formatLegend(kcData.value.upper.at(-1)?.value),
           middle: formatLegend(kcData.value.middle.at(-1)?.value),

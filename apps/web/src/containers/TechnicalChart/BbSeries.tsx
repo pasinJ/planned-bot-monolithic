@@ -167,7 +167,7 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
           middle: formatLegend(currentMiddleBar?.value),
           lower: formatLegend(currentLowerBar?.value),
         });
-      } else if (isMouseOffChart(param) && o.isSome(bbData)) {
+      } else if (isMouseOffChart(param.point) && o.isSome(bbData)) {
         setLegend({
           upper: formatLegend(bbData.value.upper.at(-1)?.value),
           middle: formatLegend(bbData.value.middle.at(-1)?.value),

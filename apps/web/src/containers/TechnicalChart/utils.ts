@@ -1,8 +1,11 @@
-import { getUnixTime } from 'date-fns';
+import { getUnixTime, isAfter, isBefore, isEqual } from 'date-fns';
 import { Decimal } from 'decimal.js';
-import { MouseEventParams, Time, UTCTimestamp } from 'lightweight-charts';
+import { MouseEventParams, SeriesMarker, Time, UTCTimestamp } from 'lightweight-charts';
 import material from 'material-colors';
+import { append, ascend, groupBy, prop, sort, toPairs } from 'ramda';
 
+import { Order } from '#features/btStrategies/order';
+import { Kline } from '#features/klines/kline';
 import { HexColor } from '#shared/utils/string';
 import { isString } from '#shared/utils/typeGuards';
 
@@ -11,11 +14,71 @@ export const sourcesList: Source[] = ['open', 'high', 'low', 'close'];
 
 export const upColor = '#26A69A' as HexColor;
 export const downColor = '#EF5350' as HexColor;
+export const markerColor = '#f7c82d' as HexColor;
 
 export function formatLegend(value: string | number | undefined): string {
   if (isString(value)) return value;
   else if (value === undefined) return 'n/a';
   else return new Decimal(value).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toString();
+}
+
+export function ordersToMarkersAndEvents(
+  klines: readonly Kline[],
+  orders: readonly Order[],
+): { markers: SeriesMarker<UTCTimestamp>[]; events: Map<UTCTimestamp, string[]> } {
+  const orderEvents = orders.flatMap((order) =>
+    order.status === 'REJECTED'
+      ? { time: order.submittedAt, text: `${order.type} order (${order.id}) was rejected` }
+      : order.status === 'CANCELED'
+      ? [
+          { time: order.submittedAt, text: `${order.type} order (${order.id}) was submitted` },
+          { time: order.canceledAt, text: `${order.type} order (${order.id}) was canceled` },
+        ]
+      : order.status === 'FILLED'
+      ? isEqual(order.submittedAt, order.filledAt)
+        ? {
+            time: order.submittedAt,
+            text: `${order.type} order (${order.id}) was submitted and filled at price ${order.filledPrice}`,
+          }
+        : [
+            { time: order.submittedAt, text: `${order.type} order (${order.id}) was submitted` },
+            {
+              time: order.filledAt,
+              text: `${order.type} order (${order.id}) was filled at price ${order.filledPrice}`,
+            },
+          ]
+      : { time: order.submittedAt, text: `${order.type} order (${order.id}) was submitted` },
+  );
+  const groupedOrderEvents = groupBy((event) => event.time.toISOString(), orderEvents);
+
+  const { markers, events } = toPairs(groupedOrderEvents).reduce(
+    ({ markers, events }, [time, event]) => {
+      if (event === undefined) return { markers, events };
+
+      const eventDate = new Date(time);
+      const matchKlineIndex = klines.findIndex(
+        (kline) => !isBefore(eventDate, kline.openTimestamp) && !isAfter(eventDate, kline.closeTimestamp),
+      );
+      const marker: SeriesMarker<UTCTimestamp> | undefined =
+        matchKlineIndex !== -1
+          ? {
+              time: getUnixTime(klines[matchKlineIndex].openTimestamp) as UTCTimestamp,
+              position: matchKlineIndex % 2 === 0 ? 'aboveBar' : 'belowBar',
+              color: markerColor,
+              shape: 'circle',
+              size: 2,
+            }
+          : undefined;
+
+      return {
+        markers: marker ? append(marker, markers) : markers,
+        events: marker ? events.set(marker.time, event.map(prop('text'))) : events,
+      };
+    },
+    { markers: [] as SeriesMarker<UTCTimestamp>[], events: new Map() as Map<UTCTimestamp, string[]> },
+  );
+
+  return { markers: sort(ascend(prop('time')), markers), events };
 }
 
 export function dateToUtcTimestamp(date: Date): UTCTimestamp {
@@ -25,8 +88,8 @@ export function dateToUtcTimestamp(date: Date): UTCTimestamp {
 export function isMouseInDataRange(time: Time | undefined): time is Time {
   return time !== undefined;
 }
-export function isMouseOffChart(param: MouseEventParams): boolean {
-  return param.point === undefined;
+export function isMouseOffChart(point: MouseEventParams['point']): point is undefined {
+  return point === undefined;
 }
 
 const colorPreset: HexColor[] = [
