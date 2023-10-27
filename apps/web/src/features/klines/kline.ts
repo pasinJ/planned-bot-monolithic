@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 import { ExchangeName, exchangeNameSchema } from '#features/exchanges/exchange';
 import { SymbolName, symbolNameSchema } from '#features/symbols/symbol';
-import { ValidDate, validDateSchema } from '#shared/utils/date';
+import { ValidDate, utcToZonedTime, validDateSchema } from '#shared/utils/date';
+import { TimezoneString } from '#shared/utils/string';
 import { schemaForType } from '#shared/utils/zod';
 
 export type Price = number & z.BRAND<'Price'>;
@@ -69,3 +70,13 @@ export const klineSchema = schemaForType<Kline>().with(
     })
     .readonly(),
 );
+
+export function formatKlineTimestamps(kline: Kline, timezone: TimezoneString): Kline {
+  return timezone !== 'UTC'
+    ? {
+        ...kline,
+        openTimestamp: utcToZonedTime(kline.openTimestamp, timezone),
+        closeTimestamp: utcToZonedTime(kline.closeTimestamp, timezone),
+      }
+    : kline;
+}
