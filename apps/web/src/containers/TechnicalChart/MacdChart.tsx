@@ -21,17 +21,13 @@ import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { macd } from './indicators';
 import { Source, dateToUtcTimestamp, downColor, upColor } from './utils';
 
@@ -126,7 +122,7 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
       {o.isNone(container) ? undefined : o.isNone(transformedMacdData) ? (
         <div>Loading...</div>
       ) : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -155,7 +151,7 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
               <HistogramSeries data={transformedMacdData.value.histogram} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
@@ -177,9 +173,15 @@ const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: He
     const seriesOptions = useMemo(() => ({ ...macdSeriesOptions, color }), [color]);
 
     return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+      <Chart.Series
+        ref={_series}
+        type="Line"
+        data={data}
+        options={seriesOptions}
+        crosshairMoveCb={updateLegend}
+      >
         <SeriesLegendWithoutMenus name="MACD" color={seriesOptions.color} legend={legend} />
-      </Series>
+      </Chart.Series>
     );
   },
 );
@@ -200,9 +202,15 @@ const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: 
     const seriesOptions = useMemo(() => ({ ...signalSeriesOptions, color }), [color]);
 
     return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+      <Chart.Series
+        ref={_series}
+        type="Line"
+        data={data}
+        options={seriesOptions}
+        crosshairMoveCb={updateLegend}
+      >
         <SeriesLegendWithoutMenus name="SIGNAL" color={seriesOptions.color} legend={legend} />
-      </Series>
+      </Chart.Series>
     );
   },
 );
@@ -219,7 +227,7 @@ const HistogramSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] 
   const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
   return (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Histogram"
       data={data}
@@ -227,7 +235,7 @@ const HistogramSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] 
       crosshairMoveCb={updateLegend}
     >
       <SeriesLegendWithoutMenus name="HISTOGRAM" color="#696969" legend={legend} />
-    </Series>
+    </Chart.Series>
   );
 });
 

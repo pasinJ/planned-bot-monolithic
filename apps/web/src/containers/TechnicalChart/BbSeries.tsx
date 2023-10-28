@@ -20,6 +20,7 @@ import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { SeriesObj, useSeriesObjRef } from '../Chart';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
@@ -28,8 +29,6 @@ import SettingsButton from './components/SettingButton';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import VisibilityButton from './components/VisibilityButton';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { bb } from './indicators';
 import { Source, dateToUtcTimestamp, formatLegend, isMouseInDataRange, isMouseOffChart } from './utils';
 
@@ -184,15 +183,20 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
     <div>Loading...</div>
   ) : (
     <>
-      <Series
+      <Chart.Series
         ref={_upperSeries}
         type="Line"
         data={bbData.value.upper}
         options={upperSeriesOptions}
         crosshairMoveCb={updateLegend}
       />
-      <Series ref={_middleSeries} type="Line" data={bbData.value.middle} options={middleSeriesOptions} />
-      <Series ref={_lowerSeries} type="Line" data={bbData.value.lower} options={lowerSeriesOptions} />
+      <Chart.Series
+        ref={_middleSeries}
+        type="Line"
+        data={bbData.value.middle}
+        options={middleSeriesOptions}
+      />
+      <Chart.Series ref={_lowerSeries} type="Line" data={bbData.value.lower} options={lowerSeriesOptions} />
       <Legend
         id={id}
         name={name}

@@ -3,8 +3,8 @@ import * as o from 'fp-ts/lib/Option';
 import { AreaData, BaselineData, HistogramData, LineData, MouseEventHandler, Time } from 'lightweight-charts';
 import { MutableRefObject, useCallback, useState } from 'react';
 
-import { SeriesObj } from '../containers/Series';
-import { formatLegend, isMouseInDataRange, isMouseOffChart } from '../utils';
+import { SeriesObj } from '../Series';
+import { formatLegendValue, isMouseInDataRange, isMouseOffChart } from '../utils';
 
 type SeriesData = LineData[] | AreaData[] | HistogramData[] | BaselineData[];
 
@@ -14,7 +14,7 @@ export default function useSeriesLegend(props: {
 }) {
   const { data, seriesRef } = props;
 
-  const [legend, setLegend] = useState<string>(formatLegend(data?.at(-1)?.value));
+  const [legend, setLegend] = useState<string>(formatLegendValue(data?.at(-1)?.value));
   const updateLegend: MouseEventHandler<Time> = useCallback(
     (param) => {
       if (o.isNone(seriesRef.current)) return;
@@ -25,9 +25,9 @@ export default function useSeriesLegend(props: {
       } else {
         if (isMouseInDataRange(param.time)) {
           const currentBar = param.seriesData.get(series.right) as LineData | null;
-          setLegend(formatLegend(currentBar?.value));
+          setLegend(formatLegendValue(currentBar?.value));
         } else if (isMouseOffChart(param.point)) {
-          setLegend(formatLegend(data?.at(-1)?.value));
+          setLegend(formatLegendValue(data?.at(-1)?.value));
         } else {
           setLegend('n/a');
         }

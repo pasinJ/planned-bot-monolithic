@@ -20,17 +20,13 @@ import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import DecimalConfigField from './components/DecimalConfigField';
 import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { rsi } from './indicators';
 import { Source, dateToUtcTimestamp } from './utils';
 
@@ -101,7 +97,7 @@ export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function R
       {o.isNone(container) ? undefined : o.isNone(rsiData) ? (
         <div>Loading...</div>
       ) : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -128,7 +124,7 @@ export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function R
               <RsiSeries data={rsiData.value} settings={getValues()} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
@@ -192,7 +188,7 @@ const RsiSeries = forwardRef<o.Option<SeriesObj>, RsiSeriesProps>(function RsiSe
   );
 
   return (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Line"
       data={data}
@@ -201,7 +197,7 @@ const RsiSeries = forwardRef<o.Option<SeriesObj>, RsiSeriesProps>(function RsiSe
       crosshairMoveCb={updateLegend}
     >
       <SeriesLegendWithoutMenus name="RSI" color={seriesOptions.color} legend={legend} />
-    </Series>
+    </Chart.Series>
   );
 });
 

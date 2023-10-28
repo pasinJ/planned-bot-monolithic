@@ -19,6 +19,7 @@ import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { SeriesObj, useSeriesObjRef } from '../Chart';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
@@ -26,8 +27,6 @@ import RemoveButton from './components/RemoveButton';
 import SettingsButton from './components/SettingButton';
 import SettingsModal from './components/SettingsModal';
 import VisibilityButton from './components/VisibilityButton';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { kc } from './indicators';
 import { dateToUtcTimestamp, formatLegend, isMouseInDataRange, isMouseOffChart } from './utils';
 
@@ -179,15 +178,20 @@ export const KcSeries = forwardRef<o.Option<SeriesObj>, KcSeriesProps>(function 
     <div>Loading...</div>
   ) : (
     <>
-      <Series
+      <Chart.Series
         ref={_upperSeries}
         type="Line"
         data={kcData.value.upper}
         options={upperSeriesOptions}
         crosshairMoveCb={updateLegend}
       />
-      <Series ref={_middleSeries} type="Line" data={kcData.value.middle} options={middleSeriesOptions} />
-      <Series ref={_lowerSeries} type="Line" data={kcData.value.lower} options={lowerSeriesOptions} />
+      <Chart.Series
+        ref={_middleSeries}
+        type="Line"
+        data={kcData.value.middle}
+        options={middleSeriesOptions}
+      />
+      <Chart.Series ref={_lowerSeries} type="Line" data={kcData.value.lower} options={lowerSeriesOptions} />
       <Legend
         id={id}
         name={name}

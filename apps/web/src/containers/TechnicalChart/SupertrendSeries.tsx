@@ -11,15 +11,13 @@ import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { SeriesObj, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ColorField from './components/ColorField';
 import DecimalConfigField from './components/DecimalConfigField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { supertrend } from './indicators';
 import { dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
@@ -109,7 +107,7 @@ export const SupertrendSeries = forwardRef<o.Option<SeriesObj>, SupertrendSeries
     return o.isNone(transformedData) ? (
       <div>Loading...</div>
     ) : (
-      <Series
+      <Chart.Series
         ref={_series}
         type="Line"
         data={transformedData.value}
@@ -151,7 +149,7 @@ export const SupertrendSeries = forwardRef<o.Option<SeriesObj>, SupertrendSeries
             </form>
           </SettingsModal>
         </SeriesLegendWithMenus>
-      </Series>
+      </Chart.Series>
     );
   },
 );

@@ -18,16 +18,12 @@ import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { atr } from './indicators';
 import { dateToUtcTimestamp } from './utils';
 
@@ -71,7 +67,7 @@ export const AtrChart = forwardRef<o.Option<ChartObj>, AtrChartProps>(function A
       {o.isNone(container) ? undefined : o.isNone(atrData) ? (
         <div>Loading...</div>
       ) : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -98,7 +94,7 @@ export const AtrChart = forwardRef<o.Option<ChartObj>, AtrChartProps>(function A
               <AtrSeries data={atrData.value} color={color} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
@@ -120,9 +116,15 @@ const AtrSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: Hex
     const seriesOptions = useMemo(() => ({ ...atrSeriesOptions, color }), [color]);
 
     return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+      <Chart.Series
+        ref={_series}
+        type="Line"
+        data={data}
+        options={seriesOptions}
+        crosshairMoveCb={updateLegend}
+      >
         <SeriesLegendWithoutMenus name="ATR" color={seriesOptions.color} legend={legend} />
-      </Series>
+      </Chart.Series>
     );
   },
 );

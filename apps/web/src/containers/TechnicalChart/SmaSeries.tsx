@@ -10,15 +10,13 @@ import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { SeriesObj, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { sma } from './indicators';
 import { Source, dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
@@ -83,7 +81,7 @@ export const SmaSeries = forwardRef<o.Option<SeriesObj>, SmaSeriesProps>(functio
   return o.isNone(smaData) ? (
     <div>Loading...</div>
   ) : (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Line"
       data={smaData.value}
@@ -120,6 +118,6 @@ export const SmaSeries = forwardRef<o.Option<SeriesObj>, SmaSeriesProps>(functio
           </form>
         </SettingsModal>
       </SeriesLegendWithMenus>
-    </Series>
+    </Chart.Series>
   );
 });

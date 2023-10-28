@@ -10,15 +10,13 @@ import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { SeriesObj, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { vwma } from './indicators';
 import { Source, dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
@@ -83,7 +81,7 @@ export const VwmaSeries = forwardRef<o.Option<SeriesObj>, VwmaSeriesProps>(funct
   return o.isNone(vwmaData) ? (
     <div>Loading...</div>
   ) : (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Line"
       data={vwmaData.value}
@@ -120,6 +118,6 @@ export const VwmaSeries = forwardRef<o.Option<SeriesObj>, VwmaSeriesProps>(funct
           </form>
         </SettingsModal>
       </SeriesLegendWithMenus>
-    </Series>
+    </Chart.Series>
   );
 });

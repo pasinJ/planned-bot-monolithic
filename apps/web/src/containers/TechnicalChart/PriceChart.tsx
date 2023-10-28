@@ -24,13 +24,8 @@ import { Order } from '#features/btStrategies/order';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import VisibilityButton from './components/VisibilityButton';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import ChartTooltip from './containers/ChartTooltip';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import {
   downColor,
   formatLegend,
@@ -82,7 +77,7 @@ export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(functi
   return (
     <div className="relative overflow-hidden" ref={handleContainerRef}>
       {o.isNone(container) ? undefined : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -101,8 +96,8 @@ export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(functi
               {children}
             </div>
           </div>
-          {events ? <ChartTooltip events={events} /> : undefined}
-        </ChartContainer>
+          {events ? <Chart.Tooltip events={events} /> : undefined}
+        </Chart.Container>
       )}
     </div>
   );
@@ -164,7 +159,7 @@ const PriceSeries = forwardRef<o.Option<SeriesObj>, PriceSeriesProps>(function P
   );
 
   return (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Candlestick"
       data={data}
@@ -184,7 +179,7 @@ const PriceSeries = forwardRef<o.Option<SeriesObj>, PriceSeriesProps>(function P
         <Typography>{legend.close}</Typography>
         <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
       </div>
-    </Series>
+    </Chart.Series>
   );
 });
 
@@ -209,7 +204,7 @@ const VolumeSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(
   );
 
   return (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Histogram"
       data={data}
@@ -222,6 +217,6 @@ const VolumeSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(
         <Typography>{legend}</Typography>
         <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
       </div>
-    </Series>
+    </Chart.Series>
   );
 });

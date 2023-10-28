@@ -11,14 +11,12 @@ import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { DecimalString, HexColor } from '#shared/utils/string';
 
+import Chart, { SeriesObj, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ColorField from './components/ColorField';
 import DecimalConfigField from './components/DecimalConfigField';
 import NameField from './components/NameField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { psar } from './indicators';
 import { dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
 
@@ -101,7 +99,7 @@ export const PsarSeries = forwardRef<o.Option<SeriesObj>, PsarSeriesProps>(funct
   return o.isNone(transformedData) ? (
     <div>Loading...</div>
   ) : (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Line"
       data={transformedData.value}
@@ -138,6 +136,6 @@ export const PsarSeries = forwardRef<o.Option<SeriesObj>, PsarSeriesProps>(funct
           </form>
         </SettingsModal>
       </SeriesLegendWithMenus>
-    </Series>
+    </Chart.Series>
   );
 });

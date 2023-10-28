@@ -18,15 +18,11 @@ import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor } from '#shared/utils/string';
 
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { emv } from './indicators';
 import { dateToUtcTimestamp } from './utils';
 
@@ -75,7 +71,7 @@ export const EmvChart = forwardRef<o.Option<ChartObj>, EmvChartProps>(function E
       {o.isNone(container) ? undefined : o.isNone(emvData) ? (
         <div>Loading...</div>
       ) : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -107,7 +103,7 @@ export const EmvChart = forwardRef<o.Option<ChartObj>, EmvChartProps>(function E
               <EmvSeries data={emvData.value} color={getValues().color} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
@@ -129,9 +125,15 @@ const EmvSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: Hex
     const seriesOptions = useMemo(() => ({ ...emvSeriesOptions, color }), [color]);
 
     return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+      <Chart.Series
+        ref={_series}
+        type="Line"
+        data={data}
+        options={seriesOptions}
+        crosshairMoveCb={updateLegend}
+      >
         <SeriesLegendWithoutMenus name="EMV" color={seriesOptions.color} legend={legend} />
-      </Series>
+      </Chart.Series>
     );
   },
 );

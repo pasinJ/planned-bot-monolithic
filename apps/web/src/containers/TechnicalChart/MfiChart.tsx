@@ -26,11 +26,7 @@ import DecimalConfigField from './components/DecimalConfigField';
 import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import { mfi } from './indicators';
 import { dateToUtcTimestamp } from './utils';
 
@@ -98,7 +94,7 @@ export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function M
       {o.isNone(container) ? undefined : o.isNone(mfiData) ? (
         <div>Loading...</div>
       ) : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -125,7 +121,7 @@ export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function M
               <MfiSeries data={mfiData.value} settings={getValues()} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
@@ -189,7 +185,7 @@ const MfiSeries = forwardRef<o.Option<SeriesObj>, MfiSeriesProps>(function MfiSe
   );
 
   return (
-    <Series
+    <Chart.Series
       ref={_series}
       type="Line"
       data={data}
@@ -198,7 +194,7 @@ const MfiSeries = forwardRef<o.Option<SeriesObj>, MfiSeriesProps>(function MfiSe
       crosshairMoveCb={updateLegend}
     >
       <SeriesLegendWithoutMenus name="MFI" color={seriesOptions.color} legend={legend} />
-    </Series>
+    </Chart.Series>
   );
 });
 

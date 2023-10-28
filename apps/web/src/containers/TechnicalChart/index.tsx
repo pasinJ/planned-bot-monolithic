@@ -51,7 +51,7 @@ import { VwapSeries, VwapSeriesType } from './VwapSeries';
 import { VwmaSeries, VwmaSeriesType } from './VwmaSeries';
 import { WadChart, WadChartType } from './WadChart';
 import { WmaSeries, WmaSeriesType } from './WmaSeries';
-import { ChartObj } from './containers/ChartContainer';
+import { ChartObj } from '../Chart/ChartContainer';
 import { isMouseInDataRange, isMouseOffChart } from './utils';
 
 type ChartObjs = Map<string, ChartObj>;

@@ -18,17 +18,13 @@ import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
 import { momentum } from './indicators';
 import { Source, dateToUtcTimestamp } from './utils';
 
@@ -77,7 +73,7 @@ export const MomChart = forwardRef<o.Option<ChartObj>, MomChartProps>(function M
       {o.isNone(container) ? undefined : o.isNone(momData) ? (
         <div>Loading...</div>
       ) : (
-        <ChartContainer
+        <Chart.Container
           ref={ref}
           container={container.value}
           options={chartOptions}
@@ -104,7 +100,7 @@ export const MomChart = forwardRef<o.Option<ChartObj>, MomChartProps>(function M
               <MomentumSeries data={momData.value} color={color} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
@@ -126,9 +122,15 @@ const MomentumSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color
     const seriesOptions = useMemo(() => ({ ...momSeriesOptions, color }), [color]);
 
     return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
+      <Chart.Series
+        ref={_series}
+        type="Line"
+        data={data}
+        options={seriesOptions}
+        crosshairMoveCb={updateLegend}
+      >
         <SeriesLegendWithoutMenus name="MOM" color={seriesOptions.color} legend={legend} />
-      </Series>
+      </Chart.Series>
     );
   },
 );

@@ -1,9 +1,8 @@
 import Typography from '@mui/material/Typography';
 import * as o from 'fp-ts/lib/Option';
-import { MouseEventHandler, Time, UTCTimestamp } from 'lightweight-charts';
+import { MouseEventHandler, MouseEventParams, Time, UTCTimestamp } from 'lightweight-charts';
 import { useCallback, useContext, useLayoutEffect, useState } from 'react';
 
-import { isMouseInDataRange, isMouseOffChart } from '../utils';
 import { ChartContext } from './ChartContainer';
 
 const toolTipWidth = 200;
@@ -88,4 +87,11 @@ export default function ChartTooltip(props: TooltipProps) {
       ))}
     </div>
   );
+}
+
+function isMouseInDataRange(time: Time | undefined): time is Time {
+  return time !== undefined;
+}
+function isMouseOffChart(point: MouseEventParams['point']): point is undefined {
+  return point === undefined;
 }
