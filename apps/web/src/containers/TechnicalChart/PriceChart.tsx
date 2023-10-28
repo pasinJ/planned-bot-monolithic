@@ -1,12 +1,8 @@
 import Typography from '@mui/material/Typography';
-import { getUnixTime } from 'date-fns';
-import * as e from 'fp-ts/lib/Either';
 import * as o from 'fp-ts/lib/Option';
 import {
-  CandlestickData,
   CandlestickStyleOptions,
   DeepPartial,
-  HistogramData,
   HistogramSeriesOptions,
   LogicalRangeChangeEventHandler,
   MouseEventHandler,
@@ -17,25 +13,20 @@ import {
   TimeChartOptions,
   UTCTimestamp,
 } from 'lightweight-charts';
-import { mergeDeepRight } from 'ramda';
-import { PropsWithChildren, forwardRef, useCallback, useMemo, useState } from 'react';
+import { __, mergeDeepRight } from 'ramda';
+import { PropsWithChildren, useMemo } from 'react';
 
 import { Order } from '#features/btStrategies/order';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
+import { to4Digits } from '#shared/utils/number';
 
-import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
+import Chart, { useChartContainer } from '../Chart';
 import VisibilityButton from './components/VisibilityButton';
-import {
-  downColor,
-  formatLegend,
-  isMouseInDataRange,
-  isMouseOffChart,
-  ordersToMarkersAndEvents,
-  upColor,
-} from './utils';
+import { dateToUtcTimestamp, downColor, ordersToMarkersAndEvents, upColor } from './utils';
 
-export type PriceChartType = 'price';
+export type PriceChartType = typeof priceChartType;
+const priceChartType = 'price';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 500 };
 
@@ -46,24 +37,12 @@ type PriceChartProps = PropsWithChildren<{
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
 }>;
-export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(function PriceChart(props, ref) {
+export default function PriceChart(props: PriceChartProps) {
   const { klines, orders, options, crosshairMoveCb, logicalRangeChangeCb, children } = props;
 
   const { container, handleContainerRef } = useChartContainer();
 
   const symbol = klines.at(0)?.symbol ?? '???';
-  const prices = klines.map(({ openTimestamp, open, high, low, close }) => ({
-    time: getUnixTime(openTimestamp) as UTCTimestamp,
-    open,
-    high,
-    low,
-    close,
-  }));
-  const volumes = klines.map(({ openTimestamp, volume, open, close }) => ({
-    time: getUnixTime(openTimestamp) as UTCTimestamp,
-    value: volume,
-    color: open > close ? downColor : upColor,
-  }));
   const { markers, events } = useMemo(
     () => (orders ? ordersToMarkersAndEvents(klines, orders) : { markers: undefined, events: undefined }),
     [klines, orders],
@@ -78,81 +57,48 @@ export const PriceChart = forwardRef<o.Option<ChartObj>, PriceChartProps>(functi
     <div className="relative overflow-hidden" ref={handleContainerRef}>
       {o.isNone(container) ? undefined : (
         <Chart.Container
-          ref={ref}
+          id={priceChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
           logicalRangeChangeCb={logicalRangeChangeCb}
         >
+          {events ? <Chart.Tooltip events={events} /> : undefined}
           <div className="absolute left-3 top-3 z-10 max-w-lg">
             <div className=" flex w-fit space-x-6">
               <Typography className="text-2xl font-medium">{symbol}</Typography>
               <div className="flex flex-col">
-                <PriceSeries data={prices} markers={markers} />
-                <VolumeSeries data={volumes} />
+                <PriceSeries klines={klines} markers={markers} />
+                <VolumeSeries klines={klines} />
               </div>
             </div>
             <div className="flex max-h-48 flex-col space-y-1 overflow-auto whitespace-nowrap scrollbar-thin scrollbar-track-gray-50 scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
               {children}
             </div>
           </div>
-          {events ? <Chart.Tooltip events={events} /> : undefined}
         </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const priceSeriesOption: DeepPartial<CandlestickStyleOptions & SeriesOptionsCommon> = { upColor, downColor };
 const priceScaleOptionsOfPriceSeries: DeepPartial<PriceScaleOptions> = {
   scaleMargins: { top: 0.1, bottom: 0.4 },
 };
-type PriceSeriesProps = { data: CandlestickData[]; markers?: SeriesMarker<UTCTimestamp>[] };
-const PriceSeries = forwardRef<o.Option<SeriesObj>, PriceSeriesProps>(function PriceSeries(props, ref) {
-  const { data, markers } = props;
+type PriceSeriesProps = { klines: readonly Kline[]; markers?: SeriesMarker<UTCTimestamp>[] };
+function PriceSeries(props: PriceSeriesProps) {
+  const { klines, markers } = props;
 
-  const _series = useSeriesObjRef(ref);
   const [hidden, handleToggleHidden] = useClickToggle(false);
 
-  type Legend = { open: string; high: string; low: string; close: string };
-  const lastBarLegend: Legend = useMemo(() => {
-    const lastBar = data.at(-1);
-    return lastBar && 'open' in lastBar
-      ? {
-          open: formatLegend(lastBar.open),
-          high: formatLegend(lastBar.high),
-          low: formatLegend(lastBar.low),
-          close: formatLegend(lastBar.close),
-        }
-      : { open: 'n/a', high: 'n/a', low: 'n/a', close: 'n/a' };
-  }, [data]);
-  const [legend, setLegend] = useState<Legend>(lastBarLegend);
-  const updateLegend: MouseEventHandler<Time> = useCallback(
-    (param) => {
-      if (o.isNone(_series.current)) return;
-
-      const series = _series.current.value.getSeries();
-      if (e.isLeft(series)) {
-        setLegend({ open: 'n/a', high: 'n/a', low: 'n/a', close: 'n/a' });
-      } else {
-        if (isMouseInDataRange(param.time)) {
-          const priceBar = param.seriesData.get(series.right) as CandlestickData;
-          setLegend({
-            open: formatLegend(priceBar.open),
-            high: formatLegend(priceBar.high),
-            low: formatLegend(priceBar.low),
-            close: formatLegend(priceBar.close),
-          });
-        } else if (isMouseOffChart(param.point)) {
-          setLegend(lastBarLegend);
-        } else {
-          setLegend({ open: 'n/a', high: 'n/a', low: 'n/a', close: 'n/a' });
-        }
-      }
-    },
-    [lastBarLegend, _series],
-  );
-
+  const prices = klines.map(({ openTimestamp, open, high, low, close }) => ({
+    time: dateToUtcTimestamp(openTimestamp),
+    open,
+    high,
+    low,
+    close,
+  }));
   const seriesOptions: DeepPartial<CandlestickStyleOptions & SeriesOptionsCommon> = useMemo(
     () => ({ ...priceSeriesOption, visible: !hidden }),
     [hidden],
@@ -160,28 +106,20 @@ const PriceSeries = forwardRef<o.Option<SeriesObj>, PriceSeriesProps>(function P
 
   return (
     <Chart.Series
-      ref={_series}
+      id="price"
       type="Candlestick"
-      data={data}
-      markers={markers}
+      data={prices}
       options={seriesOptions}
+      markers={markers}
       priceScaleOptions={priceScaleOptionsOfPriceSeries}
-      crosshairMoveCb={updateLegend}
     >
       <div className="group flex items-center space-x-1.5">
-        <Typography className="font-medium">O</Typography>
-        <Typography>{legend.open}</Typography>
-        <Typography className="font-medium">H</Typography>
-        <Typography>{legend.high}</Typography>
-        <Typography className="font-medium">L</Typography>
-        <Typography>{legend.low}</Typography>
-        <Typography className="font-medium">C</Typography>
-        <Typography>{legend.close}</Typography>
+        <Chart.SeriesValue defaultValue={prices.at(-1)} formatValue={to4Digits} />
         <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
       </div>
     </Chart.Series>
   );
-});
+}
 
 const volumeSeriesOptions: DeepPartial<HistogramSeriesOptions & SeriesOptionsCommon> = {
   priceFormat: { type: 'volume' },
@@ -190,14 +128,14 @@ const volumeSeriesOptions: DeepPartial<HistogramSeriesOptions & SeriesOptionsCom
 const priceScaleOptionsOfVolumeSeries: DeepPartial<PriceScaleOptions> = {
   scaleMargins: { top: 0.7, bottom: 0 },
 };
-const VolumeSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(function VolumeSeries(
-  { data },
-  ref,
-) {
-  const _series = useSeriesObjRef(ref);
+function VolumeSeries({ klines }: { klines: readonly Kline[] }) {
   const [hidden, handleToggleHidden] = useClickToggle(false);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
+  const volumes = klines.map(({ openTimestamp, volume, open, close }) => ({
+    time: dateToUtcTimestamp(openTimestamp),
+    value: volume,
+    color: open > close ? downColor : upColor,
+  }));
   const seriesOptions: DeepPartial<HistogramSeriesOptions & SeriesOptionsCommon> = useMemo(
     () => ({ ...volumeSeriesOptions, visible: !hidden }),
     [hidden],
@@ -205,18 +143,17 @@ const VolumeSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(
 
   return (
     <Chart.Series
-      ref={_series}
+      id="volume"
       type="Histogram"
-      data={data}
+      data={volumes}
       options={seriesOptions}
       priceScaleOptions={priceScaleOptionsOfVolumeSeries}
-      crosshairMoveCb={updateLegend}
     >
       <div className="group flex items-center space-x-1.5">
         <Typography className="font-medium">Vol</Typography>
-        <Typography>{legend}</Typography>
+        <Chart.SeriesValue defaultValue={volumes.at(-1)?.value} formatValue={to4Digits} />
         <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
       </div>
     </Chart.Series>
   );
-});
+}

@@ -13,24 +13,26 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight, prop } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
 
+import DecimalFieldRf from '#components/DecimalFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
+import { to4Digits } from '#shared/utils/number';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
-import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import DecimalConfigField from './components/DecimalConfigField';
-import IntegerConfigField from './components/IntegerConfigField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { rsi } from './indicators';
 import { Source, dateToUtcTimestamp } from './utils';
 
-export type RsiChartType = 'rsi';
+export type RsiChartType = typeof rsiChartType;
+const rsiChartType = 'rsi';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -68,37 +70,21 @@ type RsiChartProps = {
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: RsiChartType) => void;
 };
-export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function RsiChart(props, ref) {
+export default function RsiChart(props: RsiChartProps) {
   const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
-
-  const { control, getValues, reset, trigger } = useForm<RsiSettings>(defaultSettingFormOptions);
-  const { source, period } = getValues();
-
-  const [rsiData, setRsiData] = useState<o.Option<LineData[]>>(o.none);
-  useEffect(() => {
-    const sourceValue = klines.map(prop(source));
-    void rsi(sourceValue, Number(period))
-      .then((rsi) =>
-        rsi.map((value, index) => ({
-          time: dateToUtcTimestamp(klines[index].openTimestamp),
-          value,
-        })),
-      )
-      .then((data) => setRsiData(o.some(data)));
-  }, [klines, source, period]);
-
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<RsiSettings>(defaultSettingFormOptions);
+  const settings = getValues();
 
   return (
     <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(rsiData) ? (
-        <div>Loading...</div>
-      ) : (
+      {o.isNone(container) ? undefined : (
         <Chart.Container
-          ref={ref}
+          id={rsiChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
@@ -107,7 +93,7 @@ export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function R
           <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
             <ChartTitleWithMenus
               title="RSI"
-              chartType="rsi"
+              chartType={rsiChartType}
               handleOpenSettings={handleOpenSettings}
               handleRemoveChart={handleRemoveChart}
             />
@@ -115,20 +101,20 @@ export const RsiChart = forwardRef<o.Option<ChartObj>, RsiChartProps>(function R
               open={settingOpen}
               onClose={handleCloseSettings}
               reset={reset}
-              prevValue={getValues()}
+              prevValue={settings}
               validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <RsiSeries data={rsiData.value} settings={getValues()} />
+              <RsiSeries klines={klines} settings={settings} />
             </div>
           </div>
         </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const rsiSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -161,10 +147,12 @@ const oversoldPriceLineOptions: CreatePriceLineOptions & { id: string } = {
   lineStyle: LineStyle.Dashed,
 };
 
-type RsiSeriesProps = { data: LineData[]; settings: RsiSettings };
-const RsiSeries = forwardRef<o.Option<SeriesObj>, RsiSeriesProps>(function RsiSeries(props, ref) {
-  const { data, settings } = props;
+type RsiSeriesProps = { klines: readonly Kline[]; settings: RsiSettings };
+function RsiSeries(props: RsiSeriesProps) {
+  const { klines, settings } = props;
   const {
+    source,
+    period,
     rsiLineColor,
     overboughtLevel,
     overboughtLineColor,
@@ -174,8 +162,18 @@ const RsiSeries = forwardRef<o.Option<SeriesObj>, RsiSeriesProps>(function RsiSe
     oversoldLineColor,
   } = settings;
 
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const [rsiData, setRsiData] = useState<o.Option<LineData[]>>(o.none);
+  useEffect(() => {
+    const sourceValue = klines.map(prop(source));
+    void rsi(sourceValue, Number(period))
+      .then((rsi) =>
+        rsi.map((value, index) => ({
+          time: dateToUtcTimestamp(klines[index].openTimestamp),
+          value,
+        })),
+      )
+      .then((data) => setRsiData(o.some(data)));
+  }, [klines, source, period]);
 
   const seriesOptions = useMemo(() => ({ ...rsiSeriesOptions, color: rsiLineColor }), [rsiLineColor]);
   const priceLinesOptions = useMemo(
@@ -187,33 +185,50 @@ const RsiSeries = forwardRef<o.Option<SeriesObj>, RsiSeriesProps>(function RsiSe
     [overboughtLevel, overboughtLineColor, middleLevel, middleLineColor, oversoldLevel, oversoldLineColor],
   );
 
-  return (
+  return o.isNone(rsiData) ? undefined : (
     <Chart.Series
-      ref={_series}
+      id={rsiChartType}
       type="Line"
-      data={data}
+      data={rsiData.value}
       options={seriesOptions}
       priceLinesOptions={priceLinesOptions}
-      crosshairMoveCb={updateLegend}
     >
-      <SeriesLegendWithoutMenus name="RSI" color={seriesOptions.color} legend={legend} />
+      <SeriesLegendWithoutMenus name="RSI" color={seriesOptions.color}>
+        <Chart.SeriesValue defaultValue={rsiData.value.at(-1)?.value} formatValue={to4Digits} />
+      </SeriesLegendWithoutMenus>
     </Chart.Series>
   );
-});
+}
 
 function SettingsForm({ control }: { control: Control<RsiSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
-        <IntegerConfigField id="period" label="Period" name="period" control={control} />
-        <DecimalConfigField
-          id="overbought-level"
-          label="Overbought"
-          name="overboughtLevel"
-          control={control}
+        <PeriodField control={control} />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'overboughtLevel',
+            rules: { required: `Overbought level is required` },
+          }}
+          fieldProps={{ id: 'overbought-level', label: 'Overbought', required: true }}
         />
-        <DecimalConfigField id="middle-level" label="Middle" name="middleLevel" control={control} />
-        <DecimalConfigField id="oversold-level" label="Oversold" name="oversoldLevel" control={control} />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'middleLevel',
+            rules: { required: `Middle level is required` },
+          }}
+          fieldProps={{ id: 'middle-level', label: 'Middle', required: true }}
+        />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'oversoldLevel',
+            rules: { required: `Oversold level is required` },
+          }}
+          fieldProps={{ id: 'oversold-level', label: 'Oversold', required: true }}
+        />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

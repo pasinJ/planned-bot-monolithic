@@ -11,33 +11,31 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight, prop } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
+import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
-import Chart, { ChartObj, SeriesObj, useChartContainer, useSeriesLegend, useSeriesObjRef } from '../Chart';
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
+import StdDevField from './components/StdDevField';
 import { bb, bbw } from './indicators';
 import { Source, dateToUtcTimestamp } from './utils';
 
-export type BbwChartType = 'bbw';
+export type BbwChartType = typeof bbwChartType;
+const bbwChartType = 'bbw';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
-type BbwSettings = {
-  source: Source;
-  period: IntegerString;
-  stddev: IntegerString;
-  color: HexColor;
-};
+type BbwSettings = { source: Source; period: IntegerString; stddev: IntegerString; color: HexColor };
 const defaultSettings: BbwSettings = {
   source: 'close',
   period: '20' as IntegerString,
@@ -53,14 +51,62 @@ type BbwChartProps = {
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: BbwChartType) => void;
 };
-export const BbwChart = forwardRef<o.Option<ChartObj>, BbwChartProps>(function BbwChart(props, ref) {
+export default function BbwChart(props: BbwChartProps) {
   const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
 
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
   const { control, getValues, reset, trigger } = useForm<BbwSettings>(settingFormOptions);
-  const { source, period, stddev, color } = getValues();
+  const settings = getValues();
+
+  return (
+    <div className="relative" ref={handleContainerRef}>
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={bbwChartType}
+          container={container.value}
+          options={chartOptions}
+          crosshairMoveCb={crosshairMoveCb}
+          logicalRangeChangeCb={logicalRangeChangeCb}
+        >
+          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
+            <ChartTitleWithMenus
+              title="BBW"
+              chartType={bbwChartType}
+              handleOpenSettings={handleOpenSettings}
+              handleRemoveChart={handleRemoveChart}
+            />
+            <SettingsModal
+              open={settingOpen}
+              onClose={handleCloseSettings}
+              reset={reset}
+              prevValue={settings}
+              validSettings={trigger}
+            >
+              <SettingsForm control={control} />
+            </SettingsModal>
+            <div className="flex flex-col">
+              <BbwSeries klines={klines} settings={settings} />
+            </div>
+          </div>
+        </Chart.Container>
+      )}
+    </div>
+  );
+}
+
+const bbwSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+  lineWidth: 2,
+  color: defaultSettings.color,
+  lastValueVisible: false,
+  priceLineVisible: false,
+};
+type BbwSeriesProps = { klines: readonly Kline[]; settings: BbwSettings };
+function BbwSeries(props: BbwSeriesProps) {
+  const { klines, settings } = props;
+  const { source, period, stddev, color } = settings;
 
   const [bbwData, setBbwData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -72,83 +118,24 @@ export const BbwChart = forwardRef<o.Option<ChartObj>, BbwChartProps>(function B
       )
       .then((bbwData) => setBbwData(o.some(bbwData)));
   }, [klines, source, period, stddev]);
+  const seriesOptions = useMemo(() => ({ ...bbwSeriesOptions, color }), [color]);
 
-  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
-
-  return (
-    <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(bbwData) ? (
-        <div>Loading...</div>
-      ) : (
-        <Chart.Container
-          ref={ref}
-          container={container.value}
-          options={chartOptions}
-          crosshairMoveCb={crosshairMoveCb}
-          logicalRangeChangeCb={logicalRangeChangeCb}
-        >
-          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
-            <ChartTitleWithMenus
-              title="BBW"
-              chartType="bbw"
-              handleOpenSettings={handleOpenSettings}
-              handleRemoveChart={handleRemoveChart}
-            />
-            <SettingsModal
-              open={settingOpen}
-              onClose={handleCloseSettings}
-              reset={reset}
-              prevValue={getValues()}
-              validSettings={trigger}
-            >
-              <SettingsForm control={control} />
-            </SettingsModal>
-            <div className="flex flex-col">
-              <BbwSeries data={bbwData.value} color={color} />
-            </div>
-          </div>
-        </Chart.Container>
-      )}
-    </div>
+  return o.isNone(bbwData) ? undefined : (
+    <Chart.Series id={bbwChartType} type="Line" data={bbwData.value} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="BBW" color={seriesOptions.color}>
+        <Chart.SeriesValue defaultValue={bbwData.value.at(-1)?.value} formatValue={to4Digits} />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
   );
-});
-
-const bbwSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  lineWidth: 2,
-  color: defaultSettings.color,
-  lastValueVisible: false,
-  priceLineVisible: false,
-};
-const BbwSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function BbwSeries(props, ref) {
-    const { data, color } = props;
-
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
-
-    const seriesOptions = useMemo(() => ({ ...bbwSeriesOptions, color }), [color]);
-
-    return (
-      <Chart.Series
-        ref={_series}
-        type="Line"
-        data={data}
-        options={seriesOptions}
-        crosshairMoveCb={updateLegend}
-      >
-        <SeriesLegendWithoutMenus name="BBW" color={seriesOptions.color} legend={legend} />
-      </Chart.Series>
-    );
-  },
-);
+}
 
 function SettingsForm({ control }: { control: Control<BbwSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
         <SourceField control={control} />
-        <IntegerConfigField id="period" label="Period" name="period" control={control} />
-        <IntegerConfigField id="stddev" label="StdDev" name="stddev" control={control} />
+        <PeriodField control={control} />
+        <StdDevField control={control} />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

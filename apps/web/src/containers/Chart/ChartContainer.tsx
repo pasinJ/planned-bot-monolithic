@@ -6,38 +6,27 @@ import {
   IChartApi,
   LogicalRangeChangeEventHandler,
   MouseEventHandler,
-  SeriesOptionsCommon,
-  SeriesType,
+  Point,
   Time,
   TimeChartOptions,
+  UTCTimestamp,
   createChart,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
 import {
   PropsWithChildren,
-  createContext,
   forwardRef,
   useCallback,
+  useContext,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
 } from 'react';
 
+import { ChartContext } from './ChartContext';
+import { ChartGroupContext } from './ChartGroupContext';
 import type { SeriesApi } from './Series';
-
-export const ChartContext = createContext<o.Option<ChartObj>>(o.none);
-export type ChartObj = {
-  getChart: () => IChartApi;
-  addSeries: (
-    type: SeriesType,
-    options?: DeepPartial<SeriesOptionsCommon>,
-    crosshairMoveCb?: MouseEventHandler<Time>,
-  ) => SeriesApi;
-  getSeriesList: () => SeriesApi[];
-  removeSeries: (seriesApi: SeriesApi, crosshairMoveCb?: MouseEventHandler<Time>) => void;
-  removeChart: () => void;
-};
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = {
   autoSize: true,
@@ -47,115 +36,119 @@ const defaultChartOptions: DeepPartial<TimeChartOptions> = {
   crosshair: { mode: CrosshairMode.Normal },
 };
 
+export type ChartObj = {
+  getChart: () => IChartApi;
+  removeChart: () => void;
+  addSeries: (seriesId: string, seriesApi: SeriesApi) => void;
+  removeSeries: (seriesId: string) => void;
+  setVerticalCrosshairPosition: (point: Point | undefined, time: UTCTimestamp | undefined) => void;
+  subscribeVerticalCrosshairChange: (callback: CrosshairCallbacks) => void;
+  unsubscribeVerticalCrosshairChange: (callback: CrosshairCallbacks) => void;
+};
+export type CrosshairCallbacks = (point: Point | undefined, time: UTCTimestamp | undefined) => void;
+
 type ChartContainerProps = PropsWithChildren<{
+  id: string;
   container: HTMLElement;
   options?: DeepPartial<TimeChartOptions>;
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
 }>;
-export const ChartContainer = forwardRef<o.Option<ChartObj>, ChartContainerProps>(
-  function ChartContainer(props, ref) {
-    const { children, container, options, crosshairMoveCb, logicalRangeChangeCb } = props;
 
-    const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+export const ChartContainer = forwardRef<ChartObj, ChartContainerProps>(function ChartContainer(props, ref) {
+  const { children, id, container, options, crosshairMoveCb, logicalRangeChangeCb } = props;
 
-    useImperativeHandle(ref, () => o.some(chartObj.current), []);
-    const _chart = useRef<o.Option<IChartApi>>(o.none);
-    const _seriesSet = useRef<Set<SeriesApi>>(new Set());
-    const chartObj = useRef<ChartObj>({
-      getChart() {
-        if (o.isSome(_chart.current)) return _chart.current.value;
+  const parentGroup = useContext(ChartGroupContext);
 
-        const chart = createChart(container, options);
-        chart.timeScale().fitContent();
+  const _chart = useRef<o.Option<IChartApi>>(o.none);
+  const childrenSeries = useRef<Map<string, SeriesApi>>(new Map());
+  const crosshairCallbacks = useRef<Set<CrosshairCallbacks>>(new Set());
+  const chartObj = useRef<ChartObj>({
+    getChart() {
+      if (o.isSome(_chart.current)) return _chart.current.value;
 
-        if (crosshairMoveCb) {
-          chart.subscribeCrosshairMove(crosshairMoveCb);
-        }
-        if (logicalRangeChangeCb) {
-          chart.timeScale().subscribeVisibleLogicalRangeChange(logicalRangeChangeCb);
-        }
+      const chart = createChart(container, options);
+      chart.timeScale().fitContent();
 
-        window.addEventListener('resize', handleResize);
+      if (crosshairMoveCb) {
+        chart.subscribeCrosshairMove(crosshairMoveCb);
+      }
+      if (logicalRangeChangeCb) {
+        chart.timeScale().subscribeVisibleLogicalRangeChange(logicalRangeChangeCb);
+      }
 
-        _chart.current = o.some(chart);
-        _seriesSet.current.clear();
+      window.addEventListener('resize', handleResize);
 
-        return chart;
-      },
-      addSeries(type, options, crosshairMoveCb) {
-        const chart = chartObj.current.getChart();
+      _chart.current = o.some(chart);
+      childrenSeries.current.clear();
+      crosshairCallbacks.current.clear();
 
-        const series: SeriesApi =
-          type === 'Candlestick'
-            ? chart.addCandlestickSeries(options)
-            : type === 'Area'
-            ? chart.addAreaSeries(options)
-            : type === 'Bar'
-            ? chart.addBarSeries(options)
-            : type === 'Baseline'
-            ? chart.addBaselineSeries(options)
-            : type === 'Histogram'
-            ? chart.addHistogramSeries(options)
-            : chart.addLineSeries(options);
+      if (o.isSome(parentGroup)) parentGroup.value.addChart(id, chartObj.current);
 
-        if (crosshairMoveCb) {
-          chart.subscribeCrosshairMove(crosshairMoveCb);
-        }
-
-        _seriesSet.current.add(series);
-
-        return series;
-      },
-      getSeriesList() {
-        return Array.from(_seriesSet.current);
-      },
-      removeSeries(seriesApi, seriesCrosshairMoveCb) {
-        if (o.isNone(_chart.current)) return;
-
-        _chart.current.value.removeSeries(seriesApi);
-        _seriesSet.current.delete(seriesApi);
-
-        if (seriesCrosshairMoveCb) {
-          _chart.current.value.unsubscribeCrosshairMove(seriesCrosshairMoveCb);
-        }
-      },
-      removeChart() {
-        if (o.isNone(_chart.current)) return;
-
-        const chart = _chart.current.value;
-
-        if (crosshairMoveCb) {
-          chart.unsubscribeCrosshairMove(crosshairMoveCb);
-        }
-        if (logicalRangeChangeCb) {
-          chart.timeScale().unsubscribeVisibleLogicalRangeChange(logicalRangeChangeCb);
-        }
-
-        chart.remove();
-
+      return chart;
+    },
+    removeChart() {
+      if (o.isSome(_chart.current)) {
         window.removeEventListener('resize', handleResize);
 
+        if (o.isSome(parentGroup)) parentGroup.value.removeChart(id);
+
+        _chart.current.value.remove();
         _chart.current = o.none;
-        _seriesSet.current.clear();
-      },
-    });
-    const handleResize = useCallback(() => {
-      if (o.isNone(_chart.current)) return;
+        childrenSeries.current.clear();
+        crosshairCallbacks.current.clear();
+      }
+    },
+    addSeries(seriesId, seriesApi) {
+      childrenSeries.current.set(seriesId, seriesApi);
+    },
+    removeSeries(seriesId) {
+      if (o.isSome(_chart.current)) {
+        const seriesApi = childrenSeries.current.get(seriesId);
+        if (seriesApi) {
+          _chart.current.value.removeSeries(seriesApi);
+          childrenSeries.current.delete(seriesId);
+        }
+      }
+    },
+    setVerticalCrosshairPosition(point, time) {
+      if (o.isSome(_chart.current) && childrenSeries.current.size > 0) {
+        const chart = _chart.current.value;
+        const anySeries = Array.from(childrenSeries.current.values())[0];
 
-      _chart.current.value.applyOptions({ ...chartOptions, width: container.clientWidth });
-    }, [chartOptions, container.clientWidth]);
+        if (time !== undefined) chart.setCrosshairPosition(Infinity, time, anySeries);
 
-    useLayoutEffect(() => {
-      chartObj.current.getChart();
+        crosshairCallbacks.current.forEach((callback) => callback(point, time));
+      }
+    },
+    subscribeVerticalCrosshairChange(callback) {
+      return crosshairCallbacks.current.add(callback);
+    },
+    unsubscribeVerticalCrosshairChange(callback) {
+      return crosshairCallbacks.current.delete(callback);
+    },
+  });
 
-      return chartObj.current.removeChart;
-    }, []);
+  const handleResize = useCallback(() => {
+    if (o.isSome(_chart.current)) {
+      const currentOptions = _chart.current.value.options();
+      _chart.current.value.applyOptions({ ...currentOptions, width: container.clientWidth });
+    }
+  }, [container.clientWidth]);
 
-    useLayoutEffect(() => {
-      chartObj.current.getChart().applyOptions(chartOptions);
-    }, [chartOptions]);
+  useImperativeHandle(ref, () => chartObj.current, []);
 
-    return <ChartContext.Provider value={o.some(chartObj.current)}>{children}</ChartContext.Provider>;
-  },
-);
+  useLayoutEffect(() => {
+    chartObj.current.getChart();
+
+    return chartObj.current.removeChart;
+  }, []);
+
+  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+  useLayoutEffect(() => {
+    chartObj.current.getChart().applyOptions(chartOptions);
+  }, [chartOptions]);
+
+  const contextValue = useMemo(() => o.some(chartObj.current), []);
+  return <ChartContext.Provider value={contextValue}>{children}</ChartContext.Provider>;
+});

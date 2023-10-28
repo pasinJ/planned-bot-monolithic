@@ -1,13 +1,11 @@
 import { getUnixTime, isAfter, isBefore, isEqual } from 'date-fns';
-import { Decimal } from 'decimal.js';
-import { MouseEventParams, SeriesMarker, Time, UTCTimestamp } from 'lightweight-charts';
+import { SeriesMarker, UTCTimestamp } from 'lightweight-charts';
 import material from 'material-colors';
 import { append, ascend, groupBy, prop, sort, toPairs } from 'ramda';
 
 import { Order } from '#features/btStrategies/order';
 import { Kline } from '#features/klines/kline';
 import { HexColor } from '#shared/utils/string';
-import { isString } from '#shared/utils/typeGuards';
 
 export type Source = 'open' | 'high' | 'low' | 'close';
 export const sourcesList: Source[] = ['open', 'high', 'low', 'close'];
@@ -15,12 +13,6 @@ export const sourcesList: Source[] = ['open', 'high', 'low', 'close'];
 export const upColor = '#26A69A' as HexColor;
 export const downColor = '#EF5350' as HexColor;
 export const markerColor = '#f7c82d' as HexColor;
-
-export function formatLegend(value: string | number | undefined): string {
-  if (isString(value)) return value;
-  else if (value === undefined) return 'n/a';
-  else return new Decimal(value).toDecimalPlaces(3, Decimal.ROUND_HALF_UP).toString();
-}
 
 export function ordersToMarkersAndEvents(
   klines: readonly Kline[],
@@ -83,13 +75,6 @@ export function ordersToMarkersAndEvents(
 
 export function dateToUtcTimestamp(date: Date): UTCTimestamp {
   return getUnixTime(date) as UTCTimestamp;
-}
-
-export function isMouseInDataRange(time: Time | undefined): time is Time {
-  return time !== undefined;
-}
-export function isMouseOffChart(point: MouseEventParams['point']): point is undefined {
-  return point === undefined;
 }
 
 const colorPreset: HexColor[] = [

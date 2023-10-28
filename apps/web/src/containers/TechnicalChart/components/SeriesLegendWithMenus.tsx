@@ -9,7 +9,7 @@ type SeriesLegendWithMenus = PropsWithChildren<{
   id: string;
   title: string;
   color?: string;
-  legend: string;
+  legend: JSX.Element;
   hidden: boolean;
   handleToggleHidden: MouseEventHandler<HTMLButtonElement>;
   handleRemoveSeries: (id: string) => void;

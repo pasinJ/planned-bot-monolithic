@@ -3,13 +3,10 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Modal, { ModalProps } from '@mui/material/Modal';
 import Typography from '@mui/material/Typography';
-import * as t from 'fp-ts/lib/Task';
-import { pipe } from 'fp-ts/lib/function';
 import { MouseEventHandler } from 'react';
 import { FieldValues, UseFormReset, UseFormTrigger } from 'react-hook-form';
 
 import MaterialSymbol from '#components/MaterialSymbol';
-import { executeT, ioVoid } from '#shared/utils/fp';
 
 type SettingsModalProps<T extends FieldValues> = ModalProps & {
   onClose: MouseEventHandler<HTMLButtonElement>;
@@ -25,11 +22,7 @@ export default function SettingsModal<T extends FieldValues>(props: SettingsModa
     return onClose(e);
   };
   const handleSaveSettings: MouseEventHandler<HTMLButtonElement> = (e) => {
-    void pipe(
-      validSettings,
-      t.map((isValid) => (isValid ? onClose(e) : ioVoid())),
-      executeT,
-    );
+    void validSettings().then((isValid) => (isValid ? onClose(e) : undefined));
   };
 
   return (

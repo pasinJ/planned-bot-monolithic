@@ -2,25 +2,27 @@ import Divider from '@mui/material/Divider';
 import * as o from 'fp-ts/lib/Option';
 import { DeepPartial, LineData, LineStyleOptions, SeriesOptionsCommon } from 'lightweight-charts';
 import { mergeDeepRight, prop } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
-import { UseFormProps, useForm } from 'react-hook-form';
+import { useEffect, useMemo, useState } from 'react';
+import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
+import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
-import Chart, { SeriesObj, useSeriesLegend, useSeriesObjRef } from '../Chart';
+import Chart from '../Chart';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import { wma } from './indicators';
-import { Source, dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
+import { Source, dateToUtcTimestamp, randomHexColor } from './utils';
 
-export type WmaSeriesType = 'wma';
+export type WmaSeriesType = typeof wmaSeriesType;
+const wmaSeriesType = 'wma';
 
 const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
@@ -40,7 +42,7 @@ const defaultSettingsFormOptions: UseFormProps<WmaSettings> = {
 };
 
 type WmaSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
-export const WmaSeries = forwardRef<o.Option<SeriesObj>, WmaSeriesProps>(function WmaSeries(props, ref) {
+export default function WmaSeries(props: WmaSeriesProps) {
   const { id, klines, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
@@ -51,48 +53,22 @@ export const WmaSeries = forwardRef<o.Option<SeriesObj>, WmaSeriesProps>(functio
     [],
   );
   const { control, getValues, reset, trigger } = useForm<WmaSettings>(formOptions);
-  const { name, source, period, color } = getValues();
+  const settings = getValues();
 
   const seriesOptions = useMemo(
-    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color }),
-    [hidden, color],
+    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color: settings.color }),
+    [hidden, settings.color],
   );
 
-  const _series = useSeriesObjRef(ref);
-  const [wmaData, setWmaData] = useState<o.Option<LineData[]>>(o.none);
-  const { legend, updateLegend, setLegend } = useSeriesLegend({
-    data: o.isSome(wmaData) ? wmaData.value : null,
-    seriesRef: _series,
-  });
+  const wmaData = useWmaData(klines, settings);
 
-  useEffect(() => {
-    const sourceValue = klines.map(prop(source)) as number[];
-    void wma(sourceValue, Number(period))
-      .then((wma) =>
-        wma.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
-      )
-      .then((wmaData) => {
-        setWmaData(o.some(wmaData));
-        return wmaData;
-      })
-      .then((wmaData) => setLegend(formatLegend(wmaData.at(-1)?.value)));
-  }, [klines, source, period, setLegend]);
-
-  return o.isNone(wmaData) ? (
-    <div>Loading...</div>
-  ) : (
-    <Chart.Series
-      ref={_series}
-      type="Line"
-      data={wmaData.value}
-      options={seriesOptions}
-      crosshairMoveCb={updateLegend}
-    >
+  return o.isNone(wmaData) ? undefined : (
+    <Chart.Series id={wmaSeriesType} type="Line" data={wmaData.value} options={seriesOptions}>
       <SeriesLegendWithMenus
         id={id}
-        title={name}
+        title={settings.name}
         color={seriesOptions.color}
-        legend={legend}
+        legend={<Chart.SeriesValue defaultValue={wmaData.value.at(-1)?.value} formatValue={to4Digits} />}
         hidden={hidden}
         handleToggleHidden={handleToggleHidden}
         handleSettingOpen={handleSettingOpen}
@@ -102,22 +78,45 @@ export const WmaSeries = forwardRef<o.Option<SeriesObj>, WmaSeriesProps>(functio
           open={settingOpen}
           onClose={handleClose}
           reset={reset}
-          prevValue={getValues()}
+          prevValue={settings}
           validSettings={trigger}
         >
-          <form className="flex flex-col space-y-2 py-6">
-            <div className="flex flex-col space-y-2">
-              <NameField control={control} />
-              <SourceField control={control} />
-              <IntegerConfigField id="period" label="Period" name="period" control={control} />
-            </div>
-            <Divider>Style</Divider>
-            <div className="flex flex-col space-y-2 pt-2">
-              <ColorField name="color" labelId="wma-color" label="WMA line color" control={control} />
-            </div>
-          </form>
+          <SettingsForm control={control} />
         </SettingsModal>
       </SeriesLegendWithMenus>
     </Chart.Series>
   );
-});
+}
+
+function useWmaData(klines: readonly Kline[], settings: WmaSettings) {
+  const { source, period } = settings;
+
+  const [wmaData, setWmaData] = useState<o.Option<LineData[]>>(o.none);
+
+  useEffect(() => {
+    const sourceValue = klines.map(prop(source)) as number[];
+    void wma(sourceValue, Number(period))
+      .then((wma) =>
+        wma.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
+      )
+      .then((wmaData) => setWmaData(o.some(wmaData)));
+  }, [klines, source, period]);
+
+  return wmaData;
+}
+
+function SettingsForm({ control }: { control: Control<WmaSettings> }) {
+  return (
+    <form className="flex flex-col space-y-2 py-6">
+      <div className="flex flex-col space-y-2">
+        <NameField control={control} />
+        <SourceField control={control} />
+        <PeriodField control={control} />
+      </div>
+      <Divider>Style</Divider>
+      <div className="flex flex-col space-y-2 pt-2">
+        <ColorField name="color" labelId="wma-color" label="WMA line color" control={control} />
+      </div>
+    </form>
+  );
+}

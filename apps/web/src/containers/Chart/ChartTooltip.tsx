@@ -1,9 +1,10 @@
 import Typography from '@mui/material/Typography';
 import * as o from 'fp-ts/lib/Option';
-import { MouseEventHandler, MouseEventParams, Time, UTCTimestamp } from 'lightweight-charts';
+import { MouseEventHandler, Time, UTCTimestamp } from 'lightweight-charts';
 import { useCallback, useContext, useLayoutEffect, useState } from 'react';
 
-import { ChartContext } from './ChartContainer';
+import { ChartContext } from './ChartContext';
+import { isMouseInDataRange, isMouseOffChart } from './utils';
 
 const toolTipWidth = 200;
 const toolTipHeight = 80;
@@ -14,7 +15,7 @@ type TooltipProps = { events: Map<UTCTimestamp, string[]> };
 export default function ChartTooltip(props: TooltipProps) {
   const { events } = props;
 
-  const chart = useContext(ChartContext);
+  const parentChart = useContext(ChartContext);
   const [tooltipTexts, setTooltipTexts] = useState<string[]>([]);
   const [tooltipDisplay, setTooltipDisplay] = useState<'none' | 'block'>('none');
   const [tooltipPosition, setTooltipPosition] = useState<{ left: number; top: number }>({
@@ -62,14 +63,14 @@ export default function ChartTooltip(props: TooltipProps) {
   );
 
   useLayoutEffect(() => {
-    if (o.isSome(chart)) {
-      const chartApi = chart.value.getChart();
+    if (o.isSome(parentChart)) {
+      const chartApi = parentChart.value.getChart();
       const crossHairCallback = updateTooltip(chartApi.chartElement());
       chartApi.subscribeCrosshairMove(crossHairCallback);
 
       return () => chartApi.unsubscribeCrosshairMove(crossHairCallback);
     }
-  }, [chart, updateTooltip]);
+  }, [parentChart, updateTooltip]);
 
   return (
     <div
@@ -87,11 +88,4 @@ export default function ChartTooltip(props: TooltipProps) {
       ))}
     </div>
   );
-}
-
-function isMouseInDataRange(time: Time | undefined): time is Time {
-  return time !== undefined;
-}
-function isMouseOffChart(point: MouseEventParams['point']): point is undefined {
-  return point === undefined;
 }
