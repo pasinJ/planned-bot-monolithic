@@ -5,9 +5,12 @@ import { IntegerString } from '#shared/utils/string';
 
 import { formatIntegerString, integerStringLoose, nonNegativeIntegerStringLoose } from './IntegerField.util';
 
-export default function IntegerField(
-  props: Omit<TextFieldProps, 'value'> & { value: IntegerString; allowNegative?: boolean },
-) {
+export type IntegerFieldProps = Omit<TextFieldProps, 'value'> & {
+  value: IntegerString;
+  allowNegative?: boolean;
+};
+
+export default function IntegerField(props: IntegerFieldProps) {
   const { value, onChange, onBlur, allowNegative, ...restProps } = props;
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {

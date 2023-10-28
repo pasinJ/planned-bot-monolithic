@@ -5,7 +5,9 @@ import { DecimalString } from '#shared/utils/string';
 
 import { decimalStringLoose, formatDecimalString } from './DecimalField.util';
 
-export default function DecimalField(props: Omit<TextFieldProps, 'value'> & { value: DecimalString }) {
+export type DecimalFieldProps = Omit<TextFieldProps, 'value'> & { value: DecimalString };
+
+export default function DecimalField(props: DecimalFieldProps) {
   const { value, onChange, onBlur, ...restProps } = props;
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (e) => {
