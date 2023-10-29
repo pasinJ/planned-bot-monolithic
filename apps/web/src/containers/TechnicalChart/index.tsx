@@ -82,8 +82,6 @@ type TechnicalChartProps = { klines: readonly Kline[]; orders?: readonly Order[]
 export default function TechnicalChart(props: TechnicalChartProps) {
   const { klines, orders } = props;
 
-  console.log('render TechnicalChart');
-
   const { dateService } = useContext(InfraContext);
   const timezone = dateService.getTimezone();
   const localKlines = useMemo(

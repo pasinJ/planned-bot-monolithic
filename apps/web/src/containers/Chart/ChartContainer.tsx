@@ -45,7 +45,7 @@ export type ChartObj = {
   subscribeVerticalCrosshairChange: (callback: CrosshairCallbacks) => void;
   unsubscribeVerticalCrosshairChange: (callback: CrosshairCallbacks) => void;
 };
-export type CrosshairCallbacks = (point: Point | undefined, time: UTCTimestamp | undefined) => void;
+export type CrosshairCallbacks = (params: { point?: Point; time?: Time }) => void;
 
 type ChartContainerProps = PropsWithChildren<{
   id: string;
@@ -118,14 +118,20 @@ export const ChartContainer = forwardRef<ChartObj, ChartContainerProps>(function
 
         if (time !== undefined) chart.setCrosshairPosition(Infinity, time, anySeries);
 
-        crosshairCallbacks.current.forEach((callback) => callback(point, time));
+        crosshairCallbacks.current.forEach((callback) => callback({ point, time }));
       }
     },
     subscribeVerticalCrosshairChange(callback) {
-      return crosshairCallbacks.current.add(callback);
+      crosshairCallbacks.current.add(callback);
+      if (o.isSome(_chart.current)) {
+        _chart.current.value.subscribeCrosshairMove(callback);
+      }
     },
     unsubscribeVerticalCrosshairChange(callback) {
-      return crosshairCallbacks.current.delete(callback);
+      crosshairCallbacks.current.delete(callback);
+      if (o.isSome(_chart.current)) {
+        _chart.current.value.unsubscribeCrosshairMove(callback);
+      }
     },
   });
 

@@ -26,7 +26,7 @@ export default function SeriesValue(props: SeriesValueProps) {
 
   const createCrosshairMoveHandler = useCallback(
     (series: SeriesApi): CrosshairCallbacks => {
-      return (point, time) => {
+      return ({ point, time }) => {
         if (!isMouseInDataRange(time)) return setValue(null);
         else if (isMouseOffChart(point)) return setValue(defaultValue ?? null);
 
