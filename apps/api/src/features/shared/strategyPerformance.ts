@@ -153,5 +153,7 @@ export function calculateWinLossMetrics(closedTrades: readonly ClosedTrade[]): W
 
 export type ProfitFactor = number & z.BRAND<'ProfitFactor'>;
 export function calculateProfitFactor(netProfit: Profit, netLoss: Loss): ProfitFactor {
-  return to2DigitDecimalNumber(new Decimal(netProfit).dividedBy(netLoss)) as ProfitFactor;
+  return (
+    netLoss === 0 ? 0 : to2DigitDecimalNumber(new Decimal(netProfit).dividedBy(netLoss))
+  ) as ProfitFactor;
 }
