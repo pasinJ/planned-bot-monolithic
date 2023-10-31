@@ -11,7 +11,9 @@ type DecimalFieldRfProps<T extends FieldValues, N extends Path<T>> = {
 };
 
 export default function DecimalFieldRf<T extends FieldValues, N extends Path<T>>(
-  props: DecimalFieldRfProps<T, N>,
+  props: FieldPathValue<T, N> extends DecimalString
+    ? DecimalFieldRfProps<T, N>
+    : DecimalFieldRfProps<T, N> & { __fieldMustBeDecimalString: never },
 ) {
   const { controllerProps, fieldProps } = props;
   const {

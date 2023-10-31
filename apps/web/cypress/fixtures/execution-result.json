@@ -1,0 +1,438 @@
+{
+  "id": "yCWXsPA-uTM9pbWdYQHcj",
+  "btStrategyId": "LucJQCKxgyOpZdZSw8Jhd",
+  "status": "FINISHED",
+  "executionTimeMs": 9103,
+  "logs": [
+    "[2023-10-26 04:37:47.105 +0000] [INFO] Worker process for backtesting job (id:yCWXsPA-uTM9pbWdYQHcj) started",
+    "[2023-10-26 04:37:47.167 +0000] [INFO] Binance service created",
+    "[2023-10-26 04:37:47.167 +0000] [INFO] MongoDB client start connecting to MongoDB",
+    "[2023-10-26 04:37:47.212 +0000] [INFO] MongoDB client connected",
+    "[2023-10-26 04:37:47.229 +0000] [INFO] Backtesting dependencies created",
+    "[2023-10-26 04:37:47.241 +0000] [INFO] Got backtesting strategy from database",
+    "[2023-10-26 04:37:47.735 +0000] [INFO] Got 921 klines of BTCUSDT from BINANCE",
+    "[2023-10-26 04:37:48.129 +0000] [INFO] Added klines to database",
+    "[2023-10-26 04:37:48.134 +0000] [INFO] Got BTCUSDT symbol from database",
+    "[2023-10-26 04:37:48.150 +0000] [INFO] Got 200 klines of BTCUSDT before 2023-09-01T00:00:00.000Z",
+    "[2023-10-26 04:37:48.153 +0000] [INFO] Progress updator has been started",
+    "[2023-10-26 04:37:48.186 +0000] [INFO] Strategy executor has been started",
+    "[2023-10-26 04:37:53.778 +0000] [INFO] Strategy executor has been stopped",
+    "[2023-10-26 04:37:53.778 +0000] [INFO] Progress updator has been stopped",
+    "[2023-10-26 04:37:53.779 +0000] [INFO] Strategy execution succeeded",
+    "[2023-10-26 04:37:53.779 +0000] [INFO] Backtesting successfully done"
+  ],
+  "orders": {
+    "openingOrders": [],
+    "submittedOrders": [],
+    "triggeredOrders": [],
+    "filledOrders": [
+      {
+        "submittedAt": "2023-09-03T09:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "E6VX9f7I4hOPWuZcY9yo_",
+        "status": "FILLED",
+        "createdAt": "2023-09-03T09:59:59.999Z",
+        "filledPrice": 25905.02,
+        "fee": {
+          "amount": 0.000001,
+          "currency": "BTC"
+        },
+        "filledAt": "2023-09-03T09:59:59.999Z"
+      },
+      {
+        "submittedAt": "2023-09-07T05:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "BcmjgKOA8e4b5DfkCZ1tF",
+        "status": "FILLED",
+        "createdAt": "2023-09-07T05:59:59.999Z",
+        "filledPrice": 25788.92,
+        "fee": {
+          "amount": 0.000001,
+          "currency": "BTC"
+        },
+        "filledAt": "2023-09-07T05:59:59.999Z"
+      },
+      {
+        "submittedAt": "2023-09-07T17:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "NpQSRzc4Uy1eBKRfE610e",
+        "status": "FILLED",
+        "createdAt": "2023-09-07T17:59:59.999Z",
+        "filledPrice": 25931.18,
+        "fee": {
+          "amount": 0.000001,
+          "currency": "BTC"
+        },
+        "filledAt": "2023-09-07T17:59:59.999Z"
+      },
+      {
+        "submittedAt": "2023-09-30T23:59:59.999Z",
+        "id": "kX42-mFzQbKH251RJ8RuL",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.029997,
+        "createdAt": "2023-09-30T23:59:59.999Z",
+        "status": "FILLED",
+        "filledPrice": 26962.56,
+        "fee": {
+          "amount": 0.08087959,
+          "currency": "USDT"
+        },
+        "filledAt": "2023-09-30T23:59:59.999Z"
+      }
+    ],
+    "canceledOrders": [],
+    "rejectedOrders": [
+      {
+        "submittedAt": "2023-09-04T16:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.009999,
+        "id": "v-WaPc3GaGjh0OlXtTY9_",
+        "status": "REJECTED",
+        "createdAt": "2023-09-04T16:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-07T14:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.019998,
+        "id": "fVEO2cMjY2iJkST0Y48Ad",
+        "status": "REJECTED",
+        "createdAt": "2023-09-07T14:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-08T18:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.029997,
+        "id": "eH5jwEiAbV_m1dOJlMO30",
+        "status": "REJECTED",
+        "createdAt": "2023-09-08T18:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-12T10:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "YSkb4y5_oAdjPvID7QE57",
+        "status": "REJECTED",
+        "createdAt": "2023-09-12T10:59:59.999Z",
+        "reason": "Insufficient capital"
+      },
+      {
+        "submittedAt": "2023-09-15T18:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.029997,
+        "id": "8Z821i1mIensBJJ-94d3D",
+        "status": "REJECTED",
+        "createdAt": "2023-09-15T18:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-16T01:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "7ilw4xhU_LeRrkQ9K1qoV",
+        "status": "REJECTED",
+        "createdAt": "2023-09-16T01:59:59.999Z",
+        "reason": "Insufficient capital"
+      },
+      {
+        "submittedAt": "2023-09-17T20:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.029997,
+        "id": "SNXp9Eu6MF3ghBQRJG4xm",
+        "status": "REJECTED",
+        "createdAt": "2023-09-17T20:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-18T05:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "jqb91cVE9CQ81cgNtJrr3",
+        "status": "REJECTED",
+        "createdAt": "2023-09-18T05:59:59.999Z",
+        "reason": "Insufficient capital"
+      },
+      {
+        "submittedAt": "2023-09-21T02:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.029997,
+        "id": "zxHJwYRnZk3csQ360tmA-",
+        "status": "REJECTED",
+        "createdAt": "2023-09-21T02:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-24T17:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "tXq7B_P7YOn6DhsXGzlk2",
+        "status": "REJECTED",
+        "createdAt": "2023-09-24T17:59:59.999Z",
+        "reason": "Insufficient capital"
+      },
+      {
+        "submittedAt": "2023-09-24T20:59:59.999Z",
+        "orderSide": "EXIT",
+        "type": "MARKET",
+        "quantity": 0.029997,
+        "id": "GTbyIbHBGNr6UigK_1y8N",
+        "status": "REJECTED",
+        "createdAt": "2023-09-24T20:59:59.999Z",
+        "reason": "Quantity must be multiple of step size (0.00001)"
+      },
+      {
+        "submittedAt": "2023-09-27T10:59:59.999Z",
+        "orderSide": "ENTRY",
+        "type": "MARKET",
+        "quantity": 0.01,
+        "id": "YiOfczHPjVsn21oBy510X",
+        "status": "REJECTED",
+        "createdAt": "2023-09-27T10:59:59.999Z",
+        "reason": "Insufficient capital"
+      }
+    ]
+  },
+  "trades": {
+    "openingTrades": [
+      {
+        "id": "bODEd-7sREAqPCtXvYjLE",
+        "entryOrder": {
+          "submittedAt": "2023-09-03T09:59:59.999Z",
+          "orderSide": "ENTRY",
+          "type": "MARKET",
+          "quantity": 0.01,
+          "id": "E6VX9f7I4hOPWuZcY9yo_",
+          "status": "FILLED",
+          "createdAt": "2023-09-03T09:59:59.999Z",
+          "filledPrice": 25905.02,
+          "fee": {
+            "amount": 0.000001,
+            "currency": "BTC"
+          },
+          "filledAt": "2023-09-03T09:59:59.999Z"
+        },
+        "tradeQuantity": 0.009999,
+        "maxPrice": 27483.57,
+        "minPrice": 24901,
+        "maxRunup": 15.78392145,
+        "maxDrawdown": -10.03919598,
+        "unrealizedReturn": 10.57434246
+      },
+      {
+        "id": "xxeNwd6hVVSkPmYre0Kix",
+        "entryOrder": {
+          "submittedAt": "2023-09-07T05:59:59.999Z",
+          "orderSide": "ENTRY",
+          "type": "MARKET",
+          "quantity": 0.01,
+          "id": "BcmjgKOA8e4b5DfkCZ1tF",
+          "status": "FILLED",
+          "createdAt": "2023-09-07T05:59:59.999Z",
+          "filledPrice": 25788.92,
+          "fee": {
+            "amount": 0.000001,
+            "currency": "BTC"
+          },
+          "filledAt": "2023-09-07T05:59:59.999Z"
+        },
+        "tradeQuantity": 0.009999,
+        "maxPrice": 27483.57,
+        "minPrice": 24901,
+        "maxRunup": 16.94480535,
+        "maxDrawdown": -8.87831208,
+        "unrealizedReturn": 11.73522636
+      },
+      {
+        "id": "0TcvI67lC3YxXygLTo3H_",
+        "entryOrder": {
+          "submittedAt": "2023-09-07T17:59:59.999Z",
+          "orderSide": "ENTRY",
+          "type": "MARKET",
+          "quantity": 0.01,
+          "id": "NpQSRzc4Uy1eBKRfE610e",
+          "status": "FILLED",
+          "createdAt": "2023-09-07T17:59:59.999Z",
+          "filledPrice": 25931.18,
+          "fee": {
+            "amount": 0.000001,
+            "currency": "BTC"
+          },
+          "filledAt": "2023-09-07T17:59:59.999Z"
+        },
+        "tradeQuantity": 0.009999,
+        "maxPrice": 27483.57,
+        "minPrice": 24901,
+        "maxRunup": 15.52234761,
+        "maxDrawdown": -10.30076982,
+        "unrealizedReturn": 10.31276862
+      }
+    ],
+    "closedTrades": [
+      {
+        "id": "bODEd-7sREAqPCtXvYjLE",
+        "entryOrder": {
+          "submittedAt": "2023-09-03T09:59:59.999Z",
+          "orderSide": "ENTRY",
+          "type": "MARKET",
+          "quantity": 0.01,
+          "id": "E6VX9f7I4hOPWuZcY9yo_",
+          "status": "FILLED",
+          "createdAt": "2023-09-03T09:59:59.999Z",
+          "filledPrice": 25905.02,
+          "fee": {
+            "amount": 0.000001,
+            "currency": "BTC"
+          },
+          "filledAt": "2023-09-03T09:59:59.999Z"
+        },
+        "tradeQuantity": 0.009999,
+        "maxPrice": 27483.57,
+        "minPrice": 24901,
+        "maxRunup": 15.78392145,
+        "maxDrawdown": -10.03919598,
+        "exitOrder": {
+          "submittedAt": "2023-09-30T23:59:59.999Z",
+          "id": "kX42-mFzQbKH251RJ8RuL",
+          "orderSide": "EXIT",
+          "type": "MARKET",
+          "quantity": 0.029997,
+          "createdAt": "2023-09-30T23:59:59.999Z",
+          "status": "FILLED",
+          "filledPrice": 26962.56,
+          "fee": {
+            "amount": 0.08087959,
+            "currency": "USDT"
+          },
+          "filledAt": "2023-09-30T23:59:59.999Z"
+        },
+        "netReturn": 10.52147758
+      },
+      {
+        "id": "xxeNwd6hVVSkPmYre0Kix",
+        "entryOrder": {
+          "submittedAt": "2023-09-07T05:59:59.999Z",
+          "orderSide": "ENTRY",
+          "type": "MARKET",
+          "quantity": 0.01,
+          "id": "BcmjgKOA8e4b5DfkCZ1tF",
+          "status": "FILLED",
+          "createdAt": "2023-09-07T05:59:59.999Z",
+          "filledPrice": 25788.92,
+          "fee": {
+            "amount": 0.000001,
+            "currency": "BTC"
+          },
+          "filledAt": "2023-09-07T05:59:59.999Z"
+        },
+        "tradeQuantity": 0.009999,
+        "maxPrice": 27483.57,
+        "minPrice": 24901,
+        "maxRunup": 16.94480535,
+        "maxDrawdown": -8.87831208,
+        "exitOrder": {
+          "submittedAt": "2023-09-30T23:59:59.999Z",
+          "id": "kX42-mFzQbKH251RJ8RuL",
+          "orderSide": "EXIT",
+          "type": "MARKET",
+          "quantity": 0.029997,
+          "createdAt": "2023-09-30T23:59:59.999Z",
+          "status": "FILLED",
+          "filledPrice": 26962.56,
+          "fee": {
+            "amount": 0.08087959,
+            "currency": "USDT"
+          },
+          "filledAt": "2023-09-30T23:59:59.999Z"
+        },
+        "netReturn": 11.68247758
+      },
+      {
+        "id": "0TcvI67lC3YxXygLTo3H_",
+        "entryOrder": {
+          "submittedAt": "2023-09-07T17:59:59.999Z",
+          "orderSide": "ENTRY",
+          "type": "MARKET",
+          "quantity": 0.01,
+          "id": "NpQSRzc4Uy1eBKRfE610e",
+          "status": "FILLED",
+          "createdAt": "2023-09-07T17:59:59.999Z",
+          "filledPrice": 25931.18,
+          "fee": {
+            "amount": 0.000001,
+            "currency": "BTC"
+          },
+          "filledAt": "2023-09-07T17:59:59.999Z"
+        },
+        "tradeQuantity": 0.009999,
+        "maxPrice": 27483.57,
+        "minPrice": 24901,
+        "maxRunup": 15.52234761,
+        "maxDrawdown": -10.30076982,
+        "exitOrder": {
+          "submittedAt": "2023-09-30T23:59:59.999Z",
+          "id": "kX42-mFzQbKH251RJ8RuL",
+          "orderSide": "EXIT",
+          "type": "MARKET",
+          "quantity": 0.029997,
+          "createdAt": "2023-09-30T23:59:59.999Z",
+          "status": "FILLED",
+          "filledPrice": 26962.56,
+          "fee": {
+            "amount": 0.08087959,
+            "currency": "USDT"
+          },
+          "filledAt": "2023-09-30T23:59:59.999Z"
+        },
+        "netReturn": 10.25987758
+      }
+    ]
+  },
+  "performance": {
+    "netReturn": 32.46383274,
+    "netProfit": 32.46383274,
+    "netLoss": 0,
+    "buyAndHoldReturn": 40.8196653,
+    "maxDrawdown": -25.62883686,
+    "maxRunup": 46.4113584,
+    "returnOfInvestment": 3.24638327,
+    "profitFactor": 1,
+    "totalTradeVolume": 0.03,
+    "totalFees": {
+      "inCapitalCurrency": 0.08087959,
+      "inAssetCurrency": 0.000003
+    },
+    "backtestDuration": "1 month",
+    "winLossMetrics": {
+      "numOfTotalTrades": 3,
+      "numOfWinningTrades": 3,
+      "numOfLosingTrades": 0,
+      "numOfEvenTrades": 0,
+      "winRate": 100,
+      "lossRate": 0,
+      "evenRate": 0,
+      "avgProfit": 10.82127758,
+      "avgLoss": 0,
+      "largestProfit": 11.68247758,
+      "largestLoss": 0
+    }
+  }
+}

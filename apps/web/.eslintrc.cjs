@@ -29,7 +29,10 @@ module.exports = {
         '@typescript-eslint/consistent-type-definitions': 'off',
       },
     },
-    { files: ['src/**/*.ts?(x)', 'cypress/**/*.ts?(x)', 'test-utils/**/*.ts?(x)'], rules: { 'no-console': 'warn' } },
+    {
+      files: ['src/**/*.ts?(x)', 'cypress/**/*.ts?(x)', 'test-utils/**/*.ts?(x)'],
+      rules: { 'no-console': 'warn' },
+    },
     {
       files: ['src/**/!(*.*test).ts?(x)'],
       settings: {
@@ -53,6 +56,7 @@ module.exports = {
         'fp-ts/no-lib-imports': 'off',
         'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
         '@tanstack/query/prefer-query-object-syntax': 'error',
+        'react/prop-types': ['error', { skipUndeclared: true }],
       },
     },
     {

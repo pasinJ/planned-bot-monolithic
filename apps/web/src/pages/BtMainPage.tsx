@@ -1,44 +1,45 @@
-import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import { isEmpty } from 'ramda';
-import { MouseEventHandler, useState } from 'react';
 
-import FetchingFailed from '#components/FetchingFailed';
+import MaterialSymbol from '#components/MaterialSymbol';
+import PendingFetch from '#components/PendingFetch';
 import useBtStrategies from '#features/btStrategies/hooks/useBtStrategies';
-import { AddBtStrategyPageLink } from '#routes/components/pageLinks';
+import useAutoFetch from '#hooks/useAutoFetch';
+import { BackStrategyPageLink } from '#routes/components/pageLinks';
 
 export default function BtMainPage() {
-  const [autoFetching, setAutoFetching] = useState(true);
-  const btStrategies = useBtStrategies(autoFetching);
-
-  if (btStrategies.isError && autoFetching) setAutoFetching(false);
-  const handleRetry: MouseEventHandler<HTMLButtonElement> = () => setAutoFetching(true);
+  const [fetchBtStrategies, handleRetryFetchBtStrategies] = useAutoFetch(true, useBtStrategies);
 
   return (
-    <Box>
-      <Typography variant="h1">Backtesting page</Typography>
-      {btStrategies.isLoading ? (
-        <Spinner />
-      ) : btStrategies.isError ? (
-        <FetchingFailed error={btStrategies.error} onRetry={handleRetry} />
-      ) : isEmpty(btStrategies.data) ? (
-        <>
-          <Typography>You have no existing strategy.</Typography>
-          <Button variant="contained" color="primary" component={AddBtStrategyPageLink}>
-            Create
-          </Button>
-        </>
-      ) : null}
-    </Box>
-  );
-}
-
-function Spinner() {
-  return (
-    <div className="flex h-full w-full items-center justify-center">
-      <CircularProgress size="4rem" />
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between">
+        <Typography className="font-bold" variant="h2" component="h1">
+          Backtesting
+        </Typography>
+        <Button
+          className="h-fit py-3"
+          variant="contained"
+          color="primary"
+          size="large"
+          component={BackStrategyPageLink()}
+          endIcon={<MaterialSymbol symbol="add" />}
+        >
+          Create
+        </Button>
+      </header>
+      <div className="relative flex-grow">
+        <PendingFetch
+          isLoading={fetchBtStrategies.isLoading}
+          error={fetchBtStrategies.error}
+          retryFetch={handleRetryFetchBtStrategies}
+        />
+        <div>
+          {isEmpty(fetchBtStrategies.data) ? (
+            <Typography>You have no existing strategy.</Typography>
+          ) : undefined}
+        </div>
+      </div>
     </div>
   );
 }

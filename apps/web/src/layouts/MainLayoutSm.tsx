@@ -21,14 +21,14 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
   const toggleDrawer = () => setIsDrawerOpening((prev) => !prev);
 
   return (
-    <Box className="flex">
+    <div className="flex">
       <TopAppBar toggleDrawer={toggleDrawer} />
       <SideNav isDrawerOpening={isDrawerOpening} toggleDrawer={toggleDrawer} />
-      <Box component="main" className="flex w-full flex-col">
+      <main className="relative flex min-h-screen w-full flex-col">
         <Toolbar />
-        <Box className="relative h-full w-full bg-gray-100 px-4 py-6">{children}</Box>
-      </Box>
-    </Box>
+        <div className="flex-grow bg-gray-100 px-4 py-6">{children}</div>
+      </main>
+    </div>
   );
 }
 

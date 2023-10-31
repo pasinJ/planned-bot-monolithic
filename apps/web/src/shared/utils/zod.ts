@@ -112,6 +112,8 @@ export function replaceDateSchemaWithStringToDate<T extends z.ZodTypeAny>(
       ? replaceDateSchemaInDiscriminatedUnion(
           schema as unknown as z.ZodDiscriminatedUnion<string, ZodDiscriminatedUnionOption<string>[]>,
         )
+      : schema._def.typeName === 'ZodEffects'
+      ? replaceDateSchema(schema._def.schema).pipe(schema)
       : schema;
     /* eslint-enable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
   }

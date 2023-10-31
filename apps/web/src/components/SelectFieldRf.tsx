@@ -5,13 +5,13 @@ import Select, { SelectProps } from '@mui/material/Select';
 import { PropsWithChildren } from 'react';
 import { FieldValues, Path, UseControllerProps, useController } from 'react-hook-form';
 
-type SelectFieldRf<T extends FieldValues> = PropsWithChildren<{
-  controllerProps: UseControllerProps<T, Path<T>>;
+type SelectFieldRf<T extends FieldValues, N extends Path<T>> = PropsWithChildren<{
+  controllerProps: UseControllerProps<T, N>;
   formControlProps: FormControlProps;
   selectProps: SelectProps;
 }>;
 
-export default function SelectFieldRf<T extends FieldValues>(props: SelectFieldRf<T>) {
+export default function SelectFieldRf<T extends FieldValues, N extends Path<T>>(props: SelectFieldRf<T, N>) {
   const { controllerProps, formControlProps, selectProps, children } = props;
 
   const {

@@ -89,4 +89,16 @@ describe('UUT: Replace date schema with string to date', () => {
       });
     });
   });
+  describe('[GIVEN] the input schema has refinement', () => {
+    describe('[WHEN] parse that kind of array with the output schema', () => {
+      it('[THEN] it will return correct parsed array', () => {
+        const schema = z.object({ a: z.date(), x: z.number() }).refine(() => true);
+        const input = { a: '2022-04-03T12:23:04.000Z', x: 1 };
+
+        const result = replaceDateSchemaWithStringToDate(schema).parse(input);
+
+        expect(result).toEqual({ a: new Date('2022-04-03T12:23:04.000Z'), x: 1 });
+      });
+    });
+  });
 });

@@ -5,27 +5,29 @@ import { useContext } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { InfraContext } from '#infra/InfraProvider.context';
-import { createGeneralError } from '#shared/errors/generalError';
+import { GeneralError, createGeneralError } from '#shared/errors/generalError';
 import { ValidDate } from '#shared/utils/date';
 import { executeTeToPromise } from '#shared/utils/fp';
 
 import { BtExecutionId } from '../btExecution';
 import { BtStrategyId } from '../btStrategy';
-import { BtStrategyRepoError } from '../btStrategy.repository.error';
+import { ExecuteBtStrategyError } from '../btStrategy.repository';
 
 export default function useExecuteBtStrategy(): UseMutationResult<
   { id: BtExecutionId; createdAt: ValidDate },
-  BtStrategyRepoError<'ExecuteBtStrategyFailed'>,
-  void
+  ExecuteBtStrategyError | GeneralError<'ParamsEmpty'>,
+  BtStrategyId | undefined
 > {
   const params = useParams();
   const { btStrategyRepo } = useContext(InfraContext);
 
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (btStrategyId?: BtStrategyId) =>
       pipe(
-        params.id !== undefined
-          ? te.right(params.id as BtStrategyId)
+        btStrategyId !== undefined
+          ? te.right(btStrategyId)
+          : params.btStrategyId !== undefined
+          ? te.right(params.btStrategyId as BtStrategyId)
           : te.left(
               createGeneralError(
                 'ParamsEmpty',

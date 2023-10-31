@@ -21,16 +21,17 @@ export type UseKlinesRequest = {
   startTimestamp: ValidDate;
   endTimestamp: ValidDate;
 };
+
 export default function useKlines(
-  request: UseKlinesRequest,
   autoFetchEnabled: boolean,
+  request: UseKlinesRequest | null,
 ): UseQueryResult<readonly Kline[], GetKlinesError> {
   const { klineRepo } = useContext(InfraContext);
 
   return useQuery<readonly Kline[], GetKlinesError>({
-    queryKey: [...klinesQueryKey, ...values(request)],
-    queryFn: () => executeTeToPromise(klineRepo.getKlines(request)),
-    staleTime: staleTimeMs,
     enabled: autoFetchEnabled,
+    queryKey: request ? [...klinesQueryKey, ...values(request)] : undefined,
+    queryFn: request ? () => executeTeToPromise(klineRepo.getKlines(request)) : undefined,
+    staleTime: staleTimeMs,
   });
 }

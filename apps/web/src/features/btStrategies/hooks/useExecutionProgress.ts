@@ -14,30 +14,32 @@ import {
   BtExecutionStatus,
   ExecutionLogs,
   ProgressPercentage,
-  btExecutionStatusEnum,
+  isExecutionInFinalStatus,
 } from '../btExecution';
 import { BtStrategyId } from '../btStrategy';
-import { BtStrategyRepoError } from '../btStrategy.repository.error';
+import { GetExecutionProgressError } from '../btStrategy.repository';
 
 const refetchIntervalMs = 1000;
+const staleTime = Infinity;
 
-type UseExecutionProgressResult = {
+export type UseExecutionProgressResp = {
   status: BtExecutionStatus;
   percentage: ProgressPercentage;
   logs: ExecutionLogs;
 };
+
 export default function useExecutionProgress(
   btExecutionId: BtExecutionId,
-): UseQueryResult<UseExecutionProgressResult, BtStrategyRepoError<'GetExecutionProgressFailed'>> {
+): UseQueryResult<UseExecutionProgressResp, GetExecutionProgressError> {
   const params = useParams();
   const { btStrategyRepo } = useContext(InfraContext);
 
-  return useQuery<UseExecutionProgressResult, BtStrategyRepoError<'GetExecutionProgressFailed'>>({
+  return useQuery<UseExecutionProgressResp, GetExecutionProgressError>({
     queryKey: ['executionProgress', btExecutionId],
     queryFn: () =>
       pipe(
-        params.id !== undefined
-          ? e.right(params.id as BtStrategyId)
+        params.btStrategyId !== undefined
+          ? e.right(params.btStrategyId as BtStrategyId)
           : e.left(
               createGeneralError(
                 'ParamsEmpty',
@@ -48,9 +50,7 @@ export default function useExecutionProgress(
         te.chainW((btStrategyId) => btStrategyRepo.getExecutionProgress(btStrategyId, btExecutionId)),
         executeTeToPromise,
       ),
-    refetchInterval: (data) =>
-      data?.status === btExecutionStatusEnum.PENDING || data?.status === btExecutionStatusEnum.RUNNING
-        ? refetchIntervalMs
-        : false,
+    refetchInterval: (data) => (data && isExecutionInFinalStatus(data) ? false : refetchIntervalMs),
+    staleTime,
   });
 }

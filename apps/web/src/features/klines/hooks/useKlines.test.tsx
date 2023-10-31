@@ -18,7 +18,7 @@ function renderUseKlines(
   autoFetchEnabled: boolean,
   overrides: { klineRepo: KlineRepo },
 ) {
-  return renderHookWithContexts(() => useKlines(request, autoFetchEnabled), ['Infra', 'ServerState'], {
+  return renderHookWithContexts(() => useKlines(autoFetchEnabled, request), ['Infra', 'ServerState'], {
     infraContext: overrides,
   });
 }

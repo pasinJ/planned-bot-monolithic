@@ -1,105 +1,231 @@
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
-import * as io from 'fp-ts/lib/IO';
-import * as t from 'fp-ts/lib/Task';
-import { pipe } from 'fp-ts/lib/function';
-import { isEmpty, propEq } from 'ramda';
+import Step from '@mui/material/Step';
+import StepLabel from '@mui/material/StepLabel';
+import Stepper from '@mui/material/Stepper';
+import * as o from 'fp-ts/lib/Option';
+import { pick, propEq } from 'ramda';
 import { useEffect, useState } from 'react';
-import { UseFormProps, useForm, useWatch } from 'react-hook-form';
 
-import FetchingFailed from '#components/FetchingFailed';
-import { BtStrategyBody } from '#features/btStrategies/btStrategy';
-import { exchangeNameEnum } from '#features/exchanges/exchange';
+import PendingFetch from '#components/PendingFetch';
+import { BtExecutionId } from '#features/btStrategies/btExecution';
+import {
+  AssetCurrency,
+  BtRange,
+  BtStrategy,
+  BtStrategyBody,
+  MaxNumKlines,
+  extendBtRange,
+} from '#features/btStrategies/btStrategy';
+import useBtStrategy from '#features/btStrategies/hooks/useBtStrategy';
+import { UseSaveBtStrategyRequest } from '#features/btStrategies/hooks/useSaveBtStrategy';
+import { ExchangeName, exchangeNameEnum } from '#features/exchanges/exchange';
+import useKlines, { UseKlinesRequest } from '#features/klines/hooks/useKlines';
+import { Timeframe } from '#features/klines/kline';
 import useSymbols from '#features/symbols/hooks/useSymbols';
+import { Symbol, SymbolName } from '#features/symbols/symbol';
+import useAutoFetch from '#hooks/useAutoFetch';
+import useObjState from '#hooks/useObjState';
+import useOptionState from '#hooks/useOptionState';
 import { ValidDate } from '#shared/utils/date';
-import { executeT, ioVoid } from '#shared/utils/fp';
-import { DecimalString, IntegerString } from '#shared/utils/string';
+import {
+  DecimalString,
+  IntegerString,
+  numberToDecimalString,
+  numberToIntegerString,
+} from '#shared/utils/string';
+import { isUndefined } from '#shared/utils/typeGuards';
 
-import BacktestingResultStep from './containers/BacktestingResultStep';
-import GeneralDetailsStep from './containers/GeneralDetailsStep';
-import StrategyDetailsStep from './containers/StrategyDetailsStep';
-import { BacktestForm } from './types';
+import BacktestingResultTab from './BacktestingResultTab';
+import GeneralDetailsTab, { GeneralDetails, GeneralDetailsFormValues } from './GeneralDetailsTab';
+import StrategyDetailsTab, { StrategyDetails, StrategyDetailsFormValues } from './StrategyDetailsTab';
 
-const defaultFormValues: BacktestForm = {
+const tabs = ['General datails', 'Strategy details', 'Backtesting result'];
+
+type FormsValues = GeneralDetailsFormValues & StrategyDetailsFormValues;
+const defaultFormsValues: FormsValues = {
   name: '',
   exchange: exchangeNameEnum.BINANCE,
   symbol: null,
-  timeframe: '1d',
+  timeframe: '',
   maxNumKlines: '100' as IntegerString,
-  startTimestamp: new Date() as ValidDate,
-  endTimestamp: new Date() as ValidDate,
-  capitalCurrency: null,
+  btRange: { start: new Date() as ValidDate, end: new Date() as ValidDate },
+  capitalCurrency: '',
   initialCapital: '1000' as DecimalString,
   takerFeeRate: '0' as DecimalString,
   makerFeeRate: '0' as DecimalString,
   language: 'typescript',
   body: 'console.log("Hello world!");' as BtStrategyBody,
 };
-const formOptions: UseFormProps<BacktestForm> = { defaultValues: defaultFormValues, mode: 'all' };
 
-type BacktestStrategyFormProps = {
-  activeStep: number;
-  moveToPrevStep: io.IO<void>;
-  moveToNextStep: io.IO<void>;
-};
-export default function BacktestStrategyForm(props: BacktestStrategyFormProps) {
-  const { activeStep, moveToPrevStep, moveToNextStep } = props;
+export type LastExecution = { btExecutionId: BtExecutionId; request: UseSaveBtStrategyRequest };
 
-  const [autoFetchingSymbols, setAutoFetchingSymbols] = useState(true);
-  const querySymbolsResult = useSymbols(autoFetchingSymbols);
-  const handleRetryFetchSymbols = () => setAutoFetchingSymbols(true);
-  if (querySymbolsResult.isError && autoFetchingSymbols) setAutoFetchingSymbols(false);
+export default function BacktestStrategyForm() {
+  const [activeTab, setActiveTab] = useState(0);
 
-  const { control, trigger, getValues, setValue, formState, clearErrors } =
-    useForm<BacktestForm>(formOptions);
-  const formValues = getValues();
-  const symbol = useWatch({ name: 'symbol', control });
-  const selectedSymbol = querySymbolsResult.data?.find(propEq(symbol, 'name'));
-  if (selectedSymbol !== undefined) setValue('capitalCurrency', selectedSymbol.quoteAsset);
+  const [formsValues, setFormsValues] = useObjState<FormsValues>(defaultFormsValues);
+  const [generalDetails, setGeneralDetails] = useOptionState<GeneralDetails>(o.none);
+  const [strategyDetails, setStrategyDetails] = useOptionState<
+    StrategyDetails & { assetCurrency: AssetCurrency }
+  >(o.none);
 
-  useEffect(() => clearErrors(), [activeStep, clearErrors]);
+  const [fetchSymbols, handleRefetchSymbols] = useAutoFetch(true, useSymbols);
+  const [selectedSymbol, setSelectedSymbol] = useOptionState<Symbol>(o.none);
+  const [lastExecution, setLastExecution] = useOptionState<LastExecution>(o.none);
 
-  const handleMoveNextStep = () => {
-    if (isEmpty(formState.errors)) {
-      void pipe(
-        trigger,
-        t.chainIOK((isFormValid) => (isFormValid ? moveToNextStep : ioVoid)),
-        executeT,
+  const fetchBtStrategy = useBtStrategy(o.isNone(lastExecution), undefined);
+  useEffect(() => {
+    if (!isUndefined(fetchBtStrategy.data)) {
+      setFormsValues(createDefaultFormValuesFromBtStrategy(fetchBtStrategy.data));
+      setGeneralDetails(o.some(createGeneralDetailsFromBtStrategy(fetchBtStrategy.data)));
+      setStrategyDetails(o.some(createStrategyDetailsFromBtStrategy(fetchBtStrategy.data)));
+    }
+  }, [fetchBtStrategy.data, setFormsValues, setGeneralDetails, setStrategyDetails, setSelectedSymbol]);
+
+  const moveForwardToStrategyDetailsTab = (formValues: GeneralDetailsFormValues, details: GeneralDetails) => {
+    setFormsValues((prev) => ({ ...prev, ...formValues }));
+    setGeneralDetails((prev) => (o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details })));
+
+    const selectedSymbol = fetchSymbols.data?.find(propEq(details.symbol, 'name'));
+    setSelectedSymbol(selectedSymbol ? o.some(selectedSymbol) : o.none);
+
+    setActiveTab(1);
+  };
+  const moveBackToGeneralDetailsTab = (formValues: StrategyDetailsFormValues, isFormDirty: boolean) => {
+    if (isFormDirty) setFormsValues((prev) => ({ ...prev, ...formValues }));
+
+    setActiveTab(0);
+  };
+  const moveForwarToBacktestResultTab = (
+    formValues: StrategyDetailsFormValues,
+    details: StrategyDetails & { assetCurrency: AssetCurrency },
+    isFormDirty: boolean,
+  ) => {
+    if (isFormDirty) {
+      setFormsValues((prev) => ({ ...prev, ...formValues }));
+      setStrategyDetails((prev) =>
+        o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details }),
       );
     }
+
+    setActiveTab(2);
+  };
+  const moveBackToStrategyDetailsTab = () => setActiveTab(1);
+
+  const [getKlinesRequest, setGetKlinesRequest] = useObjState<UseKlinesRequest | null>(null);
+  const [fetchKlines, startFetchKlines] = useAutoFetch(false, useKlines, [getKlinesRequest]);
+  const handleStartFetchKlines = (generalFormValues: GeneralDetails): void => {
+    setGetKlinesRequest(createGetKlinesRequest(generalFormValues));
+    startFetchKlines();
   };
 
   return (
-    <form className="relative flex w-full justify-center" aria-label="backtest strategy">
-      {querySymbolsResult.isInitialLoading ? <CircularProgress className="abs-center" /> : undefined}
-      <FetchingFailed
-        className="abs-center"
-        error={querySymbolsResult.error}
-        onRetry={handleRetryFetchSymbols}
-      />
-      {activeStep === 0 ? (
-        <GeneralDetailsStep control={control} querySymbolsResult={querySymbolsResult}>
-          <Divider className="my-4" />
-          <Button className="mt-2 self-end" variant="contained" onClick={handleMoveNextStep}>
-            Next
-          </Button>
-        </GeneralDetailsStep>
-      ) : activeStep === 1 && selectedSymbol !== undefined && formValues.symbol !== null ? (
-        <StrategyDetailsStep control={control} formValues={formValues} selectedSymbol={selectedSymbol}>
-          <Divider className="my-4" />
-          <div className="mt-2 flex justify-between">
-            <Button variant="outlined" onClick={moveToPrevStep}>
-              Back
-            </Button>
-            <Button variant="contained" onClick={handleMoveNextStep}>
-              Save & Execute
-            </Button>
-          </div>
-        </StrategyDetailsStep>
-      ) : activeStep === 2 ? (
-        <BacktestingResultStep />
-      ) : undefined}
-    </form>
+    <article className="flex flex-col">
+      <Stepper alternativeLabel activeStep={activeTab}>
+        {tabs.map((label, index) => (
+          <Step key={index} completed={index < activeTab}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+      <div className="mt-4 flex flex-grow justify-center">
+        {isUndefined(fetchSymbols.data) ? (
+          <PendingFetch
+            isLoading={fetchSymbols.isInitialLoading}
+            error={fetchSymbols.error}
+            retryFetch={handleRefetchSymbols}
+          />
+        ) : activeTab === 0 ? (
+          <GeneralDetailsTab
+            symbols={fetchSymbols.data}
+            formValues={formsValues}
+            moveToNextTab={moveForwardToStrategyDetailsTab}
+            startFetchKlines={handleStartFetchKlines}
+          />
+        ) : isUndefined(fetchKlines.data) ? (
+          <PendingFetch
+            isLoading={fetchKlines.isInitialLoading}
+            error={fetchKlines.error}
+            retryFetch={startFetchKlines}
+          />
+        ) : activeTab === 1 && o.isSome(selectedSymbol) && o.isSome(generalDetails) ? (
+          <StrategyDetailsTab
+            formValues={formsValues}
+            selectedSymbol={selectedSymbol.value}
+            klines={fetchKlines.data}
+            generalDetails={generalDetails.value}
+            moveToPrevTab={moveBackToGeneralDetailsTab}
+            moveToNextTab={moveForwarToBacktestResultTab}
+            lastExecution={lastExecution}
+            setLastExecution={setLastExecution}
+          />
+        ) : activeTab === 2 &&
+          o.isSome(lastExecution) &&
+          o.isSome(generalDetails) &&
+          o.isSome(strategyDetails) ? (
+          <BacktestingResultTab
+            btExecutionId={lastExecution.value.btExecutionId}
+            klines={fetchKlines.data}
+            initialCapital={strategyDetails.value.initialCapital}
+            capitalCurrency={strategyDetails.value.capitalCurrency}
+            assetCurrency={strategyDetails.value.assetCurrency}
+            btRange={generalDetails.value.btRange}
+            moveToPrevTab={moveBackToStrategyDetailsTab}
+          />
+        ) : undefined}
+      </div>
+    </article>
+  );
+}
+
+function createGetKlinesRequest(data: {
+  exchange: ExchangeName;
+  symbol: SymbolName;
+  timeframe: Timeframe;
+  maxNumKlines: MaxNumKlines;
+  btRange: BtRange;
+}): UseKlinesRequest {
+  const extendedRange = extendBtRange(data.btRange, data.timeframe, data.maxNumKlines);
+  return {
+    exchange: data.exchange,
+    symbol: data.symbol,
+    timeframe: data.timeframe,
+    startTimestamp: extendedRange.start,
+    endTimestamp: extendedRange.end,
+  };
+}
+
+function createDefaultFormValuesFromBtStrategy(btStrategy: BtStrategy): FormsValues {
+  return {
+    name: btStrategy.name,
+    exchange: btStrategy.exchange,
+    symbol: btStrategy.symbol,
+    timeframe: btStrategy.timeframe,
+    maxNumKlines: numberToIntegerString(btStrategy.maxNumKlines),
+    btRange: btStrategy.btRange,
+    capitalCurrency: btStrategy.capitalCurrency,
+    initialCapital: numberToDecimalString(btStrategy.initialCapital),
+    takerFeeRate: numberToDecimalString(btStrategy.takerFeeRate),
+    makerFeeRate: numberToDecimalString(btStrategy.makerFeeRate),
+    language: btStrategy.language,
+    body: btStrategy.body,
+  };
+}
+
+function createGeneralDetailsFromBtStrategy(btStrategy: BtStrategy): GeneralDetails {
+  return pick(['name', 'exchange', 'symbol', 'timeframe', 'maxNumKlines', 'btRange'], btStrategy);
+}
+function createStrategyDetailsFromBtStrategy(
+  btStrategy: BtStrategy,
+): StrategyDetails & { assetCurrency: AssetCurrency } {
+  return pick(
+    [
+      'capitalCurrency',
+      'assetCurrency',
+      'initialCapital',
+      'takerFeeRate',
+      'makerFeeRate',
+      'language',
+      'body',
+    ],
+    btStrategy,
   );
 }

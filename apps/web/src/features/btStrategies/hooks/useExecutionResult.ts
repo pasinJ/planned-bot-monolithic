@@ -9,73 +9,38 @@ import { DeepReadonly } from 'ts-essentials';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { createGeneralError } from '#shared/errors/generalError';
 import { executeTeToPromise } from '#shared/utils/fp';
-import { DurationString } from '#shared/utils/string';
 
 import { BtExecutionId, ExecutionLogs, ExecutionTime } from '../btExecution';
 import { BtStrategyId } from '../btStrategy';
-import { BtStrategyRepoError } from '../btStrategy.repository.error';
-import {
-  CanceledOrder,
-  FilledOrder,
-  OpeningOrder,
-  RejectedOrder,
-  SubmittedOrder,
-  TriggeredOrder,
-} from '../order';
-import {
-  BuyAndHoldReturn,
-  MaxEquityDrawdown,
-  MaxEquityRunup,
-  NetLoss,
-  NetProfit,
-  ProfitFactor,
-  ReturnOfInvestment,
-  TotalFees,
-  TotalTradeVolume,
-  WinLossMetrics,
-} from '../performance';
-import { ClosedTrade, NetReturn, OpeningTrade } from '../trade';
+import { GetExecutionResultError } from '../btStrategy.repository';
+import { OrdersLists } from '../order';
+import { PerformanceMetrics } from '../performance';
+import { TradesLists } from '../trade';
 
-type UseExecutionResultResp = DeepReadonly<{
+export type UseExecutionResultResp = DeepReadonly<{
   status: 'FINISHED';
   executionTimeMs: ExecutionTime;
   logs: ExecutionLogs;
-  orders: {
-    openingOrders: OpeningOrder[];
-    submittedOrders: SubmittedOrder[];
-    triggeredOrders: TriggeredOrder[];
-    filledOrders: FilledOrder[];
-    canceledOrders: CanceledOrder[];
-    rejectedOrders: RejectedOrder[];
-  };
-  trades: { openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] };
-  performance: {
-    netReturn: NetReturn;
-    netProfit: NetProfit;
-    netLoss: NetLoss;
-    buyAndHoldReturn: BuyAndHoldReturn;
-    maxDrawdown: MaxEquityDrawdown;
-    maxRunup: MaxEquityRunup;
-    returnOfInvestment: ReturnOfInvestment;
-    profitFactor: ProfitFactor;
-    totalTradeVolume: TotalTradeVolume;
-    totalFees: TotalFees;
-    backtestDuration: DurationString;
-    winLossMetrics: WinLossMetrics;
-  };
+  orders: OrdersLists;
+  trades: TradesLists;
+  performance: PerformanceMetrics;
 }>;
+
 export default function useExecutionResult(
+  autoFetchEnabled: boolean,
   btExecutionId: BtExecutionId,
-): UseQueryResult<UseExecutionResultResp, BtStrategyRepoError<'GetExecutionResultFailed'>> {
+): UseQueryResult<UseExecutionResultResp, GetExecutionResultError> {
   const params = useParams();
   const { btStrategyRepo } = useContext(InfraContext);
 
-  return useQuery<UseExecutionResultResp, BtStrategyRepoError<'GetExecutionResultFailed'>>({
+  return useQuery<UseExecutionResultResp, GetExecutionResultError>({
+    enabled: autoFetchEnabled,
+    staleTime: Infinity,
     queryKey: ['executionResult', btExecutionId],
     queryFn: () =>
       pipe(
-        params.id !== undefined
-          ? e.right(params.id as BtStrategyId)
+        params.btStrategyId !== undefined
+          ? e.right(params.btStrategyId as BtStrategyId)
           : e.left(
               createGeneralError(
                 'ParamsEmpty',

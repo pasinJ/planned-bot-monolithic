@@ -2,17 +2,28 @@ import { setupServer } from 'msw/node';
 
 import { exchangeNameEnum } from '#features/exchanges/exchange';
 import { timeframeEnum } from '#features/klines/kline';
-import { BaseAsset, SymbolName } from '#features/symbols/symbol';
+import { SymbolName } from '#features/symbols/symbol';
 import { createAxiosHttpClient } from '#infra/axiosHttpClient';
-import { ValidDate } from '#shared/utils/date';
 import { executeT } from '#shared/utils/fp';
 import { TimezoneString } from '#shared/utils/string';
+import executionResultResponse from '#test-utils/execution-result.json';
 import { generateArrayOf } from '#test-utils/faker';
 import { mockBtStrategy } from '#test-utils/features/btStrategies/btStrategy';
 import { addRestRoute, createApiPath } from '#test-utils/msw';
 
-import { BtExecutionId, btExecutionStatusEnum } from './btExecution';
-import { BtStrategyId } from './btStrategy';
+import { BtExecutionId } from './btExecution';
+import {
+  AssetCurrency,
+  BtRange,
+  BtStrategyBody,
+  BtStrategyId,
+  BtStrategyName,
+  CapitalCurrency,
+  InitialCapital,
+  MakerFeeRate,
+  MaxNumKlines,
+  TakerFeeRate,
+} from './btStrategy';
 import { AddBtStrategyRequest, UpdateBtStrategyRequest, createBtStrategyRepo } from './btStrategy.repository';
 import { isBtStrategyRepoError } from './btStrategy.repository.error';
 import { API_ENDPOINTS } from './endpoints';
@@ -24,6 +35,55 @@ const server = setupServer();
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
+
+describe('UUT: Get backtesting strategy by ID', () => {
+  const { url, method } = API_ENDPOINTS.GET_BT_STRATEGY;
+
+  describe('[WHEN] get backtesting strategy by ID', () => {
+    it('[THEN] it will send a GET request to the server', async () => {
+      let serverHasBeenCalled = false;
+      server.use(
+        addRestRoute(method, createApiPath(url), async (_, res, ctx) => {
+          serverHasBeenCalled = true;
+          return res(ctx.status(200), ctx.json(mockBtStrategy()));
+        }),
+      );
+      const id = 'M0rCxGh2EW' as BtStrategyId;
+
+      await executeT(btStrategyRepo.getBtStrategyById(id));
+
+      expect(serverHasBeenCalled).toBe(true);
+    });
+  });
+
+  describe('[GIVEN] the server responds successful response with a backtesting strategy', () => {
+    describe('[WHEN] get backtesting strategy by ID', () => {
+      it('[THEN] it will return Right of the backtesting strategy', async () => {
+        const strategy = mockBtStrategy();
+        server.use(
+          addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(200), ctx.json(strategy))),
+        );
+
+        const result = await executeT(btStrategyRepo.getBtStrategyById(strategy.id));
+
+        expect(result).toEqualRight(strategy);
+      });
+    });
+  });
+
+  describe('[GIVEN] the server responds HTTP error', () => {
+    describe('[WHEN] get backtesting strategy by ID', () => {
+      it('[THEN] it will return Left of error', async () => {
+        server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
+        const id = 'M0rCxGh2EW' as BtStrategyId;
+
+        const result = await executeT(btStrategyRepo.getBtStrategyById(id));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
+      });
+    });
+  });
+});
 
 describe('UUT: Get backtesting strategies', () => {
   const { url, method } = API_ENDPOINTS.GET_BT_STRATEGIES;
@@ -77,19 +137,20 @@ describe('UUT: Get backtesting strategies', () => {
 describe('UUT: Add backtesting strategy', () => {
   const { method, url } = API_ENDPOINTS.ADD_BT_STRATEGY;
   const request: AddBtStrategyRequest = {
-    name: 'strategy name',
+    name: 'strategy name' as BtStrategyName,
     exchange: exchangeNameEnum.BINANCE,
     symbol: 'BNBUSDT' as SymbolName,
     timeframe: timeframeEnum['15m'],
-    maxNumKlines: 100,
-    startTimestamp: new Date('2010-02-03') as ValidDate,
-    endTimestamp: new Date('2010-02-04') as ValidDate,
+    maxNumKlines: 100 as MaxNumKlines,
+    btRange: { start: new Date('2010-02-03'), end: new Date('2010-02-04') } as BtRange,
     timezone: 'Asia/Bangkok' as TimezoneString,
-    capitalCurrency: 'BNB' as BaseAsset,
-    initialCapital: 100.1,
-    takerFeeRate: 0.1,
-    makerFeeRate: 0.1,
-    body: 'console.log("Hi")',
+    assetCurrency: 'BNB' as AssetCurrency,
+    capitalCurrency: 'USDT' as CapitalCurrency,
+    initialCapital: 100.1 as InitialCapital,
+    takerFeeRate: 0.1 as TakerFeeRate,
+    makerFeeRate: 0.1 as MakerFeeRate,
+    language: 'javascript',
+    body: 'console.log("Hi")' as BtStrategyBody,
   };
 
   describe('[WHEN] add backtesting strategy', () => {
@@ -110,13 +171,14 @@ describe('UUT: Add backtesting strategy', () => {
         symbol: 'BNBUSDT',
         timeframe: '15m',
         maxNumKlines: 100,
-        startTimestamp: '2010-02-03T00:00:00.000Z',
-        endTimestamp: '2010-02-04T00:00:00.000Z',
+        btRange: { start: '2010-02-03T00:00:00.000Z', end: '2010-02-04T00:00:00.000Z' },
         timezone: 'Asia/Bangkok',
-        capitalCurrency: 'BNB',
+        assetCurrency: 'BNB',
+        capitalCurrency: 'USDT',
         initialCapital: 100.1,
         takerFeeRate: 0.1,
         makerFeeRate: 0.1,
+        language: 'javascript',
         body: 'console.log("Hi")',
       });
     });
@@ -157,19 +219,20 @@ describe('UUT: Update backtesting strategy', () => {
   const { method, url: urlTemplate } = API_ENDPOINTS.UPDATE_BT_STRATEGY;
   const request: UpdateBtStrategyRequest = {
     id: 'existId' as BtStrategyId,
-    name: 'strategy name',
+    name: 'strategy name' as BtStrategyName,
     exchange: exchangeNameEnum.BINANCE,
     symbol: 'BNBUSDT' as SymbolName,
     timeframe: timeframeEnum['15m'],
-    maxNumKlines: 100,
-    startTimestamp: new Date('2010-02-03') as ValidDate,
-    endTimestamp: new Date('2010-02-04') as ValidDate,
+    maxNumKlines: 100 as MaxNumKlines,
+    btRange: { start: new Date('2010-02-03'), end: new Date('2010-02-04') } as BtRange,
     timezone: 'Asia/Bangkok' as TimezoneString,
-    capitalCurrency: 'BNB' as BaseAsset,
-    initialCapital: 100.1,
-    takerFeeRate: 0.1,
-    makerFeeRate: 0.1,
-    body: 'console.log("Hi")',
+    assetCurrency: 'BNB' as AssetCurrency,
+    capitalCurrency: 'USDT' as CapitalCurrency,
+    initialCapital: 100.1 as InitialCapital,
+    takerFeeRate: 0.1 as TakerFeeRate,
+    makerFeeRate: 0.1 as MakerFeeRate,
+    language: 'javascript',
+    body: 'console.log("Hi")' as BtStrategyBody,
   };
   const url = urlTemplate.replace(':id', request.id);
 
@@ -191,13 +254,14 @@ describe('UUT: Update backtesting strategy', () => {
         symbol: 'BNBUSDT',
         timeframe: '15m',
         maxNumKlines: 100,
-        startTimestamp: '2010-02-03T00:00:00.000Z',
-        endTimestamp: '2010-02-04T00:00:00.000Z',
+        btRange: { start: '2010-02-03T00:00:00.000Z', end: '2010-02-04T00:00:00.000Z' },
         timezone: 'Asia/Bangkok',
-        capitalCurrency: 'BNB',
+        assetCurrency: 'BNB',
+        capitalCurrency: 'USDT',
         initialCapital: 100.1,
         takerFeeRate: 0.1,
         makerFeeRate: 0.1,
+        language: 'javascript',
         body: 'console.log("Hi")',
       });
     });
@@ -366,46 +430,7 @@ describe('UUT: Get execution progress', () => {
 
 describe('UUT: Get execution result', () => {
   const { method, url } = API_ENDPOINTS.GET_EXECUTION_RESULT;
-  const response = {
-    status: btExecutionStatusEnum.FINISHED,
-    executionTimeMs: 10000,
-    logs: ['log1'],
-    orders: {
-      openingOrders: [],
-      submittedOrders: [],
-      triggeredOrders: [],
-      filledOrders: [],
-      canceledOrders: [],
-      rejectedOrders: [],
-    },
-    trades: { openingTrades: [], closedTrades: [] },
-    performance: {
-      netReturn: 99,
-      netProfit: 99,
-      netLoss: 99,
-      buyAndHoldReturn: 99,
-      maxDrawdown: 999,
-      maxRunup: 999,
-      returnOfInvestment: 99,
-      profitFactor: 99,
-      totalTradeVolume: 99,
-      totalFees: { inCapitalCurrency: 9, inAssetCurrency: 9 },
-      backtestDuration: '1 days',
-      winLossMetrics: {
-        numOfTotalTrades: 19,
-        numOfWinningTrades: 19,
-        numOfLosingTrades: 19,
-        numOfEvenTrades: 19,
-        winRate: 9.9,
-        lossRate: 9.9,
-        evenRate: 9.9,
-        avgProfit: 9.9,
-        avgLoss: 9.9,
-        largestProfit: 9.9,
-        largestLoss: 9.9,
-      },
-    },
-  };
+  const response = executionResultResponse;
 
   describe('[WHEN] get execution result', () => {
     it('[THEN] it will send a request to the server', async () => {
@@ -431,7 +456,7 @@ describe('UUT: Get execution result', () => {
 
   describe('[GIVEN] the server responds successful response', () => {
     describe('[WHEN] get execution result', () => {
-      it('[THEN] it will return Right of the response', async () => {
+      it('[THEN] it will return Right', async () => {
         const btStrategyId = '8szSkrNS4N' as BtStrategyId;
         const btExecutionId = 'SJ-jRbgW0Z' as BtExecutionId;
         const transformedUrl = url
@@ -446,7 +471,7 @@ describe('UUT: Get execution result', () => {
 
         const result = await executeT(btStrategyRepo.getExecutionResult(btStrategyId, btExecutionId));
 
-        expect(result).toEqualRight(response);
+        expect(result).toBeRight();
       });
     });
   });

@@ -1,12 +1,12 @@
 import { createTheme } from '@mui/material/styles';
-import { mergeAll } from 'ramda';
-import type { Config } from 'tailwindcss';
+import { concat, mergeAll, mergeDeepWith } from 'ramda';
+import { Config } from 'tailwindcss';
 
 import * as breakpoints from './src/styles/theme.constant.ts';
+import tremorConfig from './tailwind.tremor.config.ts';
 
 const muiTheme = createTheme();
-
-export default {
+const customConfig: Config = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   important: '#root',
   darkMode: 'class',
@@ -25,6 +25,10 @@ export default {
       black: colors.black,
       gray: colors.gray,
       slate: colors.slate,
+      emerald: colors.emerald,
+      rose: colors.rose,
+      up: '#34d399',
+      down: '#f43f5e',
       primary: {
         DEFAULT: 'rgba(var(--primary-color), <alpha-value>)',
         light: 'rgba(var(--primary-light-color), <alpha-value>)',
@@ -88,4 +92,6 @@ export default {
     },
   },
   plugins: [require('tailwind-scrollbar')],
-} satisfies Config;
+};
+
+export default mergeDeepWith(concat, customConfig, tremorConfig);

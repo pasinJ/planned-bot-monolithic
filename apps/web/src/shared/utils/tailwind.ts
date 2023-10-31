@@ -30,7 +30,7 @@ export const mergeClassName = extendTailwindMerge({
     ],
   },
   classGroups: {
-    boxShadow: pipe(range(0, 24), map(toString)),
+    shadow: [{ shadow: pipe(range(0, 24), map(toString)) }],
     content: ['empty', 'lightModeSym', 'darkModeSym'],
     display: ['revert'],
   },

@@ -41,6 +41,7 @@
     "test-utils",
     "mocks",
     "../strategyExecutorContextTypes/dist/index.d.cts",
-    "tailwind.config.ts"
+    "tailwind.config.ts",
+    "tailwind.tremor.config.ts"
   ]
 }

@@ -12,3 +12,7 @@ export function to4Digits(val: number): number {
 export function to8Digits(val: number): number {
   return toDigits(val, 8);
 }
+
+export function toLocale(val: number, maxDigits = 2): string {
+  return val.toLocaleString(undefined, { maximumFractionDigits: maxDigits });
+}

@@ -24,7 +24,18 @@ export const progressPercentageSchema = schemaForType<ProgressPercentage>().with
 );
 
 export type ExecutionLogs = readonly string[];
-export const executionLogsSchema = schemaForType<ExecutionLogs>().with(z.array(z.string()));
+export const executionLogsSchema = schemaForType<ExecutionLogs>().with(z.string().array());
 
 export type ExecutionTime = number & z.BRAND<'ExecutionTime'>;
 export const executionTimeSchema = schemaForType<ExecutionTime>().with(z.number().brand('ExecutionTime'));
+
+export function isExecutionInFinalStatus(executionProgress: {
+  status: BtExecutionStatus;
+  percentage: ProgressPercentage;
+  logs: ExecutionLogs;
+}): boolean {
+  return (
+    executionProgress.status !== btExecutionStatusEnum.PENDING &&
+    executionProgress.status !== btExecutionStatusEnum.RUNNING
+  );
+}

@@ -51,7 +51,7 @@ describe('[GIVEN] the current path contains ID', () => {
           .mockReturnValue(te.right({ status: btExecutionStatusEnum.PENDING, progress: 0, logs: [] })),
       };
       const btStrategyId = 'CDjYfJFPml';
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: btStrategyId });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       renderUseExecutionProgress(btExecutionId, { btStrategyRepo }, path);
@@ -74,7 +74,7 @@ describe('[GIVEN] the repository return Right of status, progress percentage, an
           .fn()
           .mockReturnValue(te.right({ status: btExecutionStatusEnum.PENDING, progress: 0, logs: [] })),
       };
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: 'CDjYfJFPml' });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId: 'CDjYfJFPml' });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       const { result } = renderUseExecutionProgress(btExecutionId, { btStrategyRepo }, path);
@@ -93,7 +93,7 @@ describe('[GIVEN] the repository return Left of error', () => {
       const btStrategyRepo: Partial<BtStrategyRepo> = {
         getExecutionProgress: jest.fn().mockReturnValue(te.left(error)),
       };
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: 'CDjYfJFPml' });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId: 'CDjYfJFPml' });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       const { result } = renderUseExecutionProgress(btExecutionId, { btStrategyRepo }, path);
@@ -118,7 +118,7 @@ describe('[GIVEN] the returned progress is not final', () => {
             te.right({ status: btExecutionStatusEnum.FINISHED, percentage: 100, logs: [] }),
           ),
       };
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: 'CDjYfJFPml' });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId: 'CDjYfJFPml' });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       renderUseExecutionProgress(btExecutionId, { btStrategyRepo }, path);

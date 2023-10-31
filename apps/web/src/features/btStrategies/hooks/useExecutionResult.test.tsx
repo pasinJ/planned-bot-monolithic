@@ -15,11 +15,16 @@ function renderUseExecutionResult(
   btExecutionId: BtExecutionId,
   overrides: { btStrategyRepo: Partial<BtStrategyRepo> },
   currentPath: string,
+  autoFetch = true,
 ) {
-  return renderHookWithContexts(() => useExecutionResult(btExecutionId), ['Infra', 'ServerState', 'Routes'], {
-    infraContext: overrides,
-    routes: { uiPath: BACKTEST_STRATEGY_ROUTE, currentPath },
-  });
+  return renderHookWithContexts(
+    () => useExecutionResult(autoFetch, btExecutionId),
+    ['Infra', 'ServerState', 'Routes'],
+    {
+      infraContext: overrides,
+      routes: { uiPath: BACKTEST_STRATEGY_ROUTE, currentPath },
+    },
+  );
 }
 const response = {
   status: btExecutionStatusEnum.FINISHED,
@@ -62,7 +67,21 @@ const response = {
   },
 } as unknown as GetExecutionResultResp;
 
-describe('[GIVEN] the current path does not contain ID', () => {
+describe('[GIVEN] auto fetch is disabled', () => {
+  describe('[WHEN] use execution result hook', () => {
+    it('[THEN] it will not call backtesting repository', () => {
+      const btStrategyRepo: Partial<BtStrategyRepo> = { getExecutionResult: jest.fn() };
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE);
+      const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
+
+      renderUseExecutionResult(btExecutionId, { btStrategyRepo }, path, false);
+
+      expect(btStrategyRepo.getExecutionResult).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('[GIVEN] auto fetch is enable [AND] the current path does not contain ID', () => {
   describe('[WHEN] use execution result hook', () => {
     it('[THEN] it will return error', async () => {
       const btStrategyRepo: Partial<BtStrategyRepo> = {};
@@ -77,14 +96,14 @@ describe('[GIVEN] the current path does not contain ID', () => {
   });
 });
 
-describe('[GIVEN] the current path contains ID', () => {
+describe('[GIVEN] auto fetch is enable [AND] the current path contains ID', () => {
   describe('[WHEN] use execution result hook', () => {
     it('[THEN] it will call backtesting repository for getting execution progress', async () => {
       const btStrategyRepo: Partial<BtStrategyRepo> = {
         getExecutionResult: jest.fn().mockReturnValue(te.right(response)),
       };
       const btStrategyId = 'CDjYfJFPml';
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: btStrategyId });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       renderUseExecutionResult(btExecutionId, { btStrategyRepo }, path);
@@ -106,7 +125,7 @@ describe('[GIVEN] the repository return Right of response', () => {
         getExecutionResult: jest.fn().mockReturnValue(te.right(response)),
       };
       const btStrategyId = 'CDjYfJFPml';
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: btStrategyId });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       const { result } = renderUseExecutionResult(btExecutionId, { btStrategyRepo }, path);
@@ -123,7 +142,7 @@ describe('[GIVEN] the repository return Left of error', () => {
       const btStrategyRepo: Partial<BtStrategyRepo> = {
         getExecutionResult: jest.fn().mockReturnValue(te.left(error)),
       };
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { id: 'CDjYfJFPml' });
+      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId: 'CDjYfJFPml' });
       const btExecutionId = 'bBJM-qLZyO' as BtExecutionId;
 
       const { result } = renderUseExecutionResult(btExecutionId, { btStrategyRepo }, path);

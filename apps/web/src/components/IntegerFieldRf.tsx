@@ -6,12 +6,14 @@ import { IntegerString } from '#shared/utils/string';
 import IntegerField, { IntegerFieldProps } from './IntegerField';
 
 type IntegerFieldRfProps<T extends FieldValues, N extends Path<T>> = {
-  controllerProps: FieldPathValue<T, N> extends IntegerString ? UseControllerProps<T, N> : never;
+  controllerProps: UseControllerProps<T, N>;
   fieldProps: Omit<IntegerFieldProps, 'value'>;
 };
 
 export default function IntegerFieldRf<T extends FieldValues, N extends Path<T>>(
-  props: IntegerFieldRfProps<T, N>,
+  props: FieldPathValue<T, N> extends IntegerString
+    ? IntegerFieldRfProps<T, N>
+    : IntegerFieldRfProps<T, N> & { __fieldMustBeIntegerString: never },
 ) {
   const { controllerProps, fieldProps } = props;
   const {

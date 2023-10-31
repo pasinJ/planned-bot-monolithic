@@ -3,13 +3,15 @@ import { DateTimePicker, DateTimePickerProps } from '@mui/x-date-pickers/DateTim
 import { FieldPathValue, FieldValues, Path, UseControllerProps, useController } from 'react-hook-form';
 
 type DateTimePickerRfProps<TDate, T extends FieldValues, N extends Path<T>> = {
-  controllerProps: FieldPathValue<T, N> extends Date ? UseControllerProps<T, N> : never;
+  controllerProps: UseControllerProps<T, N>;
   dateTimePickerProps: DateTimePickerProps<TDate>;
   textFieldProps: TextFieldProps;
 };
 
 export default function DateTimePickerRf<TDate, T extends FieldValues, N extends Path<T>>(
-  props: DateTimePickerRfProps<TDate, T, N>,
+  props: FieldPathValue<T, N> extends Date
+    ? DateTimePickerRfProps<TDate, T, N>
+    : DateTimePickerRfProps<TDate, T, N> & { __fieldMustBeDate: never },
 ) {
   const { controllerProps, dateTimePickerProps, textFieldProps } = props;
   const {

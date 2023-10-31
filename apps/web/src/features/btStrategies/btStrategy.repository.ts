@@ -5,7 +5,7 @@ import { DeepReadonly } from 'ts-essentials';
 
 import { ExchangeName } from '#features/exchanges/exchange';
 import { Timeframe } from '#features/klines/kline';
-import { BaseAsset, QuoteAsset, SymbolName } from '#features/symbols/symbol';
+import { SymbolName } from '#features/symbols/symbol';
 import { HttpClient } from '#infra/httpClient.type';
 import { ValidDate } from '#shared/utils/date';
 import { DurationString, TimezoneString } from '#shared/utils/string';
@@ -17,7 +17,20 @@ import {
   ExecutionTime,
   ProgressPercentage,
 } from './btExecution';
-import { BtStrategy, BtStrategyId } from './btStrategy';
+import {
+  AssetCurrency,
+  BtRange,
+  BtStrategy,
+  BtStrategyBody,
+  BtStrategyId,
+  BtStrategyName,
+  CapitalCurrency,
+  InitialCapital,
+  MakerFeeRate,
+  MaxNumKlines,
+  StrategyLanguage,
+  TakerFeeRate,
+} from './btStrategy';
 import { BtStrategyRepoError, createBtStrategyRepoError } from './btStrategy.repository.error';
 import { API_ENDPOINTS } from './endpoints';
 import {
@@ -29,7 +42,6 @@ import {
   TriggeredOrder,
 } from './order';
 import {
-  BuyAndHoldReturn,
   MaxEquityDrawdown,
   MaxEquityRunup,
   NetLoss,
@@ -43,6 +55,7 @@ import {
 import { ClosedTrade, NetReturn, OpeningTrade } from './trade';
 
 export type BtStrategyRepo = {
+  getBtStrategyById: GetBtStrategyById;
   getBtStrategies: GetBtStrategies;
   addBtStrategy: AddBtStrategy;
   updateBtStrategy: UpdateBtStrategy;
@@ -52,6 +65,7 @@ export type BtStrategyRepo = {
 };
 export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo {
   return {
+    getBtStrategyById: getBtStrategyById({ httpClient }),
     getBtStrategies: getBtStrategies({ httpClient }),
     addBtStrategy: addBtStrategy({ httpClient }),
     updateBtStrategy: updateBtStrategy({ httpClient }),
@@ -59,6 +73,23 @@ export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient })
     getExecutionProgress: getExecutionProgress({ httpClient }),
     getExecutionResult: getExecutionResult({ httpClient }),
   };
+}
+
+type GetBtStrategyById = (id: BtStrategyId) => te.TaskEither<GetBtStrategyByIdError, BtStrategy>;
+export type GetBtStrategyByIdError = BtStrategyRepoError<'GetBtStrategyByIdFailed'>;
+export function getBtStrategyById({ httpClient }: { httpClient: HttpClient }): GetBtStrategyById {
+  const { method, url, responseSchema } = API_ENDPOINTS.GET_BT_STRATEGY;
+  return (id) =>
+    pipe(
+      httpClient.sendRequest({ method, url: url.replace(':btStrategyId', id), responseSchema }),
+      te.mapLeft((error) =>
+        createBtStrategyRepoError(
+          'GetBtStrategyByIdFailed',
+          `Getting a backtesting strategy (${id}) from backend failed`,
+          error,
+        ),
+      ),
+    );
 }
 
 type GetBtStrategies = te.TaskEither<GetBtStrategiesError, readonly BtStrategy[]>;
@@ -81,19 +112,20 @@ type AddBtStrategy = (
   request: AddBtStrategyRequest,
 ) => te.TaskEither<AddBtStrategyError, AddBtStrategyResult>;
 export type AddBtStrategyRequest = {
-  name: string;
+  name: BtStrategyName;
   exchange: ExchangeName;
   symbol: SymbolName;
   timeframe: Timeframe;
-  maxNumKlines: number;
-  startTimestamp: ValidDate;
-  endTimestamp: ValidDate;
+  maxNumKlines: MaxNumKlines;
+  btRange: BtRange;
   timezone: TimezoneString;
-  capitalCurrency: BaseAsset | QuoteAsset;
-  initialCapital: number;
-  takerFeeRate: number;
-  makerFeeRate: number;
-  body: string;
+  assetCurrency: AssetCurrency;
+  capitalCurrency: CapitalCurrency;
+  initialCapital: InitialCapital;
+  takerFeeRate: TakerFeeRate;
+  makerFeeRate: MakerFeeRate;
+  language: StrategyLanguage;
+  body: BtStrategyBody;
 };
 export type AddBtStrategyError = BtStrategyRepoError<'AddBtStrategyFailed'>;
 export type AddBtStrategyResult = { id: BtStrategyId; createdAt: ValidDate };
@@ -115,19 +147,20 @@ export function addBtStrategy({ httpClient }: { httpClient: HttpClient }): AddBt
 type UpdateBtStrategy = (request: UpdateBtStrategyRequest) => te.TaskEither<UpdateBtStrategyError, void>;
 export type UpdateBtStrategyRequest = {
   id: BtStrategyId;
-  name: string;
+  name: BtStrategyName;
   exchange: ExchangeName;
   symbol: SymbolName;
   timeframe: Timeframe;
-  maxNumKlines: number;
-  startTimestamp: ValidDate;
-  endTimestamp: ValidDate;
+  maxNumKlines: MaxNumKlines;
+  btRange: BtRange;
   timezone: TimezoneString;
-  capitalCurrency: BaseAsset | QuoteAsset;
-  initialCapital: number;
-  takerFeeRate: number;
-  makerFeeRate: number;
-  body: string;
+  assetCurrency: AssetCurrency;
+  capitalCurrency: CapitalCurrency;
+  initialCapital: InitialCapital;
+  takerFeeRate: TakerFeeRate;
+  makerFeeRate: MakerFeeRate;
+  language: StrategyLanguage;
+  body: BtStrategyBody;
 };
 export type UpdateBtStrategyError = BtStrategyRepoError<'UpdateBtStrategyFailed'>;
 function updateBtStrategy({ httpClient }: { httpClient: HttpClient }): UpdateBtStrategy {
@@ -136,7 +169,7 @@ function updateBtStrategy({ httpClient }: { httpClient: HttpClient }): UpdateBtS
     pipe(
       httpClient.sendRequest({
         method,
-        url: url.replace(':id', request.id),
+        url: url.replace(':btStrategyId', request.id),
         responseSchema,
         body: dissoc('id', request),
       }),
@@ -156,7 +189,7 @@ function executeBtStrategy({ httpClient }: { httpClient: HttpClient }): ExecuteB
   const { method, url, responseSchema } = API_ENDPOINTS.EXECUTE_BT_STRATEGY;
   return (btStrategyId) =>
     pipe(
-      httpClient.sendRequest({ method, url: url.replace(':id', btStrategyId), responseSchema }),
+      httpClient.sendRequest({ method, url: url.replace(':btStrategyId', btStrategyId), responseSchema }),
       te.mapLeft((error) =>
         createBtStrategyRepoError(
           'ExecuteBtStrategyFailed',
@@ -214,7 +247,6 @@ export type GetExecutionResultResp = DeepReadonly<{
     netReturn: NetReturn;
     netProfit: NetProfit;
     netLoss: NetLoss;
-    buyAndHoldReturn: BuyAndHoldReturn;
     maxDrawdown: MaxEquityDrawdown;
     maxRunup: MaxEquityRunup;
     returnOfInvestment: ReturnOfInvestment;

@@ -1,8 +1,10 @@
+import { Decimal } from 'decimal.js';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
 import { schemaForType } from '#shared/utils/zod';
 
+import { InitialCapital } from './btStrategy';
 import { FilledEntryOrder, FilledExitOrder, filledEntryOrderSchema, filledExitOrderSchema } from './order';
 
 export type TradeId = string & z.BRAND<'TradeId'>;
@@ -63,3 +65,40 @@ export const closedTradeSchema = schemaForType<ClosedTrade>().with(
     })
     .readonly(),
 );
+
+export type TradesLists = DeepReadonly<{ openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] }>;
+
+export function calculatePercentageOfNetReturn(closedTrade: ClosedTrade): number {
+  const { entryOrder, netReturn } = closedTrade;
+  const cost = new Decimal(entryOrder.filledPrice).times(entryOrder.quantity);
+  return new Decimal(netReturn)
+    .dividedBy(cost)
+    .times(100)
+    .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+    .toNumber();
+}
+export function calculatePercentageOfMaxRunup(closedTrade: ClosedTrade): number {
+  const { entryOrder, maxRunup } = closedTrade;
+  const cost = new Decimal(entryOrder.filledPrice).times(entryOrder.quantity);
+  return new Decimal(maxRunup)
+    .dividedBy(cost)
+    .times(100)
+    .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+    .toNumber();
+}
+export function calculatePercentageOfMaxDrawdown(closedTrade: ClosedTrade): number {
+  const { entryOrder, maxDrawdown } = closedTrade;
+  const cost = new Decimal(entryOrder.filledPrice).times(entryOrder.quantity);
+  return new Decimal(maxDrawdown)
+    .dividedBy(cost)
+    .times(100)
+    .toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
+    .toNumber();
+}
+
+export function calculatePercentageCompareWithInitialCapital(
+  initialCapital: InitialCapital,
+  val: number,
+): number {
+  return new Decimal(val).times(100).dividedBy(initialCapital).toNumber();
+}

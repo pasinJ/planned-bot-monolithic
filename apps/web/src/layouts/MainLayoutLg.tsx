@@ -16,11 +16,9 @@ import { BtMainPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutLg({ children }: PropsWithChildren) {
   return (
-    <div className="flex h-screen">
+    <div className="flex max-w-full">
       <SideNav />
-      <Box component="main" className="h-full w-full">
-        <Box className="relative h-full w-full bg-gray-100 px-10 py-6">{children}</Box>
-      </Box>
+      <main className="relative min-h-screen min-w-0 flex-grow bg-gray-100 px-10 py-6">{children}</main>
     </div>
   );
 }

@@ -2,8 +2,8 @@ import { faker } from '@faker-js/faker';
 import { mergeRight } from 'ramda';
 
 import {
-  BtEndTimestamp,
-  BtStartTimestamp,
+  AssetCurrency,
+  BtRange,
   BtStrategy,
   BtStrategyBody,
   BtStrategyId,
@@ -28,13 +28,13 @@ export function mockBtStrategy(overrides?: Partial<BtStrategy>): BtStrategy {
       exchange: exchangeNameEnum.BINANCE,
       symbol: 'BTCUSDT' as SymbolName,
       timeframe: timeframeEnum['1d'],
+      assetCurrency: 'BTC' as AssetCurrency,
       capitalCurrency: 'USDT' as CapitalCurrency,
       initialCapital: 999.99 as InitialCapital,
       takerFeeRate: 0.9 as TakerFeeRate,
       makerFeeRate: 0.9 as MakerFeeRate,
       maxNumKlines: 99 as MaxNumKlines,
-      startTimestamp: new Date('2022-04-04') as BtStartTimestamp,
-      endTimestamp: new Date('2022-04-05') as BtEndTimestamp,
+      btRange: { start: new Date('2022-04-04'), end: new Date('2022-04-05') } as BtRange,
       timezone: 'Asia/Bangkok' as TimezoneString,
       language: 'javascript',
       body: `console.log("Hello world")` as BtStrategyBody,
