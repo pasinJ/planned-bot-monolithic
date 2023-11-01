@@ -1,7 +1,7 @@
 import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { isNotNil, omit, pick, propEq } from 'ramda';
+import { isNotNil, omit, pick } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
 import { Kline } from '#features/shared/kline.js';
@@ -10,7 +10,7 @@ import {
   createDateRange,
   getDurationString,
 } from '#features/shared/objectValues/dateRange.js';
-import { FeeAmount, FilledOrder, OrderId } from '#features/shared/order.js';
+import { FeeAmount, OrderId } from '#features/shared/order.js';
 import { OrdersLists, TradesLists } from '#features/shared/strategyExecutor/executeStrategy.js';
 import {
   EquityDrawdown,
@@ -21,12 +21,10 @@ import {
   StrategyModule,
 } from '#features/shared/strategyExecutorContext/strategy.js';
 import {
-  BuyAndHoldReturn,
   ProfitFactor,
   ReturnOfInvestment,
   TotalTradeVolume,
   WinLossMetrics,
-  calculateBuyAndHoldReturn,
   calculateProfitFactor,
   calculateReturnOfInvestment,
   calculateWinLossMetrics,
@@ -76,7 +74,6 @@ export type GetBtExecutionResultResp =
         netReturn: Return;
         netProfit: Profit;
         netLoss: Loss;
-        buyAndHoldReturn: BuyAndHoldReturn;
         maxDrawdown: EquityDrawdown;
         maxRunup: EquityRunup;
         returnOfInvestment: ReturnOfInvestment;
@@ -111,8 +108,8 @@ export function getBtExecutionResult(
               te.bindW('updatedResult', ({ lastKline }) =>
                 _forceExitOpeningTrades(forceExitDeps, executionResult, lastKline),
               ),
-              te.let('performance', ({ btStrategy, lastKline, updatedResult }) =>
-                createPerformanceReport(btStrategy, lastKline, updatedResult),
+              te.let('performance', ({ btStrategy, updatedResult }) =>
+                createPerformanceReport(btStrategy, updatedResult),
               ),
               te.map(({ updatedResult, performance }) => ({
                 ...omit(['strategyModule', 'orders', 'trades'], executionResult),
@@ -166,7 +163,6 @@ function _forceExitOpeningTrades(
 
 function createPerformanceReport(
   btStrategy: BtStrategyModel,
-  lastKline: Kline,
   request: { strategyModule: StrategyModule; orders: OrdersLists; trades: TradesLists },
 ) {
   const { endTimestamp, startTimestamp } = btStrategy;
@@ -175,16 +171,13 @@ function createPerformanceReport(
   const { filledOrders } = orders;
   const { closedTrades } = trades;
 
-  type FilledEntryOrder = Extract<FilledOrder, { orderSide: 'ENTRY' }>;
-  const firstEntryOrder = orders.filledOrders.find(propEq('ENTRY', 'orderSide')) as FilledEntryOrder;
-
   const backtestRange = unsafeUnwrapEitherRight(createDateRange(startTimestamp, endTimestamp));
 
   return {
     netReturn,
     netProfit,
     netLoss,
-    buyAndHoldReturn: calculateBuyAndHoldReturn(initialCapital, firstEntryOrder, lastKline),
+
     maxDrawdown: maxDrawdown,
     maxRunup: maxRunup,
     returnOfInvestment: calculateReturnOfInvestment(initialCapital, netReturn),

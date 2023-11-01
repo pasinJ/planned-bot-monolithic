@@ -180,7 +180,6 @@ describe('UUT: Get backtesting execution result use case', () => {
             netReturn: 1,
             netProfit: 2,
             netLoss: 3,
-            buyAndHoldReturn: 0,
             maxDrawdown: 4,
             maxRunup: 5,
             returnOfInvestment: 0.010001,
