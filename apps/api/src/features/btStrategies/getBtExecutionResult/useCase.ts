@@ -37,9 +37,9 @@ import { GeneralError, createGeneralError } from '#shared/errors/generalError.js
 import { Milliseconds } from '#shared/utils/date.js';
 import { unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 
+import { GetLastKlineBefore, GetLastKlineBeforeError } from '../../klines/DAOs/kline.feature.js';
 import { GetBtExecutionResultById, GetBtExecutionResultByIdError } from '../DAOs/btExecution.feature.js';
 import { GetBtStrategyById, GetBtStrategyByIdError } from '../DAOs/btStrategy.feature.js';
-import { GetLastKlineBefore, GetLastKlineBeforeError } from '../DAOs/kline.feature.js';
 import {
   BtExecutionFailedResult,
   BtExecutionId,

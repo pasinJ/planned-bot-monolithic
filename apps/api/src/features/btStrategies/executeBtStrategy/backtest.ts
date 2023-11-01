@@ -50,7 +50,6 @@ import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.j
 import { isError } from '#shared/utils/general.js';
 import { isString } from '#shared/utils/string.js';
 
-import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import {
   AddKlines,
   CreateKlinesIteratorError,
@@ -58,7 +57,8 @@ import {
   GetKlinesBefore,
   GetNextKlineIterationError,
   IterateThroughKlines,
-} from '../DAOs/kline.feature.js';
+} from '../../klines/DAOs/kline.feature.js';
+import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import {
   BT_PROGRESS_PERCENTAGE_FINISHED,
   BtProgressPercentage,

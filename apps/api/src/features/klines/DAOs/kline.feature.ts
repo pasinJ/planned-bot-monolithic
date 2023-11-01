@@ -14,7 +14,7 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { ValidDate } from '#shared/utils/date.js';
 import { isUndefined } from '#shared/utils/general.js';
 
-import { KlineDaoError, createKlineDaoError } from './kline.error.js';
+import { KlineDaoError, createKlineDaoError } from '../../btStrategies/DAOs/kline.error.js';
 import { KlineMongooseModel } from './kline.js';
 
 export type AddKlines = (klines: Kline | readonly Kline[]) => te.TaskEither<AddKlinesError, void>;

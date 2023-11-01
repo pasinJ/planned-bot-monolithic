@@ -7,7 +7,7 @@ import { Kline } from '#features/shared/kline.js';
 import { timeframeList } from '#features/shared/timeframe.js';
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 
-import { KlineDaoError, createKlineDaoError } from './kline.error.js';
+import { KlineDaoError, createKlineDaoError } from '../../btStrategies/DAOs/kline.error.js';
 
 type KlineDocument = Kline & { _id: string; __v: number };
 export type KlineMongooseModel = Model<KlineDocument>;
