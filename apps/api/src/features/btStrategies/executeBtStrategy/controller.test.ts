@@ -35,7 +35,7 @@ const setupServer = setupTestServer(method, url, buildExecuteBtStrategyControlle
 describe('[GIVEN] request is valid [AND] backtesting strategy ID exists', () => {
   describe('[WHEN] user sends a request to execute the backtesting strategy', () => {
     it('[THEN] it will return HTTP202 and response body with execution ID, timestamp, progress path, and result path', async () => {
-      const executeBtUrl = url.replace(':id', anyBtStrategyId);
+      const executeBtUrl = url.replace(':btStrategyId', anyBtStrategyId);
       const executionId = '8ud6E71NKg' as BtExecutionId;
       const createdAt = new Date('2020-12-12') as ValidDate;
       const httpServer = setupServer({
@@ -59,7 +59,7 @@ describe('[GIVEN] url has backtesting strategy ID param equals to an empty strin
   describe('[WHEN] user sends a request to execute the backtesting strategy', () => {
     it('[THEN] it will return HTTP400 and error response body', async () => {
       const httpServer = setupServer();
-      const executeBtUrl = url.replace(':id', '');
+      const executeBtUrl = url.replace(':btStrategyId', '');
 
       const resp = await httpServer.inject({ method, url: executeBtUrl });
 
@@ -72,7 +72,7 @@ describe('[GIVEN] url has backtesting strategy ID param equals to an empty strin
 describe('[GIVEN] backtesting strategy ID does not exist', () => {
   describe('[WHEN] user sends a request to execute the backtesting strategy', () => {
     it('[THEN] it will return HTTP404 and error response body', async () => {
-      const executeBtUrl = url.replace(':id', anyBtStrategyId);
+      const executeBtUrl = url.replace(':btStrategyId', anyBtStrategyId);
       const httpServer = setupServer({ btStrategyDao: { existById: () => te.right(false) } });
 
       const response = await httpServer.inject({ method, url: executeBtUrl });
@@ -86,7 +86,7 @@ describe('[GIVEN] backtesting strategy ID does not exist', () => {
 describe('[GIVEN] DAO fails to check existence of that backtesting strategy', () => {
   describe('[WHEN] user sends a request to execute the backtesting strategy', () => {
     it('[THEN] it will return HTTP500 and error response body', async () => {
-      const executeBtUrl = url.replace(':id', anyBtStrategyId);
+      const executeBtUrl = url.replace(':btStrategyId', anyBtStrategyId);
       const error = createBtStrategyDaoError('ExistByIdFailed', 'Mock');
       const httpServer = setupServer({ btStrategyDao: { existById: () => te.left(error) } });
 
@@ -101,7 +101,7 @@ describe('[GIVEN] DAO fails to check existence of that backtesting strategy', ()
 describe('[GIVEN] the backtesting strategy is pending or running', () => {
   describe('[WHEN] user sends a request to execute that strategy', () => {
     it('[THEN] it will return HTTP409 and error response body', async () => {
-      const executeBtUrl = url.replace(':id', anyBtStrategyId);
+      const executeBtUrl = url.replace(':btStrategyId', anyBtStrategyId);
       const error = createJobSchedulerError('ExceedJobMaxSchedulingLimit', 'Mock');
       const httpServer = setupServer({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
 
@@ -116,7 +116,7 @@ describe('[GIVEN] the backtesting strategy is pending or running', () => {
 describe('[GIVEN] job scheduler fails to schedule a new backtesting job', () => {
   describe('[WHEN] user sends a request to execute the backtesting strategy', () => {
     it('[THEN] it will return HTTP500 and error response body', async () => {
-      const executeBtUrl = url.replace(':id', anyBtStrategyId);
+      const executeBtUrl = url.replace(':btStrategyId', anyBtStrategyId);
       const error = createJobSchedulerError('ScheduleJobFailed', 'Mock');
       const httpServer = setupServer({ btJobScheduler: { scheduleBtJob: () => te.left(error) } });
 

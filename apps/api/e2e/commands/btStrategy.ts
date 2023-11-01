@@ -12,7 +12,7 @@ export async function executeBtStrategy(btStrategyId = 'IP3t1OJ5Cd') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.EXECUTE_BT_STRATEGY;
   return {
     request: { id: btStrategyId },
-    response: await client.request({ method, url: url.replace(':id', btStrategyId), data: {} }),
+    response: await client.request({ method, url: url.replace(':btStrategyId', btStrategyId), data: {} }),
   };
 }
 
