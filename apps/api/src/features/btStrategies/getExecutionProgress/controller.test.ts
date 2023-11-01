@@ -21,12 +21,13 @@ function mockDeps(
 
 const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_PROGRESS;
 const setupServer = setupTestServer(method, url, buildGetBtExecutionProgressController, mockDeps);
+const btStrategyId = '290FQtHEQX';
 const anyBtExecutionId = 'jOWOiJ5GLZ';
 
-describe('[GIVEN] user send an empty string as execution ID', () => {
+describe('[GIVEN] user send an empty string as backtesting strategy ID or execution ID', () => {
   describe('[WHEN] user send a request to get backtesting execution progress', () => {
     it('[THEN] it will return HTTP400 and error response body', async () => {
-      const getProgressUrl = url.replace(':id', '');
+      const getProgressUrl = url.replace(':btStrategyId', '').replace(':btExecutionId', anyBtExecutionId);
       const httpServer = setupServer();
 
       const resp = await httpServer.inject({ method, url: getProgressUrl });
@@ -40,7 +41,9 @@ describe('[GIVEN] user send an empty string as execution ID', () => {
 describe('[GIVEN] the execution ID does not exist', () => {
   describe('[WHEN] user send a request to get backtesting execution progress', () => {
     it('[THEN] it will return HTTP400 and error response body', async () => {
-      const getProgressUrl = url.replace(':id', anyBtExecutionId);
+      const getProgressUrl = url
+        .replace(':btStrategyId', btStrategyId)
+        .replace(':btExecutionId', anyBtExecutionId);
       const error = createBtExecutionDaoError('NotExist', 'Mock');
       const httpServer = setupServer({ btExecutionDao: { getProgressById: () => te.left(error) } });
 
@@ -55,7 +58,9 @@ describe('[GIVEN] the execution ID does not exist', () => {
 describe('[GIVEN] Bt execution DAO fails to get progress from database', () => {
   describe('[WHEN] user send a request to get backtesting execution progress', () => {
     it('[THEN] it will return HTTP500 and error response body', async () => {
-      const getProgressUrl = url.replace(':id', anyBtExecutionId);
+      const getProgressUrl = url
+        .replace(':btStrategyId', btStrategyId)
+        .replace(':btExecutionId', anyBtExecutionId);
       const error = createBtExecutionDaoError('GetProgressByIdFailed', 'Mock');
       const httpServer = setupServer({ btExecutionDao: { getProgressById: () => te.left(error) } });
 
@@ -71,7 +76,9 @@ describe('[GIVEN] the execution ID exists', () => {
   describe('[WHEN] user send a request to get backtesting execution progress', () => {
     it('[THEN] it will return HTTP200 and progress information in response body', async () => {
       const btExecutionProgress = mockBtExecutionProgress();
-      const getProgressUrl = url.replace(':id', btExecutionProgress.id);
+      const getProgressUrl = url
+        .replace(':btStrategyId', btStrategyId)
+        .replace(':btExecutionId', btExecutionProgress.id);
       const httpServer = setupServer({
         btExecutionDao: { getProgressById: () => te.right(btExecutionProgress) },
       });

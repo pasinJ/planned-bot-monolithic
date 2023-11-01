@@ -14,6 +14,7 @@ import { expectHttpStatus } from './commands/expect.js';
 const client = await createMongoClient();
 executeIo(buildSymbolDao(client));
 const symbolModel: SymbolMongooseModel = client.models[symbolModelName];
+const btStrategyId = '-l50r9Z1GK';
 
 afterEach(() => clearCollections(client));
 afterAll(() => client.disconnect());
@@ -23,7 +24,7 @@ describe('[GIVEN] user sends an empty string as execution ID', () => {
     it('[THEN] it will return HTTP400 and error response body', async () => {
       const executionId = '';
 
-      const { response } = await getBtExecutionProgressById(executionId);
+      const { response } = await getBtExecutionProgressById(btStrategyId, executionId);
 
       expectHttpStatus(response, 400);
       expect(response.data).toEqual(toBeHttpErrorResponse);
@@ -36,7 +37,7 @@ describe('[GIVEN] the execution ID does not exist', () => {
     it('[THEN] it will return HTTP404 and error response body', async () => {
       const executionId = 'IekAhOdDxG';
 
-      const { response } = await getBtExecutionProgressById(executionId);
+      const { response } = await getBtExecutionProgressById(btStrategyId, executionId);
 
       expectHttpStatus(response, 404);
       expect(response.data).toEqual(toBeHttpErrorResponse);
@@ -61,7 +62,7 @@ describe('[GIVEN] the execution ID exists', () => {
       const { response: executeBtResponse } = await executeBtStrategy(btStrategyId);
 
       const executionId = path(['data', 'id'], executeBtResponse) as string;
-      const { response: progressResponse } = await getBtExecutionProgressById(executionId);
+      const { response: progressResponse } = await getBtExecutionProgressById(btStrategyId, executionId);
 
       expectHttpStatus(progressResponse, 200);
       expect(progressResponse.data).toEqual({

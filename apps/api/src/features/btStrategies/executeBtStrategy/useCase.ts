@@ -43,8 +43,8 @@ export function executeBtStrategy(
     te.map(({ id, createdAt }) => ({
       id,
       createdAt,
-      progressPath: GET_BT_PROGRESS.url.replace(':id', btStrategyId).replace(':executionId', id),
-      resultPath: GET_BT_RESULT.url.replace(':id', btStrategyId).replace(':executionId', id),
+      progressPath: GET_BT_PROGRESS.url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', id),
+      resultPath: GET_BT_RESULT.url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', id),
     })),
   );
 }
