@@ -15,26 +15,40 @@ import { executeT } from '#shared/utils/fp.js';
 import { isoUtcDateStringSchema } from '#shared/utils/string.js';
 import { SchemaValidationError, validateWithZod } from '#shared/utils/zod.js';
 
-export function buildGetKlinesByParamsController(): RouteHandlerMethod {
-  return async function getKlinesByParamsController({ params }, reply): Promise<FastifyReply> {
+import { GetKlinesByParamsUseCaseDeps, getKlinesByParamsUseCase } from './useCase.js';
+
+export type GetKlinesByQueryControllerDeps = GetKlinesByParamsUseCaseDeps;
+
+export function buildGetKlinesByQueryController(deps: GetKlinesByQueryControllerDeps): RouteHandlerMethod {
+  return async function getKlinesByQueryController({ query }, reply): Promise<FastifyReply> {
     return pipe(
-      te.fromEither(validateRequestParams(params)),
+      te.fromEither(validateRequestQuery(query)),
+      te.chainW((query) => getKlinesByParamsUseCase(deps, query)),
       te.match(
         (error) =>
           match(error)
             .returnType<FastifyReply>()
-            .with({ name: 'SchemaValidationError' }, (error) => reply.code(400).send({ error }))
+            .with({ name: 'SchemaValidationError' }, { name: 'SymbolDaoError', type: 'NotExist' }, (error) =>
+              reply.code(400).send({ error }),
+            )
+            .with(
+              { name: 'SymbolDaoError', type: 'GetByNameAndExchangeFailed' },
+              { name: 'KlineDaoError', type: 'CountFailed' },
+              { name: 'KlineDaoError', type: 'GetFailed' },
+              { name: 'BnbServiceError', type: 'GetKlinesForBtFailed' },
+              (error) => reply.code(500).send({ error }),
+            )
             .exhaustive(),
-        () => reply.code(200).send([]),
+        (result) => reply.code(200).send(result),
       ),
       executeT,
     );
   };
 }
 
-type RequestParams = { exchange: ExchangeName; symbol: string; timeframe: Timeframe; dateRange: DateRange };
-function validateRequestParams(params: unknown): e.Either<SchemaValidationError, RequestParams> {
-  const paramsSchema = z
+type RequestQuery = { exchange: ExchangeName; symbol: string; timeframe: Timeframe; dateRange: DateRange };
+function validateRequestQuery(query: unknown): e.Either<SchemaValidationError, RequestQuery> {
+  const querySchema = z
     .object({
       exchange: exchangeNameSchema,
       symbol: z.string().trim().min(1),
@@ -56,7 +70,7 @@ function validateRequestParams(params: unknown): e.Either<SchemaValidationError,
         return z.NEVER;
       }
     });
-  const errorMessage = 'Request params is invalid';
+  const errorMessage = 'Request query is invalid';
 
-  return validateWithZod(paramsSchema, errorMessage, params);
+  return validateWithZod(querySchema, errorMessage, query);
 }

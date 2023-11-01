@@ -265,7 +265,9 @@ describe('[GIVEN] downloading klines from server succeeds', () => {
 describe('[GIVEN] adding returned klines from server to database fails', () => {
   describe('[WHEN] get klines by params', () => {
     it('[THEN] it will return Right of a list of the returned klines', async () => {
-      const klinesFromServer = generateArrayOf(mockBnbSymbol, 5);
+      const klinesFromServer = generateArrayOf(() =>
+        mockKline({ closeTimestamp: new Date('2023-03-04 12:00') }),
+      );
       const error = createKlineDaoError('AddFailed', 'Mock');
       const deps = mockDeps({
         symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
@@ -291,7 +293,9 @@ describe('[GIVEN] adding returned klines from server to database fails', () => {
 describe('[GIVEN] adding returned klines from server to database succeeds', () => {
   describe('[WHEN] get klines by params', () => {
     it('[THEN] it will return Right of a list of the returned klines', async () => {
-      const klinesFromServer = generateArrayOf(mockBnbSymbol, 5);
+      const klinesFromServer = generateArrayOf(() =>
+        mockKline({ closeTimestamp: new Date('2023-03-04 12:00') }),
+      );
       const deps = mockDeps({
         symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
         klineDao: {

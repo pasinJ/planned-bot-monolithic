@@ -20,6 +20,7 @@ import {
   GetSymbolByNameAndExchange,
   GetSymbolByNameAndExchangeError,
 } from '#features/symbols/DAOs/symbol.feature.js';
+import { isAfterOrEqual, isBeforeOrEqual } from '#shared/utils/date.js';
 
 import {
   AddKlines,
@@ -75,6 +76,13 @@ export function getKlinesByParamsUseCase(
                     endTimestamp: dateRange.end as BtEndTimestamp,
                   }),
                   te.chainFirstIOK((klines) => klineDao.add(klines)),
+                  te.map((klines) =>
+                    klines.filter(
+                      (kline) =>
+                        isAfterOrEqual(kline.closeTimestamp, dateRange.start) &&
+                        isBeforeOrEqual(kline.closeTimestamp, dateRange.end),
+                    ),
+                  ),
                 ),
         ),
       ),

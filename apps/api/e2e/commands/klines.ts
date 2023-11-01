@@ -2,7 +2,7 @@ import { KLINE_ENDPOINTS } from '#features/klines/routes.constant.js';
 
 import { client } from './httpClient.js';
 
-export async function getKlinesByParams(params: Record<string, string>) {
+export async function getKlinesByQuery(query: Record<string, unknown>) {
   const { method, url } = KLINE_ENDPOINTS.GET_BY_PARAMS;
-  return { response: await client.request({ method, url, params }) };
+  return { response: await client.request({ method, url, params: query }) };
 }

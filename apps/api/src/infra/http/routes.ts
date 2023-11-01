@@ -32,7 +32,7 @@ export function addRoutes(
       getBtExecutionProgressRouteOptions(deps),
       getBtExecutionResultRouteOptions(deps),
       getSymbolsRouteOptions(deps),
-      getKlinesByParamsRouteOptions(),
+      getKlinesByParamsRouteOptions(deps),
     ]),
     ioe.map((routeOptionsList) =>
       routeOptionsList.map((routeOptions) =>
