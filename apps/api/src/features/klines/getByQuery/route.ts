@@ -17,7 +17,7 @@ import { addKlines, countKlines, getKlines } from '../DAOs/kline.feature.js';
 import { KLINE_ENDPOINTS } from '../routes.constant.js';
 import { buildGetKlinesByQueryController } from './controller.js';
 
-export function getKlinesByParamsRouteOptions(deps: AppDeps): RouteOptions {
+export function getKlinesByQueryRouteOptions(deps: AppDeps): RouteOptions {
   const { symbolDao, klineDao, bnbService } = deps;
   const getKlinesFromApi = bnbService.composeWith(getKlinesByApi);
   const getKlinesFromDailyFiles = bnbService.composeWith(({ httpClient }) =>
@@ -40,7 +40,7 @@ export function getKlinesByParamsRouteOptions(deps: AppDeps): RouteOptions {
   );
 
   return {
-    ...KLINE_ENDPOINTS.GET_BY_PARAMS,
+    ...KLINE_ENDPOINTS.GET_BY_QUERY,
     preValidation: preValidationHook,
     onSend: onSendHook,
     handler: buildGetKlinesByQueryController({

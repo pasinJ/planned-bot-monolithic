@@ -15,15 +15,15 @@ import { executeT } from '#shared/utils/fp.js';
 import { isoUtcDateStringSchema } from '#shared/utils/string.js';
 import { SchemaValidationError, validateWithZod } from '#shared/utils/zod.js';
 
-import { GetKlinesByParamsUseCaseDeps, getKlinesByParamsUseCase } from './useCase.js';
+import { GetKlinesByQueryUseCaseDeps, getKlinesByQueryUseCase } from './useCase.js';
 
-export type GetKlinesByQueryControllerDeps = GetKlinesByParamsUseCaseDeps;
+export type GetKlinesByQueryControllerDeps = GetKlinesByQueryUseCaseDeps;
 
 export function buildGetKlinesByQueryController(deps: GetKlinesByQueryControllerDeps): RouteHandlerMethod {
   return async function getKlinesByQueryController({ query }, reply): Promise<FastifyReply> {
     return pipe(
       te.fromEither(validateRequestQuery(query)),
-      te.chainW((query) => getKlinesByParamsUseCase(deps, query)),
+      te.chainW((query) => getKlinesByQueryUseCase(deps, query)),
       te.match(
         (error) =>
           match(error)

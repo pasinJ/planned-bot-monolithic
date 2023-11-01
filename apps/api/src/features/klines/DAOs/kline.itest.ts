@@ -3,7 +3,7 @@ import { Schema } from 'mongoose';
 import { executeIo } from '#shared/utils/fp.js';
 import { createMongoClient, deleteModel } from '#test-utils/mongoDb.js';
 
-import { isKlineDaoError } from '../../btStrategies/DAOs/kline.error.js';
+import { isKlineDaoError } from './kline.error.js';
 import { buildKlineDao, klineModelName } from './kline.js';
 
 const client = await createMongoClient();

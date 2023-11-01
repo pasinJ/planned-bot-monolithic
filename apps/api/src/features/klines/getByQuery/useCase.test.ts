@@ -2,7 +2,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
-import { createKlineDaoError, isKlineDaoError } from '#features/btStrategies/DAOs/kline.error.js';
+import { createKlineDaoError, isKlineDaoError } from '#features/klines/DAOs/kline.error.js';
 import { DateRange } from '#features/shared/objectValues/dateRange.js';
 import { createSymbolDaoError, isSymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { createBnbServiceError, isBnbServiceError } from '#infra/services/binance/error.js';
@@ -12,13 +12,13 @@ import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import { mockKline } from '#test-utils/features/shared/kline.js';
 
 import {
-  GetKlinesByParamsUseCaseDeps,
-  GetKlinesByParamsUseCaseReq,
-  getKlinesByParamsUseCase,
+  GetKlinesByQueryUseCaseDeps,
+  GetKlinesByQueryUseCaseReq,
+  getKlinesByQueryUseCase,
 } from './useCase.js';
 
-function mockDeps(override?: DeepPartial<GetKlinesByParamsUseCaseDeps>): GetKlinesByParamsUseCaseDeps {
-  return mergeDeepRight<GetKlinesByParamsUseCaseDeps, DeepPartial<GetKlinesByParamsUseCaseDeps>>(
+function mockDeps(override?: DeepPartial<GetKlinesByQueryUseCaseDeps>): GetKlinesByQueryUseCaseDeps {
+  return mergeDeepRight<GetKlinesByQueryUseCaseDeps, DeepPartial<GetKlinesByQueryUseCaseDeps>>(
     {
       symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
       klineDao: {
@@ -32,7 +32,7 @@ function mockDeps(override?: DeepPartial<GetKlinesByParamsUseCaseDeps>): GetKlin
   );
 }
 
-const baseRequest: GetKlinesByParamsUseCaseReq = {
+const baseRequest: GetKlinesByQueryUseCaseReq = {
   exchange: 'BINANCE',
   symbol: 'BTCUSDT',
   timeframe: '1d',
@@ -40,7 +40,7 @@ const baseRequest: GetKlinesByParamsUseCaseReq = {
 };
 
 describe('[GIVEN] the symbol does not exist', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Left of error', async () => {
       const error = createSymbolDaoError('NotExist', 'Mock');
       const deps = mockDeps({
@@ -48,7 +48,7 @@ describe('[GIVEN] the symbol does not exist', () => {
       });
       const request = baseRequest;
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
     });
@@ -56,7 +56,7 @@ describe('[GIVEN] the symbol does not exist', () => {
 });
 
 describe('[GIVEN] symbol DAO fails to get symbol by name and exchange', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Left of error', async () => {
       const error = createSymbolDaoError('GetByNameAndExchangeFailed', 'Mock');
       const deps = mockDeps({
@@ -64,7 +64,7 @@ describe('[GIVEN] symbol DAO fails to get symbol by name and exchange', () => {
       });
       const request = baseRequest;
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualLeft(expect.toSatisfy(isSymbolDaoError));
     });
@@ -72,7 +72,7 @@ describe('[GIVEN] symbol DAO fails to get symbol by name and exchange', () => {
 });
 
 describe('[GIVEN] the symbol exists', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will count existing klines in the given range', async () => {
       const deps = mockDeps({
         symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
@@ -80,7 +80,7 @@ describe('[GIVEN] the symbol exists', () => {
       });
       const request = baseRequest;
 
-      await executeT(getKlinesByParamsUseCase(deps, request));
+      await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(deps.klineDao.count).toHaveBeenCalledExactlyOnceWith({
         exchange: baseRequest.exchange,
@@ -94,7 +94,7 @@ describe('[GIVEN] the symbol exists', () => {
 });
 
 describe('[GIVEN] the symbol exists [BUT] counting klines failed', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Left of error', async () => {
       const error = createKlineDaoError('CountFailed', 'Mock');
       const deps = mockDeps({
@@ -103,7 +103,7 @@ describe('[GIVEN] the symbol exists [BUT] counting klines failed', () => {
       });
       const request = baseRequest;
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualLeft(expect.toSatisfy(isKlineDaoError));
     });
@@ -111,7 +111,7 @@ describe('[GIVEN] the symbol exists [BUT] counting klines failed', () => {
 });
 
 describe('[GIVEN] existing klines in given range is greater than or equal to expected', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will get klines in given range', async () => {
       const deps = mockDeps({
         symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
@@ -120,13 +120,13 @@ describe('[GIVEN] existing klines in given range is greater than or equal to exp
           get: jest.fn().mockReturnValue(te.right(generateArrayOf(mockKline))),
         },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1h',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-05') } as DateRange,
       };
 
-      await executeT(getKlinesByParamsUseCase(deps, request));
+      await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(deps.klineDao.get).toHaveBeenCalledExactlyOnceWith({
         exchange: request.exchange,
@@ -140,7 +140,7 @@ describe('[GIVEN] existing klines in given range is greater than or equal to exp
 });
 
 describe('[GIVEN] getting klines in given range fails', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Left of error', async () => {
       const error = createKlineDaoError('GetFailed', 'Mock');
       const deps = mockDeps({
@@ -150,13 +150,13 @@ describe('[GIVEN] getting klines in given range fails', () => {
           get: jest.fn().mockReturnValue(te.left(error)),
         },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1h',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-05') } as DateRange,
       };
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualLeft(expect.toSatisfy(isKlineDaoError));
     });
@@ -164,7 +164,7 @@ describe('[GIVEN] getting klines in given range fails', () => {
 });
 
 describe('[GIVEN] getting klines in given range succeeds', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Right of a list of klines in given range', async () => {
       const klines = generateArrayOf(mockKline);
       const deps = mockDeps({
@@ -174,13 +174,13 @@ describe('[GIVEN] getting klines in given range succeeds', () => {
           get: jest.fn().mockReturnValue(te.right(klines)),
         },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1h',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-05') } as DateRange,
       };
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualRight(klines);
     });
@@ -188,20 +188,20 @@ describe('[GIVEN] getting klines in given range succeeds', () => {
 });
 
 describe('[GIVEN] existing klines in given range is less than expected', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will download klines from server', async () => {
       const deps = mockDeps({
         symbolDao: { getByNameAndExchange: jest.fn().mockReturnValue(te.right(mockBnbSymbol())) },
         klineDao: { count: jest.fn().mockReturnValue(te.right(1)) },
         bnbService: { downloadKlines: jest.fn().mockReturnValue(te.right(generateArrayOf(mockKline))) },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1d',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-06') } as DateRange,
       };
 
-      await executeT(getKlinesByParamsUseCase(deps, request));
+      await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(deps.bnbService.downloadKlines).toHaveBeenCalledExactlyOnceWith({
         executionId: expect.toBeString(),
@@ -216,7 +216,7 @@ describe('[GIVEN] existing klines in given range is less than expected', () => {
 });
 
 describe('[GIVEN] downloading klines from server fails', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Left of error', async () => {
       const error = createBnbServiceError('GetKlinesForBtFailed', 'Mock');
       const deps = mockDeps({
@@ -224,13 +224,13 @@ describe('[GIVEN] downloading klines from server fails', () => {
         klineDao: { count: jest.fn().mockReturnValue(te.right(1)) },
         bnbService: { downloadKlines: jest.fn().mockReturnValue(te.left(error)) },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1d',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-06') } as DateRange,
       };
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualLeft(expect.toSatisfy(isBnbServiceError));
     });
@@ -238,7 +238,7 @@ describe('[GIVEN] downloading klines from server fails', () => {
 });
 
 describe('[GIVEN] downloading klines from server succeeds', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will add returned klines from server to database', async () => {
       const klinesFromServer = generateArrayOf(mockBnbSymbol, 5);
       const deps = mockDeps({
@@ -249,13 +249,13 @@ describe('[GIVEN] downloading klines from server succeeds', () => {
         },
         bnbService: { downloadKlines: jest.fn().mockReturnValue(te.right(klinesFromServer)) },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1d',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-06') } as DateRange,
       };
 
-      await executeT(getKlinesByParamsUseCase(deps, request));
+      await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(deps.klineDao.add).toHaveBeenCalledExactlyOnceWith(klinesFromServer);
     });
@@ -263,7 +263,7 @@ describe('[GIVEN] downloading klines from server succeeds', () => {
 });
 
 describe('[GIVEN] adding returned klines from server to database fails', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Right of a list of the returned klines', async () => {
       const klinesFromServer = generateArrayOf(() =>
         mockKline({ closeTimestamp: new Date('2023-03-04 12:00') }),
@@ -277,13 +277,13 @@ describe('[GIVEN] adding returned klines from server to database fails', () => {
         },
         bnbService: { downloadKlines: jest.fn().mockReturnValue(te.right(klinesFromServer)) },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1d',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-06') } as DateRange,
       };
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualRight(klinesFromServer);
     });
@@ -291,7 +291,7 @@ describe('[GIVEN] adding returned klines from server to database fails', () => {
 });
 
 describe('[GIVEN] adding returned klines from server to database succeeds', () => {
-  describe('[WHEN] get klines by params', () => {
+  describe('[WHEN] get klines by query', () => {
     it('[THEN] it will return Right of a list of the returned klines', async () => {
       const klinesFromServer = generateArrayOf(() =>
         mockKline({ closeTimestamp: new Date('2023-03-04 12:00') }),
@@ -304,13 +304,13 @@ describe('[GIVEN] adding returned klines from server to database succeeds', () =
         },
         bnbService: { downloadKlines: jest.fn().mockReturnValue(te.right(klinesFromServer)) },
       });
-      const request: GetKlinesByParamsUseCaseReq = {
+      const request: GetKlinesByQueryUseCaseReq = {
         ...baseRequest,
         timeframe: '1d',
         dateRange: { start: new Date('2023-03-04'), end: new Date('2023-03-06') } as DateRange,
       };
 
-      const result = await executeT(getKlinesByParamsUseCase(deps, request));
+      const result = await executeT(getKlinesByQueryUseCase(deps, request));
 
       expect(result).toEqualRight(klinesFromServer);
     });

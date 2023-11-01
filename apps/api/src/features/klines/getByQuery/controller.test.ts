@@ -2,7 +2,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { mergeDeepRight } from 'ramda';
 import { DeepPartial } from 'ts-essentials';
 
-import { createKlineDaoError } from '#features/btStrategies/DAOs/kline.error.js';
+import { createKlineDaoError } from '#features/klines/DAOs/kline.error.js';
 import { timeframeEnum } from '#features/shared/timeframe.js';
 import { createSymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { toBeHttpErrorResponse } from '#test-utils/expect.js';
@@ -29,7 +29,7 @@ function mockDeps(override?: DeepPartial<GetKlinesByQueryControllerDeps>): GetKl
   );
 }
 
-const { method, url } = KLINE_ENDPOINTS.GET_BY_PARAMS;
+const { method, url } = KLINE_ENDPOINTS.GET_BY_QUERY;
 const setupServer = setupTestServer(method, url, buildGetKlinesByQueryController, mockDeps);
 
 describe('[GIVEN] user sends request without exchange, symbol, timeframe, start timestamp and end timestamp query', () => {

@@ -12,9 +12,9 @@ import { mockKline } from '#test-utils/features/shared/kline.js';
 import { mockStrategyModule } from '#test-utils/features/shared/strategyModule.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
+import { createKlineDaoError } from '../../klines/DAOs/kline.error.js';
 import { createBtExecutionDaoError } from '../DAOs/btExecution.error.js';
 import { createBtStrategyDaoError } from '../DAOs/btStrategy.error.js';
-import { createKlineDaoError } from '../DAOs/kline.error.js';
 import { BtExecutionId, btExecutionStatusEnum } from '../dataModels/btExecution.js';
 import { BtStrategyId } from '../dataModels/btStrategy.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';

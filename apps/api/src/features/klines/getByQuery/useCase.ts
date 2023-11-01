@@ -30,27 +30,27 @@ import {
   GetKlinesError,
 } from '../DAOs/kline.feature.js';
 
-export type GetKlinesByParamsUseCaseDeps = {
+export type GetKlinesByQueryUseCaseDeps = {
   symbolDao: { getByNameAndExchange: GetSymbolByNameAndExchange };
   klineDao: { count: CountKlines; get: GetKlines; add: AddKlines };
   bnbService: { downloadKlines: GetKlinesForBt };
 };
-export type GetKlinesByParamsUseCaseReq = {
+export type GetKlinesByQueryUseCaseReq = {
   exchange: ExchangeName;
   symbol: string;
   timeframe: Timeframe;
   dateRange: DateRange;
 };
-export type GetKlinesByParamsUseCaseError =
+export type GetKlinesByQueryUseCaseError =
   | GetSymbolByNameAndExchangeError
   | CountKlinesError
   | GetKlinesError
   | GetKlinesForBtError;
 
-export function getKlinesByParamsUseCase(
-  deps: GetKlinesByParamsUseCaseDeps,
-  request: GetKlinesByParamsUseCaseReq,
-): te.TaskEither<GetKlinesByParamsUseCaseError, readonly Kline[]> {
+export function getKlinesByQueryUseCase(
+  deps: GetKlinesByQueryUseCaseDeps,
+  request: GetKlinesByQueryUseCaseReq,
+): te.TaskEither<GetKlinesByQueryUseCaseError, readonly Kline[]> {
   const { symbolDao, klineDao, bnbService } = deps;
   const { exchange, symbol, timeframe, dateRange } = request;
   const klinesInRangeFilter = { exchange, symbol, timeframe, start: dateRange.start, end: dateRange.end };
