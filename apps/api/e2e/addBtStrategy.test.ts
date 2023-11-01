@@ -22,6 +22,7 @@ describe('[WHEN] user successfully add a backtesting strategy', () => {
       name: body.symbol,
       exchange: body.exchange,
       baseAsset: body.capitalCurrency,
+      quoteAsset: body.assetCurrency,
     });
     await symbolModel.create(symbol);
 

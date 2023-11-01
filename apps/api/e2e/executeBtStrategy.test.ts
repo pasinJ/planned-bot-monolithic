@@ -38,6 +38,7 @@ describe('[GIVEN] the backtesting strategy ID already exists', () => {
         name: addStrategyRequest.symbol,
         exchange: addStrategyRequest.exchange,
         baseAsset: addStrategyRequest.capitalCurrency,
+        quoteAsset: addStrategyRequest.assetCurrency,
       });
       await symbolModel.create(symbol);
 

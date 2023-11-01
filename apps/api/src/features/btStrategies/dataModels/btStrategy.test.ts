@@ -1,6 +1,6 @@
 import { exchangeNameEnum } from '#features/shared/exchange.js';
-import { languageEnum } from '#features/shared/strategy.js';
-import { AssetName, SymbolName } from '#features/shared/symbol.js';
+import { AssetCurrency, CapitalCurrency, languageEnum } from '#features/shared/strategy.js';
+import { SymbolName } from '#features/shared/symbol.js';
 import { timeframeEnum } from '#features/shared/timeframe.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate } from '#shared/utils/date.js';
@@ -17,7 +17,8 @@ describe('UUT: Create backtesting strategy model', () => {
     symbol: 'BTCUSDT' as SymbolName,
     timeframe: timeframeEnum['15m'],
     initialCapital: 1000,
-    capitalCurrency: 'USDT' as AssetName,
+    assetCurrency: 'BTC' as AssetCurrency,
+    capitalCurrency: 'USDT' as CapitalCurrency,
     takerFeeRate: 1,
     makerFeeRate: 2,
     maxNumKlines: 10,

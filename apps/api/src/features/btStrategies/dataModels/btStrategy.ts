@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { ExchangeName } from '#features/shared/exchange.js';
 import {
+  AssetCurrency,
   CapitalCurrency,
   InitialCapital,
   Language,
@@ -18,7 +19,7 @@ import {
   strategyNameSchema,
   takerFeeRateSchema,
 } from '#features/shared/strategy.js';
-import { AssetName, SymbolName } from '#features/shared/symbol.js';
+import { SymbolName } from '#features/shared/symbol.js';
 import { Timeframe } from '#features/shared/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate, validDateSchema } from '#shared/utils/date.js';
@@ -32,6 +33,7 @@ export type BtStrategyModel = Readonly<{
   symbol: SymbolName;
   timeframe: Timeframe;
   initialCapital: InitialCapital;
+  assetCurrency: AssetCurrency;
   capitalCurrency: CapitalCurrency;
   takerFeeRate: TakerFeeRate;
   makerFeeRate: MakerFeeRate;
@@ -74,7 +76,8 @@ export function createBtStrategyModel(
     symbol: SymbolName;
     timeframe: Timeframe;
     initialCapital: number;
-    capitalCurrency: AssetName;
+    assetCurrency: AssetCurrency;
+    capitalCurrency: CapitalCurrency;
     takerFeeRate: number;
     makerFeeRate: number;
     maxNumKlines: number;
@@ -94,6 +97,7 @@ export function createBtStrategyModel(
       symbol: z.any(),
       timeframe: z.any(),
       initialCapital: initialCapitalSchema,
+      assetCurrency: z.any(),
       capitalCurrency: z.any(),
       takerFeeRate: takerFeeRateSchema,
       makerFeeRate: makerFeeRateSchema,

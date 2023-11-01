@@ -53,6 +53,7 @@ describe('[GIVEN] the execution ID exists', () => {
         name: addBtStrategyRequest.symbol,
         exchange: addBtStrategyRequest.exchange,
         baseAsset: addBtStrategyRequest.capitalCurrency,
+        quoteAsset: addBtStrategyRequest.assetCurrency,
       });
       await symbolModel.create(symbol);
 

@@ -1,16 +1,18 @@
 import { FastifyReply, RouteHandlerMethod } from 'fastify';
+import e from 'fp-ts/lib/Either.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { exchangeNameSchema } from '#features/shared/exchange.js';
-import { languageSchema } from '#features/shared/strategy.js';
-import { timeframeSchema } from '#features/shared/timeframe.js';
+import { ValidDate } from '#SECT/date.js';
+import { ExchangeName, exchangeNameSchema } from '#features/shared/exchange.js';
+import { Language, languageSchema } from '#features/shared/strategy.js';
+import { Timeframe, timeframeSchema } from '#features/shared/timeframe.js';
 import { validDateSchema } from '#shared/utils/date.js';
 import { executeT } from '#shared/utils/fp.js';
-import { isoUtcDateStringSchema, timezoneStringSchema } from '#shared/utils/string.js';
-import { validateWithZod } from '#shared/utils/zod.js';
+import { TimezoneString, isoUtcDateStringSchema, timezoneStringSchema } from '#shared/utils/string.js';
+import { SchemaValidationError, validateWithZod } from '#shared/utils/zod.js';
 
 import { AddBtStrategyDeps, addBtStrategy } from './useCase.js';
 
@@ -20,7 +22,9 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
   return function addBtStrategyController({ body }, reply): Promise<FastifyReply> {
     return pipe(
       te.fromEither(validateRequestBody(body)),
-      te.chainW((parsedBody) => addBtStrategy(deps, parsedBody)),
+      te.chainW(({ btRange, ...rest }) =>
+        addBtStrategy(deps, { ...rest, startTimestamp: btRange.start, endTimestamp: btRange.end }),
+      ),
       te.match(
         (error) =>
           match(error)
@@ -43,20 +47,39 @@ export function buildAddBtStrategyController(deps: AddBtStrategyControllerDeps):
   };
 }
 
-function validateRequestBody(body: unknown) {
+type RequestBody = {
+  name: string;
+  exchange: ExchangeName;
+  symbol: string;
+  assetCurrency: string;
+  capitalCurrency: string;
+  timeframe: Timeframe;
+  maxNumKlines: number;
+  initialCapital: number;
+  takerFeeRate: number;
+  makerFeeRate: number;
+  btRange: { start: ValidDate; end: ValidDate };
+  timezone: TimezoneString;
+  language: Language;
+  body: string;
+};
+function validateRequestBody(body: unknown): e.Either<SchemaValidationError, RequestBody> {
   const requestBodySchema = z
     .object({
       name: z.string(),
       exchange: exchangeNameSchema,
       symbol: z.string(),
+      assetCurrency: z.string(),
       capitalCurrency: z.string(),
       timeframe: timeframeSchema,
       maxNumKlines: z.number(),
       initialCapital: z.number(),
       takerFeeRate: z.number(),
       makerFeeRate: z.number(),
-      startTimestamp: isoUtcDateStringSchema.pipe(z.coerce.date()).pipe(validDateSchema),
-      endTimestamp: isoUtcDateStringSchema.pipe(z.coerce.date()).pipe(validDateSchema),
+      btRange: z.object({
+        start: isoUtcDateStringSchema.pipe(z.coerce.date()).pipe(validDateSchema),
+        end: isoUtcDateStringSchema.pipe(z.coerce.date()).pipe(validDateSchema),
+      }),
       timezone: timezoneStringSchema,
       language: languageSchema,
       body: z.string(),
