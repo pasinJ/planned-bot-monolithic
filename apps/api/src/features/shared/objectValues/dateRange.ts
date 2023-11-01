@@ -8,7 +8,7 @@ import { validDateSchema } from '#shared/utils/date.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
 export type DateRange = z.infer<typeof dateRangeSchema>;
-const dateRangeSchema = z
+export const dateRangeSchema = z
   .object({ start: validDateSchema, end: validDateSchema })
   .refine(
     ({ start, end }) => isBefore(start, end) || isEqual(start, end),
