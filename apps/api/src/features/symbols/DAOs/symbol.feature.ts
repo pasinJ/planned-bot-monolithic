@@ -55,11 +55,17 @@ export function existSymbolModelByExchange({ mongooseModel }: { mongooseModel: S
     );
 }
 
-export function getSymbolModelByNameAndExchange({ mongooseModel }: { mongooseModel: SymbolMongooseModel }) {
-  return (
-    name: string,
-    exchange: ExchangeName,
-  ): te.TaskEither<SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>, Symbol> =>
+export type GetSymbolByNameAndExchange = (
+  name: string,
+  exchange: ExchangeName,
+) => te.TaskEither<GetSymbolByNameAndExchangeError, Symbol>;
+export type GetSymbolByNameAndExchangeError = SymbolDaoError<'GetByNameAndExchangeFailed' | 'NotExist'>;
+export function getSymbolModelByNameAndExchange({
+  mongooseModel,
+}: {
+  mongooseModel: SymbolMongooseModel;
+}): GetSymbolByNameAndExchange {
+  return (name, exchange) =>
     pipe(
       te.tryCatch(
         () => mongooseModel.findOne({ name, exchange }).lean(),

@@ -10,8 +10,11 @@ import { mockKline } from '#test-utils/features/shared/kline.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
 import {
+  CountKlinesFilter,
   addKlines,
+  countKlines,
   getFirstKlineBefore,
+  getKlines,
   getKlinesBefore,
   getLastKlineBefore,
   iterateThroughKlines,
@@ -422,6 +425,126 @@ describe('UUT: Get last kline before the specific date', () => {
         const result = await executeT(getLastBeforeFn(filter));
 
         expect(result).toEqualRight(null);
+      });
+    });
+  });
+});
+
+describe('UUT: Count klines', () => {
+  const countFn = klineDao.composeWith(countKlines);
+
+  describe('[GIVEN] there is no matching kline', () => {
+    describe('[WHEN] count klines', () => {
+      it('[THEN] it will return Right of 0', async () => {
+        await klineModel.insertMany([
+          mockKline({
+            exchange: 'BINANCE',
+            symbol: 'BTCUSDT',
+            timeframe: '1h',
+            openTimestamp: new Date('2021-10-03'),
+            closeTimestamp: new Date('2021-10-04'),
+          }),
+        ]);
+
+        const filter: CountKlinesFilter = {
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          timeframe: '15m',
+          start: new Date('2021-10-03') as ValidDate,
+          end: new Date('2021-10-04') as ValidDate,
+        };
+
+        const result = await executeT(countFn(filter));
+
+        expect(result).toEqualRight(0);
+      });
+    });
+  });
+
+  describe('[GIVEN] there is a matching kline', () => {
+    describe('[WHEN] count klines', () => {
+      it('[THEN] it will return Right of 1', async () => {
+        const baseKline = {
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          openTimestamp: new Date('2021-10-03'),
+          closeTimestamp: new Date('2021-10-04'),
+        } as const;
+        await klineModel.insertMany([
+          mockKline({ ...baseKline, timeframe: '1h' }),
+          mockKline({ ...baseKline, timeframe: '15m' }),
+        ]);
+
+        const filter: CountKlinesFilter = {
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          timeframe: '15m',
+          start: new Date('2021-10-03') as ValidDate,
+          end: new Date('2021-10-04') as ValidDate,
+        };
+
+        const result = await executeT(countFn(filter));
+
+        expect(result).toEqualRight(1);
+      });
+    });
+  });
+});
+
+describe('UUT: Get klines', () => {
+  const getFn = klineDao.composeWith(getKlines);
+
+  describe('[GIVEN] there is no matching kline', () => {
+    describe('[WHEN] get klines', () => {
+      it('[THEN] it will return Right of empty list', async () => {
+        await klineModel.insertMany([
+          mockKline({
+            exchange: 'BINANCE',
+            symbol: 'BTCUSDT',
+            timeframe: '1h',
+            openTimestamp: new Date('2021-10-03'),
+            closeTimestamp: new Date('2021-10-04'),
+          }),
+        ]);
+
+        const filter: CountKlinesFilter = {
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          timeframe: '15m',
+          start: new Date('2021-10-03') as ValidDate,
+          end: new Date('2021-10-04') as ValidDate,
+        };
+
+        const result = await executeT(getFn(filter));
+
+        expect(result).toEqualRight([]);
+      });
+    });
+  });
+
+  describe('[GIVEN] there is a matching kline', () => {
+    describe('[WHEN] get klines', () => {
+      it('[THEN] it will return Right of the matching kline', async () => {
+        const baseKline = {
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          openTimestamp: new Date('2021-10-03'),
+          closeTimestamp: new Date('2021-10-04'),
+        } as const;
+        const matchingKline = mockKline({ ...baseKline, timeframe: '15m' });
+        await klineModel.insertMany([mockKline({ ...baseKline, timeframe: '1h' }), matchingKline]);
+
+        const filter: CountKlinesFilter = {
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          timeframe: '15m',
+          start: new Date('2021-10-03') as ValidDate,
+          end: new Date('2021-10-04') as ValidDate,
+        };
+
+        const result = await executeT(getFn(filter));
+
+        expect(result).toEqualRight([matchingKline]);
       });
     });
   });

@@ -173,6 +173,7 @@ export function getFirstKlineBefore({
       te.map((x) => (isNotNil(x) ? omit(['_id', '__v'], x) : x)),
     );
 }
+
 export type GetLastKlineBefore = (filter: {
   exchange: ExchangeName;
   symbol: string;
@@ -206,5 +207,59 @@ export function getLastKlineBefore({
         ),
       ),
       te.map((x) => (isNotNil(x) ? omit(['_id', '__v'], x) : x)),
+    );
+}
+
+export type CountKlines = (filter: CountKlinesFilter) => te.TaskEither<CountKlinesError, number>;
+export type CountKlinesFilter = {
+  exchange: ExchangeName;
+  symbol: string;
+  timeframe: Timeframe;
+  start: ValidDate;
+  end: ValidDate;
+};
+export type CountKlinesError = KlineDaoError<'CountFailed'>;
+export function countKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }): CountKlines {
+  return (filter) =>
+    pipe(
+      te.tryCatch(
+        () =>
+          mongooseModel.count({
+            exchange: filter.exchange,
+            symbol: filter.symbol,
+            timeframe: filter.timeframe,
+            closeTimestamp: { $gte: filter.start, $lte: filter.end },
+          }),
+        createErrorFromUnknown(createKlineDaoError('CountFailed', `Counting klines failed`)),
+      ),
+    );
+}
+
+export type GetKlines = (filter: GetKlinesFilter) => te.TaskEither<GetKlinesError, readonly Kline[]>;
+export type GetKlinesFilter = {
+  exchange: ExchangeName;
+  symbol: string;
+  timeframe: Timeframe;
+  start: ValidDate;
+  end: ValidDate;
+};
+export type GetKlinesError = KlineDaoError<'GetFailed'>;
+export function getKlines({ mongooseModel }: { mongooseModel: KlineMongooseModel }): GetKlines {
+  return (filter) =>
+    pipe(
+      te.tryCatch(
+        () =>
+          mongooseModel
+            .find({
+              exchange: filter.exchange,
+              symbol: filter.symbol,
+              timeframe: filter.timeframe,
+              closeTimestamp: { $gte: filter.start, $lte: filter.end },
+            })
+            .sort({ closeTimestamp: 'asc' })
+            .lean(),
+        createErrorFromUnknown(createKlineDaoError('GetFailed', `Getting klines using filter failed`)),
+      ),
+      te.map((docs) => docs.map(omit(['_id', '__v']))),
     );
 }
