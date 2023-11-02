@@ -112,14 +112,14 @@ export default function PerformancePanel(props: PerformancePanelProps) {
         <div className="min-w-[10rem] max-w-6xl flex-grow">
           <div className="flex w-full flex-wrap justify-around gap-y-4 p-4">
             <UpDownCard
-              className="flex-grow"
+              className="flex-grow max-w-xs"
               title="Max. Run-up"
               value={maxRunup}
               valueMaxDigits={2}
               unit={capitalCurrency}
             />
             <UpDownCard
-              className="flex-grow"
+              className="flex-grow max-w-xs"
               title="Max. Drawdown"
               value={maxDrawdown}
               valueMaxDigits={2}
@@ -164,7 +164,7 @@ function TradeBarChart({ className, closedTrades, capitalCurrency }: TradeBarCha
   return (
     <div className={mergeClassName('flex flex-grow flex-col px-6', className)}>
       <Typography className="opacity-50" variant="h6" component="p">
-        Net Return of Trade
+        Net Return per Trade
       </Typography>
       <div className="h-full min-h-[8rem] w-full min-w-[8rem] p-3">
         <div className="flex h-1/2 justify-center gap-x-0.5">
