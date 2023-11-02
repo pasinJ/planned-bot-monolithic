@@ -16,7 +16,7 @@ export default function useLastExecutionsProgress(
   return useQueries<UseQueryOptions<GetLastExecutionProgressResp, GetExecutionProgressError>[]>({
     queries: btStrategyIds.map((btStrategyId) => ({
       enabled: autoFetchEnabled,
-      queryKey: ['executionProgress', btStrategyId],
+      queryKey: ['btExecutionProgress', btStrategyId, 'last'],
       queryFn: () => executeTeToPromise(btStrategyRepo.getLastExecutionProgress(btStrategyId)),
       refetchInterval: (data) => (data?.status === 'PENDING' || data?.status === 'RUNNING' ? 1000 : false),
       staleTime: Infinity,

@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { createGeneralError } from '#shared/errors/generalError';
 import { executeTeToPromise } from '#shared/utils/fp';
+import { isUndefined } from '#shared/utils/typeGuards';
 
 import {
   BtExecutionId,
@@ -31,14 +32,15 @@ export type UseExecutionProgressResp = {
 export default function useExecutionProgress(
   btExecutionId: BtExecutionId,
 ): UseQueryResult<UseExecutionProgressResp, GetExecutionProgressError> {
-  const params = useParams();
   const { btStrategyRepo } = useContext(InfraContext);
+  const params = useParams();
+  const btStrategyId = params.btStrategyId;
 
   return useQuery<UseExecutionProgressResp, GetExecutionProgressError>({
-    queryKey: ['executionProgress', btExecutionId],
+    queryKey: isUndefined(btStrategyId) ? undefined : ['btExecutionProgress', btStrategyId, btExecutionId],
     queryFn: () =>
       pipe(
-        params.btStrategyId !== undefined
+        !isUndefined(btStrategyId)
           ? e.right(params.btStrategyId as BtStrategyId)
           : e.left(
               createGeneralError(

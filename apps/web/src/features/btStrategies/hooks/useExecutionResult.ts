@@ -9,6 +9,7 @@ import { DeepReadonly } from 'ts-essentials';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { createGeneralError } from '#shared/errors/generalError';
 import { executeTeToPromise } from '#shared/utils/fp';
+import { isUndefined } from '#shared/utils/typeGuards';
 
 import { BtExecutionId, ExecutionLogs, ExecutionTime } from '../btExecution';
 import { BtStrategyId } from '../btStrategy';
@@ -30,16 +31,17 @@ export default function useExecutionResult(
   autoFetchEnabled: boolean,
   btExecutionId: BtExecutionId,
 ): UseQueryResult<UseExecutionResultResp, GetExecutionResultError> {
-  const params = useParams();
   const { btStrategyRepo } = useContext(InfraContext);
+  const params = useParams();
+  const btStrategyId = params.btStrategyId;
 
   return useQuery<UseExecutionResultResp, GetExecutionResultError>({
     enabled: autoFetchEnabled,
     staleTime: Infinity,
-    queryKey: ['executionResult', btExecutionId],
+    queryKey: isUndefined(btStrategyId) ? undefined : ['btExecutionResult', btStrategyId, btExecutionId],
     queryFn: () =>
       pipe(
-        params.btStrategyId !== undefined
+        !isUndefined(btStrategyId)
           ? e.right(params.btStrategyId as BtStrategyId)
           : e.left(
               createGeneralError(
