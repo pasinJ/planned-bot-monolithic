@@ -19,7 +19,7 @@ import {
   strategyNameSchema,
   takerFeeRateSchema,
 } from '#features/shared/strategy.js';
-import { SymbolName } from '#features/shared/symbol.js';
+import { Symbol, SymbolName } from '#features/shared/symbol.js';
 import { Timeframe } from '#features/shared/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate, validDateSchema } from '#shared/utils/date.js';
@@ -150,4 +150,27 @@ export function createBtStrategyModel(
       (btStrategy) => btStrategy as BtStrategyModel,
     ),
   );
+}
+
+export function validateBtStrategyCurrencies(
+  symbol: Symbol,
+  assetCurrency: string,
+  capitalCurrency: string,
+): e.Either<
+  GeneralError<'InvalidCurrency'>,
+  { assetCurrency: AssetCurrency; capitalCurrency: CapitalCurrency }
+> {
+  return (capitalCurrency === symbol.baseAsset && assetCurrency === symbol.quoteAsset) ||
+    (capitalCurrency === symbol.quoteAsset && assetCurrency === symbol.baseAsset)
+    ? e.right({
+        symbol: symbol.name,
+        capitalCurrency: capitalCurrency as CapitalCurrency,
+        assetCurrency: assetCurrency as AssetCurrency,
+      })
+    : e.left(
+        createGeneralError(
+          'InvalidCurrency',
+          `Currency of strategy must be either base asset (${symbol.baseAsset}) or quote asset (${symbol.quoteAsset}) of symbol`,
+        ),
+      );
 }

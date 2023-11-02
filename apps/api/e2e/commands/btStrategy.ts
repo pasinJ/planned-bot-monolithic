@@ -8,6 +8,13 @@ export async function addBtStrategy(body: Record<string, unknown> = mockValidAdd
   return { request: { body }, response: await client.request({ method, url, data: body }) };
 }
 
+export async function updateBtStrategy(btStrategyId: string, body: Record<string, unknown>) {
+  const { method, url: urlTemplate } = BT_STRATEGY_ENDPOINTS.UPDATE_BT_STRATEGY;
+  const url = urlTemplate.replace(':btStrategyId', btStrategyId);
+
+  return { request: { body }, response: await client.request({ method, url, data: body }) };
+}
+
 export async function executeBtStrategy(btStrategyId = 'IP3t1OJ5Cd') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.EXECUTE_BT_STRATEGY;
   return {

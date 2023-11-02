@@ -1,5 +1,6 @@
 import { dissoc } from 'ramda';
 
+import { InitialCapital } from '#SECT/Strategy.js';
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
 import { mockBtStrategyModel } from '#test-utils/features/btStrategies/btStrategy.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
@@ -9,6 +10,7 @@ import {
   addBtStrategyModel,
   existBtStrategyModelById,
   getBtStrategyModelById,
+  updateBtStrategyById,
 } from './btStrategy.feature.js';
 import { BtStrategyMongooseModel, btStrategyModelName, buildBtStrategyDao } from './btStrategy.js';
 
@@ -109,6 +111,45 @@ describe('UUT: Get backtesting strategy model by ID', () => {
         const result = await executeT(getFn(id));
 
         expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyDaoError));
+      });
+    });
+  });
+});
+
+describe('UUT: Update backtesting strategy by ID', () => {
+  const updateByIdFn = btStrategyDao.composeWith(updateBtStrategyById);
+
+  describe('[GIVEN] the ID does not exist', () => {
+    describe('[WHEN] update backtesting strategy by ID', () => {
+      it('[THEN] it will return Left of error', async () => {
+        const btStrategy = mockBtStrategyModel();
+
+        const result = await executeT(updateByIdFn(btStrategy.id, btStrategy));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyDaoError));
+      });
+    });
+  });
+
+  describe('[GIVEN] the ID exists', () => {
+    const btStrategy = mockBtStrategyModel({ initialCapital: 1000 });
+    const updateTo = { initialCapital: 500 as InitialCapital };
+
+    describe('[WHEN] update backtesting strategy by ID', () => {
+      it('[THEN] it will return Right of undefined', async () => {
+        await btStrategyModel.create(btStrategy);
+
+        const result = await executeT(updateByIdFn(btStrategy.id, updateTo));
+
+        expect(result).toEqualRight(undefined);
+      });
+      it('[THEN] it will update backtesting strategy in database', async () => {
+        await btStrategyModel.create(btStrategy);
+
+        await executeT(updateByIdFn(btStrategy.id, updateTo));
+
+        const updatedBtStratgy = await btStrategyModel.findById(btStrategy.id);
+        expect(updatedBtStratgy).toEqual(expect.objectContaining(updateTo));
       });
     });
   });

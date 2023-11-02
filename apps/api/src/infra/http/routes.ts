@@ -6,6 +6,7 @@ import { addBtStrategyRouteOptions } from '#features/btStrategies/addBtStrategy/
 import { executeBtStrategyRouteOptions } from '#features/btStrategies/executeBtStrategy/route.js';
 import { getBtExecutionResultRouteOptions } from '#features/btStrategies/getBtExecutionResult/route.js';
 import { getBtExecutionProgressRouteOptions } from '#features/btStrategies/getExecutionProgress/route.js';
+import { updateBtStrategyRouteOptions } from '#features/btStrategies/updateBtStrategy/route.js';
 import { getKlinesByQueryRouteOptions } from '#features/klines/getByQuery/route.js';
 import { getSymbolsRouteOptions } from '#features/symbols/getSymbols/route.js';
 import { AppDeps } from '#shared/appDeps.type.js';
@@ -28,6 +29,7 @@ export function addRoutes(
     ioe.of([
       generalRouteOptions,
       addBtStrategyRouteOptions(deps),
+      updateBtStrategyRouteOptions(deps),
       executeBtStrategyRouteOptions(deps),
       getBtExecutionProgressRouteOptions(deps),
       getBtExecutionResultRouteOptions(deps),
