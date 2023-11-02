@@ -428,6 +428,77 @@ describe('UUT: Get execution progress', () => {
   });
 });
 
+describe('UUT: Get last execution progress', () => {
+  const { method, url } = API_ENDPOINTS.GET_LAST_EXECUTION_PROGRESS;
+
+  describe('[WHEN] get last execution progress', () => {
+    it('[THEN] it will send a request to the server', async () => {
+      const btStrategyId = '8szSkrNS4N' as BtStrategyId;
+      const transformedUrl = url.replace(':btStrategyId', btStrategyId);
+
+      let serverHasBeenCalled = false;
+      server.use(
+        addRestRoute(method, createApiPath(transformedUrl), (_, res, ctx) => {
+          serverHasBeenCalled = true;
+          return res(
+            ctx.status(200),
+            ctx.json({ id: 'SJ-jRbgW0Z', btStrategyId, status: 'PENDING', percentage: 0, logs: [] }),
+          );
+        }),
+      );
+
+      await executeT(btStrategyRepo.getLastExecutionProgress(btStrategyId));
+
+      expect(serverHasBeenCalled).toBe(true);
+    });
+  });
+
+  describe('[GIVEN] the server responds successful response with execution ID, backtesting strategy ID, status, progress percentage, and logs', () => {
+    describe('[WHEN] get last execution progress', () => {
+      it('[THEN] it will return Right of execution ID, backtesting strategy ID, status, progress percentage, and logs', async () => {
+        const btStrategyId = '8szSkrNS4N' as BtStrategyId;
+        const transformedUrl = url.replace(':btStrategyId', btStrategyId);
+
+        server.use(
+          addRestRoute(method, createApiPath(transformedUrl), (_, res, ctx) =>
+            res(
+              ctx.status(200),
+              ctx.json({ id: 'SJ-jRbgW0Z', btStrategyId, status: 'PENDING', percentage: 0, logs: [] }),
+            ),
+          ),
+        );
+
+        const result = await executeT(btStrategyRepo.getLastExecutionProgress(btStrategyId));
+
+        expect(result).toEqualRight({
+          id: 'SJ-jRbgW0Z',
+          btStrategyId,
+          status: 'PENDING',
+          percentage: 0,
+          logs: [],
+        });
+      });
+    });
+  });
+
+  describe('[GIVEN] the server responds HTTP error', () => {
+    describe('[WHEN] get last execution progress', () => {
+      it('[THEN] it will return Left of error', async () => {
+        const btStrategyId = '8szSkrNS4N' as BtStrategyId;
+        const transformedUrl = url.replace(':btStrategyId', btStrategyId);
+
+        server.use(
+          addRestRoute(method, createApiPath(transformedUrl), (_, res, ctx) => res(ctx.status(404))),
+        );
+
+        const result = await executeT(btStrategyRepo.getLastExecutionProgress(btStrategyId));
+
+        expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyRepoError));
+      });
+    });
+  });
+});
+
 describe('UUT: Get execution result', () => {
   const { method, url } = API_ENDPOINTS.GET_EXECUTION_RESULT;
   const response = executionResultResponse;

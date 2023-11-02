@@ -61,6 +61,7 @@ export type BtStrategyRepo = {
   updateBtStrategy: UpdateBtStrategy;
   executeBtStrategy: ExecuteBtStrategy;
   getExecutionProgress: GetExecutionProgress;
+  getLastExecutionProgress: GetLastExecutionProgress;
   getExecutionResult: GetExecutionResult;
 };
 export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient }): BtStrategyRepo {
@@ -71,6 +72,7 @@ export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient })
     updateBtStrategy: updateBtStrategy({ httpClient }),
     executeBtStrategy: executeBtStrategy({ httpClient }),
     getExecutionProgress: getExecutionProgress({ httpClient }),
+    getLastExecutionProgress: getLastExecutionProgress({ httpClient }),
     getExecutionResult: getExecutionResult({ httpClient }),
   };
 }
@@ -268,6 +270,36 @@ function getExecutionResult({ httpClient }: { httpClient: HttpClient }): GetExec
       }),
       te.mapLeft((error) =>
         createBtStrategyRepoError('GetExecutionResultFailed', 'Getting execution result failed', error),
+      ),
+    );
+}
+
+export type GetLastExecutionProgress = (
+  btStrategyId: BtStrategyId,
+) => te.TaskEither<GetLastExecutionProgressError, GetLastExecutionProgressResp>;
+export type GetLastExecutionProgressError = BtStrategyRepoError<'GetLastExecutionProgressFailed'>;
+export type GetLastExecutionProgressResp = null | DeepReadonly<{
+  id: BtExecutionId;
+  btStrategyId: BtStrategyId;
+  status: BtExecutionStatus;
+  percentage: ProgressPercentage;
+  logs: ExecutionLogs;
+}>;
+function getLastExecutionProgress({ httpClient }: { httpClient: HttpClient }): GetLastExecutionProgress {
+  const { method, url, responseSchema } = API_ENDPOINTS.GET_LAST_EXECUTION_PROGRESS;
+  return (btStrategyId) =>
+    pipe(
+      httpClient.sendRequest({
+        method,
+        url: url.replace(':btStrategyId', btStrategyId),
+        responseSchema,
+      }),
+      te.mapLeft((error) =>
+        createBtStrategyRepoError(
+          'GetLastExecutionProgressFailed',
+          `Getting last execution progress of backtesting strategy (btStrategyId) failed`,
+          error,
+        ),
       ),
     );
 }

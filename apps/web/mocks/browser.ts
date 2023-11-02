@@ -68,6 +68,9 @@ const executeBtStrategyUrl = createApiPath(BACKTEST_API_ENDPOINTS.EXECUTE_BT_STR
 const getExecutionProgressUrl = createApiPath(BACKTEST_API_ENDPOINTS.GET_EXECUTION_PROGRESS.url)
   .replace(':btStrategyId', '*')
   .replace(':btExecutionId', '*');
+const getLastExecutionProgressUrl = createApiPath(
+  BACKTEST_API_ENDPOINTS.GET_LAST_EXECUTION_PROGRESS.url,
+).replace(':btStrategyId', '*');
 const getExecutionResultUrl = createApiPath(BACKTEST_API_ENDPOINTS.GET_EXECUTION_RESULT.url)
   .replace(':btStrategyId', '*')
   .replace(':btExecutionId', '*');
@@ -117,11 +120,39 @@ export const worker = setupWorker(
       }),
     );
   }),
+  rest.get(getLastExecutionProgressUrl, (_, res, ctx) => {
+    const body =
+      counter === 0
+        ? { status: 'PENDING', percentage: 0, logs: [] }
+        : counter === 1
+        ? { status: 'RUNNING', percentage: 0, logs: [] }
+        : counter === 2
+        ? { status: 'RUNNING', percentage: 10, logs: ['log1'] }
+        : counter === 3
+        ? { status: 'RUNNING', percentage: 20, logs: ['log1', 'log2'] }
+        : counter === 4
+        ? { status: 'RUNNING', percentage: 50, logs: ['log1', 'log2'] }
+        : counter === 5
+        ? { status: 'RUNNING', percentage: 100, logs: ['log1', 'log2', 'log3'] }
+        : { status: 'FINISHED', percentage: 100, logs: ['log1', 'log2', 'log3'] };
+
+    counter += 1;
+
+    return res(
+      ctx.delay(DELAY),
+      ctx.status(200),
+      ctx.json({
+        id: faker.string.nanoid(),
+        btStrategyId: faker.string.nanoid(),
+        ...body,
+      }),
+    );
+  }),
   rest.get(getExecutionResultUrl, (_, res, ctx) =>
     res(ctx.delay(DELAY), ctx.status(200), ctx.json(executionResult)),
   ),
   rest.get(getBtStrategiesUrl, (_, res, ctx) =>
-    res(ctx.delay(DELAY), ctx.status(500), ctx.json(generateArrayOf(mockBtStrategy))),
+    res(ctx.delay(5000), ctx.status(200), ctx.json(generateArrayOf(mockBtStrategy))),
   ),
   rest.get(getBtStrategyUrl, (_, res, ctx) =>
     res(ctx.delay(DELAY), ctx.status(200), ctx.json(mockBtStrategy())),

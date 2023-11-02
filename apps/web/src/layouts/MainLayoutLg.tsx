@@ -12,7 +12,7 @@ import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 import logo from '#assets/favicon-64x64.png';
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
-import { BtMainPageLink } from '#routes/components/pageLinks';
+import { BacktestMainPageLink } from '#routes/components/pageLinks';
 
 export default function MainLayoutLg({ children }: PropsWithChildren) {
   return (
@@ -72,7 +72,7 @@ function DrawerBody({ isOpen }: { isOpen: boolean }) {
         isOpen={isOpen}
         symbol="youtube_searched_for"
         text="Backtesting"
-        navLinkComponent={BtMainPageLink}
+        navLinkComponent={BacktestMainPageLink}
       />
     </List>
   );

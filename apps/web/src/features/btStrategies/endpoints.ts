@@ -69,6 +69,17 @@ export const API_ENDPOINTS = {
       logs: executionLogsSchema,
     }),
   },
+  GET_LAST_EXECUTION_PROGRESS: {
+    method: 'GET',
+    url: '/v1/backtesting-strategies/:btStrategyId/lastExecution/progress',
+    responseSchema: z.object({
+      id: btExecutionId,
+      btStrategyId: btStrategyIdSchema,
+      status: btExecutionStatusSchema,
+      percentage: progressPercentageSchema,
+      logs: executionLogsSchema,
+    }),
+  },
   GET_EXECUTION_RESULT: {
     method: 'GET',
     url: '/v1/backtesting-strategies/:btStrategyId/execution/:btExecutionId/result',
