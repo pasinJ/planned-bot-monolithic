@@ -152,7 +152,7 @@ export const worker = setupWorker(
     res(ctx.delay(DELAY), ctx.status(200), ctx.json(executionResult)),
   ),
   rest.get(getBtStrategiesUrl, (_, res, ctx) =>
-    res(ctx.delay(5000), ctx.status(200), ctx.json(generateArrayOf(mockBtStrategy))),
+    res(ctx.delay(DELAY), ctx.status(200), ctx.json(generateArrayOf(mockBtStrategy))),
   ),
   rest.get(getBtStrategyUrl, (_, res, ctx) =>
     res(ctx.delay(DELAY), ctx.status(200), ctx.json(mockBtStrategy())),

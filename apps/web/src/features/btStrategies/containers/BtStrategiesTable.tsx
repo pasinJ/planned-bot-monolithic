@@ -16,10 +16,10 @@ import useLastExecutionsProgress from '#features/btStrategies/hooks/useLastExecu
 import { Timeframe } from '#features/klines/kline';
 import useAutoFetch from '#hooks/useAutoFetch';
 import useObjState from '#hooks/useObjState';
-import { BacktestStrategyPageLink } from '#routes/components/pageLinks';
+import { BacktestReportPageLink, BacktestStrategyPageLink } from '#routes/components/pageLinks';
 import { isUndefined } from '#shared/utils/typeGuards';
 
-type X = {
+type Data = {
   btStrategy: BtStrategy;
   lastExecutionProgress: BtExecutionProgress | null;
 };
@@ -43,7 +43,7 @@ const timeframeMap: Record<Timeframe, string> = {
   '1M': '1 month',
 };
 
-const columnDefs: MRT_ColumnDef<X>[] = [
+const columnDefs: MRT_ColumnDef<Data>[] = [
   { header: 'Name', accessorKey: 'btStrategy.name', minSize: 200 },
   {
     header: 'Exchange',
@@ -72,7 +72,7 @@ const columnDefs: MRT_ColumnDef<X>[] = [
   },
 ];
 
-function StatusCell({ row }: { row: MRT_Row<X> }) {
+function StatusCell({ row }: { row: MRT_Row<Data> }) {
   const status = row.original.lastExecutionProgress?.status;
 
   if (isUndefined(status)) {
@@ -113,7 +113,7 @@ export default function BtStrategyTable() {
 
   const [filteredBtStrategyIds, setFilteredBtStrategyIds] = useObjState<BtStrategyId[]>([]);
   const lastExecutionsProgress = useLastExecutionsProgress(true, filteredBtStrategyIds);
-  const handleTableRefChange = (ref: MRT_TableInstance<X> | null) => {
+  const handleTableRefChange = (ref: MRT_TableInstance<Data> | null) => {
     if (ref !== null) {
       const newFilteredBtStrategyIds = ref
         .getFilteredRowModel()
@@ -155,8 +155,9 @@ export default function BtStrategyTable() {
   );
 }
 
-function RowAction({ row }: { row: MRT_Row<X> }) {
+function RowAction({ row }: { row: MRT_Row<Data> }) {
   const btStrategyId = row.original.btStrategy.id;
+  const btExecutionId = row.original.lastExecutionProgress?.id;
   const lastExecutionStatus = row.original.lastExecutionProgress?.status;
 
   return (
@@ -164,15 +165,15 @@ function RowAction({ row }: { row: MRT_Row<X> }) {
       <IconButton color="primary" className="bg-primary/5" component={BacktestStrategyPageLink(btStrategyId)}>
         <MaterialSymbol symbol="edit" />
       </IconButton>
-      {lastExecutionStatus && lastExecutionStatus !== 'PENDING' ? (
+      {isUndefined(btExecutionId) || lastExecutionStatus === 'PENDING' ? undefined : (
         <IconButton
           color="primary"
           className="bg-primary/5"
-          component={BacktestStrategyPageLink(btStrategyId)}
+          component={BacktestReportPageLink(btStrategyId, btExecutionId)}
         >
           <MaterialSymbol symbol="monitoring" />
         </IconButton>
-      ) : undefined}
+      )}
     </div>
   );
 }
