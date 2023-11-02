@@ -3,18 +3,13 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
-import {
-  MRT_ColumnDef,
-  MRT_ColumnFiltersState,
-  MRT_TableInstance,
-  MaterialReactTable,
-  MaterialReactTableProps,
-} from 'material-react-table';
+import { MRT_ColumnDef, MRT_ColumnFiltersState, MRT_TableInstance } from 'material-react-table';
 import { equals, flatten, pick, toPairs, values } from 'ramda';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { useState } from 'react';
 import { NonEmptyArray } from 'ts-essentials';
 
 import DateCell from '#components/DateCell';
+import MaterialReactTableWithRef from '#components/MaterialReactTableRef';
 import MaterialSymbol from '#components/MaterialSymbol';
 import TechnicalChart from '#containers/TechnicalChart';
 import { Order, OrdersLists, orderStatusEnum } from '#features/btStrategies/order';
@@ -200,16 +195,3 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
     </div>
   );
 }
-
-const MaterialReactTableWithRef = forwardRef<MRT_TableInstance<Order>, MaterialReactTableProps<Order>>(
-  function MaterialReactTableWithRef(props, ref) {
-    const _ref = useRef<MRT_TableInstance<Order>>(null);
-    useImperativeHandle<MRT_TableInstance<Order> | null, MRT_TableInstance<Order> | null>(
-      ref,
-      () => _ref.current,
-      [],
-    );
-
-    return <MaterialReactTable tableInstanceRef={_ref} {...props} />;
-  },
-);
