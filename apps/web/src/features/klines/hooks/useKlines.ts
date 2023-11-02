@@ -1,5 +1,5 @@
 import { UseQueryResult, useQuery } from '@tanstack/react-query';
-import { values } from 'ramda';
+import { isNotNil } from 'ramda';
 import { useContext } from 'react';
 
 import { ExchangeName } from '#features/exchanges/exchange';
@@ -28,9 +28,11 @@ export default function useKlines(
 ): UseQueryResult<readonly Kline[], GetKlinesError> {
   const { klineRepo } = useContext(InfraContext);
 
+  const isEnabled = autoFetchEnabled && isNotNil(request);
+
   return useQuery<readonly Kline[], GetKlinesError>({
-    enabled: autoFetchEnabled,
-    queryKey: request ? [...klinesQueryKey, ...values(request)] : undefined,
+    enabled: isEnabled,
+    queryKey: isEnabled ? [...klinesQueryKey, request] : undefined,
     queryFn: request ? () => executeTeToPromise(klineRepo.getKlines(request)) : undefined,
     staleTime: staleTimeMs,
   });

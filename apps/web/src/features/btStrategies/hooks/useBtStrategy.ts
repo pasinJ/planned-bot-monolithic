@@ -19,10 +19,11 @@ export default function useBtStrategy(
 ): UseQueryResult<BtStrategy, GetBtStrategyByIdError | GeneralError<'ParamsEmpty'>> {
   const { btStrategyRepo } = useContext(InfraContext);
   const params = useParams();
+  const isEnabled = autoFetchEnabled && isNotNil(btStrategyId ?? params.btStrategyId);
 
   return useQuery({
-    enabled: autoFetchEnabled && isNotNil(btStrategyId ?? params.btStrategyId),
-    queryKey: ['btStrategy', btStrategyId ?? params.btStrategyId],
+    enabled: isEnabled,
+    queryKey: isEnabled ? ['btStrategy', btStrategyId ?? params.btStrategyId] : undefined,
     staleTime: Infinity,
     queryFn: () =>
       executeTeToPromise(
