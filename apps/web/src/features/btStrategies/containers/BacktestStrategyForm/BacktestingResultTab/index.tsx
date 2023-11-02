@@ -14,7 +14,7 @@ import useExecutionProgress from '#features/btStrategies/hooks/useExecutionProgr
 import useExecutionResult from '#features/btStrategies/hooks/useExecutionResult';
 import { Kline } from '#features/klines/kline';
 import useAutoFetch from '#hooks/useAutoFetch';
-import { BtMainPageLink } from '#routes/components/pageLinks';
+import { BacktestMainPageLink } from '#routes/components/pageLinks';
 import { isUndefined } from '#shared/utils/typeGuards';
 
 import LogsPanel, { LogsPanelProps } from './LogsPanel';
@@ -113,7 +113,7 @@ export default function BacktestingResultTab(props: BacktestingResultTabProps) {
         <Button variant="outlined" onClick={moveToPrevTab}>
           Back
         </Button>
-        <Button variant="contained" component={BtMainPageLink}>
+        <Button variant="contained" component={BacktestMainPageLink}>
           Done
         </Button>
       </div>

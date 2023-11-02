@@ -14,13 +14,12 @@ import { equals, flatten, pick, toPairs, values } from 'ramda';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { NonEmptyArray } from 'ts-essentials';
 
+import DateCell from '#components/DateCell';
 import MaterialSymbol from '#components/MaterialSymbol';
 import TechnicalChart from '#containers/TechnicalChart';
 import { Order, OrdersLists, orderStatusEnum } from '#features/btStrategies/order';
 import { Kline } from '#features/klines/kline';
 import { KeysOfUnion } from '#shared/common.type';
-
-import DateCell from './DateCell';
 
 const columnDefs: Record<KeysOfUnion<Order>, MRT_ColumnDef<Order>> = {
   id: { accessorKey: 'id', header: 'ID' },

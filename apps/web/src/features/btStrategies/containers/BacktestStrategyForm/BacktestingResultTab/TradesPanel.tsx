@@ -3,6 +3,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { MRT_Cell, MRT_ColumnDef, MRT_Row, MaterialReactTable } from 'material-react-table';
 import { useContext, useMemo } from 'react';
 
+import DateCell from '#components/DateCell';
 import { FilledEntryOrder, FilledExitOrder } from '#features/btStrategies/order';
 import {
   ClosedTrade,
@@ -14,8 +15,6 @@ import {
 import { BaseAsset, QuoteAsset } from '#features/symbols/symbol';
 import { InfraContext } from '#infra/InfraProvider.context';
 import { toDigits } from '#shared/utils/number';
-
-import DateCell from './DateCell';
 
 export type TradesPanelProps = { trades: TradesLists; capitalCurrency: BaseAsset | QuoteAsset };
 
