@@ -4,13 +4,14 @@ import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import { prop, toPairs } from 'ramda';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, ReactNode, useMemo } from 'react';
 import { Control, UseFormProps } from 'react-hook-form';
 import { z } from 'zod';
 
 import AutocompleteFieldRf from '#components/AutocompleteFieldRf';
 import DateTimePickerRf from '#components/DateTimePickerRf';
 import IntegerFieldRf from '#components/IntegerFieldRf';
+import ListboxComponent from '#components/ListBoxVirtual';
 import SelectFieldRf from '#components/SelectFieldRf';
 import TextFieldRf from '#components/TextFieldRf';
 import {
@@ -154,8 +155,10 @@ function SymbolField({
       autocompleteProps={{
         id: 'symbol-field',
         className: 'min-w-[10rem] flex-grow',
-        options: symbols.map(prop('name')),
+        options: useMemo(() => symbols.map(prop('name')), [symbols]),
         autoComplete: true,
+        ListboxComponent,
+        renderOption: (props, option, state) => [props, option, state.index] as ReactNode,
       }}
       fieldProps={{ label: 'Symbol', variant: 'outlined', required: true }}
     />
