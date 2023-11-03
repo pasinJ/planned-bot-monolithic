@@ -18,7 +18,7 @@ function renderUseExecutionProgress(
   currentPath: string,
 ) {
   return renderHookWithContexts(
-    () => useExecutionProgress(btExecutionId),
+    () => useExecutionProgress(true, btExecutionId),
     ['Infra', 'ServerState', 'Routes'],
     {
       infraContext: overrides,

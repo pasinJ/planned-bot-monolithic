@@ -8,7 +8,7 @@ import { Symbol } from '../symbol';
 import { GetSymbolsError } from '../symbol.repository';
 
 const symbolsQueryKey = ['symbols'];
-const staleTimeMs = 5 * 60000;
+const staleTimeMs = 30 * 60000;
 
 export default function useSymbols(
   autoFetchEnabled: boolean,

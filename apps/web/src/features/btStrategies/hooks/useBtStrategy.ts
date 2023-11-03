@@ -24,7 +24,6 @@ export default function useBtStrategy(
   return useQuery({
     enabled: isEnabled,
     queryKey: isEnabled ? ['btStrategy', btStrategyId ?? params.btStrategyId] : undefined,
-    staleTime: Infinity,
     queryFn: () =>
       executeTeToPromise(
         pipe(

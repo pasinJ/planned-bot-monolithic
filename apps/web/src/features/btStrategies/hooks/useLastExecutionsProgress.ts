@@ -19,7 +19,6 @@ export default function useLastExecutionsProgress(
       queryKey: ['btExecutionProgress', btStrategyId, 'last'],
       queryFn: () => executeTeToPromise(btStrategyRepo.getLastExecutionProgress(btStrategyId)),
       refetchInterval: (data) => (data?.status === 'PENDING' || data?.status === 'RUNNING' ? 1000 : false),
-      staleTime: Infinity,
       refetchOnWindowFocus: false,
     })),
   });

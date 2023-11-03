@@ -1,5 +1,6 @@
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
+import { isNotNil } from 'ramda';
 
 import MaterialSymbol from '#components/MaterialSymbol';
 import { ExecutionTime } from '#features/btStrategies/btExecution';
@@ -13,7 +14,7 @@ export type LogsPanelProps = {
 export default function LogsPanel({ progress, executionTimeMs }: LogsPanelProps) {
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex h-full w-full items-center justify-center gap-x-4">
+      <div className="mb-4 flex w-full items-center justify-center gap-x-4">
         {progress === undefined || progress.status === 'PENDING' ? (
           <>
             <CircularProgress size="3rem" />
@@ -21,7 +22,11 @@ export default function LogsPanel({ progress, executionTimeMs }: LogsPanelProps)
           </>
         ) : progress.status === 'RUNNING' ? (
           <>
-            <CircularProgress variant="determinate" value={progress.percentage} size="3rem" />
+            {progress.percentage === 0 ? (
+              <CircularProgress size="3rem" />
+            ) : (
+              <CircularProgress variant="determinate" value={progress.percentage} size="3rem" />
+            )}
             <Typography>Progress: {progress.percentage}%</Typography>
           </>
         ) : progress.status === 'FINISHED' ? (
@@ -39,8 +44,18 @@ export default function LogsPanel({ progress, executionTimeMs }: LogsPanelProps)
           </>
         )}
       </div>
-      <div className="h-full min-h-[32rem] flex-grow space-y-1 overflow-auto whitespace-break-spaces rounded-md bg-gray-900 p-8 text-gray-100">
-        {progress?.logs.map((value, index) => <Typography key={index}>{value}</Typography>)}
+      <div className="max-h-[40rem] min-h-[32rem] flex-grow space-y-1 overflow-auto whitespace-break-spaces rounded-md bg-gray-900 p-8 text-gray-100">
+        {progress?.logs.map((value, index) => {
+          const matchString = /^(\[.*\]\s\[.*\])\s(.*)$/.exec(value);
+          if (isNotNil(matchString)) {
+            return (
+              <div key={index} className="flex gap-x-2">
+                <Typography className="font-bold">{matchString[1]}</Typography>
+                <Typography className="opacity-80">{matchString[2]}</Typography>
+              </div>
+            );
+          }
+        })}
       </div>
     </div>
   );

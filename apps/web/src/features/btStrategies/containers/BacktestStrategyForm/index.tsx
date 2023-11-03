@@ -71,7 +71,7 @@ export default function BacktestStrategyForm() {
   const [selectedSymbol, setSelectedSymbol] = useOptionState<Symbol>(o.none);
   const [lastExecution, setLastExecution] = useOptionState<LastExecution>(o.none);
 
-  const fetchBtStrategy = useBtStrategy(o.isNone(lastExecution), undefined);
+  const fetchBtStrategy = useBtStrategy(o.isNone(generalDetails) && o.isNone(strategyDetails), undefined);
   useEffect(() => {
     if (!isUndefined(fetchBtStrategy.data)) {
       setFormsValues(createDefaultFormValuesFromBtStrategy(fetchBtStrategy.data));
@@ -81,11 +81,16 @@ export default function BacktestStrategyForm() {
   }, [fetchBtStrategy.data, setFormsValues, setGeneralDetails, setStrategyDetails, setSelectedSymbol]);
 
   const moveForwardToStrategyDetailsTab = (formValues: GeneralDetailsFormValues, details: GeneralDetails) => {
-    setFormsValues((prev) => ({ ...prev, ...formValues }));
-    setGeneralDetails((prev) => (o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details })));
-
     const selectedSymbol = fetchSymbols.data?.find(propEq(details.symbol, 'name'));
     setSelectedSymbol(selectedSymbol ? o.some(selectedSymbol) : o.none);
+
+    setFormsValues((prev) =>
+      prev.capitalCurrency === selectedSymbol?.baseAsset ||
+      prev.capitalCurrency === selectedSymbol?.quoteAsset
+        ? { ...prev, ...formValues }
+        : { ...prev, ...formValues, capitalCurrency: '' },
+    );
+    setGeneralDetails((prev) => (o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details })));
 
     setActiveTab(1);
   };

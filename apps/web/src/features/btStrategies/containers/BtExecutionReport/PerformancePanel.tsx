@@ -109,17 +109,17 @@ export default function PerformancePanel(props: PerformancePanelProps) {
         <WinLossCard winLossMetrics={performance.winLossMetrics} capitalCurrency={capitalCurrency} />
       </div>
       <div className="flex flex-wrap justify-evenly gap-6">
-        <div className="min-w-[10rem] max-w-6xl flex-grow">
-          <div className="flex w-full flex-wrap justify-around gap-y-4 p-4">
+        <div className="flex w-1/2 min-w-[40rem] flex-grow flex-col">
+          <div className="flex flex-grow flex-wrap justify-around gap-x-12 gap-y-4 px-8 py-4">
             <UpDownCard
-              className="flex-grow max-w-xs"
+              className="max-w-xs flex-grow"
               title="Max. Run-up"
               value={maxRunup}
               valueMaxDigits={2}
               unit={capitalCurrency}
             />
             <UpDownCard
-              className="flex-grow max-w-xs"
+              className="max-w-xs flex-grow"
               title="Max. Drawdown"
               value={maxDrawdown}
               valueMaxDigits={2}
@@ -294,7 +294,7 @@ function EtcCard(props: EtcSectionProps) {
   const { profitFactor, returnOfInvestment, totalTradeVolume, totalFees, backtestDuration } = performance;
 
   return (
-    <MetricsCard className="min-w-[10rem] max-w-xl">
+    <MetricsCard className="min-w-[4rem] max-w-xl flex-grow">
       <CardHeading text="Etc." />
       <CardInfo title="Profit factor" info={to4Digits(profitFactor)} />
       <Divider />
@@ -320,13 +320,12 @@ function EtcCard(props: EtcSectionProps) {
         title="Backtest period"
         info={
           <div className="text-right">
-            <Typography>{backtestDuration}</Typography>
-            <Typography className="opacity-50">
+            <Typography className="whitespace-break-spaces">{backtestDuration}</Typography>
+            <Typography className="whitespace-break-spaces opacity-50">
               {`(${format(startTimestamp, 'yyyy-MM-dd HH:mm:ss')} - ${format(
                 endTimestamp,
                 'yyyy-MM-dd HH:mm:ss',
-              )}
-              )`}
+              )})`}
             </Typography>
           </div>
         }
@@ -351,7 +350,7 @@ function CardHeading({ text }: { text: string }) {
 }
 function CardInfo({ title, info }: { title: string; info: string | number | JSX.Element }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex justify-between gap-x-2">
       <Typography className="font-medium">{title}</Typography>
       {is(String, info) || is(Number, info) ? <Typography>{info}</Typography> : info}
     </div>
@@ -401,7 +400,7 @@ function EquityChart(props: EquityChartProps) {
   const buyAndHoldData: LineData<UTCTimestamp>[] = buyAndHoldHistory.map(modify('time', dateToUtcTimestamp));
 
   return (
-    <div className="relative" ref={handleContainerRef}>
+    <div className="relative flex-grow" ref={handleContainerRef}>
       {o.isNone(container) ? undefined : (
         <Chart.Container id="equity" container={container.value} options={equityChartOptions}>
           <div className="absolute left-4 top-4 z-10">
@@ -418,7 +417,7 @@ function EquityChart(props: EquityChartProps) {
                 </Typography>
                 <Chart.SeriesValue
                   defaultValue={equityData.at(-1)?.value}
-                  formatValue={(x) => toLocale(x, 2).concat(` ${capitalCurrency}`)}
+                  formatValue={(x) => toLocale(x, 4).concat(` ${capitalCurrency}`)}
                 />
               </div>
             </Chart.Series>
@@ -429,7 +428,7 @@ function EquityChart(props: EquityChartProps) {
                 </Typography>
                 <Chart.SeriesValue
                   defaultValue={buyAndHoldData.at(-1)?.value}
-                  formatValue={(x) => toLocale(x, 2).concat(` ${capitalCurrency}`)}
+                  formatValue={(x) => toLocale(x, 4).concat(` ${capitalCurrency}`)}
                 />
               </div>
             </Chart.Series>

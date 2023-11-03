@@ -1,7 +1,7 @@
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 import { dissoc } from 'ramda';
-import { DeepReadonly } from 'ts-essentials';
+import { DeepReadonly, StrictExclude } from 'ts-essentials';
 
 import { ExchangeName } from '#features/exchanges/exchange';
 import { Timeframe } from '#features/klines/kline';
@@ -232,33 +232,41 @@ type GetExecutionResult = (
   btExecutionId: BtExecutionId,
 ) => te.TaskEither<GetExecutionResultError, GetExecutionResultResp>;
 export type GetExecutionResultError = BtStrategyRepoError<'GetExecutionResultFailed'>;
-export type GetExecutionResultResp = DeepReadonly<{
-  status: 'FINISHED';
-  executionTimeMs: ExecutionTime;
-  logs: ExecutionLogs;
-  orders: {
-    openingOrders: OpeningOrder[];
-    submittedOrders: SubmittedOrder[];
-    triggeredOrders: TriggeredOrder[];
-    filledOrders: FilledOrder[];
-    canceledOrders: CanceledOrder[];
-    rejectedOrders: RejectedOrder[];
-  };
-  trades: { openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] };
-  performance: {
-    netReturn: NetReturn;
-    netProfit: NetProfit;
-    netLoss: NetLoss;
-    maxDrawdown: MaxEquityDrawdown;
-    maxRunup: MaxEquityRunup;
-    returnOfInvestment: ReturnOfInvestment;
-    profitFactor: ProfitFactor;
-    totalTradeVolume: TotalTradeVolume;
-    totalFees: TotalFees;
-    backtestDuration: DurationString;
-    winLossMetrics: WinLossMetrics;
-  };
-}>;
+export type GetExecutionResultResp = DeepReadonly<
+  | {
+      status: 'FINISHED';
+      executionTimeMs: ExecutionTime;
+      logs: ExecutionLogs;
+      orders: {
+        openingOrders: OpeningOrder[];
+        submittedOrders: SubmittedOrder[];
+        triggeredOrders: TriggeredOrder[];
+        filledOrders: FilledOrder[];
+        canceledOrders: CanceledOrder[];
+        rejectedOrders: RejectedOrder[];
+      };
+      trades: { openingTrades: OpeningTrade[]; closedTrades: ClosedTrade[] };
+      performance: {
+        netReturn: NetReturn;
+        netProfit: NetProfit;
+        netLoss: NetLoss;
+        maxDrawdown: MaxEquityDrawdown;
+        maxRunup: MaxEquityRunup;
+        returnOfInvestment: ReturnOfInvestment;
+        profitFactor: ProfitFactor;
+        totalTradeVolume: TotalTradeVolume;
+        totalFees: TotalFees;
+        backtestDuration: DurationString;
+        winLossMetrics: WinLossMetrics;
+      };
+    }
+  | {
+      status: StrictExclude<BtExecutionStatus, 'PENDING' | 'RUNNING' | 'FINISHED'>;
+      executionTimeMs: ExecutionTime;
+      logs: ExecutionLogs;
+      error?: unknown;
+    }
+>;
 function getExecutionResult({ httpClient }: { httpClient: HttpClient }): GetExecutionResult {
   const { method, url, responseSchema } = API_ENDPOINTS.GET_EXECUTION_RESULT;
   return (btStrategyId, btExecutionId) =>

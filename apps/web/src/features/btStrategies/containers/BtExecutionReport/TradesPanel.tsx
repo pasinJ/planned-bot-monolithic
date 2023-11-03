@@ -24,6 +24,7 @@ export default function TradesPanel({ trades, capitalCurrency }: TradesPanelProp
       { accessorKey: 'id', header: 'ID' },
       {
         accessorKey: 'entryOrder.filledAt',
+        id: 'enteredAt',
         header: 'Entered at',
         Cell: ({ cell }) => <DateCell cell={cell} />,
       },
@@ -58,9 +59,13 @@ export default function TradesPanel({ trades, capitalCurrency }: TradesPanelProp
     <MaterialReactTable
       data={trades.closedTrades as ClosedTrade[]}
       columns={columns}
+      state={{ sorting: [{ id: 'enteredAt', desc: false }] }}
       enableColumnResizing
       enableStickyHeader
       renderDetailPanel={({ row }) => <DetailPanel row={row} />}
+      muiTableHeadCellProps={{
+        sx: { '& .Mui-TableHeadCell-Content-Wrapper': { whiteSpace: 'break-spaces' } },
+      }}
     />
   );
 }

@@ -2,7 +2,7 @@ import { UseQueryResult, useQuery } from '@tanstack/react-query';
 import * as e from 'fp-ts/lib/Either';
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { InfraContext } from '#infra/InfraProvider.context';
@@ -21,7 +21,6 @@ import { BtStrategyId } from '../btStrategy';
 import { GetExecutionProgressError } from '../btStrategy.repository';
 
 const refetchIntervalMs = 1000;
-const staleTime = Infinity;
 
 export type UseExecutionProgressResp = {
   status: BtExecutionStatus;
@@ -30,13 +29,17 @@ export type UseExecutionProgressResp = {
 };
 
 export default function useExecutionProgress(
+  autoFetchEnabled: boolean,
   btExecutionId: BtExecutionId,
 ): UseQueryResult<UseExecutionProgressResp, GetExecutionProgressError> {
   const { btStrategyRepo } = useContext(InfraContext);
   const params = useParams();
   const btStrategyId = params.btStrategyId;
 
+  const [isFinalStatus, setIsFinalStatus] = useState(false);
+
   return useQuery<UseExecutionProgressResp, GetExecutionProgressError>({
+    enabled: autoFetchEnabled && !isFinalStatus,
     queryKey: isUndefined(btStrategyId) ? undefined : ['btExecutionProgress', btStrategyId, btExecutionId],
     queryFn: () =>
       pipe(
@@ -50,9 +53,12 @@ export default function useExecutionProgress(
             ),
         te.fromEither,
         te.chainW((btStrategyId) => btStrategyRepo.getExecutionProgress(btStrategyId, btExecutionId)),
+        te.chainFirstIOK(
+          (result) => () =>
+            isExecutionInFinalStatus(result) ? setIsFinalStatus(true) : setIsFinalStatus(false),
+        ),
         executeTeToPromise,
       ),
     refetchInterval: (data) => (data && isExecutionInFinalStatus(data) ? false : refetchIntervalMs),
-    staleTime,
   });
 }

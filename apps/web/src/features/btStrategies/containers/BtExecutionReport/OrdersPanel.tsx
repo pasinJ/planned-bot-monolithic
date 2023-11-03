@@ -175,7 +175,10 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
         ref={handleTableRefChange}
         data={flatten(values(orders))}
         columns={displayPreset[activeDisplayPreset].columns}
-        state={{ columnFilters: displayPreset[activeDisplayPreset].filter }}
+        state={{
+          columnFilters: displayPreset[activeDisplayPreset].filter,
+          sorting: [{ id: 'createdAt', desc: false }],
+        }}
         enableColumnResizing
         enableStickyHeader
         renderTopToolbarCustomActions={() => (
@@ -191,6 +194,9 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
             ))}
           </div>
         )}
+        muiTableHeadCellProps={{
+          sx: { '& .Mui-TableHeadCell-Content-Wrapper': { whiteSpace: 'break-spaces' } },
+        }}
       />
     </div>
   );

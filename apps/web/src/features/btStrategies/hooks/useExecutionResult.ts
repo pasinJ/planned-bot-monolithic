@@ -4,28 +4,36 @@ import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 import { useContext } from 'react';
 import { useParams } from 'react-router-dom';
-import { DeepReadonly } from 'ts-essentials';
+import { DeepReadonly, StrictExclude } from 'ts-essentials';
 
 import { InfraContext } from '#infra/InfraProvider.context';
 import { createGeneralError } from '#shared/errors/generalError';
 import { executeTeToPromise } from '#shared/utils/fp';
 import { isUndefined } from '#shared/utils/typeGuards';
 
-import { BtExecutionId, ExecutionLogs, ExecutionTime } from '../btExecution';
+import { BtExecutionId, BtExecutionStatus, ExecutionLogs, ExecutionTime } from '../btExecution';
 import { BtStrategyId } from '../btStrategy';
 import { GetExecutionResultError } from '../btStrategy.repository';
 import { OrdersLists } from '../order';
 import { PerformanceMetrics } from '../performance';
 import { TradesLists } from '../trade';
 
-export type UseExecutionResultResp = DeepReadonly<{
-  status: 'FINISHED';
-  executionTimeMs: ExecutionTime;
-  logs: ExecutionLogs;
-  orders: OrdersLists;
-  trades: TradesLists;
-  performance: PerformanceMetrics;
-}>;
+export type UseExecutionResultResp = DeepReadonly<
+  | {
+      status: 'FINISHED';
+      executionTimeMs: ExecutionTime;
+      logs: ExecutionLogs;
+      orders: OrdersLists;
+      trades: TradesLists;
+      performance: PerformanceMetrics;
+    }
+  | {
+      status: StrictExclude<BtExecutionStatus, 'PENDING' | 'RUNNING' | 'FINISHED'>;
+      executionTimeMs: ExecutionTime;
+      logs: ExecutionLogs;
+      error?: unknown;
+    }
+>;
 
 export default function useExecutionResult(
   autoFetchEnabled: boolean,

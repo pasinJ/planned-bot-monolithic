@@ -44,7 +44,7 @@ export default function BtExecutionReport(props: BtExecutionReportProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('logs');
   const handleChangeTab = (_: unknown, tabValue: TabValue) => setActiveTab(tabValue);
 
-  const fetchProgress = useExecutionProgress(btExecutionId);
+  const fetchProgress = useExecutionProgress(true, btExecutionId);
   const [fetchResult, handleStartFetchResult] = useAutoFetch(false, useExecutionResult, [btExecutionId]);
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function BtExecutionReport(props: BtExecutionReportProps) {
               }),
             )
             .with(['performance', P.any], ([, val]) =>
-              isUndefined(fetchResult.data)
+              isUndefined(fetchResult.data) || fetchResult.data.status !== 'FINISHED'
                 ? undefined
                 : val.panelComponent({
                     klines,
@@ -89,12 +89,12 @@ export default function BtExecutionReport(props: BtExecutionReportProps) {
                   }),
             )
             .with(['trades', P.any], ([, val]) =>
-              isUndefined(fetchResult.data)
+              isUndefined(fetchResult.data) || fetchResult.data.status !== 'FINISHED'
                 ? undefined
                 : val.panelComponent({ trades: fetchResult.data.trades, capitalCurrency }),
             )
             .with(['orders', P.any], ([, val]) =>
-              isUndefined(fetchResult.data)
+              isUndefined(fetchResult.data) || fetchResult.data.status !== 'FINISHED'
                 ? undefined
                 : val.panelComponent({ orders: fetchResult.data.orders, klines }),
             )

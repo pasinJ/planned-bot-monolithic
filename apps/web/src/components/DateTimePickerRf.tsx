@@ -33,6 +33,8 @@ export default function DateTimePickerRf<TDate, T extends FieldValues, N extends
           ...textFieldProps,
         },
       }}
+      inputRef={ref}
+      value={value}
       onChange={onChange}
       {...dateTimePickerProps}
     />
