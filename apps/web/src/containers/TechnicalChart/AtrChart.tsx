@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -26,7 +25,7 @@ import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { atr } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type AtrChartType = typeof atrChartType;
 const atrChartType = 'atr';
@@ -43,9 +42,11 @@ type AtrChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: AtrChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function AtrChart(props: AtrChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -81,7 +82,7 @@ export default function AtrChart(props: AtrChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <AtrSeries klines={klines} settings={settings} />
+              <AtrSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -96,11 +97,12 @@ const atrSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type AtrSeriesProps = { klines: readonly Kline[]; settings: AtrSettings };
+type AtrSeriesProps = { klines: readonly Kline[]; settings: AtrSettings; maxDecimalDigits?: number };
 function AtrSeries(props: AtrSeriesProps) {
   const {
     klines,
     settings: { color, period },
+    maxDecimalDigits,
   } = props;
 
   const [atrData, setAtrData] = useState<o.Option<LineData[]>>(o.none);
@@ -117,7 +119,10 @@ function AtrSeries(props: AtrSeriesProps) {
   return o.isNone(atrData) ? undefined : (
     <Chart.Series id={atrChartType} type="Line" data={atrData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="ATR" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={atrData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={atrData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

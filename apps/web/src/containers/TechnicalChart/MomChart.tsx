@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -27,7 +26,7 @@ import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import { momentum } from './indicators';
-import { Source, dateToUtcTimestamp } from './utils';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
 export type MomChartType = typeof momChartType;
 const momChartType = 'mom';
@@ -48,9 +47,11 @@ type MomChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: MomChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function MomChart(props: MomChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -86,7 +87,7 @@ export default function MomChart(props: MomChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <MomentumSeries klines={klines} settings={settings} />
+              <MomentumSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -101,9 +102,9 @@ const momSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type MomentumSeriesProps = { klines: readonly Kline[]; settings: MomSettings };
+type MomentumSeriesProps = { klines: readonly Kline[]; settings: MomSettings; maxDecimalDigits?: number };
 function MomentumSeries(props: MomentumSeriesProps) {
-  const { klines, settings } = props;
+  const { klines, settings, maxDecimalDigits } = props;
   const { source, period, color } = settings;
 
   const [momData, setMomData] = useState<o.Option<LineData[]>>(o.none);
@@ -121,7 +122,10 @@ function MomentumSeries(props: MomentumSeriesProps) {
   return o.isNone(momData) ? undefined : (
     <Chart.Series id={momChartType} type="Line" data={momData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="MOM" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={momData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={momData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

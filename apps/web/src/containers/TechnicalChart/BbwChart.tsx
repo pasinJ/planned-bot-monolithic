@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -28,7 +27,7 @@ import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import StdDevField from './components/StdDevField';
 import { bb, bbw } from './indicators';
-import { Source, dateToUtcTimestamp } from './utils';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
 export type BbwChartType = typeof bbwChartType;
 const bbwChartType = 'bbw';
@@ -50,9 +49,11 @@ type BbwChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: BbwChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function BbwChart(props: BbwChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -88,7 +89,7 @@ export default function BbwChart(props: BbwChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <BbwSeries klines={klines} settings={settings} />
+              <BbwSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -103,9 +104,9 @@ const bbwSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type BbwSeriesProps = { klines: readonly Kline[]; settings: BbwSettings };
+type BbwSeriesProps = { klines: readonly Kline[]; settings: BbwSettings; maxDecimalDigits?: number };
 function BbwSeries(props: BbwSeriesProps) {
-  const { klines, settings } = props;
+  const { klines, settings, maxDecimalDigits } = props;
   const { source, period, stddev, color } = settings;
 
   const [bbwData, setBbwData] = useState<o.Option<LineData[]>>(o.none);
@@ -123,7 +124,10 @@ function BbwSeries(props: BbwSeriesProps) {
   return o.isNone(bbwData) ? undefined : (
     <Chart.Series id={bbwChartType} type="Line" data={bbwData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="BBW" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={bbwData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={bbwData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -25,7 +24,7 @@ import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { emv } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type EmvChartType = typeof emvChartType;
 const emvChartType = 'emv';
@@ -45,9 +44,11 @@ type EmvChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: EmvChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function EmvChart(props: EmvChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -83,7 +84,7 @@ export default function EmvChart(props: EmvChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <EmvSeries klines={klines} color={settings.color} />
+              <EmvSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -98,9 +99,9 @@ const emvSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type EmvSeriesProps = { klines: readonly Kline[]; color: HexColor };
+type EmvSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
 function EmvSeries(props: EmvSeriesProps) {
-  const { klines, color } = props;
+  const { klines, color, maxDecimalDigits } = props;
 
   const [emvData, setEmvData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -118,7 +119,10 @@ function EmvSeries(props: EmvSeriesProps) {
   return o.isNone(emvData) ? undefined : (
     <Chart.Series id={emvChartType} type="Line" data={emvData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="EMV" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={emvData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={emvData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

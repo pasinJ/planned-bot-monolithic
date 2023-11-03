@@ -28,7 +28,7 @@ import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { mfi } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type MfiChartType = typeof mfiChartType;
 const mfiChartType = 'mfi';
@@ -66,9 +66,11 @@ type MfiChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: MfiChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function MfiChart(props: MfiChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -104,7 +106,7 @@ export default function MfiChart(props: MfiChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <MfiSeries klines={klines} settings={settings} />
+              <MfiSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -144,9 +146,9 @@ const oversoldPriceLineOptions: CreatePriceLineOptions & { id: string } = {
   lineStyle: LineStyle.Dashed,
 };
 
-type MfiSeriesProps = { klines: readonly Kline[]; settings: MfiSettings };
+type MfiSeriesProps = { klines: readonly Kline[]; settings: MfiSettings; maxDecimalDigits?: number };
 function MfiSeries(props: MfiSeriesProps) {
-  const { klines, settings } = props;
+  const { klines, settings, maxDecimalDigits } = props;
   const {
     period,
     mfiLineColor,
@@ -189,7 +191,10 @@ function MfiSeries(props: MfiSeriesProps) {
       priceLinesOptions={priceLinesOptions}
     >
       <SeriesLegendWithoutMenus name="MFI" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={mfiData.value.at(-1)?.value} />
+        <Chart.SeriesValue
+          defaultValue={mfiData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

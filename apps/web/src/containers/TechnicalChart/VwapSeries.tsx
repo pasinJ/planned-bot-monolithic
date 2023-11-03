@@ -8,7 +8,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart from '../Chart';
@@ -18,7 +17,7 @@ import PeriodField from './components/PeriodField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import { vwap } from './indicators';
-import { dateToUtcTimestamp, randomHexColor } from './utils';
+import { dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
 export type VwapSeriesType = typeof vwapSeriesType;
 const vwapSeriesType = 'vwap';
@@ -39,9 +38,14 @@ const defaultSettingsFormOptions: UseFormProps<VwapSettings> = {
   mode: 'onBlur',
 };
 
-type VwapSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
+type VwapSeriesProps = {
+  id: string;
+  klines: readonly Kline[];
+  handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
+};
 export default function VwapSeries(props: VwapSeriesProps) {
-  const { id, klines, handleRemoveSeries } = props;
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
@@ -66,7 +70,12 @@ export default function VwapSeries(props: VwapSeriesProps) {
         id={id}
         title={settings.name}
         color={seriesOptions.color}
-        legend={<Chart.SeriesValue defaultValue={vwapData.value.at(-1)?.value} formatValue={to4Digits} />}
+        legend={
+          <Chart.SeriesValue
+            defaultValue={vwapData.value.at(-1)?.value}
+            formatValue={formatValue(4, maxDecimalDigits)}
+          />
+        }
         hidden={hidden}
         handleToggleHidden={handleToggleHidden}
         handleSettingOpen={handleSettingOpen}

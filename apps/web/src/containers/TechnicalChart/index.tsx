@@ -7,8 +7,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import Zoom from '@mui/material/Zoom';
+import { Decimal } from 'decimal.js';
 import { flow } from 'fp-ts/lib/function';
-import { ChartOptions, DeepPartial } from 'lightweight-charts';
+import { BarPrice, ChartOptions, DeepPartial } from 'lightweight-charts';
 import { nanoid } from 'nanoid';
 import { append, equals, includes, reject, uniq } from 'ramda';
 import { useContext, useMemo, useState } from 'react';
@@ -78,6 +79,8 @@ type IndicatorSeriesType =
 type AddSeries = (seriesType: IndicatorSeriesType) => void;
 type AddChart = (chartType: IndicatorChartType) => void;
 
+const SPACE_FOR_DECIMAL_POINT_AND_MINUS_SIGN = 2;
+
 type TechnicalChartProps = { klines: readonly Kline[]; orders?: readonly Order[] };
 export default function TechnicalChart(props: TechnicalChartProps) {
   const { klines, orders } = props;
@@ -91,6 +94,31 @@ export default function TechnicalChart(props: TechnicalChartProps) {
   const localOrders = useMemo(
     () => orders?.map((order) => formatOrderTimestamp(order, timezone)),
     [orders, timezone],
+  );
+  const { maxDecimalDigits, maxSignificantDigits } = useMemo(
+    () =>
+      localKlines.reduce(
+        (prev, kline) => ({
+          maxDecimalDigits: Math.max(
+            prev.maxDecimalDigits,
+            new Decimal(kline.open).decimalPlaces(),
+            new Decimal(kline.high).decimalPlaces(),
+            new Decimal(kline.low).decimalPlaces(),
+            new Decimal(kline.close).decimalPlaces(),
+            new Decimal(kline.volume).decimalPlaces(),
+          ),
+          maxSignificantDigits: Math.max(
+            prev.maxSignificantDigits,
+            new Decimal(kline.open).precision(true),
+            new Decimal(kline.high).precision(true),
+            new Decimal(kline.low).precision(true),
+            new Decimal(kline.close).precision(true),
+            new Decimal(kline.volume).precision(true),
+          ),
+        }),
+        { maxDecimalDigits: -Infinity, maxSignificantDigits: -Infinity },
+      ),
+    [localKlines],
   );
 
   const [chartsList, setChartsList] = useState<IndicatorChartType[]>(['price']);
@@ -114,6 +142,15 @@ export default function TechnicalChart(props: TechnicalChartProps) {
   };
 
   function chartOptions(index: number): DeepPartial<ChartOptions> {
+    const baseOptions: DeepPartial<ChartOptions> = {
+      localization: {
+        priceFormatter: (p: BarPrice) =>
+          `${p
+            .toFixed(maxDecimalDigits)
+            .padStart(maxSignificantDigits + SPACE_FOR_DECIMAL_POINT_AND_MINUS_SIGN)}`,
+      },
+    };
+
     const timeframe = klines.at(0)?.timeframe;
     const timeOptions: Partial<ChartOptions['timeScale']> =
       timeframe && timeframe === '1s'
@@ -121,9 +158,10 @@ export default function TechnicalChart(props: TechnicalChartProps) {
         : timeframe && isIntraDayTimeframe(timeframe)
         ? { timeVisible: true, secondsVisible: false }
         : { timeVisible: false };
+
     return index === chartsList.length - 1
-      ? { timeScale: { visible: true, ...timeOptions } }
-      : { timeScale: { visible: false } };
+      ? { ...baseOptions, timeScale: { visible: true, ...timeOptions } }
+      : { ...baseOptions, timeScale: { visible: false } };
   }
 
   return (
@@ -140,13 +178,20 @@ export default function TechnicalChart(props: TechnicalChartProps) {
             klines: localKlines,
             orders: localOrders,
             options: chartOptions(index),
+            maxDecimalDigits,
           };
 
           return match(chartType)
             .with('price', () => (
               <PriceChart {...chartProps}>
                 {Array.from(seriesMap).map(([id, seriesType]) => {
-                  const seriesProps = { id, key: id, klines: localKlines, handleRemoveSeries };
+                  const seriesProps = {
+                    id,
+                    key: id,
+                    klines: localKlines,
+                    maxDecimalDigits,
+                    handleRemoveSeries,
+                  };
                   return match(seriesType)
                     .with('sma', () => <SmaSeries {...seriesProps} />)
                     .with('ema', () => <EmaSeries {...seriesProps} />)

@@ -1,10 +1,11 @@
 import { getUnixTime, isAfter, isBefore, isEqual } from 'date-fns';
 import { SeriesMarker, UTCTimestamp } from 'lightweight-charts';
 import material from 'material-colors';
-import { append, ascend, groupBy, prop, sort, toPairs } from 'ramda';
+import { __, append, ascend, curry, groupBy, max, prop, sort, toPairs } from 'ramda';
 
 import { Order } from '#features/btStrategies/order';
 import { Kline } from '#features/klines/kline';
+import { toDigits } from '#shared/utils/number';
 import { HexColor } from '#shared/utils/string';
 
 export type Source = 'open' | 'high' | 'low' | 'close';
@@ -75,6 +76,10 @@ export function ordersToMarkersAndEvents(
 
 export function dateToUtcTimestamp(date: Date): UTCTimestamp {
   return getUnixTime(date) as UTCTimestamp;
+}
+
+export function formatValue(minDigits: number, maxDigits = 0) {
+  return curry(toDigits)(__, max(minDigits, maxDigits));
 }
 
 const colorPreset: HexColor[] = [

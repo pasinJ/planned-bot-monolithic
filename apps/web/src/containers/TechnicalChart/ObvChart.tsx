@@ -24,7 +24,7 @@ import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { obv } from './indicators';
-import { dateToUtcTimestamp, randomHexColor } from './utils';
+import { dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
 export type ObvChartType = typeof obvChartType;
 const obvChartType = 'obv';
@@ -44,9 +44,11 @@ type ObvChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: ObvChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function ObvChart(props: ObvChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -86,7 +88,7 @@ export default function ObvChart(props: ObvChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <ObvSeries klines={klines} color={settings.color} />
+              <ObvSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -101,9 +103,9 @@ const obvSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type ObvSeriesProps = { klines: readonly Kline[]; color: HexColor };
+type ObvSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
 function ObvSeries(props: ObvSeriesProps) {
-  const { klines, color } = props;
+  const { klines, maxDecimalDigits, color } = props;
 
   const [obvData, setObvData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -122,7 +124,10 @@ function ObvSeries(props: ObvSeriesProps) {
   return o.isNone(obvData) ? undefined : (
     <Chart.Series id={obvChartType} type="Line" data={obvData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="OBV" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={obvData.value.at(-1)?.value} />
+        <Chart.SeriesValue
+          defaultValue={obvData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

@@ -18,7 +18,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -29,7 +28,7 @@ import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import { roc } from './indicators';
-import { Source, dateToUtcTimestamp } from './utils';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
 export type RocChartType = typeof rocChartType;
 const rocChartType = 'roc';
@@ -51,9 +50,11 @@ type RocChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: RocChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function RocChart(props: RocChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -89,7 +90,7 @@ export default function RocChart(props: RocChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <RocSeries klines={klines} settings={settings} />
+              <RocSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -111,9 +112,9 @@ const zeroLineOptions: CreatePriceLineOptions & { id: string } = {
   lineWidth: 2,
   lineStyle: LineStyle.Dashed,
 };
-type RocSeriesProps = { klines: readonly Kline[]; settings: RocSettings };
+type RocSeriesProps = { klines: readonly Kline[]; settings: RocSettings; maxDecimalDigits?: number };
 function RocSeries(props: RocSeriesProps) {
-  const { klines, settings } = props;
+  const { klines, settings, maxDecimalDigits } = props;
   const { source, period, color } = settings;
 
   const [rocData, setRocData] = useState<o.Option<LineData[]>>(o.none);
@@ -137,7 +138,10 @@ function RocSeries(props: RocSeriesProps) {
       priceLinesOptions={[zeroLineOptions]}
     >
       <SeriesLegendWithoutMenus name="ROC" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={rocData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={rocData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

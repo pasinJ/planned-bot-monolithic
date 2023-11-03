@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -25,7 +24,7 @@ import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { pvt } from './indicators';
-import { dateToUtcTimestamp, randomHexColor } from './utils';
+import { dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
 export type PvtChartType = typeof pvtChartType;
 const pvtChartType = 'pvt';
@@ -45,9 +44,11 @@ type PvtChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: PvtChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function PvtChart(props: PvtChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -87,7 +88,7 @@ export default function PvtChart(props: PvtChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <PvtSeries klines={klines} color={settings.color} />
+              <PvtSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -102,9 +103,9 @@ const pvtSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type PvtSeriesProps = { klines: readonly Kline[]; color: HexColor };
+type PvtSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
 function PvtSeries(props: PvtSeriesProps) {
-  const { klines, color } = props;
+  const { klines, color, maxDecimalDigits } = props;
 
   const pvtData = useMemo<LineData[]>(
     () =>
@@ -120,7 +121,10 @@ function PvtSeries(props: PvtSeriesProps) {
   return (
     <Chart.Series id={pvtChartType} type="Line" data={pvtData} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="PVT" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={pvtData.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={pvtData.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

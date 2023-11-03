@@ -11,7 +11,6 @@ import IntegerFieldRf from '#components/IntegerFieldRf';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart from '../Chart';
@@ -20,7 +19,7 @@ import NameField from './components/NameField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import { supertrend } from './indicators';
-import { dateToUtcTimestamp, randomHexColor } from './utils';
+import { dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
 export type SupertrendSeriesType = typeof supertrendSeriesType;
 const supertrendSeriesType = 'supertrend';
@@ -46,9 +45,10 @@ type SupertrendSeriesProps = {
   id: string;
   klines: readonly Kline[];
   handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
 };
 export default function SupertrendSeries(props: SupertrendSeriesProps) {
-  const { id, klines, handleRemoveSeries } = props;
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
@@ -74,7 +74,10 @@ export default function SupertrendSeries(props: SupertrendSeriesProps) {
         title={settings.name}
         color={seriesOptions.color}
         legend={
-          <Chart.SeriesValue defaultValue={supertrendData.value.at(-1)?.value} formatValue={to4Digits} />
+          <Chart.SeriesValue
+            defaultValue={supertrendData.value.at(-1)?.value}
+            formatValue={formatValue(4, maxDecimalDigits)}
+          />
         }
         hidden={hidden}
         handleToggleHidden={handleToggleHidden}

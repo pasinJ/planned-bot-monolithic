@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to2Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -26,7 +25,7 @@ import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { adx } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type AdxChartType = typeof adxChartType;
 const adxChartType = 'adx';
@@ -43,9 +42,11 @@ type AdxChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: AdxChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function AdxChart(props: AdxChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -81,7 +82,7 @@ export default function AdxChart(props: AdxChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <AdxSeries klines={klines} settings={settings} />
+              <AdxSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -96,11 +97,12 @@ const adxSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type AdxSeriesProps = { klines: readonly Kline[]; settings: AdxSettings };
+type AdxSeriesProps = { klines: readonly Kline[]; settings: AdxSettings; maxDecimalDigits?: number };
 function AdxSeries(props: AdxSeriesProps) {
   const {
     klines,
     settings: { color, period },
+    maxDecimalDigits,
   } = props;
 
   const [adxData, setAdxData] = useState<o.Option<LineData[]>>(o.none);
@@ -117,7 +119,10 @@ function AdxSeries(props: AdxSeriesProps) {
   return o.isNone(adxData) ? undefined : (
     <Chart.Series id={adxChartType} type="Line" data={adxData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="ADX" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={adxData.value.at(-1)?.value} formatValue={to2Digits} />
+        <Chart.SeriesValue
+          defaultValue={adxData.value.at(-1)?.value}
+          formatValue={formatValue(2, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

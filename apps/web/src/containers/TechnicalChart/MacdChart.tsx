@@ -20,7 +20,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 import IntegerFieldRf from '#components/IntegerFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -30,7 +29,7 @@ import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import { macd } from './indicators';
-import { Source, dateToUtcTimestamp, downColor, upColor } from './utils';
+import { Source, dateToUtcTimestamp, downColor, formatValue, upColor } from './utils';
 
 export type MacdChartType = typeof macdChartType;
 const macdChartType = 'macd';
@@ -65,9 +64,11 @@ type MacdChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: MacdChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function MacdChart(props: MacdChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -106,9 +107,17 @@ export default function MacdChart(props: MacdChartProps) {
             </SettingsModal>
             {o.isNone(macdData) ? undefined : (
               <div className="flex flex-col">
-                <MacdSeries data={macdData.value.macd} color={settings.macdLineColor} />
-                <SignalSeries data={macdData.value.signal} color={settings.signalLineColor} />
-                <HistogramSeries data={macdData.value.histogram} />
+                <MacdSeries
+                  data={macdData.value.macd}
+                  color={settings.macdLineColor}
+                  maxDecimalDigits={maxDecimalDigits}
+                />
+                <SignalSeries
+                  data={macdData.value.signal}
+                  color={settings.signalLineColor}
+                  maxDecimalDigits={maxDecimalDigits}
+                />
+                <HistogramSeries data={macdData.value.histogram} maxDecimalDigits={maxDecimalDigits} />
               </div>
             )}
           </div>
@@ -165,16 +174,16 @@ const macdSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type MacdSeriesProps = { data: LineData[]; color: HexColor };
+type MacdSeriesProps = { data: LineData[]; color: HexColor; maxDecimalDigits?: number };
 function MacdSeries(props: MacdSeriesProps) {
-  const { data, color } = props;
+  const { data, color, maxDecimalDigits } = props;
 
   const seriesOptions = useMemo(() => ({ ...macdSeriesOptions, color }), [color]);
 
   return (
     <Chart.Series id="macd" type="Line" data={data} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="MACD" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );
@@ -186,16 +195,16 @@ const signalSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> =
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type SignalSeriesProps = { data: LineData[]; color: HexColor };
+type SignalSeriesProps = { data: LineData[]; color: HexColor; maxDecimalDigits?: number };
 function SignalSeries(props: SignalSeriesProps) {
-  const { data, color } = props;
+  const { data, color, maxDecimalDigits } = props;
 
   const seriesOptions = useMemo(() => ({ ...signalSeriesOptions, color }), [color]);
 
   return (
     <Chart.Series id="signal" type="Line" data={data} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="SIGNAL" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );
@@ -205,12 +214,12 @@ const histogramSeriesOptions: DeepPartial<HistogramStyleOptions & SeriesOptionsC
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type HistogramSeriesProps = { data: HistogramData[] };
-function HistogramSeries({ data }: HistogramSeriesProps) {
+type HistogramSeriesProps = { data: HistogramData[]; maxDecimalDigits?: number };
+function HistogramSeries({ data, maxDecimalDigits }: HistogramSeriesProps) {
   return (
     <Chart.Series id="histogram" type="Histogram" data={data} options={histogramSeriesOptions}>
       <SeriesLegendWithoutMenus name="HISTOGRAM" color="#696969">
-        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

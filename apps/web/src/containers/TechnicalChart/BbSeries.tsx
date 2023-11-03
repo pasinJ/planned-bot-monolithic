@@ -9,7 +9,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart from '../Chart';
@@ -23,7 +22,7 @@ import SourceField from './components/SourceField';
 import StdDevField from './components/StdDevField';
 import VisibilityButton from './components/VisibilityButton';
 import { bb } from './indicators';
-import { Source, dateToUtcTimestamp } from './utils';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
 export type BbSeriesType = typeof bbSeriesType;
 const bbSeriesType = 'bb';
@@ -61,9 +60,14 @@ const defaultSettingsFormOptions: UseFormProps<BbSettings> = {
   mode: 'onBlur',
 };
 
-type BbSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
+type BbSeriesProps = {
+  id: string;
+  klines: readonly Kline[];
+  handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
+};
 export default function BbSeries(props: BbSeriesProps) {
-  const { id, klines, handleRemoveSeries } = props;
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
@@ -80,14 +84,27 @@ export default function BbSeries(props: BbSeriesProps) {
           {settings.name}
         </Typography>
         <div className="flex gap-x-1 group-hover:hidden">
-          <BandSeries id="upper" data={bbData.value.upper} hidden={hidden} color={settings.upperLineColor} />
+          <BandSeries
+            id="upper"
+            data={bbData.value.upper}
+            hidden={hidden}
+            color={settings.upperLineColor}
+            maxDecimalDigits={maxDecimalDigits}
+          />
           <BandSeries
             id="middle"
             data={bbData.value.middle}
             hidden={hidden}
             color={settings.middleLineColor}
+            maxDecimalDigits={maxDecimalDigits}
           />
-          <BandSeries id="lower" data={bbData.value.lower} hidden={hidden} color={settings.lowerLineColor} />
+          <BandSeries
+            id="lower"
+            data={bbData.value.lower}
+            hidden={hidden}
+            color={settings.lowerLineColor}
+            maxDecimalDigits={maxDecimalDigits}
+          />
         </div>
         <div>
           <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
@@ -137,9 +154,15 @@ function useBbData(klines: readonly Kline[], settings: BbSettings) {
   return bbData;
 }
 
-type BandSeriesProps = { id: string; data: LineData[]; hidden: boolean; color: HexColor };
+type BandSeriesProps = {
+  id: string;
+  data: LineData[];
+  hidden: boolean;
+  color: HexColor;
+  maxDecimalDigits?: number;
+};
 function BandSeries(props: BandSeriesProps) {
-  const { id, data, hidden, color } = props;
+  const { id, data, hidden, color, maxDecimalDigits } = props;
 
   const seriesOptions = useMemo(
     () => ({
@@ -152,7 +175,7 @@ function BandSeries(props: BandSeriesProps) {
 
   return (
     <Chart.Series id={id} type="Line" data={data} options={seriesOptions}>
-      <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={to4Digits} />
+      <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
     </Chart.Series>
   );
 }

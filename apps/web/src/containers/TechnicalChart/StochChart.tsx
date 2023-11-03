@@ -20,7 +20,6 @@ import DecimalFieldRf from '#components/DecimalFieldRf';
 import IntegerFieldRf from '#components/IntegerFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -29,7 +28,7 @@ import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { stoch } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type StochChartType = typeof stochChartType;
 const stochChartType = 'stoch';
@@ -73,9 +72,11 @@ type StochChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: StochChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function StochChart(props: StochChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -115,8 +116,16 @@ export default function StochChart(props: StochChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <KLineSeries data={stochData.value.kLine} settings={settings} />
-              <DLineSeries data={stochData.value.dLine} color={settings.dLineColor} />
+              <KLineSeries
+                data={stochData.value.kLine}
+                settings={settings}
+                maxDecimalDigits={maxDecimalDigits}
+              />
+              <DLineSeries
+                data={stochData.value.dLine}
+                color={settings.dLineColor}
+                maxDecimalDigits={maxDecimalDigits}
+              />
             </div>
           </div>
         </Chart.Container>
@@ -178,9 +187,9 @@ const lowerLineOptions: CreatePriceLineOptions & { id: string } = {
   lineWidth: 2,
   lineStyle: LineStyle.Dashed,
 };
-type KLineSeriesProps = { data: LineData[]; settings: StochSettings };
+type KLineSeriesProps = { data: LineData[]; settings: StochSettings; maxDecimalDigits?: number };
 function KLineSeries(props: KLineSeriesProps) {
-  const { data, settings } = props;
+  const { data, settings, maxDecimalDigits } = props;
   const { kLineColor, upperLevel, upperLineColor, middleLevel, middleLineColor, lowerLevel, lowerLineColor } =
     settings;
 
@@ -203,7 +212,7 @@ function KLineSeries(props: KLineSeriesProps) {
       priceLinesOptions={priceLinesOptions}
     >
       <SeriesLegendWithoutMenus name="%K" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );
@@ -215,16 +224,16 @@ const dLineSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = 
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type DLineSeriesProps = { data: LineData[]; color: HexColor };
+type DLineSeriesProps = { data: LineData[]; color: HexColor; maxDecimalDigits?: number };
 function DLineSeries(props: DLineSeriesProps) {
-  const { data, color } = props;
+  const { data, color, maxDecimalDigits } = props;
 
   const seriesOptions = useMemo(() => ({ ...dLineSeriesOptions, color }), [color]);
 
   return (
     <Chart.Series id="dLine" type="Line" data={data} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="%D" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

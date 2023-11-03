@@ -19,7 +19,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 import DecimalFieldRf from '#components/DecimalFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -29,7 +28,7 @@ import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { rsi } from './indicators';
-import { Source, dateToUtcTimestamp } from './utils';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
 export type RsiChartType = typeof rsiChartType;
 const rsiChartType = 'rsi';
@@ -69,9 +68,11 @@ type RsiChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: RsiChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function RsiChart(props: RsiChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -107,7 +108,7 @@ export default function RsiChart(props: RsiChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <RsiSeries klines={klines} settings={settings} />
+              <RsiSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -147,9 +148,9 @@ const oversoldPriceLineOptions: CreatePriceLineOptions & { id: string } = {
   lineStyle: LineStyle.Dashed,
 };
 
-type RsiSeriesProps = { klines: readonly Kline[]; settings: RsiSettings };
+type RsiSeriesProps = { klines: readonly Kline[]; settings: RsiSettings; maxDecimalDigits?: number };
 function RsiSeries(props: RsiSeriesProps) {
-  const { klines, settings } = props;
+  const { klines, settings, maxDecimalDigits } = props;
   const {
     source,
     period,
@@ -194,7 +195,10 @@ function RsiSeries(props: RsiSeriesProps) {
       priceLinesOptions={priceLinesOptions}
     >
       <SeriesLegendWithoutMenus name="RSI" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={rsiData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={rsiData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

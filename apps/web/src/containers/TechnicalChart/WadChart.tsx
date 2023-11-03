@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -25,7 +24,7 @@ import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { wad } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type WadChartType = typeof wadChartType;
 const wadChartType = 'wad';
@@ -45,9 +44,11 @@ type WadChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: WadChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function WadChart(props: WadChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -83,7 +84,7 @@ export default function WadChart(props: WadChartProps) {
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <WadSeries klines={klines} color={settings.color} />
+              <WadSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -98,9 +99,9 @@ const wadSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type WadSeriesProps = { klines: readonly Kline[]; color: HexColor };
+type WadSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
 function WadSeries(props: WadSeriesProps) {
-  const { klines, color } = props;
+  const { klines, color, maxDecimalDigits } = props;
 
   const [wadData, setWadData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -119,7 +120,10 @@ function WadSeries(props: WadSeriesProps) {
   return o.isNone(wadData) ? undefined : (
     <Chart.Series id={wadChartType} type="Line" data={wadData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="WAD" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={wadData.value.at(-1)?.value} formatValue={to4Digits} />
+        <Chart.SeriesValue
+          defaultValue={wadData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

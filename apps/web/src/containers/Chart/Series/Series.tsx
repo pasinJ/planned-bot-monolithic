@@ -20,6 +20,7 @@ import {
   PriceScaleOptions,
   SeriesMarker,
   SeriesOptionsCommon,
+  Time,
   UTCTimestamp,
   WhitespaceData,
 } from 'lightweight-charts';
@@ -38,7 +39,14 @@ import { SeriesContext } from './SeriesContext';
 
 export type SeriesApi = ISeriesApi<'Candlestick' | 'Area' | 'Bar' | 'Baseline' | 'Histogram' | 'Line'>;
 
-export type SeriesObj = { getSeries: () => e.Either<string, SeriesApi>; removeSeries: () => void };
+export type SeriesObj = {
+  getSeries: () => e.Either<string, SeriesApi>;
+  removeSeries: () => void;
+  getDataMap: () => Map<
+    Time,
+    CandlestickData | AreaData | BarData | BaselineData | HistogramData | LineData | WhitespaceData
+  >;
+};
 
 export type SeriesProps = PropsWithChildren<
   (
@@ -79,6 +87,8 @@ export type SeriesProps = PropsWithChildren<
     markers?: SeriesMarker<UTCTimestamp>[];
   }
 >;
+
+const defaultSeriesOptions: DeepPartial<SeriesOptionsCommon> = { priceFormat: { minMove: 0.00000001 } };
 
 export const Series = forwardRef<SeriesObj, SeriesProps>(function Series(props, ref) {
   const { children, id, type, options, priceScaleOptions, data, priceLinesOptions, markers } = props;
@@ -125,6 +135,9 @@ export const Series = forwardRef<SeriesObj, SeriesProps>(function Series(props, 
         _priceLines.current = new Map();
       }
     },
+    getDataMap() {
+      return new Map(data.map((x) => [x.time, x]));
+    },
   });
 
   useImperativeHandle(ref, () => seriesObj.current, []);
@@ -137,7 +150,7 @@ export const Series = forwardRef<SeriesObj, SeriesProps>(function Series(props, 
 
   useLayoutEffect(() => {
     if (options && o.isSome(_series.current)) {
-      _series.current.value.applyOptions(options);
+      _series.current.value.applyOptions({ ...defaultSeriesOptions, ...options });
     }
   }, [options]);
 

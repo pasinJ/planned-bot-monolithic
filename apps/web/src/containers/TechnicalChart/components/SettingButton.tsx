@@ -12,7 +12,7 @@ export default function SettingsButton({
     <Button
       color="inherit"
       aria-label="open indicator settings"
-      className="invisible min-w-fit p-0 group-hover:visible"
+      className="group-hover:revert hidden min-w-fit p-0"
       onClick={openSettings}
     >
       <MaterialSymbol className="px-1 text-2xl" symbol="settings" />

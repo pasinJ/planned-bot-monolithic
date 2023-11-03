@@ -8,7 +8,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
 import Chart from '../Chart';
@@ -19,7 +18,7 @@ import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
 import { sma } from './indicators';
-import { Source, dateToUtcTimestamp, randomHexColor } from './utils';
+import { Source, dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
 export type SmaSeriesType = typeof smaSeriesType;
 const smaSeriesType = 'sma';
@@ -41,9 +40,14 @@ const defaultSettingsFormOptions: UseFormProps<SmaSettings> = {
   mode: 'onBlur',
 };
 
-type SmaSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
+type SmaSeriesProps = {
+  id: string;
+  klines: readonly Kline[];
+  handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
+};
 export default function SmaSeries(props: SmaSeriesProps) {
-  const { id, klines, handleRemoveSeries } = props;
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
@@ -68,7 +72,12 @@ export default function SmaSeries(props: SmaSeriesProps) {
         id={id}
         title={settings.name}
         color={seriesOptions.color}
-        legend={<Chart.SeriesValue defaultValue={smaData.value.at(-1)?.value} formatValue={to4Digits} />}
+        legend={
+          <Chart.SeriesValue
+            defaultValue={smaData.value.at(-1)?.value}
+            formatValue={formatValue(4, maxDecimalDigits)}
+          />
+        }
         hidden={hidden}
         handleToggleHidden={handleToggleHidden}
         handleSettingOpen={handleSettingOpen}

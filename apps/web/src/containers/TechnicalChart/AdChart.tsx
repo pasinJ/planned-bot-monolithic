@@ -16,7 +16,6 @@ import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
-import { to2Digits } from '#shared/utils/number';
 import { HexColor } from '#shared/utils/string';
 
 import Chart, { useChartContainer } from '../Chart';
@@ -25,7 +24,7 @@ import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import { ad } from './indicators';
-import { dateToUtcTimestamp } from './utils';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
 export type AdChartType = typeof adChartType;
 const adChartType = 'ad';
@@ -45,9 +44,11 @@ type AdChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: AdChartType) => void;
+  maxDecimalDigits?: number;
 };
 export default function AdChart(props: AdChartProps) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
@@ -83,7 +84,7 @@ export default function AdChart(props: AdChartProps) {
               <SettingForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <AdSeries klines={klines} color={settings.color} />
+              <AdSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
         </Chart.Container>
@@ -98,9 +99,9 @@ const adSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type AdSeriesProps = { klines: readonly Kline[]; color: HexColor };
+type AdSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
 function AdSeries(props: AdSeriesProps) {
-  const { klines, color } = props;
+  const { klines, color, maxDecimalDigits } = props;
 
   const [adData, setAdData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -119,7 +120,10 @@ function AdSeries(props: AdSeriesProps) {
   return o.isNone(adData) ? undefined : (
     <Chart.Series id={adChartType} type="Line" data={adData.value} options={seriesOptions}>
       <SeriesLegendWithoutMenus name="AD" color={seriesOptions.color}>
-        <Chart.SeriesValue defaultValue={adData.value.at(-1)?.value} formatValue={to2Digits} />
+        <Chart.SeriesValue
+          defaultValue={adData.value.at(-1)?.value}
+          formatValue={formatValue(2, maxDecimalDigits)}
+        />
       </SeriesLegendWithoutMenus>
     </Chart.Series>
   );

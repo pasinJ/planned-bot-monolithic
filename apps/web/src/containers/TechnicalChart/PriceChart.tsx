@@ -13,7 +13,7 @@ import {
   TimeChartOptions,
   UTCTimestamp,
 } from 'lightweight-charts';
-import { __, mergeDeepRight } from 'ramda';
+import { mergeDeepRight } from 'ramda';
 import { PropsWithChildren, useMemo } from 'react';
 
 import { Order } from '#features/btStrategies/order';
@@ -23,7 +23,7 @@ import { to4Digits } from '#shared/utils/number';
 
 import Chart, { useChartContainer } from '../Chart';
 import VisibilityButton from './components/VisibilityButton';
-import { dateToUtcTimestamp, downColor, ordersToMarkersAndEvents, upColor } from './utils';
+import { dateToUtcTimestamp, downColor, formatValue, ordersToMarkersAndEvents, upColor } from './utils';
 
 export type PriceChartType = typeof priceChartType;
 const priceChartType = 'price';
@@ -36,9 +36,11 @@ type PriceChartProps = PropsWithChildren<{
   options?: DeepPartial<TimeChartOptions>;
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
+  maxDecimalDigits?: number;
 }>;
 export default function PriceChart(props: PriceChartProps) {
-  const { klines, orders, options, crosshairMoveCb, logicalRangeChangeCb, children } = props;
+  const { klines, orders, options, crosshairMoveCb, logicalRangeChangeCb, maxDecimalDigits, children } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
 
@@ -64,15 +66,15 @@ export default function PriceChart(props: PriceChartProps) {
           logicalRangeChangeCb={logicalRangeChangeCb}
         >
           {events ? <Chart.Tooltip events={events} /> : undefined}
-          <div className="absolute left-3 top-3 z-10 max-w-lg">
-            <div className=" flex w-fit space-x-6">
+          <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-lg">
+            <div className="pointer-events-auto flex w-fit space-x-6">
               <Typography className="text-2xl font-medium">{symbol}</Typography>
               <div className="flex flex-col">
-                <PriceSeries klines={klines} markers={markers} />
+                <PriceSeries klines={klines} markers={markers} maxDecimalDigits={maxDecimalDigits} />
                 <VolumeSeries klines={klines} />
               </div>
             </div>
-            <div className="flex max-h-48 flex-col space-y-1 overflow-auto whitespace-nowrap scrollbar-thin scrollbar-track-gray-50 scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
+            <div className="pointer-events-auto flex max-h-48 w-fit flex-col space-y-1 overflow-auto whitespace-nowrap scrollbar-thin scrollbar-track-gray-50 scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
               {children}
             </div>
           </div>
@@ -86,9 +88,13 @@ const priceSeriesOption: DeepPartial<CandlestickStyleOptions & SeriesOptionsComm
 const priceScaleOptionsOfPriceSeries: DeepPartial<PriceScaleOptions> = {
   scaleMargins: { top: 0.1, bottom: 0.4 },
 };
-type PriceSeriesProps = { klines: readonly Kline[]; markers?: SeriesMarker<UTCTimestamp>[] };
+type PriceSeriesProps = {
+  klines: readonly Kline[];
+  markers?: SeriesMarker<UTCTimestamp>[];
+  maxDecimalDigits?: number;
+};
 function PriceSeries(props: PriceSeriesProps) {
-  const { klines, markers } = props;
+  const { klines, markers, maxDecimalDigits } = props;
 
   const [hidden, handleToggleHidden] = useClickToggle(false);
 
@@ -114,7 +120,7 @@ function PriceSeries(props: PriceSeriesProps) {
       priceScaleOptions={priceScaleOptionsOfPriceSeries}
     >
       <div className="group flex items-center space-x-1.5">
-        <Chart.SeriesValue defaultValue={prices.at(-1)} formatValue={to4Digits} />
+        <Chart.SeriesValue defaultValue={prices.at(-1)} formatValue={formatValue(4, maxDecimalDigits)} />
         <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
       </div>
     </Chart.Series>

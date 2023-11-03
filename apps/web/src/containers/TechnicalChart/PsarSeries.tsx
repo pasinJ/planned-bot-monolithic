@@ -10,7 +10,6 @@ import DecimalFieldRf from '#components/DecimalFieldRf';
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
-import { to4Digits } from '#shared/utils/number';
 import { DecimalString, HexColor } from '#shared/utils/string';
 
 import Chart from '../Chart';
@@ -19,7 +18,7 @@ import NameField from './components/NameField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import { psar } from './indicators';
-import { dateToUtcTimestamp, randomHexColor } from './utils';
+import { dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
 export type PsarSeriesType = typeof psarSeriesType;
 const psarSeriesType = 'psar';
@@ -42,9 +41,14 @@ const defaultSettingsFormOptions: UseFormProps<PsarSettings> = {
   mode: 'onBlur',
 };
 
-type PsarSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
+type PsarSeriesProps = {
+  id: string;
+  klines: readonly Kline[];
+  handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
+};
 export default function PsarSeries(props: PsarSeriesProps) {
-  const { id, klines, handleRemoveSeries } = props;
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
@@ -69,7 +73,12 @@ export default function PsarSeries(props: PsarSeriesProps) {
         id={id}
         title={settings.name}
         color={seriesOptions.color}
-        legend={<Chart.SeriesValue defaultValue={psarData.value.at(-1)?.value} formatValue={to4Digits} />}
+        legend={
+          <Chart.SeriesValue
+            defaultValue={psarData.value.at(-1)?.value}
+            formatValue={formatValue(4, maxDecimalDigits)}
+          />
+        }
         hidden={hidden}
         handleToggleHidden={handleToggleHidden}
         handleSettingOpen={handleSettingOpen}

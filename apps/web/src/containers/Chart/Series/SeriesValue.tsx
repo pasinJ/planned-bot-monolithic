@@ -1,13 +1,13 @@
 import Typography from '@mui/material/Typography';
 import * as e from 'fp-ts/lib/Either';
 import * as o from 'fp-ts/lib/Option';
-import { evolve, is, pathEq, pick } from 'ramda';
+import { evolve, is, pick } from 'ramda';
 import { useCallback, useContext, useLayoutEffect, useState } from 'react';
 
 import { CrosshairCallbacks } from '../ChartContainer';
 import { ChartContext } from '../ChartContext';
 import { isBarOrCandleStickData, isMouseInDataRange, isMouseOffChart } from '../utils';
-import { SeriesApi } from './Series';
+import { SeriesObj } from './Series';
 import { SeriesContext } from './SeriesContext';
 
 type SeriesValueProps = {
@@ -25,12 +25,12 @@ export default function SeriesValue(props: SeriesValueProps) {
   >(null);
 
   const createCrosshairMoveHandler = useCallback(
-    (series: SeriesApi): CrosshairCallbacks => {
+    (seriesObj: SeriesObj): CrosshairCallbacks => {
       return ({ point, time }) => {
         if (!isMouseInDataRange(time)) return setValue(null);
         else if (isMouseOffChart(point)) return setValue(defaultValue ?? null);
 
-        const data = series.data().find(pathEq(time, ['time']));
+        const data = seriesObj.getDataMap().get(time);
         if (data !== undefined) {
           if (isBarOrCandleStickData(data)) return setValue(pick(['open', 'high', 'low', 'close'], data));
           else if ('value' in data) return setValue(data.value);
@@ -40,14 +40,13 @@ export default function SeriesValue(props: SeriesValueProps) {
     },
     [defaultValue],
   );
-
   useLayoutEffect(() => {
     if (o.isSome(parentChart) && o.isSome(parentSeries)) {
       parentChart.value.getChart();
       const series = parentSeries.value.getSeries();
 
       if (e.isRight(series)) {
-        const handler = createCrosshairMoveHandler(series.right);
+        const handler = createCrosshairMoveHandler(parentSeries.value);
         parentChart.value.subscribeVerticalCrosshairChange(handler);
 
         return () => parentChart.value.unsubscribeVerticalCrosshairChange(handler);
