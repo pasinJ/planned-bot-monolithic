@@ -26,6 +26,7 @@ import { executeIo, executeT } from '#shared/utils/fp.js';
 
 import {
   addKlines,
+  countKlines,
   getFirstKlineBefore,
   getKlinesBefore,
   iterateThroughKlines,
@@ -215,6 +216,7 @@ function prepareBacktestDeps(job: Job<BtJobData>): te.TaskEither<AppError, Backt
           symbolDao: { getByNameAndExchange: symbolDao.composeWith(getSymbolModelByNameAndExchange) },
           klineDao: {
             add: klineDao.composeWith(addKlines),
+            count: klineDao.composeWith(countKlines),
             getBefore: klineDao.composeWith(getKlinesBefore),
             getFirstBefore: klineDao.composeWith(getFirstKlineBefore),
             iterateThroughKlines: klineDao.composeWith(iterateThroughKlines),

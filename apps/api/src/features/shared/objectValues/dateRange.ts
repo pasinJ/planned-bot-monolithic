@@ -15,7 +15,7 @@ export const dateRangeSchema = z
     `Start date must be before or equal to end date`,
   )
   .readonly()
-  .brand('DateRage');
+  .brand('DateRange');
 
 export type CreateDateRangeError = GeneralError<'CraeteDateRangeFailed'>;
 export function createDateRange(startDate: Date, endDate: Date): e.Either<CreateDateRangeError, DateRange> {

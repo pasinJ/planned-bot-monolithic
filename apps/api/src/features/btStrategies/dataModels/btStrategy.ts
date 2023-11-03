@@ -1,4 +1,4 @@
-import { isBefore, isEqual } from 'date-fns';
+import { isBefore, isEqual, subDays, subHours, subMinutes, subMonths, subSeconds, subWeeks } from 'date-fns';
 import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
 import { pipe } from 'fp-ts/lib/function.js';
@@ -173,4 +173,31 @@ export function validateBtStrategyCurrencies(
           `Currency of strategy must be either base asset (${symbol.baseAsset}) or quote asset (${symbol.quoteAsset}) of symbol`,
         ),
       );
+}
+
+export function extendBtRange(
+  startTimestamp: BtStartTimestamp,
+  timeframe: Timeframe,
+  maxNumKlines: MaxNumKlines,
+): ValidDate {
+  const options = {
+    '1s': { subFn: subSeconds, multiplier: 1 },
+    '1m': { subFn: subMinutes, multiplier: 1 },
+    '3m': { subFn: subMinutes, multiplier: 3 },
+    '5m': { subFn: subMinutes, multiplier: 5 },
+    '15m': { subFn: subMinutes, multiplier: 15 },
+    '30m': { subFn: subMinutes, multiplier: 30 },
+    '1h': { subFn: subHours, multiplier: 1 },
+    '2h': { subFn: subHours, multiplier: 3 },
+    '4h': { subFn: subHours, multiplier: 4 },
+    '6h': { subFn: subHours, multiplier: 6 },
+    '8h': { subFn: subHours, multiplier: 8 },
+    '12h': { subFn: subHours, multiplier: 12 },
+    '1d': { subFn: subDays, multiplier: 1 },
+    '3d': { subFn: subDays, multiplier: 3 },
+    '1w': { subFn: subWeeks, multiplier: 1 },
+    '1M': { subFn: subMonths, multiplier: 1 },
+  };
+
+  return options[timeframe].subFn(startTimestamp, maxNumKlines * options[timeframe].multiplier) as ValidDate;
 }
