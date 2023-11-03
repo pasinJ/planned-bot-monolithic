@@ -53,7 +53,7 @@ function createMongooseModel(
 
   return pipe(
     ioe.tryCatch(
-      () => new client.Schema<BtStrategyDocument>(mongooseSchema),
+      () => new client.Schema<BtStrategyDocument>(mongooseSchema, { timestamps: { updatedAt: true } }),
       createErrorFromUnknown(
         createBtStrategyDaoError(
           'BuildDaoFailed',

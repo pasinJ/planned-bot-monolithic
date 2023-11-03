@@ -103,7 +103,7 @@ export function updateBtStrategyById({
   return (id, updateTo) =>
     pipe(
       te.tryCatch(
-        () => mongooseModel.updateOne({ _id: id }, updateTo),
+        () => mongooseModel.updateOne({ _id: id }, { ...updateTo, $inc: { version: 1 } }),
         createErrorFromUnknown(
           createBtStrategyDaoError('UpdateByIdFailed', 'Updating backtesting strategy by ID failed'),
         ),
