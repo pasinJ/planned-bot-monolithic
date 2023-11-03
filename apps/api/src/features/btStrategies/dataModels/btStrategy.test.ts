@@ -152,7 +152,6 @@ describe('UUT: Create backtesting strategy model', () => {
 
     describe.each([
       { case: 'the property is a date before current date', value: new Date('2022-01-02') },
-      { case: 'the property is a date that equals to start timestamp', value: new Date('2021-01-01') },
       { case: 'the property is a date before start timestamp', value: new Date('2021-12-20') },
     ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
       it('[THEN] it will return Left of error', () => {

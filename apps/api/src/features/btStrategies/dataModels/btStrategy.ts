@@ -22,7 +22,7 @@ import {
 import { Symbol, SymbolName } from '#features/shared/symbol.js';
 import { Timeframe } from '#features/shared/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
-import { ValidDate, validDateSchema } from '#shared/utils/date.js';
+import { ValidDate, isBeforeOrEqual, validDateSchema } from '#shared/utils/date.js';
 import { TimezoneString, nonEmptyStringSchema } from '#shared/utils/string.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
@@ -119,9 +119,9 @@ export function createBtStrategyModel(
     })
     .strict()
     .refine(
-      ({ startTimestamp, endTimestamp }) => isBefore(startTimestamp, endTimestamp),
+      ({ startTimestamp, endTimestamp }) => isBeforeOrEqual(startTimestamp, endTimestamp),
       ({ startTimestamp, endTimestamp }) => ({
-        message: `end timestamp (${endTimestamp.toISOString()}) must be after start timestamp (${startTimestamp.toISOString()})`,
+        message: `end timestamp (${endTimestamp.toISOString()}) must be after or equal to start timestamp (${startTimestamp.toISOString()})`,
         path: ['endTimestamp'],
       }),
     )
