@@ -1,7 +1,9 @@
+import { faker } from '@faker-js/faker';
 import { dissoc } from 'ramda';
 
 import { InitialCapital } from '#SECT/Strategy.js';
 import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.js';
+import { generateArrayOf } from '#test-utils/faker/helper.js';
 import { mockBtStrategyModel } from '#test-utils/features/btStrategies/btStrategy.js';
 import { createMongoClient } from '#test-utils/mongoDb.js';
 
@@ -9,6 +11,7 @@ import { isBtStrategyDaoError } from './btStrategy.error.js';
 import {
   addBtStrategyModel,
   existBtStrategyModelById,
+  getBtStrategies,
   getBtStrategyModelById,
   updateBtStrategyById,
 } from './btStrategy.feature.js';
@@ -111,6 +114,33 @@ describe('UUT: Get backtesting strategy model by ID', () => {
         const result = await executeT(getFn(id));
 
         expect(result).toEqualLeft(expect.toSatisfy(isBtStrategyDaoError));
+      });
+    });
+  });
+});
+
+describe('UUT: Get backtesting strategies', () => {
+  const getBtStrategiesFn = btStrategyDao.composeWith(getBtStrategies);
+
+  describe('[GIVEN] there are some backtesting strategies exist', () => {
+    describe('[WHEN] get backtesting strategies', () => {
+      it('[THEN] it will return Right of an array of backtesting strategies', async () => {
+        const btStrategies = generateArrayOf(() => mockBtStrategyModel({ id: faker.string.nanoid() }));
+        await btStrategyModel.insertMany(btStrategies);
+
+        const result = await executeT(getBtStrategiesFn);
+
+        expect(result).toEqualRight(btStrategies);
+      });
+    });
+  });
+
+  describe('[GIVEN] there is no backtesting strategy exists', () => {
+    describe('[WHEN] get backtesting strategies', () => {
+      it('[THEN] it will return Right of an empty array', async () => {
+        const result = await executeT(getBtStrategiesFn);
+
+        expect(result).toEqualRight([]);
       });
     });
   });

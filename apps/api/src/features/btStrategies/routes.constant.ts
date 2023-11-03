@@ -1,5 +1,6 @@
 export const BT_STRATEGY_ENDPOINTS = {
   GET_BT_STRATEGY: { method: 'GET', url: '/v1/backtesting-strategies/:btStrategyId' },
+  GET_BT_STRATEGIES: { method: 'GET', url: '/v1/backtesting-strategies' },
   ADD_BT_STRATEGY: { method: 'POST', url: '/v1/backtesting-strategies' },
   UPDATE_BT_STRATEGY: { method: 'PUT', url: '/v1/backtesting-strategies/:btStrategyId' },
   EXECUTE_BT_STRATEGY: { method: 'POST', url: '/v1/backtesting-strategies/:btStrategyId/execute' },

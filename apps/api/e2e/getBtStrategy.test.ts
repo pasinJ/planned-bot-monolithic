@@ -50,7 +50,7 @@ describe('[GIVEN] backtesting strategy exists', () => {
       expectHttpStatus(getBtStrategyResp, 200);
       expect(getBtStrategyResp.data).toEqual({
         ...addBtStrategyRequest,
-        id: expect.toBeString(),
+        id: btStrategyId,
         version: 0,
         createdAt: expect.toBeDateString(),
         updatedAt: expect.toBeDateString(),

@@ -4,6 +4,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 
 import { addBtStrategyRouteOptions } from '#features/btStrategies/addBtStrategy/route.js';
 import { executeBtStrategyRouteOptions } from '#features/btStrategies/executeBtStrategy/route.js';
+import { getBtStrategiesRouteOptions } from '#features/btStrategies/get/route.js';
 import { getBtExecutionResultRouteOptions } from '#features/btStrategies/getBtExecutionResult/route.js';
 import { getBtStrategyRouteOptions } from '#features/btStrategies/getById/route.js';
 import { getBtExecutionProgressRouteOptions } from '#features/btStrategies/getExecutionProgress/route.js';
@@ -36,6 +37,7 @@ export function addRoutes(
       getBtExecutionProgressRouteOptions(deps),
       getLastBtExecutionProgressRouteOptions(deps),
       getBtStrategyRouteOptions(deps),
+      getBtStrategiesRouteOptions(deps),
       getBtExecutionResultRouteOptions(deps),
       getSymbolsRouteOptions(deps),
       getKlinesByQueryRouteOptions(deps),

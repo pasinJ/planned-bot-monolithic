@@ -31,6 +31,13 @@ export async function getBtStrategy(btStrategyId: string) {
   };
 }
 
+export async function getBtStrategies() {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_STRATEGIES;
+  return {
+    response: await client.request({ method, url }),
+  };
+}
+
 export async function getBtExecutionProgressById(btStrategyId = 'eOZ27sKqgq', btExecutionId = 'n_D65q3SUG') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_PROGRESS;
   return {

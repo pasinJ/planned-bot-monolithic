@@ -68,6 +68,28 @@ export function getBtStrategyModelById({
     );
 }
 
+export type GetBtStrategies = te.TaskEither<GetBtStrategiesErr, readonly BtStrategyModel[]>;
+export type GetBtStrategiesErr = BtStrategyDaoError<'GetBtStrategiesFailed'>;
+export function getBtStrategies({
+  mongooseModel,
+}: {
+  mongooseModel: BtStrategyMongooseModel;
+}): GetBtStrategies {
+  return pipe(
+    te.tryCatch(
+      () => mongooseModel.find().lean(),
+      createErrorFromUnknown(
+        createBtStrategyDaoError('GetBtStrategiesFailed', 'Getting backtesting strategies failed'),
+      ),
+    ),
+    te.map((btStrategies) =>
+      btStrategies.map((btStrategy) =>
+        omit(['_id', '__v'], { ...btStrategy, id: btStrategy._id as BtStrategyId }),
+      ),
+    ),
+  );
+}
+
 export type UpdateBtStrategyById = (
   id: string,
   updateTo: Partial<BtStrategyModel>,
