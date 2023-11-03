@@ -5,6 +5,7 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { addBtStrategyRouteOptions } from '#features/btStrategies/addBtStrategy/route.js';
 import { executeBtStrategyRouteOptions } from '#features/btStrategies/executeBtStrategy/route.js';
 import { getBtExecutionResultRouteOptions } from '#features/btStrategies/getBtExecutionResult/route.js';
+import { getBtStrategyRouteOptions } from '#features/btStrategies/getById/route.js';
 import { getBtExecutionProgressRouteOptions } from '#features/btStrategies/getExecutionProgress/route.js';
 import { getLastBtExecutionProgressRouteOptions } from '#features/btStrategies/getLastBtExecutionProgress/route.js';
 import { updateBtStrategyRouteOptions } from '#features/btStrategies/updateBtStrategy/route.js';
@@ -34,6 +35,7 @@ export function addRoutes(
       executeBtStrategyRouteOptions(deps),
       getBtExecutionProgressRouteOptions(deps),
       getLastBtExecutionProgressRouteOptions(deps),
+      getBtStrategyRouteOptions(deps),
       getBtExecutionResultRouteOptions(deps),
       getSymbolsRouteOptions(deps),
       getKlinesByQueryRouteOptions(deps),

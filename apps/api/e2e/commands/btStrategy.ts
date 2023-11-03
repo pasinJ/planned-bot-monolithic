@@ -23,6 +23,14 @@ export async function executeBtStrategy(btStrategyId = 'IP3t1OJ5Cd') {
   };
 }
 
+export async function getBtStrategy(btStrategyId: string) {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_STRATEGY;
+  return {
+    request: { btStrategyId },
+    response: await client.request({ method, url: url.replace(':btStrategyId', btStrategyId) }),
+  };
+}
+
 export async function getBtExecutionProgressById(btStrategyId = 'eOZ27sKqgq', btExecutionId = 'n_D65q3SUG') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_PROGRESS;
   return {
