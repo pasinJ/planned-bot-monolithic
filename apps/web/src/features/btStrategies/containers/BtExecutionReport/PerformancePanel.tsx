@@ -2,7 +2,6 @@ import Card from '@mui/material/Card';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { DonutChart } from '@tremor/react';
 import { format } from 'date-fns';
 import Decimal from 'decimal.js';
 import * as o from 'fp-ts/lib/Option';
@@ -18,6 +17,7 @@ import {
 import { is, modify } from 'ramda';
 import { PropsWithChildren, useMemo } from 'react';
 
+import DonutChart from '#components/DonutChart';
 import UpDownCard from '#components/UpDownCard';
 import Chart, { useChartContainer } from '#containers/Chart';
 import { dateToUtcTimestamp } from '#containers/TechnicalChart/utils';
@@ -115,14 +115,14 @@ export default function PerformancePanel(props: PerformancePanelProps) {
               className="max-w-xs flex-grow"
               title="Max. Run-up"
               value={maxRunup}
-              valueMaxDigits={2}
+              valueMaxDigits={4}
               unit={capitalCurrency}
             />
             <UpDownCard
               className="max-w-xs flex-grow"
               title="Max. Drawdown"
               value={maxDrawdown}
-              valueMaxDigits={2}
+              valueMaxDigits={4}
               unit={capitalCurrency}
             />
           </div>
@@ -196,7 +196,7 @@ function TradeBarChart({ className, closedTrades, capitalCurrency }: TradeBarCha
             </Tooltip>
           ))}
         </div>
-        <Divider className="bg-slate-300" variant="fullWidth" />
+        <Divider className="bg-slate-300 dark:bg-slate-700" variant="fullWidth" />
       </div>
     </div>
   );
@@ -216,16 +216,16 @@ function WinLossCard(props: WinLossCardProps) {
         <div className="flex w-min min-w-[16rem] flex-grow flex-col gap-y-2">
           <CardInfo title="Win Rate" info={`${winRate} %`} />
           <Divider />
-          <CardInfo title="Avg. Profit" info={`${toLocale(avgProfit, 2)} ${capitalCurrency}`} />
+          <CardInfo title="Avg. Profit" info={`${toLocale(avgProfit, 4)} ${capitalCurrency}`} />
           <Divider />
-          <CardInfo title="Largest Profit" info={`${toLocale(largestProfit, 2)} ${capitalCurrency}`} />
+          <CardInfo title="Largest Profit" info={`${toLocale(largestProfit, 4)} ${capitalCurrency}`} />
         </div>
         <div className="flex w-min min-w-[16rem] flex-grow flex-col gap-y-2">
           <CardInfo title="Losing Rate" info={`${lossRate} %`} />
           <Divider />
-          <CardInfo title="Avg. Loss" info={`${toLocale(avgLoss, 2)} ${capitalCurrency}`} />
+          <CardInfo title="Avg. Loss" info={`${toLocale(avgLoss, 4)} ${capitalCurrency}`} />
           <Divider />
-          <CardInfo title="Largest Loss" info={`${toLocale(largestLoss, 2)} ${capitalCurrency}`} />
+          <CardInfo title="Largest Loss" info={`${toLocale(largestLoss, 4)} ${capitalCurrency}`} />
         </div>
       </div>
       <Divider className="my-3" />
@@ -245,40 +245,55 @@ function TradeDonutChart({ winLossMetrics }: { winLossMetrics: WinLossMetrics })
     winLossMetrics;
 
   return (
-    <DonutChart
-      data={[
-        { name: 'Losing trades', value: numOfLosingTrades, rate: lossRate },
-        { name: 'Even trades', value: numOfEvenTrades, rate: evenRate },
-        { name: 'Winning trades', value: numOfWinningTrades, rate: winRate },
-      ]}
-      category="value"
-      index="name"
-      label="# Trades"
-      colors={['rose', 'gray', 'emerald']}
-      customTooltip={({ payload, active }) => {
-        if (!active || !payload) return null;
-        const categoryPayload = (
-          payload as { name: string; value: number; color: string; payload: { payload: { rate: number } } }[]
-        ).at(0);
-        if (!categoryPayload) return null;
-        return (
-          <div className="w-56 rounded-tremor-default border border-tremor-border bg-tremor-background p-2 text-tremor-default shadow-tremor-dropdown">
-            <div className="flex flex-1 space-x-2.5">
-              <div className={`flex w-1.5 flex-col bg-${categoryPayload.color}-500 rounded`} />
-              <div className="w-full">
-                <div className="flex items-center justify-between space-x-8 text-right">
-                  <p className="whitespace-nowrap text-tremor-content">{categoryPayload.name}</p>
-                  <span className="whitespace-nowrap font-medium text-tremor-content-emphasis">
-                    <span className="opacity-50">({to2Digits(categoryPayload.payload.payload.rate)}%) </span>
-                    {categoryPayload.value}
-                  </span>
+    <div className="h-64">
+      <DonutChart
+        data={[
+          {
+            name: 'Losing trades',
+            value: numOfLosingTrades,
+            pathClassName: 'fill-down',
+            tooltipProps: {
+              title: (
+                <div className="flex gap-x-2">
+                  <Typography className="font-bold">Losing trades: </Typography>
+                  <Typography>{numOfLosingTrades}</Typography>
+                  <Typography>({to2Digits(lossRate)}%)</Typography>
                 </div>
-              </div>
-            </div>
-          </div>
-        );
-      }}
-    />
+              ),
+            },
+          },
+          {
+            name: 'Even trades',
+            value: numOfEvenTrades,
+            pathClassName: 'fill-gray-500',
+            tooltipProps: {
+              title: (
+                <div className="flex gap-x-2">
+                  <Typography className="font-bold">Even trades: </Typography>
+                  <Typography>{numOfEvenTrades}</Typography>
+                  <Typography>({to2Digits(evenRate)}%)</Typography>
+                </div>
+              ),
+            },
+          },
+          {
+            name: 'Winning trades',
+            value: numOfWinningTrades,
+            pathClassName: 'fill-up',
+            tooltipProps: {
+              title: (
+                <div className="flex gap-x-2">
+                  <Typography className="font-bold">Winning trades: </Typography>
+                  <Typography>{numOfWinningTrades}</Typography>
+                  <Typography>({to2Digits(winRate)}%)</Typography>
+                </div>
+              ),
+            },
+          },
+        ]}
+        settings={{ percentageInnerCutout: 70 }}
+      />
+    </div>
   );
 }
 

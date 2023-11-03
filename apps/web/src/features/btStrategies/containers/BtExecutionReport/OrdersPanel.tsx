@@ -162,9 +162,9 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
 
   return (
     <div className="flex flex-col">
-      <Accordion>
+      <Accordion className="bg-gray-200/50 dark:bg-gray-500/25">
         <AccordionSummary className="font-medium" expandIcon={<MaterialSymbol symbol="expand_more" />}>
-          Technical chart
+          Chart
         </AccordionSummary>
         <AccordionDetails>
           <TechnicalChart klines={klines} orders={filteredOrders} />
@@ -196,6 +196,10 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
         )}
         muiTableHeadCellProps={{
           sx: { '& .Mui-TableHeadCell-Content-Wrapper': { whiteSpace: 'break-spaces' } },
+        }}
+        muiTableContainerProps={{
+          className:
+            'dark:scrollbar-track-gray-500/25 dark:scrollbar-thin scrollbar dark:scrollbar-thumb-gray-600',
         }}
       />
     </div>

@@ -147,7 +147,10 @@ export default function BtStrategyTable() {
           enableRowActions={true}
           enableDensityToggle={false}
           renderRowActions={RowAction}
-          muiTableContainerProps={{ className: 'min-h-[30rem]' }}
+          muiTableContainerProps={{
+            className:
+              'min-h-[30rem] dark:scrollbar-track-gray-500/25 dark:scrollbar-thin scrollbar dark:scrollbar-thumb-gray-600',
+          }}
           state={{ showProgressBars: fetchBtStrategies.isRefetching }}
         />
       )}

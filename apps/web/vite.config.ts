@@ -3,13 +3,20 @@ import react from '@vitejs/plugin-react-swc';
 import { pipe } from 'fp-ts/lib/function';
 import fs from 'fs';
 import hexRgb from 'hex-rgb';
-import { concat, map, toPairs, transpose } from 'ramda';
+import { map, toPairs, transpose } from 'ramda';
 import replace from 'replace-in-file';
 import { defineConfig } from 'vite';
 import EnvironmentPlugin from 'vite-plugin-environment';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-import { PRIMARY_COLOR, SECONDARY_COLOR } from './src/styles/theme.constant';
+import {
+  DOWN_COLOR,
+  DOWN_COLOR_DARK,
+  PRIMARY_COLOR,
+  SECONDARY_COLOR,
+  UP_COLOR,
+  UP_COLOR_DARK,
+} from './src/styles/theme.constant';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -45,13 +52,19 @@ function replaceColorCssVariables() {
 
   const lightColorTemplateMapping = generateColorMapping(lightPalette, lightThemePrefix);
   const darkColorTemplateMapping = generateColorMapping(darkPalette, darkThemePrefix);
+  const [from, to] = transpose([
+    [new RegExp(`'%${lightThemePrefix}UP_COLOR%'`, 'g'), transformColorToRgb(UP_COLOR)],
+    [new RegExp(`'%${darkThemePrefix}UP_COLOR%'`, 'g'), transformColorToRgb(UP_COLOR_DARK)],
+    [new RegExp(`'%${lightThemePrefix}DOWN_COLOR%'`, 'g'), transformColorToRgb(DOWN_COLOR)],
+    [new RegExp(`'%${darkThemePrefix}DOWN_COLOR%'`, 'g'), transformColorToRgb(DOWN_COLOR_DARK)],
+  ]) as [RegExp[], string[]];
 
   filesList.forEach(({ templatePath, outputPath }) => {
     copyColorTemplate(templatePath, outputPath);
     const replaceResult = replace.sync({
       files: outputPath,
-      from: concat(lightColorTemplateMapping.from, darkColorTemplateMapping.from),
-      to: concat(lightColorTemplateMapping.to, darkColorTemplateMapping.to),
+      from: [...lightColorTemplateMapping.from, ...darkColorTemplateMapping.from, ...from],
+      to: [...lightColorTemplateMapping.to, ...darkColorTemplateMapping.to, ...to],
     });
     console.log('>>>> ', replaceResult);
   });

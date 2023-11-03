@@ -22,7 +22,12 @@ export default function UpDownCard(props: UpDownCardProps) {
   const { title, value, valueMaxDigits, unit, percentage, className } = props;
 
   const Chip = value > 0 ? UpChip : value < 0 ? DownChip : NeutralChip;
-  const color = value > 0 ? 'shadow-emerald-200' : value < 0 ? 'shadow-rose-200' : 'shadow-gray-200';
+  const color =
+    value > 0
+      ? 'shadow-emerald-200 dark:shadow-emerald-900'
+      : value < 0
+      ? 'shadow-rose-200 dark:shadow-rose-900'
+      : 'shadow-gray-200 dark:shadow-gray-900';
 
   return (
     <Card

@@ -71,6 +71,9 @@ const StrategyEditor = forwardRef<editor.IStandaloneCodeEditor | null, StrategyE
         options={{
           ariaLabel: 'strategy body editor',
           padding: { top: 16, bottom: 16 },
+          fontSize: 16,
+          scrollBeyondLastLine: false,
+          cursorWidth: 4,
         }}
         beforeMount={monacoSetup}
         onMount={handleMount}

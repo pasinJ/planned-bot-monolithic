@@ -33,6 +33,9 @@
 
     --background-color: 255, 255, 255;
     --surface-color: 255, 255, 255;
+
+    --up-color: 52, 211, 153;
+    --down-color: 244, 63, 94;
   }
   :root .dark {
     --primary-color: 0, 150, 136;
@@ -68,5 +71,8 @@
 
     --background-color: 18, 18, 18;
     --surface-color: 18, 18, 18;
+
+    --up-color: 38, 166, 154;
+    --down-color: 255, 82, 82;
   }
 }

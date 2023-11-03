@@ -4,6 +4,7 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
@@ -65,8 +66,8 @@ export default function StrategyDetailsTab(props: StrategyDetailsTabProps) {
   const { klines, ...formProps } = props;
 
   return (
-    <div className="flex w-full flex-col gap-y-2 rounded-xl bg-background p-4 shadow-2 lg:mt-6 lg:p-8">
-      <Accordion>
+    <Card className="flex w-full flex-col gap-y-2 rounded-xl bg-background p-4 shadow-2 lg:mt-6 lg:p-8">
+      <Accordion className="bg-gray-200/50 dark:bg-gray-500/25">
         <AccordionSummary className="font-medium" expandIcon={<MaterialSymbol symbol="expand_more" />}>
           Technical chart
         </AccordionSummary>
@@ -75,7 +76,7 @@ export default function StrategyDetailsTab(props: StrategyDetailsTabProps) {
         </AccordionDetails>
       </Accordion>
       <StrategyDetailsForm {...formProps} />
-    </div>
+    </Card>
   );
 }
 
@@ -324,7 +325,7 @@ const StrategyBodyField = forwardRef<
         </div>
         {children}
       </div>
-      <div className="h-[70vh]">
+      <div className="h-[60vh]">
         <StrategyEditor
           ref={ref}
           language={selectedLanguageValue}

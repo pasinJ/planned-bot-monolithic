@@ -28,7 +28,7 @@ import { dateToUtcTimestamp, downColor, formatValue, ordersToMarkersAndEvents, u
 export type PriceChartType = typeof priceChartType;
 const priceChartType = 'price';
 
-const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 500 };
+const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 600 };
 
 type PriceChartProps = PropsWithChildren<{
   klines: readonly Kline[];

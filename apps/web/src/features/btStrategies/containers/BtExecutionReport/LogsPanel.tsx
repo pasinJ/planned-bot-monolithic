@@ -44,7 +44,7 @@ export default function LogsPanel({ progress, executionTimeMs }: LogsPanelProps)
           </>
         )}
       </div>
-      <div className="max-h-[40rem] min-h-[32rem] flex-grow space-y-1 overflow-auto whitespace-break-spaces rounded-md bg-gray-900 p-8 text-gray-100">
+      <div className="max-h-[40rem] min-h-[32rem] flex-grow space-y-1 overflow-auto whitespace-break-spaces rounded-2xl bg-gray-900 p-8 text-gray-100 scrollbar dark:bg-slate-950/50 dark:scrollbar-thin dark:scrollbar-track-gray-500/25 dark:scrollbar-thumb-gray-600">
         {progress?.logs.map((value, index) => {
           const matchString = /^(\[.*\]\s\[.*\])\s(.*)$/.exec(value);
           if (isNotNil(matchString)) {

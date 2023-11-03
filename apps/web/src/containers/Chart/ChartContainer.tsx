@@ -24,6 +24,8 @@ import {
   useRef,
 } from 'react';
 
+import useAppTheme from '#styles/hooks/useAppTheme';
+
 import { ChartContext } from './ChartContext';
 import { ChartGroupContext } from './ChartGroupContext';
 import type { SeriesApi } from './Series';
@@ -35,6 +37,17 @@ const defaultChartOptions: DeepPartial<TimeChartOptions> = {
   timeScale: { rightOffset: 10 },
   crosshair: { mode: CrosshairMode.Normal },
 };
+const defaultChartOptionsDark: DeepPartial<TimeChartOptions> = mergeDeepRight(defaultChartOptions, {
+  layout: {
+    background: { color: '#121212' },
+    textColor: '#D9D9D9',
+  },
+  crosshair: { horzLine: { color: '#758696' } },
+  grid: {
+    vertLines: { color: '#1e1e1e' },
+    horzLines: { color: '#1e1e1e' },
+  },
+});
 
 export type ChartObj = {
   getChart: () => IChartApi;
@@ -57,6 +70,7 @@ type ChartContainerProps = PropsWithChildren<{
 
 export const ChartContainer = forwardRef<ChartObj, ChartContainerProps>(function ChartContainer(props, ref) {
   const { children, id, container, options, crosshairMoveCb, logicalRangeChangeCb } = props;
+  const { appTheme } = useAppTheme();
 
   const parentGroup = useContext(ChartGroupContext);
 
@@ -150,7 +164,10 @@ export const ChartContainer = forwardRef<ChartObj, ChartContainerProps>(function
     return chartObj.current.removeChart;
   }, []);
 
-  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+  const chartOptions = useMemo(
+    () => mergeDeepRight(appTheme === 'light' ? defaultChartOptions : defaultChartOptionsDark, options ?? {}),
+    [options, appTheme],
+  );
   useLayoutEffect(() => {
     chartObj.current.getChart().applyOptions(chartOptions);
   }, [chartOptions]);

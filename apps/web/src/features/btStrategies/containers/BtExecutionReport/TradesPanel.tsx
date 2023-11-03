@@ -66,6 +66,10 @@ export default function TradesPanel({ trades, capitalCurrency }: TradesPanelProp
       muiTableHeadCellProps={{
         sx: { '& .Mui-TableHeadCell-Content-Wrapper': { whiteSpace: 'break-spaces' } },
       }}
+      muiTableContainerProps={{
+        className:
+          'dark:scrollbar-track-gray-500/25 dark:scrollbar-thin scrollbar dark:scrollbar-thumb-gray-600',
+      }}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
@@ -85,7 +86,11 @@ export default function GeneralDetailsTab(props: GeneralDetailsTabProps) {
   }) as FormEventHandler<HTMLFormElement>;
 
   return (
-    <form className="flex flex-col rounded-xl bg-background p-4 shadow-2 lg:mt-6 lg:p-8" onSubmit={onSubmit}>
+    <Card
+      component="form"
+      className="flex flex-col rounded-xl bg-background p-4 shadow-2 lg:mt-6 lg:p-8"
+      onSubmit={onSubmit}
+    >
       <StrategyNameField control={control} />
       <Divider textAlign="center" className="mb-4">
         Symbol information
@@ -112,7 +117,7 @@ export default function GeneralDetailsTab(props: GeneralDetailsTabProps) {
       <Button className="mt-4 self-end" variant="contained" type="submit">
         Next
       </Button>
-    </form>
+    </Card>
   );
 }
 
