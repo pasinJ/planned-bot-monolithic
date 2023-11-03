@@ -10,4 +10,8 @@ export const BT_STRATEGY_ENDPOINTS = {
     method: 'GET',
     url: '/v1/backtesting-strategies/:btStrategyId/execution/:btExecutionId/result',
   },
+  GET_LAST_EXECUTION_PROGRESS: {
+    method: 'GET',
+    url: '/v1/backtesting-strategies/:btStrategyId/lastExecution/progress',
+  },
 } as const;

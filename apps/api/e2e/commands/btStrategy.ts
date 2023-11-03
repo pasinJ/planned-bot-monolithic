@@ -46,3 +46,14 @@ export async function getBtExecutionResultById(btStrategyId = 'eOZ27sKqgq', btEx
     }),
   };
 }
+
+export async function getLastBtExecutionProgress(btStrategyId = 'eOZ27sKqgq') {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_LAST_EXECUTION_PROGRESS;
+  return {
+    request: { btStrategyId },
+    response: await client.request({
+      method,
+      url: url.replace(':btStrategyId', btStrategyId),
+    }),
+  };
+}
