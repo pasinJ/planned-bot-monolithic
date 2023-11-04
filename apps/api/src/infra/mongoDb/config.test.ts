@@ -9,9 +9,9 @@ afterEach(resetEnvVar(originalEnv));
 describe('URI property', () => {
   describe.each([
     { env: 'mongodb://127.0.0.1:27017/test', expected: 'mongodb://127.0.0.1:27017/test' },
-    { env: 'invalid', expected: undefined },
-    { env: ' ', expected: undefined },
-    { env: undefined, expected: undefined },
+    { env: 'invalid', expected: 'mongodb://localhost:27017' },
+    { env: ' ', expected: 'mongodb://localhost:27017' },
+    { env: undefined, expected: 'mongodb://localhost:27017' },
   ])('[GIVEN] process.env.MONGODB_URI = "$env" [WHEN] get mongoDB configuration', ({ env, expected }) => {
     beforeEach(setEnvVar('MONGODB_URI', env));
 

@@ -4,7 +4,7 @@ const tsconfig = require('../tsconfig.json');
 module.exports = {
   mode: 'production',
   target: 'node',
-  entry: { lodash: 'lodash', _ta: './src/features/shared/strategyExecutorModules/technicalAnalysis.ts' },
+  entry: { lodash: 'lodash', _ta: './src/features/shared/strategyExecutorContext/technicalAnalysis.ts' },
   module: {
     rules: [
       {

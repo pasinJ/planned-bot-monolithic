@@ -4,7 +4,7 @@ import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { Isolate } from 'isolated-vm';
 import fs from 'node:fs/promises';
-import path from 'node:path';
+import path, { join } from 'node:path';
 import * as ramda from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
@@ -22,6 +22,9 @@ import { StrategyExecutorError, createStrategyExecutorError } from './error.js';
 import { ExecuteStrategy, executeStrategy } from './executeStrategy.js';
 import { importObjIntoVm } from './importObjIntoVm.js';
 import { ivm } from './isolatedVm.js';
+
+const __dirname = new URL('.', import.meta.url).pathname;
+const LIBS_DIR_PATH = join(__dirname, '../../../libs/');
 
 export type StrategyExecutor = Readonly<{ execute: ExecuteStrategy; stop: StopStrategyExecutor }>;
 export type StrategyExecutorContext = {
@@ -60,14 +63,15 @@ export function startStrategyExecutor(
 
           await isolatedGlobal.set('global', context.global.derefInto());
 
-          const libsDirPath = path.resolve(config.LIBS_DIR_PATH);
-          const libFiles = await fs.readdir(libsDirPath);
+          const libFiles = await fs.readdir(LIBS_DIR_PATH);
           await Promise.all(
-            libFiles.map(async (libFile) => {
-              const libFilePath = path.join(libsDirPath, libFile);
-              const libContent = await fs.readFile(libFilePath, 'utf8');
-              return context.eval(libContent);
-            }),
+            libFiles
+              .filter((f) => f.endsWith('js'))
+              .map(async (libFile) => {
+                const libFilePath = path.join(LIBS_DIR_PATH, libFile);
+                const libContent = await fs.readFile(libFilePath, 'utf8');
+                return context.eval(libContent);
+              }),
           );
 
           await importObjIntoVm('console', isolatedConsole, isolatedGlobal);

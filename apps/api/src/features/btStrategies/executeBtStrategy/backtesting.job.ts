@@ -1,10 +1,11 @@
 import { Agenda, Processor } from 'agenda';
-import type { fork } from 'child_process';
+import { ChildProcess, fork } from 'child_process';
 import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import { join } from 'path';
 import { equals, propSatisfies } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
@@ -25,7 +26,10 @@ import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { ValidDate } from '#shared/utils/date.js';
 
 import { BtStrategyId } from '../dataModels/btStrategy.js';
-import { BtJobConfig, BtJobTimeout, BtWorkerFilePath } from './backtesting.job.config.js';
+import { BtJobConfig, BtJobTimeout } from './backtesting.job.config.js';
+
+const __dirname = new URL('.', import.meta.url).pathname;
+const WORKER_ENTRY_POINT = join(__dirname, 'backtesting.job.worker');
 
 export type BtJobDocument = JobRecord<BtJobName, BtJobData, BtJobResult<BtExecutionStatus>>;
 type BtJobName = typeof btJobName;
@@ -62,9 +66,7 @@ export function defineBtJob(deps: BtJobDeps) {
         lockLimit: config.JOB_CONCURRENCY,
         shouldSaveResult: true,
       })),
-      ioe.let('processor', ({ config }) =>
-        buildBtJobProcessor(deps.fork, config.JOB_WORKER_FILE_PATH, config.JOB_TIMEOUT_MS),
-      ),
+      ioe.let('processor', ({ config }) => buildBtJobProcessor(deps.fork, config.JOB_TIMEOUT_MS)),
       ioe.chain(({ agendaOptions, processor }) =>
         ioe.tryCatch(
           () => agenda.define(btJobName, agendaOptions, processor),
@@ -81,11 +83,7 @@ export function defineBtJob(deps: BtJobDeps) {
   };
 }
 
-function buildBtJobProcessor(
-  fork: BtJobDeps['fork'],
-  workerPath: BtWorkerFilePath,
-  timeout: BtJobTimeout,
-): Processor<BtJobData> {
+function buildBtJobProcessor(fork: BtJobDeps['fork'], timeout: BtJobTimeout): Processor<BtJobData> {
   return async (job, done) => {
     const jobId = job.attrs._id;
     const executionId = job.attrs.data.id;
@@ -93,7 +91,13 @@ function buildBtJobProcessor(
     job.attrs.data.status = btExecutionStatusEnum.RUNNING;
     await job.save();
 
-    const worker = fork(workerPath, [executionId], { timeout });
+    let worker: ChildProcess;
+
+    try {
+      worker = fork(WORKER_ENTRY_POINT + '.js', [executionId], { timeout });
+    } catch (error) {
+      worker = fork(WORKER_ENTRY_POINT + '.ts', [executionId], { timeout });
+    }
 
     worker.on('close', (exitCode) => {
       if (exitCode !== 0) {
