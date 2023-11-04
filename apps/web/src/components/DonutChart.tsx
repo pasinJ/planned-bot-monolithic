@@ -26,12 +26,10 @@ export default function DonutChart({ data, settings, className }: DonutChartProp
   }, []);
 
   const _settings = { edgeOffset: 10, percentageInnerCutout: 80, ...settings };
-  const pieSegments = calculatePieSegments(
-    width,
-    height,
-    _settings,
-    data.sort((a, b) => b.value - a.value),
-  );
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const doughnutRadius = Math.min(width / 2, height / 2) - _settings.edgeOffset;
+  const cutoutRadius = doughnutRadius * (_settings.percentageInnerCutout / 100);
 
   return (
     <div ref={elementRef} className={mergeClassName('h-full min-h-[10rem] w-full min-w-[10rem]', className)}>
@@ -42,33 +40,45 @@ export default function DonutChart({ data, settings, className }: DonutChartProp
         xmlns="http://www.w3.org/2000/svg"
         xmlnsXlink="http://www.w3.org/1999/xlink"
       >
-        <g opacity={1}>
-          {pieSegments.map(({ name, cmd, pathClassName: className, tooltipProps }, index) => (
-            <Tooltip key={index} title={name} followCursor {...tooltipProps}>
-              <path className={className} d={cmd} />
-            </Tooltip>
-          ))}
-        </g>
+        {data.length === 0 ? (
+          <Tooltip title="No data" followCursor placement="left">
+            <path
+              className="fill-gray-200"
+              d={getHollowCirclePath(centerX, centerY, doughnutRadius, cutoutRadius)}
+            />
+          </Tooltip>
+        ) : (
+          <g opacity={1}>
+            {calculatePieSegments(
+              centerX,
+              centerY,
+              doughnutRadius,
+              cutoutRadius,
+              data.filter((x) => x.value > 0).sort((a, b) => b.value - a.value),
+            ).map(({ name, cmd, pathClassName, tooltipProps }, index) => (
+              <Tooltip key={index} title={name} followCursor placement="left" {...tooltipProps}>
+                <path className={pathClassName} d={cmd} />
+              </Tooltip>
+            ))}
+          </g>
+        )}
       </svg>
     </div>
   );
 }
 
 function calculatePieSegments(
-  width: number,
-  height: number,
-  settings: DonutChartSettings,
+  centerX: number,
+  centerY: number,
+  doughnutRadius: number,
+  cutoutRadius: number,
   data: DonutChartData[],
 ): (DonutChartData & { cmd: string })[] {
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const doughnutRadius = Math.min(width / 2, height / 2) - settings.edgeOffset;
-  const cutoutRadius = doughnutRadius * (settings.percentageInnerCutout / 100);
   const segmentTotal = data.reduce((a, b) => a + b.value, 0);
   const startRadius = -Math.PI / 2;
 
   if (data.length === 1 && 4.7122 < (data[0].value / segmentTotal) * (Math.PI * 2) + startRadius) {
-    return [{ ...data[0], cmd: getHollowCirclePath(doughnutRadius, cutoutRadius, centerX, centerY) }];
+    return [{ ...data[0], cmd: getHollowCirclePath(centerX, centerY, doughnutRadius, cutoutRadius) }];
   } else {
     const { segments } = data.reduce(
       ({ startRadius, segments }, dataItem) => {
@@ -119,7 +129,7 @@ function calculatePieSegments(
   }
 }
 
-function getHollowCirclePath(doughnutRadius: number, cutoutRadius: number, centerX: number, centerY: number) {
+function getHollowCirclePath(centerX: number, centerY: number, doughnutRadius: number, cutoutRadius: number) {
   const startRadius = -1.57; // -Math.PI/2
   const endRadius = 4.7131; // startRadius + segmentAngle
   const startX = centerX + Math.cos(startRadius) * doughnutRadius;
