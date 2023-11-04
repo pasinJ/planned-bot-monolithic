@@ -85,7 +85,6 @@
     "@typescript-eslint/parser": "^6.0.0",
     "@vitejs/plugin-react-swc": "^3.3.2",
     "autoprefixer": "^10.4.14",
-    "canvas": "^2.11.2",
     "cypress": "^12.17.3",
     "cypress-vite": "^1.4.2",
     "dotenv": "^16.3.1",
@@ -128,5 +127,8 @@
   },
   "msw": {
     "workerDirectory": "public"
+  },
+  "optionalDependencies": {
+    "canvas": "^2.11.2"
   }
 }

@@ -1,11 +1,10 @@
-.env
-.husky
-.DS_Store
-
-dist
+.git-hooks
+.scannerwork
 cypress
+dist
+env
 jest
 node_modules
-test-utils
-
+.eslintcache
+.sonarscan.cjs
 README.md

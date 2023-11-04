@@ -8,8 +8,7 @@ export type MongoDbConfig = Readonly<{ URI: MongoDbUri }>;
 export type MongoDbUri = z.infer<typeof mongoDbUriSchema>;
 const mongoDbUriSchema = nonEmptyStringSchema
   .pipe(z.string().regex(/^mongodb:\/{2}/))
-  .or(z.undefined())
-  .catch(undefined)
+  .catch('mongodb://localhost:27017')
   .brand('MongoDbUri');
 
 export const getMongoDbConfig: io.IO<MongoDbConfig> = () => {

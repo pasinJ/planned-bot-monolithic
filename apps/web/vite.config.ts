@@ -27,6 +27,9 @@ export default defineConfig(({ mode }) => {
     envDir: 'env',
     server: { watch: { ignored: ['**/src/**/*.{itest,test}.ts?(x)'] } },
     plugins: [react(), tsconfigPaths(), EnvironmentPlugin('all')],
+    define: {
+      VITE_API_BASE_URL: process.env.VITE_API_BASE_URL,
+    },
   };
 });
 

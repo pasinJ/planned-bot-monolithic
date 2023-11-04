@@ -1,11 +1,9 @@
-import TechnicalChart from '#containers/TechnicalChart';
 import ThemeSwitch from '#styles/containers/ThemeSwitch';
 
 export default function HomePage() {
   return (
     <>
       <h1>{"You're on the Home page"}</h1>
-      <TechnicalChart />
       <ThemeSwitch />
       <h2 className="text-primary">Primary</h2>
       <h2 className="text-primary-light">Primary Light</h2>
