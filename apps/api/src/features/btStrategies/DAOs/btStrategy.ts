@@ -36,6 +36,7 @@ function createMongooseModel(
     symbol: { type: String, required: true },
     timeframe: { type: String, required: true, enum: timeframeList },
     initialCapital: { type: Number, required: true },
+    assetCurrency: { type: String, required: true },
     capitalCurrency: { type: String, required: true },
     takerFeeRate: { type: Number, required: true },
     makerFeeRate: { type: Number, required: true },
@@ -52,7 +53,7 @@ function createMongooseModel(
 
   return pipe(
     ioe.tryCatch(
-      () => new client.Schema<BtStrategyDocument>(mongooseSchema),
+      () => new client.Schema<BtStrategyDocument>(mongooseSchema, { timestamps: { updatedAt: true } }),
       createErrorFromUnknown(
         createBtStrategyDaoError(
           'BuildDaoFailed',

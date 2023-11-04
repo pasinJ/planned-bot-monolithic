@@ -1,3 +1,4 @@
+import { Decimal } from 'decimal.js';
 import io from 'fp-ts/lib/IO.js';
 import ior from 'fp-ts/lib/IORef.js';
 import { flow, pipe } from 'fp-ts/lib/function.js';
@@ -24,6 +25,7 @@ import { DateService } from '#infra/services/date/service.js';
 import { executeIo } from '#shared/utils/fp.js';
 import { isUndefined } from '#shared/utils/general.js';
 
+import { LotSizeFilter, MarketLotSizeFilter } from '../bnbSymbol.js';
 import {
   CanceledOrder,
   FilledOrder,
@@ -86,10 +88,12 @@ function enterMarket(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number }): void =>
+  return (request: {
+    quantity: number;
+  }): Extract<PendingOrderRequest, { type: 'MARKET'; orderSide: 'ENTRY' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundMarketQuantity(request.quantity, symbol)),
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity }) =>
@@ -99,7 +103,8 @@ function enterMarket(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'MARKET'; orderSide: 'ENTRY' }>),
       executeIo,
     );
 }
@@ -109,10 +114,13 @@ function enterLimit(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number; limitPrice: number }): void =>
+  return (request: {
+    quantity: number;
+    limitPrice: number;
+  }): Extract<PendingOrderRequest, { type: 'LIMIT'; orderSide: 'ENTRY' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundQuantity(request.quantity, symbol)),
       io.let('roundedLimitPrice', () => roundAsset(request.limitPrice, symbol.quoteAssetPrecision)),
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
@@ -123,7 +131,8 @@ function enterLimit(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'LIMIT'; orderSide: 'ENTRY' }>),
       executeIo,
     );
 }
@@ -133,10 +142,13 @@ function enterStopMarket(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number; stopPrice: number }): void =>
+  return (request: {
+    quantity: number;
+    stopPrice: number;
+  }): Extract<PendingOrderRequest, { type: 'STOP_MARKET'; orderSide: 'ENTRY' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundQuantity(request.quantity, symbol)),
       io.let('roundedStopPrice', () => roundAsset(request.stopPrice, symbol.quoteAssetPrecision)),
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
@@ -147,7 +159,8 @@ function enterStopMarket(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'STOP_MARKET'; orderSide: 'ENTRY' }>),
       executeIo,
     );
 }
@@ -157,10 +170,14 @@ function enterStopLimit(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number; stopPrice: number; limitPrice: number }): void =>
+  return (request: {
+    quantity: number;
+    stopPrice: number;
+    limitPrice: number;
+  }): Extract<PendingOrderRequest, { type: 'STOP_LIMIT'; orderSide: 'ENTRY' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundQuantity(request.quantity, symbol)),
       io.let('roundedStopPrice', () => roundAsset(request.stopPrice, symbol.quoteAssetPrecision)),
       io.let('roundedLimitPrice', () => roundAsset(request.limitPrice, symbol.quoteAssetPrecision)),
       io.bind('id', () => deps.generateOrderId),
@@ -178,7 +195,8 @@ function enterStopLimit(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'STOP_LIMIT'; orderSide: 'ENTRY' }>),
       executeIo,
     );
 }
@@ -188,10 +206,12 @@ function exitMarket(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number }): void =>
+  return (request: {
+    quantity: number;
+  }): Extract<PendingOrderRequest, { type: 'MARKET'; orderSide: 'EXIT' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundMarketQuantity(request.quantity, symbol)),
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
       io.map(({ id, createdAt, roundedQuantity }) =>
@@ -201,7 +221,8 @@ function exitMarket(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'MARKET'; orderSide: 'EXIT' }>),
       executeIo,
     );
 }
@@ -211,10 +232,13 @@ function exitLimit(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number; limitPrice: number }): void =>
+  return (request: {
+    quantity: number;
+    limitPrice: number;
+  }): Extract<PendingOrderRequest, { type: 'LIMIT'; orderSide: 'EXIT' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundQuantity(request.quantity, symbol)),
       io.let('roundedLimitPrice', () => roundAsset(request.limitPrice, symbol.quoteAssetPrecision)),
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
@@ -225,7 +249,8 @@ function exitLimit(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'LIMIT'; orderSide: 'EXIT' }>),
       executeIo,
     );
 }
@@ -235,10 +260,13 @@ function exitStopMarket(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number; stopPrice: number }): void =>
+  return (request: {
+    quantity: number;
+    stopPrice: number;
+  }): Extract<PendingOrderRequest, { type: 'STOP_MARKET'; orderSide: 'EXIT' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundQuantity(request.quantity, symbol)),
       io.let('roundedStopPrice', () => roundAsset(request.stopPrice, symbol.quoteAssetPrecision)),
       io.bind('id', () => deps.generateOrderId),
       io.bind('createdAt', () => deps.dateService.getCurrentDate),
@@ -249,7 +277,8 @@ function exitStopMarket(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'STOP_MARKET'; orderSide: 'EXIT' }>),
       executeIo,
     );
 }
@@ -259,10 +288,14 @@ function exitStopLimit(
   symbol: Symbol,
   pendingOrderRequestsRef: ior.IORef<readonly PendingOrderRequest[]>,
 ) {
-  return (request: { quantity: number; stopPrice: number; limitPrice: number }): void =>
+  return (request: {
+    quantity: number;
+    stopPrice: number;
+    limitPrice: number;
+  }): Extract<PendingOrderRequest, { type: 'STOP_LIMIT'; orderSide: 'EXIT' }> =>
     pipe(
       io.Do,
-      io.let('roundedQuantity', () => roundAsset(request.quantity, symbol.baseAssetPrecision)),
+      io.let('roundedQuantity', () => roundQuantity(request.quantity, symbol)),
       io.let('roundedStopPrice', () => roundAsset(request.stopPrice, symbol.quoteAssetPrecision)),
       io.let('roundedLimitPrice', () => roundAsset(request.limitPrice, symbol.quoteAssetPrecision)),
       io.bind('id', () => deps.generateOrderId),
@@ -280,7 +313,8 @@ function exitStopLimit(
           createdAt,
         ),
       ),
-      io.chain((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.chainFirst((order) => pendingOrderRequestsRef.modify(append(order))),
+      io.map((order) => order as Extract<PendingOrderRequest, { type: 'STOP_LIMIT'; orderSide: 'EXIT' }>),
       executeIo,
     );
 }
@@ -386,4 +420,35 @@ function createCancelOrder(
 
 function removeDuplicateCancelOrder(x: PendingOrderRequest, y: PendingOrderRequest): boolean {
   return x.type === 'CANCEL' && y.type === 'CANCEL' && x.orderIdToCancel === y.orderIdToCancel ? true : false;
+}
+
+function roundMarketQuantity(quantity: number, symbol: Symbol): number {
+  const marketLotSizeFilter = symbol.filters.find(propEq('MARKET_LOT_SIZE', 'type')) as
+    | MarketLotSizeFilter
+    | undefined;
+
+  let roundedQuantity = new Decimal(quantity);
+
+  if (marketLotSizeFilter) {
+    roundedQuantity = roundedQuantity
+      .clampedTo(marketLotSizeFilter.minQty, marketLotSizeFilter.maxQty)
+      .toNearest(marketLotSizeFilter.stepSize, Decimal.ROUND_DOWN);
+  }
+
+  return roundQuantity(roundedQuantity, symbol);
+}
+function roundQuantity(quantity: number | Decimal, symbol: Symbol): number {
+  const lotSizeFilter = symbol.filters.find(propEq('LOT_SIZE', 'type')) as LotSizeFilter | undefined;
+
+  let roundedQuantity = new Decimal(quantity);
+
+  if (lotSizeFilter) {
+    roundedQuantity = roundedQuantity
+      .clampedTo(lotSizeFilter.minQty, lotSizeFilter.maxQty)
+      .toNearest(lotSizeFilter.stepSize, Decimal.ROUND_DOWN);
+  }
+
+  return roundedQuantity
+    .toDecimalPlaces(symbol.baseAssetPrecision as number, Decimal.ROUND_HALF_UP)
+    .toNumber();
 }

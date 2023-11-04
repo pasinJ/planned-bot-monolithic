@@ -12,6 +12,7 @@ import {
 } from '#features/btStrategies/dataModels/btStrategy.js';
 import { exchangeNameEnum } from '#features/shared/exchange.js';
 import {
+  AssetCurrency,
   CapitalCurrency,
   InitialCapital,
   MakerFeeRate,
@@ -33,6 +34,7 @@ export function mockBtStrategyModel(overrides?: DeepPartial<Unbrand<BtStrategyMo
       symbol: 'BNBUSDT' as SymbolName,
       timeframe: timeframeEnum['1d'],
       initialCapital: 1000.1 as InitialCapital,
+      assetCurrency: 'BNB' as AssetCurrency,
       capitalCurrency: 'USDT' as CapitalCurrency,
       takerFeeRate: 1.1 as TakerFeeRate,
       makerFeeRate: 2.1 as MakerFeeRate,

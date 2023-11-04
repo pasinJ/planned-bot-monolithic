@@ -12,9 +12,9 @@ import { mockKline } from '#test-utils/features/shared/kline.js';
 import { mockStrategyModule } from '#test-utils/features/shared/strategyModule.js';
 import { setupTestServer } from '#test-utils/httpServer.js';
 
+import { createKlineDaoError } from '../../klines/DAOs/kline.error.js';
 import { createBtExecutionDaoError } from '../DAOs/btExecution.error.js';
 import { createBtStrategyDaoError } from '../DAOs/btStrategy.error.js';
-import { createKlineDaoError } from '../DAOs/kline.error.js';
 import { BtExecutionId, btExecutionStatusEnum } from '../dataModels/btExecution.js';
 import { BtStrategyId } from '../dataModels/btStrategy.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
@@ -46,6 +46,7 @@ function mockDeps(
 
 const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_RESULT;
 const setupServer = setupTestServer(method, url, buildGetBtExecutionResultController, mockDeps);
+const btStrategyId = '8p1v74s2vK';
 const executionId = 'G8i7cPF5pV';
 const successfulResult = {
   id: executionId as BtExecutionId,
@@ -68,7 +69,7 @@ const successfulResult = {
 describe('[GIVEN] user send an empty string as execution ID', () => {
   describe('[WHEN] user send a request to get backtesting execution result', () => {
     it('[THEN] it will return HTTP400 and error response body', async () => {
-      const getResultUrl = url.replace(':id', '');
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', '');
       const httpServer = setupServer();
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
@@ -84,7 +85,7 @@ describe('[GIVEN] the execution ID does not exist', () => {
     it('[THEN] it will return HTTP404 and error response body', async () => {
       const error = createBtExecutionDaoError('NotExist', 'Mock');
       const httpServer = setupServer({ btExecutionDao: { getResultById: () => te.left(error) } });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -99,7 +100,7 @@ describe('[GIVEN] DAO fails to get backtest execution result', () => {
     it('[THEN] it will return HTTP500 and error response body', async () => {
       const error = createBtExecutionDaoError('GetResultByIdFailed', 'Mock');
       const httpServer = setupServer({ btExecutionDao: { getResultById: () => te.left(error) } });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -114,7 +115,7 @@ describe('[GIVEN] the execution has PENDING or RUNNING status', () => {
     it('[THEN] it will return HTTP409 and error response body', async () => {
       const error = createBtExecutionDaoError('InvalidStatus', 'Mock');
       const httpServer = setupServer({ btExecutionDao: { getResultById: () => te.left(error) } });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -136,7 +137,7 @@ describe('[GIVEN] the execution is not successful', () => {
         error: createGeneralError('Error', 'Mock').toJSON(),
       };
       const httpServer = setupServer({ btExecutionDao: { getResultById: () => te.right(executionResult) } });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -154,7 +155,7 @@ describe('[GIVEN] the execution is successful [BUT] DAO fails to get backtesting
         btExecutionDao: { getResultById: () => te.right(successfulResult) },
         btStrategyDao: { getById: () => te.left(error) },
       });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -172,7 +173,7 @@ describe('[GIVEN] the execution is successful [BUT] the backtesting strategy doe
         btExecutionDao: { getResultById: () => te.right(successfulResult) },
         btStrategyDao: { getById: () => te.left(error) },
       });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -191,7 +192,7 @@ describe('[GIVEN] the execution is successful [BUT] DAO fails to get last kline 
         btStrategyDao: { getById: () => te.right(mockBtStrategyModel()) },
         klineDao: { getLastBefore: () => te.left(error) },
       });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 
@@ -209,7 +210,7 @@ describe('[GIVEN] the execution is successful [AND] every thing works fine', () 
         btStrategyDao: { getById: () => te.right(mockBtStrategyModel()) },
         klineDao: { getLastBefore: () => te.right(mockKline()) },
       });
-      const getResultUrl = url.replace(':id', executionId);
+      const getResultUrl = url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', executionId);
 
       const resp = await httpServer.inject({ method, url: getResultUrl });
 

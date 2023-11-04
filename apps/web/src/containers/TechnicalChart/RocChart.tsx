@@ -13,28 +13,25 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight, prop } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { roc } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { Source, dateToUtcTimestamp } from './utils';
+import { roc } from './indicators';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
-export type RocChartType = 'roc';
+export type RocChartType = typeof rocChartType;
+const rocChartType = 'roc';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -53,35 +50,24 @@ type RocChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: RocChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const RocChart = forwardRef<o.Option<ChartObj>, RocChartProps>(function RocChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function RocChart(props: RocChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
-
-  const { control, getValues, reset } = useForm<RocSettings>(settingFormOptions);
-  const { source, period, color } = getValues();
-
-  const [rocData, setRocData] = useState<o.Option<LineData[]>>(o.none);
-  useEffect(() => {
-    const sourceValue = klines.map(prop(source));
-    void roc(sourceValue, Number(period))
-      .then((roc) =>
-        roc.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
-      )
-      .then((rocData) => setRocData(o.some(rocData)));
-  }, [klines, source, period]);
-
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<RocSettings>(settingFormOptions);
+  const settings = getValues();
 
   return (
     <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(rocData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={rocChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
@@ -90,7 +76,7 @@ export const RocChart = forwardRef<o.Option<ChartObj>, RocChartProps>(function R
           <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
             <ChartTitleWithMenus
               title="ROC"
-              chartType="roc"
+              chartType={rocChartType}
               handleOpenSettings={handleOpenSettings}
               handleRemoveChart={handleRemoveChart}
             />
@@ -98,19 +84,20 @@ export const RocChart = forwardRef<o.Option<ChartObj>, RocChartProps>(function R
               open={settingOpen}
               onClose={handleCloseSettings}
               reset={reset}
-              prevValue={getValues()}
+              prevValue={settings}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <RocSeries data={rocData.value} color={color} />
+              <RocSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const rocSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -125,36 +112,47 @@ const zeroLineOptions: CreatePriceLineOptions & { id: string } = {
   lineWidth: 2,
   lineStyle: LineStyle.Dashed,
 };
-const RocSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function RocSeries(props, ref) {
-    const { data, color } = props;
+type RocSeriesProps = { klines: readonly Kline[]; settings: RocSettings; maxDecimalDigits?: number };
+function RocSeries(props: RocSeriesProps) {
+  const { klines, settings, maxDecimalDigits } = props;
+  const { source, period, color } = settings;
 
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const [rocData, setRocData] = useState<o.Option<LineData[]>>(o.none);
+  useEffect(() => {
+    const sourceValue = klines.map(prop(source));
+    void roc(sourceValue, Number(period))
+      .then((roc) =>
+        roc.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
+      )
+      .then((rocData) => setRocData(o.some(rocData)));
+  }, [klines, source, period]);
 
-    const seriesOptions = useMemo(() => ({ ...rocSeriesOptions, color }), [color]);
+  const seriesOptions = useMemo(() => ({ ...rocSeriesOptions, color }), [color]);
 
-    return (
-      <Series
-        ref={_series}
-        type="Line"
-        data={data}
-        options={seriesOptions}
-        priceLinesOptions={[zeroLineOptions]}
-        crosshairMoveCb={updateLegend}
-      >
-        <SeriesLegendWithoutMenus name="ROC" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+  return o.isNone(rocData) ? undefined : (
+    <Chart.Series
+      id={rocChartType}
+      type="Line"
+      data={rocData.value}
+      options={seriesOptions}
+      priceLinesOptions={[zeroLineOptions]}
+    >
+      <SeriesLegendWithoutMenus name="ROC" color={seriesOptions.color}>
+        <Chart.SeriesValue
+          defaultValue={rocData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
+  );
+}
 
 function SettingsForm({ control }: { control: Control<RocSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
         <SourceField control={control} />
-        <IntegerConfigField id="period" label="Period" name="period" control={control} />
+        <PeriodField control={control} />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

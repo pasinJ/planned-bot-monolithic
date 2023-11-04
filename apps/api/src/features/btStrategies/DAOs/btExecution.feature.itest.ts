@@ -17,7 +17,11 @@ import { BtStrategyId } from '../dataModels/btStrategy.js';
 import { getBtJobConfig } from '../executeBtStrategy/backtesting.job.config.js';
 import { defineBtJob, scheduleBtJob } from '../executeBtStrategy/backtesting.job.js';
 import { isBtExecutionDaoError } from './btExecution.error.js';
-import { getBtExecutionProgressById, getBtExecutionResultById } from './btExecution.feature.js';
+import {
+  getBtExecutionProgressById,
+  getBtExecutionResultById,
+  getLastBtExecutionProgress,
+} from './btExecution.feature.js';
 import { BtExecutionMongooseModel, btExecutionModelName, buildBtExecutionDao } from './btExecution.js';
 
 const client = await createMongoClient();
@@ -294,6 +298,50 @@ describe('UUT: Get backtesting execution result by ID', () => {
           logs,
           error,
         });
+      });
+    });
+  });
+});
+
+describe('UUT: Get the last backtesting execution progress by backtesting strategy ID', () => {
+  const getLastExecutionProgressFn = btExecutionDao.composeWith(getLastBtExecutionProgress);
+
+  describe('[GIVEN] backtesting execution of the given backtesting strategy ID exists', () => {
+    const executionId = 'TIoOQWizJ-' as BtExecutionId;
+    const btStrategyId = 'xCL3_BM66P' as BtStrategyId;
+
+    let jobScheduler: JobScheduler;
+    let scheduleBtJobFn: ReturnType<ReturnType<typeof scheduleBtJob>>;
+
+    beforeAll(async () => {
+      jobScheduler = unsafeUnwrapEitherRight(
+        await pipe(
+          buildJobScheduler({ mainLogger: mockMainLogger(), getJobSchedulerConfig }),
+          te.chainFirstW((jobScheduler) => jobScheduler.start),
+          executeT,
+        ),
+      );
+      scheduleBtJobFn = jobScheduler.composeWith(
+        scheduleBtJob({ dateService, btExecutionDao: { generateId: () => executionId } }),
+      );
+    });
+    afterAll(() => jobScheduler.stop());
+
+    describe('[WHEN] get the last backtesting execution progress by backtesting strategy ID', () => {
+      it('[THEN] it will return Right of the execution progress', async () => {
+        await executeT(scheduleBtJobFn(btStrategyId));
+
+        const result = await executeT(getLastExecutionProgressFn(btStrategyId));
+
+        expect(result).toEqualRight(
+          expect.objectContaining({
+            id: expect.toBeString(),
+            btStrategyId,
+            status: 'PENDING',
+            percentage: 0,
+            logs: [],
+          }),
+        );
       });
     });
   });

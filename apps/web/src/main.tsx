@@ -12,8 +12,8 @@ import StyleProvider from '#styles/containers/StyleProvider';
 import reportAccessibility from './accessibility';
 
 void (async () => {
-  if (process.env.NODE_ENV !== 'production') await reportAccessibility(React);
-  if (process.env.MODE === 'standalone') {
+  if (import.meta.env.DEV) await reportAccessibility(React);
+  if (import.meta.env.MODE === 'standalone') {
     const { worker } = await import('../mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }

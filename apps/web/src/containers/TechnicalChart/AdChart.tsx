@@ -11,26 +11,23 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
-import { UseFormProps, useForm } from 'react-hook-form';
-import { ad } from 'src/containers/TechnicalChart/indicators';
+import { useEffect, useMemo, useState } from 'react';
+import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { dateToUtcTimestamp } from './utils';
+import { ad } from './indicators';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
-export type AdChartType = 'ad';
+export type AdChartType = typeof adChartType;
+const adChartType = 'ad';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -47,36 +44,24 @@ type AdChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: AdChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const AdChart = forwardRef<o.Option<ChartObj>, AdChartProps>(function AdChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function AdChart(props: AdChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
-
-  const { control, getValues, reset } = useForm<AdSettings>(defaultSettingFormOptions);
-
-  const [adData, setAdData] = useState<o.Option<LineData[]>>(o.none);
-  useEffect(() => {
-    void ad(klines)
-      .then((ad) =>
-        ad.map((value, index) => ({
-          time: dateToUtcTimestamp(klines[index].openTimestamp),
-          value,
-        })),
-      )
-      .then((data) => setAdData(o.some(data)));
-  }, [klines]);
-
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<AdSettings>(defaultSettingFormOptions);
+  const settings = getValues();
 
   return (
     <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(adData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={adChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
@@ -93,24 +78,20 @@ export const AdChart = forwardRef<o.Option<ChartObj>, AdChartProps>(function AdC
               open={settingOpen}
               onClose={handleCloseSettings}
               reset={reset}
-              prevValue={getValues()}
+              prevValue={settings}
+              validSettings={trigger}
             >
-              <form className="flex flex-col py-6">
-                <Divider>Style</Divider>
-                <div className="flex flex-col space-y-2 pt-2">
-                  <ColorField label="AD line color" labelId="line-color" name="color" control={control} />
-                </div>
-              </form>
+              <SettingForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <AdSeries data={adData.value} color={getValues().color} />
+              <AdSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const adSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -118,19 +99,43 @@ const adSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const AdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function AdSeries(props, ref) {
-    const { data, color } = props;
+type AdSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
+function AdSeries(props: AdSeriesProps) {
+  const { klines, color, maxDecimalDigits } = props;
 
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const [adData, setAdData] = useState<o.Option<LineData[]>>(o.none);
+  useEffect(() => {
+    void ad(klines)
+      .then((ad) =>
+        ad.map((value, index) => ({
+          time: dateToUtcTimestamp(klines[index].openTimestamp),
+          value,
+        })),
+      )
+      .then((data) => setAdData(o.some(data)));
+  }, [klines]);
 
-    const seriesOptions = useMemo(() => ({ ...adSeriesOptions, color }), [color]);
+  const seriesOptions = useMemo(() => ({ ...adSeriesOptions, color }), [color]);
 
-    return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-        <SeriesLegendWithoutMenus name="AD" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+  return o.isNone(adData) ? undefined : (
+    <Chart.Series id={adChartType} type="Line" data={adData.value} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="AD" color={seriesOptions.color}>
+        <Chart.SeriesValue
+          defaultValue={adData.value.at(-1)?.value}
+          formatValue={formatValue(2, maxDecimalDigits)}
+        />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
+  );
+}
+
+function SettingForm({ control }: { control: Control<AdSettings> }) {
+  return (
+    <form className="flex flex-col py-6">
+      <Divider>Style</Divider>
+      <div className="flex flex-col space-y-2 pt-2">
+        <ColorField label="AD line color" labelId="line-color" name="color" control={control} />
+      </div>
+    </form>
+  );
+}

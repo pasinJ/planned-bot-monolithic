@@ -26,6 +26,7 @@
       "#features/*": ["src/features/*"],
       "#hooks/*": ["src/hooks/*"],
       "#infra/*": ["src/infra/*"],
+      "#layouts/*": ["src/layouts/*"],
       "#pages/*": ["src/pages/*"],
       "#routes/*": ["src/routes/*"],
       "#state/*": ["src/state/*"],
@@ -39,8 +40,8 @@
     "types",
     "test-utils",
     "mocks",
-    "../strategyExecutorContextTypes/src",
-    "../indicators/src",
-    "tailwind.config.ts"
+    "../strategyExecutorContextTypes/dist/index.d.cts",
+    "tailwind.config.ts",
+    "tailwind.tremor.config.ts"
   ]
 }

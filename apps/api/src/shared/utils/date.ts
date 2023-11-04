@@ -1,4 +1,4 @@
-import { differenceInMilliseconds } from 'date-fns';
+import { differenceInMilliseconds, isAfter, isBefore, isEqual } from 'date-fns';
 import { utcToZonedTime as utcToZonedTimeBase } from 'date-fns-tz';
 import { z } from 'zod';
 
@@ -63,4 +63,11 @@ export function utcToZonedTime(timezone: TimezoneString) {
 
 export function getDiffInMs(before: Date, after: Date): Milliseconds {
   return differenceInMilliseconds(before, after) as Milliseconds;
+}
+
+export function isBeforeOrEqual(date: Date | number, dateToCompare: Date | number) {
+  return isBefore(date, dateToCompare) || isEqual(date, dateToCompare);
+}
+export function isAfterOrEqual(date: Date | number, dateToCompare: Date | number) {
+  return isAfter(date, dateToCompare) || isEqual(date, dateToCompare);
 }

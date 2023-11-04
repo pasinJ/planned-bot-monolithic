@@ -1,12 +1,11 @@
 import { createTheme } from '@mui/material/styles';
 import { mergeAll } from 'ramda';
-import type { Config } from 'tailwindcss';
+import { Config } from 'tailwindcss';
 
 import * as breakpoints from './src/styles/theme.constant.ts';
 
 const muiTheme = createTheme();
-
-export default {
+const customConfig: Config = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   important: '#root',
   darkMode: 'class',
@@ -25,6 +24,14 @@ export default {
       black: colors.black,
       gray: colors.gray,
       slate: colors.slate,
+      emerald: colors.emerald,
+      rose: colors.rose,
+      up: {
+        DEFAULT: 'rgba(var(--up-color), <alpha-value>)',
+      },
+      down: {
+        DEFAULT: 'rgba(var(--down-color), <alpha-value>)',
+      },
       primary: {
         DEFAULT: 'rgba(var(--primary-color), <alpha-value>)',
         light: 'rgba(var(--primary-light-color), <alpha-value>)',
@@ -88,4 +95,6 @@ export default {
     },
   },
   plugins: [require('tailwind-scrollbar')],
-} satisfies Config;
+};
+
+export default customConfig;

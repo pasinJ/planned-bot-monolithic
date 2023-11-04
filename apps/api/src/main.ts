@@ -6,9 +6,9 @@ import { Mongoose } from 'mongoose';
 
 import { buildBtExecutionDao } from '#features/btStrategies/DAOs/btExecution.js';
 import { buildBtStrategyDao } from '#features/btStrategies/DAOs/btStrategy.js';
-import { buildKlineDao } from '#features/btStrategies/DAOs/kline.js';
 import { getBtJobConfig } from '#features/btStrategies/executeBtStrategy/backtesting.job.config.js';
 import { defineBtJob } from '#features/btStrategies/executeBtStrategy/backtesting.job.js';
+import { buildKlineDao } from '#features/klines/DAOs/kline.js';
 import { addSymbolModels, existSymbolModelByExchange } from '#features/symbols/DAOs/symbol.feature.js';
 import { buildSymbolDao } from '#features/symbols/DAOs/symbol.js';
 import { getHttpConfig } from '#infra/http/server.config.js';

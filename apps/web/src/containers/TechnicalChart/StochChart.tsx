@@ -13,28 +13,25 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { stoch } from 'src/containers/TechnicalChart/indicators';
 
+import DecimalFieldRf from '#components/DecimalFieldRf';
+import IntegerFieldRf from '#components/IntegerFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import DecimalConfigField from './components/DecimalConfigField';
-import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { dateToUtcTimestamp } from './utils';
+import { stoch } from './indicators';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
-export type StochChartType = 'stoch';
+export type StochChartType = typeof stochChartType;
+const stochChartType = 'stoch';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -75,15 +72,70 @@ type StochChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: StochChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const StochChart = forwardRef<o.Option<ChartObj>, StochChartProps>(function StochChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function StochChart(props: StochChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
 
-  const { control, getValues, reset } = useForm<StochSettings>(defaultSettingFormOptions);
-  const { kPeriod, kSlow, dPeriod, dLineColor } = getValues();
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<StochSettings>(defaultSettingFormOptions);
+  const settings = getValues();
+
+  const stochData = useStochData(klines, settings);
+
+  return (
+    <div className="relative" ref={handleContainerRef}>
+      {o.isNone(container) ? undefined : o.isNone(stochData) ? (
+        <div>Loading...</div>
+      ) : (
+        <Chart.Container
+          id={stochChartType}
+          container={container.value}
+          options={chartOptions}
+          crosshairMoveCb={crosshairMoveCb}
+          logicalRangeChangeCb={logicalRangeChangeCb}
+        >
+          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
+            <ChartTitleWithMenus
+              title="Stoch"
+              chartType={stochChartType}
+              handleOpenSettings={handleOpenSettings}
+              handleRemoveChart={handleRemoveChart}
+            />
+            <SettingsModal
+              open={settingOpen}
+              onClose={handleCloseSettings}
+              reset={reset}
+              prevValue={settings}
+              validSettings={trigger}
+            >
+              <SettingsForm control={control} />
+            </SettingsModal>
+            <div className="flex flex-col">
+              <KLineSeries
+                data={stochData.value.kLine}
+                settings={settings}
+                maxDecimalDigits={maxDecimalDigits}
+              />
+              <DLineSeries
+                data={stochData.value.dLine}
+                color={settings.dLineColor}
+                maxDecimalDigits={maxDecimalDigits}
+              />
+            </div>
+          </div>
+        </Chart.Container>
+      )}
+    </div>
+  );
+}
+
+function useStochData(klines: readonly Kline[], settings: StochSettings) {
+  const { kPeriod, kSlow, dPeriod } = settings;
 
   type StochData = { kLine: LineData[]; dLine: LineData[] };
   const [stochData, setStochData] = useState<o.Option<StochData>>(o.none);
@@ -102,45 +154,8 @@ export const StochChart = forwardRef<o.Option<ChartObj>, StochChartProps>(functi
       .then((data) => setStochData(o.some(data)));
   }, [klines, kPeriod, kSlow, dPeriod]);
 
-  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
-
-  return (
-    <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(stochData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
-          container={container.value}
-          options={chartOptions}
-          crosshairMoveCb={crosshairMoveCb}
-          logicalRangeChangeCb={logicalRangeChangeCb}
-        >
-          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
-            <ChartTitleWithMenus
-              title="Stoch"
-              chartType="stoch"
-              handleOpenSettings={handleOpenSettings}
-              handleRemoveChart={handleRemoveChart}
-            />
-            <SettingsModal
-              open={settingOpen}
-              onClose={handleCloseSettings}
-              reset={reset}
-              prevValue={getValues()}
-            >
-              <SettingsForm control={control} />
-            </SettingsModal>
-            <div className="flex flex-col">
-              <KLineSeries data={stochData.value.kLine} settings={getValues()} />
-              <DLineSeries data={stochData.value.dLine} color={dLineColor} />
-            </div>
-          </div>
-        </ChartContainer>
-      )}
-    </div>
-  );
-});
+  return stochData;
+}
 
 const kLineSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -172,14 +187,11 @@ const lowerLineOptions: CreatePriceLineOptions & { id: string } = {
   lineWidth: 2,
   lineStyle: LineStyle.Dashed,
 };
-type KLineSeriesProps = { data: LineData[]; settings: StochSettings };
-const KLineSeries = forwardRef<o.Option<SeriesObj>, KLineSeriesProps>(function KLineSeries(props, ref) {
-  const { data, settings } = props;
+type KLineSeriesProps = { data: LineData[]; settings: StochSettings; maxDecimalDigits?: number };
+function KLineSeries(props: KLineSeriesProps) {
+  const { data, settings, maxDecimalDigits } = props;
   const { kLineColor, upperLevel, upperLineColor, middleLevel, middleLineColor, lowerLevel, lowerLineColor } =
     settings;
-
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
 
   const seriesOptions = useMemo(() => ({ ...kLineSeriesOptions, color: kLineColor }), [kLineColor]);
   const priceLinesOptions = useMemo(
@@ -192,18 +204,19 @@ const KLineSeries = forwardRef<o.Option<SeriesObj>, KLineSeriesProps>(function K
   );
 
   return (
-    <Series
-      ref={_series}
+    <Chart.Series
+      id="kLine"
       type="Line"
       data={data}
       options={seriesOptions}
       priceLinesOptions={priceLinesOptions}
-      crosshairMoveCb={updateLegend}
     >
-      <SeriesLegendWithoutMenus name="%K" color={seriesOptions.color} legend={legend} />
-    </Series>
+      <SeriesLegendWithoutMenus name="%K" color={seriesOptions.color}>
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
   );
-});
+}
 
 const dLineSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -211,32 +224,73 @@ const dLineSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = 
   lastValueVisible: false,
   priceLineVisible: false,
 };
-type DLineSeriesProps = { data: LineData[]; color: HexColor };
-const DLineSeries = forwardRef<o.Option<SeriesObj>, DLineSeriesProps>(function KLineSeries(props, ref) {
-  const { data, color } = props;
-
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+type DLineSeriesProps = { data: LineData[]; color: HexColor; maxDecimalDigits?: number };
+function DLineSeries(props: DLineSeriesProps) {
+  const { data, color, maxDecimalDigits } = props;
 
   const seriesOptions = useMemo(() => ({ ...dLineSeriesOptions, color }), [color]);
 
   return (
-    <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-      <SeriesLegendWithoutMenus name="%D" color={seriesOptions.color} legend={legend} />
-    </Series>
+    <Chart.Series id="dLine" type="Line" data={data} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="%D" color={seriesOptions.color}>
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
   );
-});
+}
 
 function SettingsForm({ control }: { control: Control<StochSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
-        <IntegerConfigField id="k-period" label="%K Period" name="kPeriod" control={control} />
-        <IntegerConfigField id="k-slow" label="%K Smoothing" name="kSlow" control={control} />
-        <IntegerConfigField id="d-period" label="%D Smoothing" name="dPeriod" control={control} />
-        <DecimalConfigField id="upper-level" label="Upper band" name="upperLevel" control={control} />
-        <DecimalConfigField id="middle-level" label="Middle band" name="middleLevel" control={control} />
-        <DecimalConfigField id="lower-level" label="Lower band" name="lowerLevel" control={control} />
+        <IntegerFieldRf
+          controllerProps={{
+            control,
+            name: 'kSlow',
+            rules: { required: `%K Smoothing is required` },
+          }}
+          fieldProps={{ id: 'k-slow', label: '%K Smoothing', required: true }}
+        />
+        <IntegerFieldRf
+          controllerProps={{
+            control,
+            name: 'dPeriod',
+            rules: { required: `%D Smoothing is required` },
+          }}
+          fieldProps={{ id: 'd-period', label: '%D Smoothing', required: true }}
+        />
+        <IntegerFieldRf
+          controllerProps={{
+            control,
+            name: 'kPeriod',
+            rules: { required: `%K Period is required` },
+          }}
+          fieldProps={{ id: 'k-period', label: '%K Period', required: true }}
+        />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'upperLevel',
+            rules: { required: `Upper band is required` },
+          }}
+          fieldProps={{ id: 'upper-level', label: 'Upper band', required: true }}
+        />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'middleLevel',
+            rules: { required: `Middle band is required` },
+          }}
+          fieldProps={{ id: 'middle-level', label: 'Middle band', required: true }}
+        />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'lowerLevel',
+            rules: { required: `Lower band is required` },
+          }}
+          fieldProps={{ id: 'lower-level', label: 'Lower band', required: true }}
+        />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

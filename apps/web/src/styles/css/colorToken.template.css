@@ -33,6 +33,9 @@
 
     --background-color: '%LT_BG%';
     --surface-color: '%LT_SURFACE%';
+
+    --up-color: '%LT_UP_COLOR%';
+    --down-color: '%LT_DOWN_COLOR%';
   }
   :root .dark {
     --primary-color: '%DT_PRIMARY%';
@@ -68,5 +71,8 @@
 
     --background-color: '%DT_BG%';
     --surface-color: '%DT_SURFACE%';
+
+    --up-color: '%DT_UP_COLOR%';
+    --down-color: '%DT_DOWN_COLOR%';
   }
 }

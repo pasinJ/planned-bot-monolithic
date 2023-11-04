@@ -1,5 +1,11 @@
 import CssBaseline from '@mui/material/CssBaseline';
-import { StyledEngineProvider, ThemeOptions, ThemeProvider, createTheme } from '@mui/material/styles';
+import {
+  StyledEngineProvider,
+  ThemeOptions,
+  ThemeProvider,
+  createTheme,
+  responsiveFontSizes,
+} from '@mui/material/styles';
 import 'material-symbols/rounded.css';
 import { assocPath } from 'ramda';
 import { PropsWithChildren, useLayoutEffect } from 'react';
@@ -38,7 +44,9 @@ export default function StyleProvider({ children, rootElem }: PropsWithChildren<
       MuiModal: { defaultProps: { container: rootElem } },
     },
   };
-  const muiTheme = createTheme(assocPath(['palette', 'mode'], appTheme, muiThemeOptions));
+  const muiTheme = responsiveFontSizes(
+    createTheme(assocPath(['palette', 'mode'], appTheme, muiThemeOptions)),
+  );
 
   useLayoutEffect(() => {
     if (appTheme === themeEnum.dark) document.body.classList.add('dark');

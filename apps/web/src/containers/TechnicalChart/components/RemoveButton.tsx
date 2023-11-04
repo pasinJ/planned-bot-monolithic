@@ -7,7 +7,7 @@ export default function RemoveButton<T>({ objKey, remove }: { objKey: T; remove:
     <Button
       color="inherit"
       aria-label="delete"
-      className="invisible min-w-fit p-0 group-hover:visible"
+      className="group-hover:revert hidden min-w-fit p-0"
       onClick={() => remove(objKey)}
     >
       <MaterialSymbol className="px-1 text-2xl" symbol="delete" />

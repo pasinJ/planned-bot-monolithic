@@ -4,8 +4,8 @@ import { pipe } from 'fp-ts/lib/function.js';
 import { DeepReadonly } from 'ts-essentials';
 
 import { ExchangeName } from '#features/shared/exchange.js';
-import { Language } from '#features/shared/strategy.js';
-import { AssetName, Symbol } from '#features/shared/symbol.js';
+import { AssetCurrency, CapitalCurrency, Language } from '#features/shared/strategy.js';
+import { Symbol } from '#features/shared/symbol.js';
 import { Timeframe } from '#features/shared/timeframe.js';
 import { SymbolDaoError } from '#features/symbols/DAOs/symbol.error.js';
 import { DateService } from '#infra/services/date/service.js';
@@ -33,6 +33,7 @@ export type AddBtStrategyRequest = Readonly<{
   name: string;
   exchange: ExchangeName;
   symbol: string;
+  assetCurrency: string;
   capitalCurrency: string;
   timeframe: Timeframe;
   maxNumKlines: number;
@@ -56,13 +57,18 @@ export function addBtStrategy(
   Readonly<{ id: BtStrategyId; createdAt: ValidDate }>
 > {
   const { dateService, btStrategyDao, symbolDao } = dep;
-  const { symbol, exchange, capitalCurrency } = request;
+  const { symbol, exchange, capitalCurrency, assetCurrency } = request;
 
   return pipe(
     symbolDao.getByNameAndExchange(symbol, exchange),
     te.bindW('symbol', (symbol) => {
-      return capitalCurrency === symbol.baseAsset || capitalCurrency === symbol.quoteAsset
-        ? te.right({ name: symbol.name, capitalCurrency: capitalCurrency as AssetName })
+      return (capitalCurrency === symbol.baseAsset && assetCurrency === symbol.quoteAsset) ||
+        (capitalCurrency === symbol.quoteAsset && assetCurrency === symbol.baseAsset)
+        ? te.right({
+            symbol: symbol.name,
+            capitalCurrency: capitalCurrency as CapitalCurrency,
+            assetCurrency: assetCurrency as AssetCurrency,
+          })
         : te.left(
             createGeneralError(
               'InvalidCurrency',
@@ -72,8 +78,8 @@ export function addBtStrategy(
     }),
     te.let('id', () => btStrategyDao.generateId()),
     te.let('currentDate', () => dateService.getCurrentDate()),
-    te.bindW('btStrategy', ({ symbol: { name, capitalCurrency }, id, currentDate }) =>
-      te.fromEither(createBtStrategyModel({ ...request, id, symbol: name, capitalCurrency }, currentDate)),
+    te.bindW('btStrategy', ({ id, symbol, currentDate }) =>
+      te.fromEither(createBtStrategyModel({ id, ...request, ...symbol }, currentDate)),
     ),
     te.chainFirstW(({ btStrategy }) => btStrategyDao.add(btStrategy)),
     te.map(({ btStrategy }) => ({ id: btStrategy.id, createdAt: btStrategy.createdAt })),

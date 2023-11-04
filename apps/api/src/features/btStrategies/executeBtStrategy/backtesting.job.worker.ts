@@ -24,15 +24,16 @@ import { saveJobThenStopAgenda } from '#infra/services/jobScheduler/service.js';
 import { AppError } from '#shared/errors/appError.js';
 import { executeIo, executeT } from '#shared/utils/fp.js';
 
-import { getBtStrategyModelById } from '../DAOs/btStrategy.feature.js';
-import { buildBtStrategyDao } from '../DAOs/btStrategy.js';
 import {
   addKlines,
+  countKlines,
   getFirstKlineBefore,
   getKlinesBefore,
   iterateThroughKlines,
-} from '../DAOs/kline.feature.js';
-import { buildKlineDao } from '../DAOs/kline.js';
+} from '../../klines/DAOs/kline.feature.js';
+import { buildKlineDao } from '../../klines/DAOs/kline.js';
+import { getBtStrategyModelById } from '../DAOs/btStrategy.feature.js';
+import { buildBtStrategyDao } from '../DAOs/btStrategy.js';
 import { getKlinesByApi } from '../services/binance/getKlinesByApi.js';
 import { getKlinesByDailyFiles } from '../services/binance/getKlinesByDailyFiles.js';
 import { getKlinesByMonthlyFiles } from '../services/binance/getKlinesByMonthlyFiles.js';
@@ -215,6 +216,7 @@ function prepareBacktestDeps(job: Job<BtJobData>): te.TaskEither<AppError, Backt
           symbolDao: { getByNameAndExchange: symbolDao.composeWith(getSymbolModelByNameAndExchange) },
           klineDao: {
             add: klineDao.composeWith(addKlines),
+            count: klineDao.composeWith(countKlines),
             getBefore: klineDao.composeWith(getKlinesBefore),
             getFirstBefore: klineDao.composeWith(getFirstKlineBefore),
             iterateThroughKlines: klineDao.composeWith(iterateThroughKlines),

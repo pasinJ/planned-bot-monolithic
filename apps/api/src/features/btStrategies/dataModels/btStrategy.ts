@@ -1,4 +1,4 @@
-import { isBefore, isEqual } from 'date-fns';
+import { isBefore, isEqual, subDays, subHours, subMinutes, subMonths, subSeconds, subWeeks } from 'date-fns';
 import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
 import { pipe } from 'fp-ts/lib/function.js';
@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { ExchangeName } from '#features/shared/exchange.js';
 import {
+  AssetCurrency,
   CapitalCurrency,
   InitialCapital,
   Language,
@@ -18,10 +19,10 @@ import {
   strategyNameSchema,
   takerFeeRateSchema,
 } from '#features/shared/strategy.js';
-import { AssetName, SymbolName } from '#features/shared/symbol.js';
+import { Symbol, SymbolName } from '#features/shared/symbol.js';
 import { Timeframe } from '#features/shared/timeframe.js';
 import { GeneralError, createGeneralError } from '#shared/errors/generalError.js';
-import { ValidDate, validDateSchema } from '#shared/utils/date.js';
+import { ValidDate, isBeforeOrEqual, validDateSchema } from '#shared/utils/date.js';
 import { TimezoneString, nonEmptyStringSchema } from '#shared/utils/string.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
@@ -32,6 +33,7 @@ export type BtStrategyModel = Readonly<{
   symbol: SymbolName;
   timeframe: Timeframe;
   initialCapital: InitialCapital;
+  assetCurrency: AssetCurrency;
   capitalCurrency: CapitalCurrency;
   takerFeeRate: TakerFeeRate;
   makerFeeRate: MakerFeeRate;
@@ -74,7 +76,8 @@ export function createBtStrategyModel(
     symbol: SymbolName;
     timeframe: Timeframe;
     initialCapital: number;
-    capitalCurrency: AssetName;
+    assetCurrency: AssetCurrency;
+    capitalCurrency: CapitalCurrency;
     takerFeeRate: number;
     makerFeeRate: number;
     maxNumKlines: number;
@@ -94,6 +97,7 @@ export function createBtStrategyModel(
       symbol: z.any(),
       timeframe: z.any(),
       initialCapital: initialCapitalSchema,
+      assetCurrency: z.any(),
       capitalCurrency: z.any(),
       takerFeeRate: takerFeeRateSchema,
       makerFeeRate: makerFeeRateSchema,
@@ -115,9 +119,9 @@ export function createBtStrategyModel(
     })
     .strict()
     .refine(
-      ({ startTimestamp, endTimestamp }) => isBefore(startTimestamp, endTimestamp),
+      ({ startTimestamp, endTimestamp }) => isBeforeOrEqual(startTimestamp, endTimestamp),
       ({ startTimestamp, endTimestamp }) => ({
-        message: `end timestamp (${endTimestamp.toISOString()}) must be after start timestamp (${startTimestamp.toISOString()})`,
+        message: `end timestamp (${endTimestamp.toISOString()}) must be after or equal to start timestamp (${startTimestamp.toISOString()})`,
         path: ['endTimestamp'],
       }),
     )
@@ -146,4 +150,54 @@ export function createBtStrategyModel(
       (btStrategy) => btStrategy as BtStrategyModel,
     ),
   );
+}
+
+export function validateBtStrategyCurrencies(
+  symbol: Symbol,
+  assetCurrency: string,
+  capitalCurrency: string,
+): e.Either<
+  GeneralError<'InvalidCurrency'>,
+  { assetCurrency: AssetCurrency; capitalCurrency: CapitalCurrency }
+> {
+  return (capitalCurrency === symbol.baseAsset && assetCurrency === symbol.quoteAsset) ||
+    (capitalCurrency === symbol.quoteAsset && assetCurrency === symbol.baseAsset)
+    ? e.right({
+        symbol: symbol.name,
+        capitalCurrency: capitalCurrency as CapitalCurrency,
+        assetCurrency: assetCurrency as AssetCurrency,
+      })
+    : e.left(
+        createGeneralError(
+          'InvalidCurrency',
+          `Currency of strategy must be either base asset (${symbol.baseAsset}) or quote asset (${symbol.quoteAsset}) of symbol`,
+        ),
+      );
+}
+
+export function extendBtRange(
+  startTimestamp: BtStartTimestamp,
+  timeframe: Timeframe,
+  maxNumKlines: MaxNumKlines,
+): ValidDate {
+  const options = {
+    '1s': { subFn: subSeconds, multiplier: 1 },
+    '1m': { subFn: subMinutes, multiplier: 1 },
+    '3m': { subFn: subMinutes, multiplier: 3 },
+    '5m': { subFn: subMinutes, multiplier: 5 },
+    '15m': { subFn: subMinutes, multiplier: 15 },
+    '30m': { subFn: subMinutes, multiplier: 30 },
+    '1h': { subFn: subHours, multiplier: 1 },
+    '2h': { subFn: subHours, multiplier: 3 },
+    '4h': { subFn: subHours, multiplier: 4 },
+    '6h': { subFn: subHours, multiplier: 6 },
+    '8h': { subFn: subHours, multiplier: 8 },
+    '12h': { subFn: subHours, multiplier: 12 },
+    '1d': { subFn: subDays, multiplier: 1 },
+    '3d': { subFn: subDays, multiplier: 3 },
+    '1w': { subFn: subWeeks, multiplier: 1 },
+    '1M': { subFn: subMonths, multiplier: 1 },
+  };
+
+  return options[timeframe].subFn(startTimestamp, maxNumKlines * options[timeframe].multiplier) as ValidDate;
 }

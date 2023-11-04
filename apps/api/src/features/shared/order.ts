@@ -55,7 +55,7 @@ export const orderTypesList = orderTypeSchema.options;
 export const orderSideSchema = z.enum(['ENTRY', 'EXIT']);
 
 export function generateOrderId(): OrderId {
-  return nanoid() as OrderId;
+  return nanoid(8) as OrderId;
 }
 
 export function createPendingOrderRequest(

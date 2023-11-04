@@ -37,6 +37,7 @@ const defaultRequest = {
   timeframe: timeframeEnum['1h'],
   maxNumKlines: 10,
   initialCapital: 1000,
+  assetCurrency: 'BTC',
   capitalCurrency: 'USDT',
   takerFeeRate: 1,
   makerFeeRate: 2,
@@ -56,6 +57,7 @@ describe('[GIVEN] the backtesting strategy uses base asset of symbol as currency
     symbol: symbol.name,
     exchange: symbol.exchange,
     capitalCurrency: symbol.baseAsset,
+    assetCurrency: symbol.quoteAsset,
   };
 
   describe('[WHEN] add the backtesting strategy', () => {
@@ -117,6 +119,7 @@ describe('[GIVEN] the backtesting strategy uses quote asset of symbol as currenc
       symbol: symbol.name,
       exchange: symbol.exchange,
       capitalCurrency: symbol.quoteAsset,
+      assetCurrency: symbol.baseAsset,
     };
 
     it('[THEN] it will call DAO to get symbol by name and exchange', async () => {
@@ -263,6 +266,7 @@ describe('[GIVEN] DAO fails to add the backtesting strategy', () => {
         symbol: symbol.name,
         exchange: symbol.exchange,
         capitalCurrency: symbol.baseAsset,
+        assetCurrency: symbol.quoteAsset,
       };
 
       const result = await executeT(addBtStrategy(deps, request));

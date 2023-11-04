@@ -11,26 +11,23 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
-import { UseFormProps, useForm } from 'react-hook-form';
-import { emv } from 'src/containers/TechnicalChart/indicators';
+import { useEffect, useMemo, useState } from 'react';
+import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { dateToUtcTimestamp } from './utils';
+import { emv } from './indicators';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
-export type EmvChartType = 'emv';
+export type EmvChartType = typeof emvChartType;
+const emvChartType = 'emv';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -47,14 +44,64 @@ type EmvChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: EmvChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const EmvChart = forwardRef<o.Option<ChartObj>, EmvChartProps>(function EmvChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function EmvChart(props: EmvChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
 
-  const { control, getValues, reset } = useForm<EmvSettings>(defaultSettingFormOptions);
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<EmvSettings>(defaultSettingFormOptions);
+  const settings = getValues();
+
+  return (
+    <div className="relative" ref={handleContainerRef}>
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={emvChartType}
+          container={container.value}
+          options={chartOptions}
+          crosshairMoveCb={crosshairMoveCb}
+          logicalRangeChangeCb={logicalRangeChangeCb}
+        >
+          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
+            <ChartTitleWithMenus
+              title="EMV"
+              chartType={emvChartType}
+              handleOpenSettings={handleOpenSettings}
+              handleRemoveChart={handleRemoveChart}
+            />
+            <SettingsModal
+              open={settingOpen}
+              onClose={handleCloseSettings}
+              reset={reset}
+              prevValue={settings}
+              validSettings={trigger}
+            >
+              <SettingsForm control={control} />
+            </SettingsModal>
+            <div className="flex flex-col">
+              <EmvSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
+            </div>
+          </div>
+        </Chart.Container>
+      )}
+    </div>
+  );
+}
+
+const emvSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
+  lineWidth: 2,
+  color: defaultSettings.color,
+  lastValueVisible: false,
+  priceLineVisible: false,
+};
+type EmvSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
+function EmvSeries(props: EmvSeriesProps) {
+  const { klines, color, maxDecimalDigits } = props;
 
   const [emvData, setEmvData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
@@ -67,70 +114,27 @@ export const EmvChart = forwardRef<o.Option<ChartObj>, EmvChartProps>(function E
       )
       .then((data) => setEmvData(o.some(data)));
   }, [klines]);
+  const seriesOptions = useMemo(() => ({ ...emvSeriesOptions, color }), [color]);
 
-  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
-
-  return (
-    <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(emvData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
-          container={container.value}
-          options={chartOptions}
-          crosshairMoveCb={crosshairMoveCb}
-          logicalRangeChangeCb={logicalRangeChangeCb}
-        >
-          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
-            <ChartTitleWithMenus
-              title="EMV"
-              chartType="emv"
-              handleOpenSettings={handleOpenSettings}
-              handleRemoveChart={handleRemoveChart}
-            />
-            <SettingsModal
-              open={settingOpen}
-              onClose={handleCloseSettings}
-              reset={reset}
-              prevValue={getValues()}
-            >
-              <form className="flex flex-col py-6">
-                <Divider>Style</Divider>
-                <div className="flex flex-col space-y-2 pt-2">
-                  <ColorField label="EMV line color" labelId="line-color" name="color" control={control} />
-                </div>
-              </form>
-            </SettingsModal>
-            <div className="flex flex-col">
-              <EmvSeries data={emvData.value} color={getValues().color} />
-            </div>
-          </div>
-        </ChartContainer>
-      )}
-    </div>
+  return o.isNone(emvData) ? undefined : (
+    <Chart.Series id={emvChartType} type="Line" data={emvData.value} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="EMV" color={seriesOptions.color}>
+        <Chart.SeriesValue
+          defaultValue={emvData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
   );
-});
+}
 
-const emvSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
-  lineWidth: 2,
-  color: defaultSettings.color,
-  lastValueVisible: false,
-  priceLineVisible: false,
-};
-const EmvSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function EmvSeries(props, ref) {
-    const { data, color } = props;
-
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
-
-    const seriesOptions = useMemo(() => ({ ...emvSeriesOptions, color }), [color]);
-
-    return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-        <SeriesLegendWithoutMenus name="EMV" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+function SettingsForm({ control }: { control: Control<EmvSettings> }) {
+  return (
+    <form className="flex flex-col py-6">
+      <Divider>Style</Divider>
+      <div className="flex flex-col space-y-2 pt-2">
+        <ColorField label="EMV line color" labelId="line-color" name="color" control={control} />
+      </div>
+    </form>
+  );
+}

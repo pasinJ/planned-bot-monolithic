@@ -1,6 +1,6 @@
 import { exchangeNameEnum } from '#features/shared/exchange.js';
-import { languageEnum } from '#features/shared/strategy.js';
-import { AssetName, SymbolName } from '#features/shared/symbol.js';
+import { AssetCurrency, CapitalCurrency, languageEnum } from '#features/shared/strategy.js';
+import { SymbolName } from '#features/shared/symbol.js';
 import { timeframeEnum } from '#features/shared/timeframe.js';
 import { isGeneralError } from '#shared/errors/generalError.js';
 import { ValidDate } from '#shared/utils/date.js';
@@ -17,7 +17,8 @@ describe('UUT: Create backtesting strategy model', () => {
     symbol: 'BTCUSDT' as SymbolName,
     timeframe: timeframeEnum['15m'],
     initialCapital: 1000,
-    capitalCurrency: 'USDT' as AssetName,
+    assetCurrency: 'BTC' as AssetCurrency,
+    capitalCurrency: 'USDT' as CapitalCurrency,
     takerFeeRate: 1,
     makerFeeRate: 2,
     maxNumKlines: 10,
@@ -151,7 +152,6 @@ describe('UUT: Create backtesting strategy model', () => {
 
     describe.each([
       { case: 'the property is a date before current date', value: new Date('2022-01-02') },
-      { case: 'the property is a date that equals to start timestamp', value: new Date('2021-01-01') },
       { case: 'the property is a date before start timestamp', value: new Date('2021-12-20') },
     ])('[WHEN] create a create backtesting strategy model with $case', ({ value }) => {
       it('[THEN] it will return Left of error', () => {

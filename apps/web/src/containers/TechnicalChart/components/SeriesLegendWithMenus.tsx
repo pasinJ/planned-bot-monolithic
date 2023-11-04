@@ -9,7 +9,7 @@ type SeriesLegendWithMenus = PropsWithChildren<{
   id: string;
   title: string;
   color?: string;
-  legend: string;
+  legend: JSX.Element;
   hidden: boolean;
   handleToggleHidden: MouseEventHandler<HTMLButtonElement>;
   handleRemoveSeries: (id: string) => void;
@@ -33,7 +33,7 @@ export default function SeriesLegendWithMenus(props: SeriesLegendWithMenus) {
       <Typography className="font-medium" color={color ?? '#000000'}>
         {title}
       </Typography>
-      <Typography className="group-hover:hidden">{legend}</Typography>
+      <div className="group-hover:hidden">{legend}</div>
       <div>
         <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
         <SettingsButton openSettings={handleSettingOpen} />

@@ -26,11 +26,17 @@ function mockDeps(overrides?: DeepPartial<AddBtStrategyControllerDeps>): AddBtSt
     overrides ?? {},
   ) as AddBtStrategyControllerDeps;
 }
-function mockValidSymbol(body: { symbol: string; exchange: string; capitalCurrency: string }): BnbSymbol {
+function mockValidSymbol(body: {
+  symbol: string;
+  exchange: string;
+  capitalCurrency: string;
+  assetCurrency: string;
+}): BnbSymbol {
   return mockBnbSymbol({
     name: body.symbol,
     exchange: body.exchange as ExchangeName,
     baseAsset: body.capitalCurrency,
+    quoteAsset: body.assetCurrency,
   });
 }
 

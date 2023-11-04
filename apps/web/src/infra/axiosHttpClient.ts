@@ -6,8 +6,7 @@ import { __, allPass, equals, gte, lt, prop } from 'ramda';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import { createExternalError } from '#shared/errors/externalError';
-import { parseWithZod } from '#shared/utils/zod';
+import { validateWithZod } from '#shared/utils/zod';
 
 import { HTTP_ERRORS } from './httpClient.constant';
 import { HttpError, createHttpError } from './httpClient.error';
@@ -36,7 +35,7 @@ function validResponseBody<ResponseSchema extends z.ZodTypeAny>(responseSchema: 
   const { type, message } = HTTP_ERRORS.InvalidResponse;
   return (body: unknown): ioe.IOEither<HttpError, z.output<ResponseSchema>> =>
     pipe(
-      parseWithZod(responseSchema, 'The received response body is invalid', body),
+      validateWithZod(responseSchema, 'The received response body is invalid', body),
       ioe.fromEither,
       ioe.mapLeft((error) => createHttpError(type, message, error)),
     );
@@ -45,11 +44,6 @@ function validResponseBody<ResponseSchema extends z.ZodTypeAny>(responseSchema: 
 function handleFailedRequest(axiosError: AxiosError): HttpError {
   const is4xx = allPass([gte(__, 400), lt(__, 500)]);
   const is5xx = allPass([gte(__, 500), lt(__, 600)]);
-
-  const externalError = createExternalError({
-    message: 'Axios error happen when sending request to external system',
-    cause: axiosError,
-  });
 
   if (axiosError.response) {
     const { type, message } = match(axiosError.response.status)
@@ -63,12 +57,12 @@ function handleFailedRequest(axiosError: AxiosError): HttpError {
       .when(is5xx, () => HTTP_ERRORS.ServerSideError)
       .otherwise(() => HTTP_ERRORS.UnhandledError);
 
-    return createHttpError(type, message, externalError);
+    return createHttpError(type, message, axiosError);
   } else if (axiosError.request) {
     const { type, message } = HTTP_ERRORS.NoResponse;
-    return createHttpError(type, message, externalError);
+    return createHttpError(type, message, axiosError);
   } else {
     const { type, message } = HTTP_ERRORS.SendingFailed;
-    return createHttpError(type, message, externalError);
+    return createHttpError(type, message, axiosError);
   }
 }

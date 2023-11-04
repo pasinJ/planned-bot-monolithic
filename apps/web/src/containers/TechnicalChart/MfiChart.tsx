@@ -13,28 +13,25 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { mfi } from 'src/containers/TechnicalChart/indicators';
 
+import DecimalFieldRf from '#components/DecimalFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { DecimalString, HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import DecimalConfigField from './components/DecimalConfigField';
-import IntegerConfigField from './components/IntegerConfigField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { dateToUtcTimestamp } from './utils';
+import { mfi } from './indicators';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
-export type MfiChartType = 'mfi';
+export type MfiChartType = typeof mfiChartType;
+const mfiChartType = 'mfi';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -69,37 +66,24 @@ type MfiChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: MfiChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function MfiChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function MfiChart(props: MfiChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
-
-  const { control, getValues, reset } = useForm<MfiSettings>(defaultSettingFormOptions);
-  const { period } = getValues();
-
-  const [mfiData, setMfiData] = useState<o.Option<LineData[]>>(o.none);
-  useEffect(() => {
-    void mfi(klines, Number(period))
-      .then((mfi) =>
-        mfi.map((value, index) => ({
-          time: dateToUtcTimestamp(klines[index].openTimestamp),
-          value,
-        })),
-      )
-      .then((data) => setMfiData(o.some(data)));
-  }, [klines, period]);
-
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<MfiSettings>(defaultSettingFormOptions);
+  const settings = getValues();
 
   return (
     <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(mfiData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={mfiChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
@@ -108,7 +92,7 @@ export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function M
           <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
             <ChartTitleWithMenus
               title="MFI"
-              chartType="mfi"
+              chartType={mfiChartType}
               handleOpenSettings={handleOpenSettings}
               handleRemoveChart={handleRemoveChart}
             />
@@ -116,19 +100,20 @@ export const MfiChart = forwardRef<o.Option<ChartObj>, MfiChartProps>(function M
               open={settingOpen}
               onClose={handleCloseSettings}
               reset={reset}
-              prevValue={getValues()}
+              prevValue={settings}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <MfiSeries data={mfiData.value} settings={getValues()} />
+              <MfiSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const mfiSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -161,10 +146,11 @@ const oversoldPriceLineOptions: CreatePriceLineOptions & { id: string } = {
   lineStyle: LineStyle.Dashed,
 };
 
-type MfiSeriesProps = { data: LineData[]; settings: MfiSettings };
-const MfiSeries = forwardRef<o.Option<SeriesObj>, MfiSeriesProps>(function MfiSeries(props, ref) {
-  const { data, settings } = props;
+type MfiSeriesProps = { klines: readonly Kline[]; settings: MfiSettings; maxDecimalDigits?: number };
+function MfiSeries(props: MfiSeriesProps) {
+  const { klines, settings, maxDecimalDigits } = props;
   const {
+    period,
     mfiLineColor,
     overboughtLevel,
     overboughtLineColor,
@@ -174,8 +160,17 @@ const MfiSeries = forwardRef<o.Option<SeriesObj>, MfiSeriesProps>(function MfiSe
     oversoldLineColor,
   } = settings;
 
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const [mfiData, setMfiData] = useState<o.Option<LineData[]>>(o.none);
+  useEffect(() => {
+    void mfi(klines, Number(period))
+      .then((mfi) =>
+        mfi.map((value, index) => ({
+          time: dateToUtcTimestamp(klines[index].openTimestamp),
+          value,
+        })),
+      )
+      .then((data) => setMfiData(o.some(data)));
+  }, [klines, period]);
 
   const seriesOptions = useMemo(() => ({ ...mfiSeriesOptions, color: mfiLineColor }), [mfiLineColor]);
   const priceLinesOptions = useMemo(
@@ -187,33 +182,53 @@ const MfiSeries = forwardRef<o.Option<SeriesObj>, MfiSeriesProps>(function MfiSe
     [overboughtLevel, overboughtLineColor, middleLevel, middleLineColor, oversoldLevel, oversoldLineColor],
   );
 
-  return (
-    <Series
-      ref={_series}
+  return o.isNone(mfiData) ? undefined : (
+    <Chart.Series
+      id={mfiChartType}
       type="Line"
-      data={data}
+      data={mfiData.value}
       options={seriesOptions}
       priceLinesOptions={priceLinesOptions}
-      crosshairMoveCb={updateLegend}
     >
-      <SeriesLegendWithoutMenus name="MFI" color={seriesOptions.color} legend={legend} />
-    </Series>
+      <SeriesLegendWithoutMenus name="MFI" color={seriesOptions.color}>
+        <Chart.SeriesValue
+          defaultValue={mfiData.value.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
   );
-});
+}
 
 function SettingsForm({ control }: { control: Control<MfiSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
-        <IntegerConfigField id="period" label="Period" name="period" control={control} />
-        <DecimalConfigField
-          id="overbought-level"
-          label="Overbought"
-          name="overboughtLevel"
-          control={control}
+        <PeriodField control={control} />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'overboughtLevel',
+            rules: { required: `Overbought level is required` },
+          }}
+          fieldProps={{ id: 'overbought-level', label: 'Overbought', required: true }}
         />
-        <DecimalConfigField id="middle-level" label="Middle" name="middleLevel" control={control} />
-        <DecimalConfigField id="oversold-level" label="Oversold" name="oversoldLevel" control={control} />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'middleLevel',
+            rules: { required: `Middle level is required` },
+          }}
+          fieldProps={{ id: 'middle-level', label: 'Middle', required: true }}
+        />
+        <DecimalFieldRf
+          controllerProps={{
+            control,
+            name: 'oversoldLevel',
+            rules: { required: `Oversold level is required` },
+          }}
+          fieldProps={{ id: 'oversold-level', label: 'Oversold', required: true }}
+        />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

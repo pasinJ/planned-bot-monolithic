@@ -14,7 +14,7 @@ export default function VisibilityButton({
     <Button
       color="inherit"
       aria-label={hidden ? 'show indicator' : 'hide indicator'}
-      className="invisible min-w-fit p-0 group-hover:visible"
+      className="group-hover:revert hidden min-w-fit p-0"
       onClick={toggleHidden}
     >
       <MaterialSymbol className="px-1 text-2xl" symbol={hidden ? 'visibility_off' : 'visibility'} />

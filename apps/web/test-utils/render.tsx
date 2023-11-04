@@ -6,6 +6,7 @@ import { includes } from 'ramda';
 import { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import { Provider } from 'react-redux';
 import { RouteObject, RouterProvider, createMemoryRouter } from 'react-router-dom';
+import { DeepPartial } from 'ts-essentials';
 
 import LocalizationDateProvider from '#components/LocalizationDateProvider';
 import InfraProvider, { InfraContextValue } from '#infra/InfraProvider.context';
@@ -19,8 +20,8 @@ export function renderWithContexts(
   layers: Layer[],
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
-    routes?: RouteObject[];
+    infraContext?: DeepPartial<InfraContextValue>;
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return render(ui, { wrapper: ContextWrapper(layers, contexts) });
@@ -31,8 +32,8 @@ export function renderHookWithContexts<R>(
   layers: Layer[],
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
-    routes?: RouteObject[];
+    infraContext?: DeepPartial<InfraContextValue>;
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return renderHook(() => hook(), { wrapper: ContextWrapper(layers, contexts) });
@@ -42,14 +43,14 @@ export function renderWithAppContext(
   ui: ReactElement,
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
-    routes?: RouteObject[];
+    infraContext?: DeepPartial<InfraContextValue>;
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return render(ui, {
     wrapper: ({ children }: PropsWithChildren) =>
       flow(
-        RoutesWrapper(contexts.routes),
+        RoutesWrapper(contexts.routes?.uiPath, contexts.routes?.currentPath, contexts.routes?.routes),
         DateWrapper,
         StyleWrapper,
         ServerStateWrapper,
@@ -63,14 +64,19 @@ function ContextWrapper(
   layers: Layer[],
   contexts: {
     clientState?: PreloadedState<RootState>;
-    infraContext?: Partial<InfraContextValue>;
-    routes?: RouteObject[];
+    infraContext?: DeepPartial<InfraContextValue>;
+    routes?: { uiPath?: string; currentPath?: string; routes?: RouteObject[] };
   } = {},
 ) {
   return ({ children }: PropsWithChildren) => {
     let element = children;
 
-    if (includes('Routes', layers)) element = RoutesWrapper(contexts.routes)(element);
+    if (includes('Routes', layers))
+      element = RoutesWrapper(
+        contexts.routes?.uiPath,
+        contexts.routes?.currentPath,
+        contexts.routes?.routes,
+      )(element);
     if (includes('Date', layers)) element = DateWrapper(element);
     if (includes('Style', layers)) element = StyleWrapper(element);
     if (includes('ServerState', layers)) element = ServerStateWrapper(element);
@@ -81,7 +87,7 @@ function ContextWrapper(
   };
 }
 
-function InfraWrapper(infraContext?: Partial<InfraContextValue>) {
+function InfraWrapper(infraContext?: DeepPartial<InfraContextValue>) {
   return (ui: ReactNode) => <InfraProvider overrides={infraContext}>{ui}</InfraProvider>;
 }
 function ClientStateWrapper(state?: PreloadedState<RootState>) {
@@ -97,12 +103,11 @@ function ServerStateWrapper(ui: ReactNode) {
 function StyleWrapper(ui: ReactNode) {
   return <StyleProvider rootElem={document.body}>{ui}</StyleProvider>;
 }
-function RoutesWrapper(routes: RouteObject[] = []) {
+function RoutesWrapper(uiPath = '/', currentPath = '/', routes: RouteObject[] = []) {
   return (ui: ReactNode) => {
-    const options = { element: ui, path: '/' };
+    const options = { element: ui, path: uiPath };
     const router = createMemoryRouter([options, ...routes], {
-      initialEntries: [options.path],
-      initialIndex: 1,
+      initialEntries: [currentPath],
     });
     return <RouterProvider router={router} />;
   };

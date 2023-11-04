@@ -4,18 +4,25 @@ import IconButton from '@mui/material/IconButton';
 import Modal, { ModalProps } from '@mui/material/Modal';
 import Typography from '@mui/material/Typography';
 import { MouseEventHandler } from 'react';
-import { FieldValues, UseFormReset } from 'react-hook-form';
+import { FieldValues, UseFormReset, UseFormTrigger } from 'react-hook-form';
 
 import MaterialSymbol from '#components/MaterialSymbol';
 
-export default function SettingsModal<T extends FieldValues>(
-  props: ModalProps & { onClose: MouseEventHandler<HTMLButtonElement>; reset: UseFormReset<T>; prevValue: T },
-) {
-  const { children, reset, prevValue, onClose, ...rest } = props;
+type SettingsModalProps<T extends FieldValues> = ModalProps & {
+  onClose: MouseEventHandler<HTMLButtonElement>;
+  reset: UseFormReset<T>;
+  prevValue: T;
+  validSettings: UseFormTrigger<T>;
+};
+export default function SettingsModal<T extends FieldValues>(props: SettingsModalProps<T>) {
+  const { children, reset, prevValue, validSettings, onClose, ...rest } = props;
 
   const handleResetThenClose: MouseEventHandler<HTMLButtonElement> = (e) => {
     reset(prevValue);
     return onClose(e);
+  };
+  const handleSaveSettings: MouseEventHandler<HTMLButtonElement> = (e) => {
+    void validSettings().then((isValid) => (isValid ? onClose(e) : undefined));
   };
 
   return (
@@ -36,7 +43,7 @@ export default function SettingsModal<T extends FieldValues>(
           <Button variant="outlined" onClick={handleResetThenClose}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={onClose}>
+          <Button variant="contained" onClick={handleSaveSettings}>
             Save
           </Button>
         </div>

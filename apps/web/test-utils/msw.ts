@@ -1,14 +1,14 @@
 import { DefaultBodyType, Path, PathParams, ResponseResolver, RestContext, RestRequest, rest } from 'msw';
 
 import { API_BASE_URL } from '#infra/httpClient.constant';
-import { Method } from '#infra/httpClient.type';
+import { HttpMethod } from '#infra/httpClient.type';
 
 export function addRestRoute<
   RequestBodyType extends DefaultBodyType = DefaultBodyType,
   Params extends PathParams<keyof Params> = PathParams,
   ResponseBody extends DefaultBodyType = DefaultBodyType,
 >(
-  method: Method,
+  method: HttpMethod,
   path: Path,
   resolver: ResponseResolver<RestRequest<RequestBodyType, Params>, RestContext, ResponseBody>,
 ) {

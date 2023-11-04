@@ -1,11 +1,12 @@
 import { FastifyReply, RouteHandlerMethod } from 'fastify';
+import e from 'fp-ts/lib/Either.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { executeT } from '#shared/utils/fp.js';
-import { validateWithZod } from '#shared/utils/zod.js';
+import { SchemaValidationError, validateWithZod } from '#shared/utils/zod.js';
 
 import { GetBtExecutionResultDeps, getBtExecutionResult } from './useCase.js';
 
@@ -17,7 +18,7 @@ export function buildGetBtExecutionResultController(
   return function getBtExecutionResultController({ params }, reply): Promise<FastifyReply> {
     return pipe(
       te.fromEither(validateRequestParams(params)),
-      te.chainW(({ id }) => getBtExecutionResult(deps, id)),
+      te.chainW(({ btExecutionId }) => getBtExecutionResult(deps, btExecutionId)),
       te.match(
         (error) =>
           match(error)
@@ -47,6 +48,11 @@ export function buildGetBtExecutionResultController(
   };
 }
 
-function validateRequestParams(params: unknown) {
-  return validateWithZod(z.object({ id: z.string().min(1) }), 'Request params is invalid', params);
+type RequestParams = { btStrategyId: string; btExecutionId: string };
+function validateRequestParams(params: unknown): e.Either<SchemaValidationError, RequestParams> {
+  return validateWithZod(
+    z.object({ btStrategyId: z.string().trim().min(1), btExecutionId: z.string().trim().min(1) }),
+    'Request params is invalid',
+    params,
+  );
 }

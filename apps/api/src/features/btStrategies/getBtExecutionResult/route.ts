@@ -5,9 +5,9 @@ import { generateTradeId } from '#features/shared/trade.js';
 import { onSendHook, preValidationHook } from '#infra/http/hooks.js';
 import { AppDeps } from '#shared/appDeps.type.js';
 
+import { getLastKlineBefore } from '../../klines/DAOs/kline.feature.js';
 import { getBtExecutionResultById } from '../DAOs/btExecution.feature.js';
 import { getBtStrategyModelById } from '../DAOs/btStrategy.feature.js';
-import { getLastKlineBefore } from '../DAOs/kline.feature.js';
 import { BT_STRATEGY_ENDPOINTS } from '../routes.constant.js';
 import { buildGetBtExecutionResultController } from './controller.js';
 

@@ -231,10 +231,10 @@ describe('UUT: Axios HTTP client download file', () => {
 
   const httpClient = buildAxiosHttpClient();
 
+  beforeEach(() => mkdir('./downloads'));
   afterEach(async () => {
     msw.resetHandlers();
     await rmdir('./downloads', { recursive: true });
-    await mkdir('./downloads');
   });
 
   describe('[WHEN] server return HTTP error', () => {

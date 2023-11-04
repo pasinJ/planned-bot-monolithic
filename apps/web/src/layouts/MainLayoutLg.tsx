@@ -12,15 +12,16 @@ import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 import logo from '#assets/favicon-64x64.png';
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
-import { BtMainPageLink } from '#routes/components/pageLinks';
+import { BacktestMainPageLink } from '#routes/components/pageLinks';
+import ThemeSwitch from '#styles/containers/ThemeSwitch';
 
 export default function MainLayoutLg({ children }: PropsWithChildren) {
   return (
-    <div className="flex h-screen">
+    <div className="flex max-w-full">
       <SideNav />
-      <Box component="main" className="h-full w-full">
-        <Box className="h-full w-full bg-gray-100 px-10 py-6">{children}</Box>
-      </Box>
+      <main className="relative min-h-screen min-w-0 flex-grow bg-gray-100 px-10 py-6 dark:bg-background">
+        {children}
+      </main>
     </div>
   );
 }
@@ -69,12 +70,12 @@ function DrawerHeader({ isOpen }: { isOpen: boolean }) {
 
 function DrawerBody({ isOpen }: { isOpen: boolean }) {
   return (
-    <List className="h-full" component="nav">
+    <List className="flex-grow p-0" component="nav">
       <SideNavItemButton
         isOpen={isOpen}
         symbol="youtube_searched_for"
         text="Backtesting"
-        navLinkComponent={BtMainPageLink}
+        navLinkComponent={BacktestMainPageLink}
       />
     </List>
   );
@@ -82,9 +83,9 @@ function DrawerBody({ isOpen }: { isOpen: boolean }) {
 
 function DrawerFooter({ isOpen, toggleDrawer }: { isOpen: boolean; toggleDrawer: MouseEventHandler }) {
   return (
-    <Box className="flex flex-col">
-      <Divider />
-      <Box className={`flex px-3 py-1 ${isOpen ? 'justify-end' : 'justify-center'}`}>
+    <Box className="flex flex-col items-center pb-1">
+      <Divider className="w-full bg-gray-200 dark:bg-gray-500" variant="middle" />
+      <Box className={`flex w-full items-center px-3 py-1 ${isOpen ? 'justify-between' : 'justify-start'}`}>
         <IconButton
           aria-label="toggle drawer"
           className="hoverable:hidden"
@@ -97,6 +98,7 @@ function DrawerFooter({ isOpen, toggleDrawer }: { isOpen: boolean; toggleDrawer:
             <MaterialSymbol symbol="chevron_right" className="text-3xl" />
           )}
         </IconButton>
+        <ThemeSwitch className={isOpen ? 'flex' : 'hidden hoverable:flex'} />
       </Box>
     </Box>
   );
@@ -114,7 +116,7 @@ function SideNavItemButton(props: {
     <ListItemButton
       component={navLinkComponent}
       className="hover:bg-surface-3 hover:text-primary-light"
-      activeClassName="text-primary bg-surface-2"
+      activeClassName="text-primary bg-surface-5"
     >
       <ListItemIcon className="text-inherit">
         <MaterialSymbol symbol={symbol} className="pb-1 pl-1.5 text-4xl" />

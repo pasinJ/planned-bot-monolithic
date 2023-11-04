@@ -37,4 +37,4 @@ type Headers = {
 };
 type HeaderValue = string | string[] | number | boolean | null;
 
-type Params = Record<string, string | number>;
+type Params = Record<string, string | number | Date>;

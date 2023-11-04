@@ -1,122 +1,126 @@
 import * as e from 'fp-ts/lib/Either';
-import { Json, stringify } from 'fp-ts/lib/Json';
+import { stringify } from 'fp-ts/lib/Json';
 import { pipe } from 'fp-ts/lib/function';
-import { append, isNotNil, pickBy } from 'ramda';
+import { isString } from 'fp-ts/lib/string';
+import { append, assoc, isNotNil, pick, pickBy, propOr } from 'ramda';
+import type { NonNever } from 'ts-essentials';
 import { z } from 'zod';
 
-import { isError, isString } from '#shared/utils/typeGuards';
+import { isError } from '#shared/utils/typeGuards';
 
-import { defineCauseSchema, implementZodSchema } from './utils';
+import { implementZodSchema } from './utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/ban-types
 type FactoryContext = ((...args: any[]) => any) | Function;
 
-export type Error = { message: string; cause?: unknown; stack?: string };
 export type GeneralCause = Error | string | undefined;
 export type AppError<
-  Name extends string = 'AppError',
+  Name extends string = string,
   Type extends string | undefined = string | undefined,
-  Cause extends GeneralCause = GeneralCause,
-> = Error & {
+> = Readonly<{
   name: Name;
   message: string;
+  cause?: AppError | GeneralCause;
   stack?: string;
-  get causesList(): string[];
-  setCause: (cause: Cause) => AppError<Name, Type, Cause>;
-  setFactoryContext: (factoryContext: FactoryContext) => AppError<Name, Type, Cause>;
   toString: () => string;
-  toJSON: () => Json;
-} & (undefined extends Type ? { type?: Type } : { type: Type }) &
-  (undefined extends Cause ? { cause?: Cause } : { cause: Cause });
+  toJSON: () => { name: string; message: string; causesList: string[] } & NonNever<
+    undefined extends Type ? { type?: Type } : { type: Type }
+  >;
+}> &
+  Readonly<NonNever<undefined extends Type ? { type?: Type } : { type: Type }>>;
 
+const errorSchema = z.custom<'Error'>(isError);
+
+const baseAppErrorSchema = z.object({
+  name: z.string(),
+  message: z.string(),
+  type: z.string().optional(),
+  stack: z.string().optional(),
+  toString: z.function() as (() => string) & z.ZodFunction<z.ZodTuple<[], z.ZodUnknown>, z.ZodUnknown>,
+  toJSON: z.function(),
+});
 export const appErrorSchema = implementZodSchema<AppError>().with(
-  z.object({
-    name: z.string(),
-    message: z.string(),
-    type: z.string().optional(),
-    cause: defineCauseSchema([isError, isString]).optional(),
-    stack: z.string().optional(),
-    causesList: z.string().array(),
-    setCause: z.function(),
-    setFactoryContext: z.function(),
-    toString: z.function() as (() => string) & z.ZodFunction<z.ZodTuple<[], z.ZodUnknown>, z.ZodUnknown>,
-    toJSON: z.function(),
+  baseAppErrorSchema.extend({
+    cause: z.union([z.string(), errorSchema, z.lazy(() => baseAppErrorSchema)]).optional(),
   }),
 );
 
 export function createAppError<
-  Name extends string = 'AppError',
+  Name extends string = string,
   Type extends string | undefined = string | undefined,
-  Cause extends GeneralCause = GeneralCause,
 >(
-  {
-    name = 'AppError' as Name,
-    message = '',
-    type,
-    cause = undefined as Cause,
-  }: { name: Name; type?: Type; message?: string; cause: Cause },
+  data: { name?: Name; message?: string; type?: Type; cause?: AppError | GeneralCause },
   factoryContext: FactoryContext = createAppError,
-): AppError<Name, Type, Cause> {
-  const baseError = new Error(message);
-  const appError = Object.assign(
-    baseError,
-    pickBy(isNotNil, {
-      name,
-      message,
-      type,
-      cause,
-      get causesList(): string[] {
-        return getCausesListLoopFromAppError(this.cause, []);
-      },
-      setCause(cause: Cause) {
-        this.cause = cause;
-        return this;
-      },
-      setFactoryContext(factoryContext: FactoryContext) {
-        // Omit all frames above factoryFunction, including factoryFunction, from the generated stack trace.
-        Error.captureStackTrace(this, factoryContext);
-        return this;
-      },
-      toString() {
-        return `[${this.name}${this.type ? `:${this.type}` : ''}]: ${this.message}`;
-      },
-      toJSON() {
-        return pickBy(isNotNil, {
-          name: this.name,
-          message: this.message,
-          type: this.type,
-          causes: this.causesList,
-        });
-      },
-    }),
-  ) as AppError<Name, Type, Cause>;
+): AppError<Name, Type> {
+  const appError = {
+    ...pickBy(isNotNil, { name: 'AppError', message: '', ...data }),
+    toString() {
+      const type = propOr<null, AppError, string | null>(null, 'type', this);
+      return `[${this.name}${type ? '' : ':' + type}]: ${this.message}`;
+    },
+    toJSON() {
+      return pickBy(isNotNil, {
+        ...pick(['name', 'message'], this),
+        type: 'type' in this ? this.type : undefined,
+        causesList: getCausesList(this),
+      });
+    },
+  } as AppError<Name, Type>;
 
-  return appError.setFactoryContext(factoryContext);
-}
-
-function getCausesListLoopFromError({ cause }: Error, causeList: string[]): string[] {
-  if (isError(cause)) return getCausesListLoopFromError(cause, append(cause.toString(), causeList));
-  else if (isNotNil(cause))
-    return pipe(
-      stringify(cause),
-      e.match(
-        () => causeList,
-        (causeString) => append(causeString, causeList),
-      ),
-    );
-  else return causeList;
-}
-function getCausesListLoopFromAppError<Cause extends GeneralCause>(
-  cause: Cause,
-  causeList: string[],
-): string[] {
-  if (isString(cause)) return append(cause, causeList);
-  else if (isAppError(cause))
-    return getCausesListLoopFromAppError(cause.cause, append(cause.toString(), causeList));
-  else if (isError(cause)) return getCausesListLoopFromError(cause, append(cause.toString(), causeList));
-  else return causeList;
+  return setStack(appError, factoryContext);
 }
 
 export function isAppError(input: unknown): input is AppError {
   return appErrorSchema.safeParse(input).success;
+}
+
+export function setCause<E extends AppError>(error: E): (cause: AppError | GeneralCause) => E;
+export function setCause<E extends AppError>(error: E, cause: AppError | GeneralCause): E;
+export function setCause<E extends AppError>(
+  error: E,
+  cause?: AppError | GeneralCause,
+): E | ((cause: AppError | GeneralCause) => E) {
+  const setCauseFn = (cause: AppError | GeneralCause) => assoc('cause', cause, error) as E;
+
+  return isNotNil(cause) ? setCauseFn(cause) : setCauseFn;
+}
+
+export function setStack<E extends AppError>(error: E, factoryContext?: FactoryContext): E {
+  const cloneError = { ...error };
+  Error.captureStackTrace(cloneError, factoryContext);
+
+  return cloneError;
+}
+
+export function getCausesList<E extends AppError>(error: E): string[] {
+  function getCausesListFromAppError<E extends AppError>({ cause }: E, causeList: string[]): string[] {
+    if (isString(cause)) return append(cause, causeList);
+    else if (isAppError(cause)) return getCausesListFromAppError(cause, append(cause.toString(), causeList));
+    else if (isError(cause)) return getCausesListFromError(cause, append(cause.toString(), causeList));
+    else return causeList;
+  }
+  function getCausesListFromError({ cause }: Error, causeList: string[]): string[] {
+    if (isError(cause)) return getCausesListFromError(cause, append(cause.toString(), causeList));
+    else if (isNotNil(cause))
+      return pipe(
+        stringify(cause),
+        e.match(
+          () => causeList,
+          (causeString) => append(causeString, causeList),
+        ),
+      );
+    else return causeList;
+  }
+
+  return getCausesListFromAppError(error, []);
+}
+
+export function createErrorFromUnknown<E extends AppError>(error: E) {
+  return (cause: unknown): E => {
+    return isString(cause) || isError(cause)
+      ? pipe(setCause(error, cause), (error) => setStack(error, createErrorFromUnknown))
+      : pipe(setCause(error, 'Unexpected cause (created from unknown)'), (error) =>
+          setStack(error, createErrorFromUnknown),
+        );
+  };
 }

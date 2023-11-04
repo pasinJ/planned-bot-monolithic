@@ -2,27 +2,26 @@ import Divider from '@mui/material/Divider';
 import * as o from 'fp-ts/lib/Option';
 import { DeepPartial, LineData, LineStyleOptions, SeriesOptionsCommon } from 'lightweight-charts';
 import { mergeDeepRight, prop } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
-import { UseFormProps, useForm } from 'react-hook-form';
-import { sma } from 'src/containers/TechnicalChart/indicators';
+import { useEffect, useMemo, useState } from 'react';
+import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart from '../Chart';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithMenus from './components/SeriesLegendWithMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { Source, dateToUtcTimestamp, formatLegend, randomHexColor } from './utils';
+import { sma } from './indicators';
+import { Source, dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
-export type SmaSeriesType = 'sma';
+export type SmaSeriesType = typeof smaSeriesType;
+const smaSeriesType = 'sma';
 
 const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
@@ -41,9 +40,14 @@ const defaultSettingsFormOptions: UseFormProps<SmaSettings> = {
   mode: 'onBlur',
 };
 
-type SmaSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
-export const SmaSeries = forwardRef<o.Option<SeriesObj>, SmaSeriesProps>(function SmaSeries(props, ref) {
-  const { id, klines, handleRemoveSeries } = props;
+type SmaSeriesProps = {
+  id: string;
+  klines: readonly Kline[];
+  handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
+};
+export default function SmaSeries(props: SmaSeriesProps) {
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
@@ -52,68 +56,75 @@ export const SmaSeries = forwardRef<o.Option<SeriesObj>, SmaSeriesProps>(functio
     () => mergeDeepRight(defaultSettingsFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<SmaSettings>(formOptions);
-  const { name, source, period, color } = getValues();
+  const { control, getValues, reset, trigger } = useForm<SmaSettings>(formOptions);
+  const settings = getValues();
 
   const seriesOptions = useMemo(
-    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color }),
-    [hidden, color],
+    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color: settings.color }),
+    [hidden, settings.color],
   );
 
-  const _series = useSeriesObjRef(ref);
-  const [smaData, setSmaData] = useState<o.Option<LineData[]>>(o.none);
-  const { legend, updateLegend, setLegend } = useSeriesLegend({
-    data: o.isSome(smaData) ? smaData.value : null,
-    seriesRef: _series,
-  });
+  const smaData = useSmaData(klines, settings);
 
+  return o.isNone(smaData) ? undefined : (
+    <Chart.Series id={smaSeriesType} type="Line" data={smaData.value} options={seriesOptions}>
+      <SeriesLegendWithMenus
+        id={id}
+        title={settings.name}
+        color={seriesOptions.color}
+        legend={
+          <Chart.SeriesValue
+            defaultValue={smaData.value.at(-1)?.value}
+            formatValue={formatValue(4, maxDecimalDigits)}
+          />
+        }
+        hidden={hidden}
+        handleToggleHidden={handleToggleHidden}
+        handleSettingOpen={handleSettingOpen}
+        handleRemoveSeries={handleRemoveSeries}
+      >
+        <SettingsModal
+          open={settingOpen}
+          onClose={handleClose}
+          reset={reset}
+          prevValue={settings}
+          validSettings={trigger}
+        >
+          <SettingsForm control={control} />
+        </SettingsModal>
+      </SeriesLegendWithMenus>
+    </Chart.Series>
+  );
+}
+
+function useSmaData(klines: readonly Kline[], settings: SmaSettings) {
+  const { source, period } = settings;
+
+  const [smaData, setSmaData] = useState<o.Option<LineData[]>>(o.none);
   useEffect(() => {
     const sourceValue = klines.map(prop(source)) as number[];
     void sma(sourceValue, Number(period))
       .then((sma) =>
         sma.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
       )
-      .then((smaData) => {
-        setSmaData(o.some(smaData));
-        return smaData;
-      })
-      .then((smaData) => setLegend(formatLegend(smaData.at(-1)?.value)));
-  }, [klines, source, period, setLegend]);
+      .then((data) => setSmaData(o.some(data)));
+  }, [klines, source, period]);
 
-  return o.isNone(smaData) ? (
-    <div>Loading...</div>
-  ) : (
-    <Series
-      ref={_series}
-      type="Line"
-      data={smaData.value}
-      options={seriesOptions}
-      crosshairMoveCb={updateLegend}
-    >
-      <SeriesLegendWithMenus
-        id={id}
-        title={name}
-        color={seriesOptions.color}
-        legend={legend}
-        hidden={hidden}
-        handleToggleHidden={handleToggleHidden}
-        handleSettingOpen={handleSettingOpen}
-        handleRemoveSeries={handleRemoveSeries}
-      >
-        <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
-          <form className="flex flex-col space-y-2 py-6">
-            <div className="flex flex-col space-y-2">
-              <NameField control={control} />
-              <SourceField control={control} />
-              <IntegerConfigField id="period" label="Period" name="period" control={control} />
-            </div>
-            <Divider>Style</Divider>
-            <div className="flex flex-col space-y-2 pt-2">
-              <ColorField name="color" labelId="sma-color" label="SMA line color" control={control} />
-            </div>
-          </form>
-        </SettingsModal>
-      </SeriesLegendWithMenus>
-    </Series>
+  return smaData;
+}
+
+function SettingsForm({ control }: { control: Control<SmaSettings> }) {
+  return (
+    <form className="flex flex-col space-y-2 py-6">
+      <div className="flex flex-col space-y-2">
+        <NameField control={control} />
+        <SourceField control={control} />
+        <PeriodField control={control} />
+      </div>
+      <Divider>Style</Divider>
+      <div className="flex flex-col space-y-2 pt-2">
+        <ColorField name="color" labelId="sma-color" label="SMA line color" control={control} />
+      </div>
+    </form>
   );
-});
+}

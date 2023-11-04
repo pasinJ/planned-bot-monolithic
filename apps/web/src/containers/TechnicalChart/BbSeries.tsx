@@ -1,39 +1,31 @@
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
-import * as e from 'fp-ts/lib/Either';
 import * as o from 'fp-ts/lib/Option';
-import { pipe } from 'fp-ts/lib/function';
-import {
-  DeepPartial,
-  LineData,
-  LineStyleOptions,
-  MouseEventHandler as MouseEventHandlerChart,
-  SeriesOptionsCommon,
-  Time,
-} from 'lightweight-charts';
+import { DeepPartial, LineData, LineStyleOptions, SeriesOptionsCommon } from 'lightweight-charts';
 import { prop } from 'ramda';
-import { MouseEventHandler, forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { bb } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useClickToggle from '#hooks/useClickToggle';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart from '../Chart';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
 import NameField from './components/NameField';
+import PeriodField from './components/PeriodField';
 import RemoveButton from './components/RemoveButton';
 import SettingsButton from './components/SettingButton';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
+import StdDevField from './components/StdDevField';
 import VisibilityButton from './components/VisibilityButton';
-import { Series, SeriesObj } from './containers/Series';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { Source, dateToUtcTimestamp, formatLegend, isMouseInDataRange, isMouseOffChart } from './utils';
+import { bb } from './indicators';
+import { Source, dateToUtcTimestamp, formatValue } from './utils';
 
-export type BbSeriesType = 'bb';
+export type BbSeriesType = typeof bbSeriesType;
+const bbSeriesType = 'bb';
 
 const defaultSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
@@ -68,35 +60,77 @@ const defaultSettingsFormOptions: UseFormProps<BbSettings> = {
   mode: 'onBlur',
 };
 
-type BbSeriesProps = { id: string; klines: readonly Kline[]; handleRemoveSeries: (id: string) => void };
-export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function BbSeries(props, ref) {
-  const { id, klines, handleRemoveSeries } = props;
+type BbSeriesProps = {
+  id: string;
+  klines: readonly Kline[];
+  handleRemoveSeries: (id: string) => void;
+  maxDecimalDigits?: number;
+};
+export default function BbSeries(props: BbSeriesProps) {
+  const { id, klines, maxDecimalDigits, handleRemoveSeries } = props;
 
   const [settingOpen, handleSettingOpen, handleClose] = useOpenModal(false);
   const [hidden, handleToggleHidden] = useClickToggle(false);
 
-  const { control, getValues, reset } = useForm<BbSettings>(defaultSettingsFormOptions);
-  const { name, source, period, stddev, upperLineColor, middleLineColor, lowerLineColor } = getValues();
+  const { control, getValues, reset, trigger } = useForm<BbSettings>(defaultSettingsFormOptions);
+  const settings = getValues();
 
-  const upperSeriesOptions = useMemo(
-    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color: upperLineColor }),
-    [hidden, upperLineColor],
+  const bbData = useBbData(klines, settings);
+
+  return o.isNone(bbData) ? undefined : (
+    <>
+      <div className="group flex items-center space-x-1.5">
+        <Typography className="font-medium" color={settings.middleLineColor}>
+          {settings.name}
+        </Typography>
+        <div className="flex gap-x-1 group-hover:hidden">
+          <BandSeries
+            id="upper"
+            data={bbData.value.upper}
+            hidden={hidden}
+            color={settings.upperLineColor}
+            maxDecimalDigits={maxDecimalDigits}
+          />
+          <BandSeries
+            id="middle"
+            data={bbData.value.middle}
+            hidden={hidden}
+            color={settings.middleLineColor}
+            maxDecimalDigits={maxDecimalDigits}
+          />
+          <BandSeries
+            id="lower"
+            data={bbData.value.lower}
+            hidden={hidden}
+            color={settings.lowerLineColor}
+            maxDecimalDigits={maxDecimalDigits}
+          />
+        </div>
+        <div>
+          <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
+          <SettingsButton openSettings={handleSettingOpen} />
+          <RemoveButton objKey={id} remove={handleRemoveSeries} />
+        </div>
+      </div>
+      <SettingsModal
+        open={settingOpen}
+        onClose={handleClose}
+        reset={reset}
+        prevValue={settings}
+        validSettings={trigger}
+      >
+        <SettingsForm control={control} />
+      </SettingsModal>
+    </>
   );
-  const middleSeriesOptions = useMemo(
-    () => ({ ...defaultMiddleSeriesOptions, lineVisible: !hidden, color: middleLineColor }),
-    [hidden, middleLineColor],
-  );
-  const lowerSeriesOptions = useMemo(
-    () => ({ ...defaultSeriesOptions, lineVisible: !hidden, color: lowerLineColor }),
-    [hidden, lowerLineColor],
-  );
+}
+
+function useBbData(klines: readonly Kline[], settings: BbSettings) {
+  const { source, period, stddev } = settings;
 
   type BbData = { upper: LineData[]; middle: LineData[]; lower: LineData[] };
   const [bbData, setBbData] = useState<o.Option<BbData>>(o.none);
 
-  const _upperSeries = useSeriesObjRef(ref);
-  const _middleSeries = useSeriesObjRef(ref);
-  const _lowerSeries = useSeriesObjRef(ref);
   useEffect(() => {
     const sourceValue = klines.map(prop(source)) as number[];
     void bb(sourceValue, Number(period), Number(stddev))
@@ -114,130 +148,35 @@ export const BbSeries = forwardRef<o.Option<SeriesObj>, BbSeriesProps>(function 
           value,
         })),
       }))
-      .then((bbData) => {
-        setBbData(o.some(bbData));
-        return bbData;
-      })
-      .then((bbData) =>
-        setLegend({
-          upper: formatLegend(bbData.upper.at(-1)?.value),
-          middle: formatLegend(bbData.middle.at(-1)?.value),
-          lower: formatLegend(bbData.lower.at(-1)?.value),
-        }),
-      );
+      .then((bbData) => setBbData(o.some(bbData)));
   }, [klines, source, period, stddev]);
 
-  type BbLegend = { upper: string; middle: string; lower: string };
-  const [legend, setLegend] = useState<BbLegend>(() =>
-    pipe(
-      bbData,
-      o.match(
-        () => ({ upper: 'n/a', middle: 'n/a', lower: 'n/a' }),
-        (bbData) => ({
-          upper: formatLegend(bbData.upper.at(-1)?.value),
-          middle: formatLegend(bbData.middle.at(-1)?.value),
-          lower: formatLegend(bbData.lower.at(-1)?.value),
-        }),
-      ),
-    ),
-  );
-  const updateLegend: MouseEventHandlerChart<Time> = useCallback(
-    (param) => {
-      if (
-        o.isNone(_upperSeries.current) ||
-        o.isNone(_middleSeries.current) ||
-        o.isNone(_lowerSeries.current)
-      ) {
-        return;
-      }
+  return bbData;
+}
 
-      const upperSeries = _upperSeries.current.value.getSeries();
-      const middleSeries = _middleSeries.current.value.getSeries();
-      const lowerSeries = _lowerSeries.current.value.getSeries();
-      if (e.isLeft(upperSeries) || e.isLeft(middleSeries) || e.isLeft(lowerSeries)) {
-        return;
-      }
-
-      if (isMouseInDataRange(param.time)) {
-        const currentUpperBar = param.seriesData.get(upperSeries.right) as LineData | null;
-        const currentMiddleBar = param.seriesData.get(middleSeries.right) as LineData | null;
-        const currentLowerBar = param.seriesData.get(lowerSeries.right) as LineData | null;
-        setLegend({
-          upper: formatLegend(currentUpperBar?.value),
-          middle: formatLegend(currentMiddleBar?.value),
-          lower: formatLegend(currentLowerBar?.value),
-        });
-      } else if (isMouseOffChart(param) && o.isSome(bbData)) {
-        setLegend({
-          upper: formatLegend(bbData.value.upper.at(-1)?.value),
-          middle: formatLegend(bbData.value.middle.at(-1)?.value),
-          lower: formatLegend(bbData.value.lower.at(-1)?.value),
-        });
-      } else {
-        setLegend({ upper: 'n/a', middle: 'n/a', lower: 'n/a' });
-      }
-    },
-    [bbData, _upperSeries, _middleSeries, _lowerSeries],
-  );
-
-  return o.isNone(bbData) ? (
-    <div>Loading...</div>
-  ) : (
-    <>
-      <Series
-        ref={_upperSeries}
-        type="Line"
-        data={bbData.value.upper}
-        options={upperSeriesOptions}
-        crosshairMoveCb={updateLegend}
-      />
-      <Series ref={_middleSeries} type="Line" data={bbData.value.middle} options={middleSeriesOptions} />
-      <Series ref={_lowerSeries} type="Line" data={bbData.value.lower} options={lowerSeriesOptions} />
-      <Legend
-        id={id}
-        name={name}
-        color={middleLineColor}
-        legend={legend}
-        hidden={hidden}
-        handleToggleHidden={handleToggleHidden}
-        handleRemoveSeries={handleRemoveSeries}
-        handleSettingOpen={handleSettingOpen}
-      />
-      <SettingsModal open={settingOpen} onClose={handleClose} reset={reset} prevValue={getValues()}>
-        <SettingsForm control={control} />
-      </SettingsModal>
-    </>
-  );
-});
-
-type LegendProps = {
+type BandSeriesProps = {
   id: string;
-  name: string;
-  color: HexColor;
-  legend: { upper: string; middle: string; lower: string };
+  data: LineData[];
   hidden: boolean;
-  handleToggleHidden: MouseEventHandler<HTMLButtonElement>;
-  handleRemoveSeries: (id: string) => void;
-  handleSettingOpen: MouseEventHandler<HTMLButtonElement>;
+  color: HexColor;
+  maxDecimalDigits?: number;
 };
-function Legend(props: LegendProps) {
-  const { id, name, color, legend, hidden, handleToggleHidden, handleRemoveSeries, handleSettingOpen } =
-    props;
+function BandSeries(props: BandSeriesProps) {
+  const { id, data, hidden, color, maxDecimalDigits } = props;
+
+  const seriesOptions = useMemo(
+    () => ({
+      ...(id === 'middle' ? defaultMiddleSeriesOptions : defaultSeriesOptions),
+      lineVisible: !hidden,
+      color,
+    }),
+    [id, hidden, color],
+  );
 
   return (
-    <div className="group flex items-center space-x-1.5">
-      <Typography className="font-medium" color={color}>
-        {name}
-      </Typography>
-      <Typography className="group-hover:hidden">{legend.upper}</Typography>
-      <Typography className="group-hover:hidden">{legend.middle}</Typography>
-      <Typography className="group-hover:hidden">{legend.lower}</Typography>
-      <div>
-        <VisibilityButton hidden={hidden} toggleHidden={handleToggleHidden} />
-        <SettingsButton openSettings={handleSettingOpen} />
-        <RemoveButton objKey={id} remove={handleRemoveSeries} />
-      </div>
-    </div>
+    <Chart.Series id={id} type="Line" data={data} options={seriesOptions}>
+      <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
+    </Chart.Series>
   );
 }
 
@@ -247,8 +186,8 @@ function SettingsForm({ control }: { control: Control<BbSettings> }) {
       <div className="flex flex-col space-y-2">
         <NameField control={control} />
         <SourceField control={control} />
-        <IntegerConfigField id="period" label="Period" name="period" control={control} />
-        <IntegerConfigField id="stddev" label="StdDev" name="stddev" control={control} />
+        <PeriodField control={control} />
+        <StdDevField control={control} />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

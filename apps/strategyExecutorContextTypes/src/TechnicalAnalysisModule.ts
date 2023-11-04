@@ -2,9 +2,15 @@ import { DeepReadonly } from "ts-essentials";
 
 export type TechnicalAnalysisModule = {
   /** Check if the first array cross over the second array at the last value */
-  crossover: (arr1: readonly number[], arr2: readonly number[]) => boolean;
+  crossover: (
+    values: readonly number[],
+    crossoverWith: number | readonly number[]
+  ) => boolean;
   /** Check if the first array cross under the second array at the last value */
-  crossunder: (arr1: readonly number[], arr2: readonly number[]) => boolean;
+  crossunder: (
+    values: readonly number[],
+    crossunderWith: number | readonly number[]
+  ) => boolean;
   /** Check if the `source` array is now falling (continuously decrease) for `period` values long. */
   falling: (source: readonly number[], period: number) => boolean;
   /** Check if the `source` array is now rising (continuously increase) for `period` values long. */

@@ -11,26 +11,23 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
-import { forwardRef, useMemo } from 'react';
-import { UseFormProps, useForm } from 'react-hook-form';
-import { pvt } from 'src/containers/TechnicalChart/indicators';
+import { useMemo } from 'react';
+import { Control, UseFormProps, useForm } from 'react-hook-form';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { dateToUtcTimestamp, randomHexColor } from './utils';
+import { pvt } from './indicators';
+import { dateToUtcTimestamp, formatValue, randomHexColor } from './utils';
 
-export type PvtChartType = 'pvt';
+export type PvtChartType = typeof pvtChartType;
+const pvtChartType = 'pvt';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -47,35 +44,28 @@ type PvtChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: PvtChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function PvtChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function PvtChart(props: PvtChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
 
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
   const settingFormOptions = useMemo(
     () => mergeDeepRight(defaultSettingFormOptions, { defaultValues: { color: randomHexColor() } }),
     [],
   );
-  const { control, getValues, reset } = useForm<PvtSettings>(settingFormOptions);
-
-  const pvtData: LineData[] = useMemo(
-    () =>
-      pvt(klines).map((value, index) => ({
-        time: dateToUtcTimestamp(klines[index].openTimestamp),
-        value,
-      })),
-    [klines],
-  );
-
-  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+  const { control, getValues, reset, trigger } = useForm<PvtSettings>(settingFormOptions);
+  const settings = getValues();
 
   return (
     <div className="relative" ref={handleContainerRef}>
       {o.isNone(container) ? undefined : (
-        <ChartContainer
-          ref={ref}
+        <Chart.Container
+          id={pvtChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
@@ -84,7 +74,7 @@ export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function P
           <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
             <ChartTitleWithMenus
               title="PVT"
-              chartType="pvt"
+              chartType={pvtChartType}
               handleOpenSettings={handleOpenSettings}
               handleRemoveChart={handleRemoveChart}
             />
@@ -92,24 +82,20 @@ export const PvtChart = forwardRef<o.Option<ChartObj>, PvtChartProps>(function P
               open={settingOpen}
               onClose={handleCloseSettings}
               reset={reset}
-              prevValue={getValues()}
+              prevValue={settings}
+              validSettings={trigger}
             >
-              <form className="flex flex-col py-6">
-                <Divider>Style</Divider>
-                <div className="flex flex-col space-y-2 pt-2">
-                  <ColorField label="PVT line color" labelId="line-color" name="color" control={control} />
-                </div>
-              </form>
+              <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <PvtSeries data={pvtData} color={getValues().color} />
+              <PvtSeries klines={klines} color={settings.color} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const pvtSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -117,19 +103,40 @@ const pvtSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const PvtSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function PvtSeries(props, ref) {
-    const { data, color } = props;
+type PvtSeriesProps = { klines: readonly Kline[]; color: HexColor; maxDecimalDigits?: number };
+function PvtSeries(props: PvtSeriesProps) {
+  const { klines, color, maxDecimalDigits } = props;
 
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const pvtData = useMemo<LineData[]>(
+    () =>
+      pvt(klines).map((value, index) => ({
+        time: dateToUtcTimestamp(klines[index].openTimestamp),
+        value,
+      })),
+    [klines],
+  );
 
-    const seriesOptions = useMemo(() => ({ ...pvtSeriesOptions, color }), [color]);
+  const seriesOptions = useMemo(() => ({ ...pvtSeriesOptions, color }), [color]);
 
-    return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-        <SeriesLegendWithoutMenus name="PVT" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+  return (
+    <Chart.Series id={pvtChartType} type="Line" data={pvtData} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="PVT" color={seriesOptions.color}>
+        <Chart.SeriesValue
+          defaultValue={pvtData.at(-1)?.value}
+          formatValue={formatValue(4, maxDecimalDigits)}
+        />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
+  );
+}
+
+function SettingsForm({ control }: { control: Control<PvtSettings> }) {
+  return (
+    <form className="flex flex-col py-6">
+      <Divider>Style</Divider>
+      <div className="flex flex-col space-y-2 pt-2">
+        <ColorField label="PVT line color" labelId="line-color" name="color" control={control} />
+      </div>
+    </form>
+  );
+}

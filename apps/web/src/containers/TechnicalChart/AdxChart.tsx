@@ -11,27 +11,24 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { adx } from 'src/containers/TechnicalChart/indicators';
 
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
+import PeriodField from './components/PeriodField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { dateToUtcTimestamp } from './utils';
+import { adx } from './indicators';
+import { dateToUtcTimestamp, formatValue } from './utils';
 
-export type AdxChartType = 'adx';
+export type AdxChartType = typeof adxChartType;
+const adxChartType = 'adx';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -45,34 +42,24 @@ type AdxChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: AdxChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const AdxChart = forwardRef<o.Option<ChartObj>, AdxChartProps>(function AdxChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function AdxChart(props: AdxChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
-
-  const { control, getValues, reset } = useForm<AdxSettings>(settingFormOptions);
-  const { period, color } = getValues();
-
-  const [adxData, setAdxData] = useState<o.Option<LineData[]>>(o.none);
-  useEffect(() => {
-    void adx(klines, Number(period))
-      .then((adx) =>
-        adx.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
-      )
-      .then((adxData) => setAdxData(o.some(adxData)));
-  }, [klines, period]);
-
   const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
+
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<AdxSettings>(settingFormOptions);
+  const settings = getValues();
 
   return (
     <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(adxData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={adxChartType}
           container={container.value}
           options={chartOptions}
           crosshairMoveCb={crosshairMoveCb}
@@ -81,7 +68,7 @@ export const AdxChart = forwardRef<o.Option<ChartObj>, AdxChartProps>(function A
           <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
             <ChartTitleWithMenus
               title="ADX"
-              chartType="adx"
+              chartType={adxChartType}
               handleOpenSettings={handleOpenSettings}
               handleRemoveChart={handleRemoveChart}
             />
@@ -89,19 +76,20 @@ export const AdxChart = forwardRef<o.Option<ChartObj>, AdxChartProps>(function A
               open={settingOpen}
               onClose={handleCloseSettings}
               reset={reset}
-              prevValue={getValues()}
+              prevValue={settings}
+              validSettings={trigger}
             >
               <SettingsForm control={control} />
             </SettingsModal>
             <div className="flex flex-col">
-              <AdxSeries data={adxData.value} color={color} />
+              <AdxSeries klines={klines} settings={settings} maxDecimalDigits={maxDecimalDigits} />
             </div>
           </div>
-        </ChartContainer>
+        </Chart.Container>
       )}
     </div>
   );
-});
+}
 
 const adxSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -109,28 +97,42 @@ const adxSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const AdxSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function AdxSeries(props, ref) {
-    const { data, color } = props;
+type AdxSeriesProps = { klines: readonly Kline[]; settings: AdxSettings; maxDecimalDigits?: number };
+function AdxSeries(props: AdxSeriesProps) {
+  const {
+    klines,
+    settings: { color, period },
+    maxDecimalDigits,
+  } = props;
 
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const [adxData, setAdxData] = useState<o.Option<LineData[]>>(o.none);
+  useEffect(() => {
+    void adx(klines, Number(period))
+      .then((adx) =>
+        adx.map((value, index) => ({ time: dateToUtcTimestamp(klines[index].openTimestamp), value })),
+      )
+      .then((data) => setAdxData(o.some(data)));
+  }, [klines, period]);
 
-    const seriesOptions = useMemo(() => ({ ...adxSeriesOptions, color }), [color]);
+  const seriesOptions = useMemo(() => ({ ...adxSeriesOptions, color }), [color]);
 
-    return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-        <SeriesLegendWithoutMenus name="ADX" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+  return o.isNone(adxData) ? undefined : (
+    <Chart.Series id={adxChartType} type="Line" data={adxData.value} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="ADX" color={seriesOptions.color}>
+        <Chart.SeriesValue
+          defaultValue={adxData.value.at(-1)?.value}
+          formatValue={formatValue(2, maxDecimalDigits)}
+        />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
+  );
+}
 
 function SettingsForm({ control }: { control: Control<AdxSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
-        <IntegerConfigField id="period" label="Period" name="period" control={control} />
+        <PeriodField control={control} />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

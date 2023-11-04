@@ -14,28 +14,25 @@ import {
   TimeChartOptions,
 } from 'lightweight-charts';
 import { mergeDeepRight, prop } from 'ramda';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Control, UseFormProps, useForm } from 'react-hook-form';
-import { macd } from 'src/containers/TechnicalChart/indicators';
 
+import IntegerFieldRf from '#components/IntegerFieldRf';
 import { Kline } from '#features/klines/kline';
 import useOpenModal from '#hooks/useOpenModal';
 import { HexColor, IntegerString } from '#shared/utils/string';
 
+import Chart, { useChartContainer } from '../Chart';
 import ChartTitleWithMenus from './components/ChartTitleWithMenus';
 import ColorField from './components/ColorField';
-import IntegerConfigField from './components/IntegerConfigField';
 import SeriesLegendWithoutMenus from './components/SeriesLegendWithoutMenus';
 import SettingsModal from './components/SettingsModal';
 import SourceField from './components/SourceField';
-import { ChartContainer, ChartObj } from './containers/ChartContainer';
-import { Series, SeriesObj } from './containers/Series';
-import useChartContainer from './hooks/useChartContainer';
-import useSeriesLegend from './hooks/useSeriesLegend';
-import useSeriesObjRef from './hooks/useSeriesObjRef';
-import { Source, dateToUtcTimestamp, downColor, upColor } from './utils';
+import { macd } from './indicators';
+import { Source, dateToUtcTimestamp, downColor, formatValue, upColor } from './utils';
 
-export type MacdChartType = 'macd';
+export type MacdChartType = typeof macdChartType;
+const macdChartType = 'macd';
 
 const defaultChartOptions: DeepPartial<TimeChartOptions> = { height: 300 };
 
@@ -67,24 +64,72 @@ type MacdChartProps = {
   crosshairMoveCb?: MouseEventHandler<Time>;
   logicalRangeChangeCb?: LogicalRangeChangeEventHandler;
   handleRemoveChart: (chartType: MacdChartType) => void;
+  maxDecimalDigits?: number;
 };
-export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function MacdChart(props, ref) {
-  const { klines, options, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } = props;
+export default function MacdChart(props: MacdChartProps) {
+  const { klines, options, maxDecimalDigits, crosshairMoveCb, logicalRangeChangeCb, handleRemoveChart } =
+    props;
 
   const { container, handleContainerRef } = useChartContainer();
-  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
 
-  const { control, getValues, reset } = useForm<MacdSettings>(settingFormOptions);
-  const {
-    source,
-    shortPeriod,
-    longPeriod,
-    signalPeriod,
-    macdLineColor,
-    signalLineColor,
-    histogramPositiveColor,
-    histogramNegativeColor,
-  } = getValues();
+  const [settingOpen, handleOpenSettings, handleCloseSettings] = useOpenModal(false);
+  const { control, getValues, reset, trigger } = useForm<MacdSettings>(settingFormOptions);
+  const settings = getValues();
+
+  const macdData = useMacdData(klines, settings);
+
+  return (
+    <div className="relative" ref={handleContainerRef}>
+      {o.isNone(container) ? undefined : (
+        <Chart.Container
+          id={macdChartType}
+          container={container.value}
+          options={chartOptions}
+          crosshairMoveCb={crosshairMoveCb}
+          logicalRangeChangeCb={logicalRangeChangeCb}
+        >
+          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
+            <ChartTitleWithMenus
+              title="MACD"
+              chartType={macdChartType}
+              handleOpenSettings={handleOpenSettings}
+              handleRemoveChart={handleRemoveChart}
+            />
+            <SettingsModal
+              open={settingOpen}
+              onClose={handleCloseSettings}
+              reset={reset}
+              prevValue={settings}
+              validSettings={trigger}
+            >
+              <SettingsForm control={control} />
+            </SettingsModal>
+            {o.isNone(macdData) ? undefined : (
+              <div className="flex flex-col">
+                <MacdSeries
+                  data={macdData.value.macd}
+                  color={settings.macdLineColor}
+                  maxDecimalDigits={maxDecimalDigits}
+                />
+                <SignalSeries
+                  data={macdData.value.signal}
+                  color={settings.signalLineColor}
+                  maxDecimalDigits={maxDecimalDigits}
+                />
+                <HistogramSeries data={macdData.value.histogram} maxDecimalDigits={maxDecimalDigits} />
+              </div>
+            )}
+          </div>
+        </Chart.Container>
+      )}
+    </div>
+  );
+}
+
+function useMacdData(klines: readonly Kline[], settings: MacdSettings) {
+  const { source, shortPeriod, longPeriod, signalPeriod, histogramPositiveColor, histogramNegativeColor } =
+    settings;
 
   type MacdData = { macd: LineData[]; signal: LineData[]; histogram: HistogramData[] };
   const [macdData, setMacdData] = useState<o.Option<MacdData>>(o.none);
@@ -107,7 +152,8 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
       }))
       .then((macdData) => setMacdData(o.some(macdData)));
   }, [klines, source, shortPeriod, longPeriod, signalPeriod]);
-  const transformedMacdData = useMemo(() => {
+
+  const styledMacdData = useMemo(() => {
     if (o.isNone(macdData)) return macdData;
 
     return o.some({
@@ -119,46 +165,8 @@ export const MacdChart = forwardRef<o.Option<ChartObj>, MacdChartProps>(function
     });
   }, [macdData, histogramPositiveColor, histogramNegativeColor]);
 
-  const chartOptions = useMemo(() => mergeDeepRight(defaultChartOptions, options ?? {}), [options]);
-
-  return (
-    <div className="relative" ref={handleContainerRef}>
-      {o.isNone(container) ? undefined : o.isNone(transformedMacdData) ? (
-        <div>Loading...</div>
-      ) : (
-        <ChartContainer
-          ref={ref}
-          container={container.value}
-          options={chartOptions}
-          crosshairMoveCb={crosshairMoveCb}
-          logicalRangeChangeCb={logicalRangeChangeCb}
-        >
-          <div className="absolute left-3 top-3 z-10 flex flex-col space-y-2">
-            <ChartTitleWithMenus
-              title="MACD"
-              chartType="macd"
-              handleOpenSettings={handleOpenSettings}
-              handleRemoveChart={handleRemoveChart}
-            />
-            <SettingsModal
-              open={settingOpen}
-              onClose={handleCloseSettings}
-              reset={reset}
-              prevValue={getValues()}
-            >
-              <SettingsForm control={control} />
-            </SettingsModal>
-            <div className="flex flex-col">
-              <MacdSeries data={transformedMacdData.value.macd} color={macdLineColor} />
-              <SignalSeries data={transformedMacdData.value.signal} color={signalLineColor} />
-              <HistogramSeries data={transformedMacdData.value.histogram} />
-            </div>
-          </div>
-        </ChartContainer>
-      )}
-    </div>
-  );
-});
+  return styledMacdData;
+}
 
 const macdSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -166,22 +174,20 @@ const macdSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const MacdSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function MacdSeries(props, ref) {
-    const { data, color } = props;
+type MacdSeriesProps = { data: LineData[]; color: HexColor; maxDecimalDigits?: number };
+function MacdSeries(props: MacdSeriesProps) {
+  const { data, color, maxDecimalDigits } = props;
 
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const seriesOptions = useMemo(() => ({ ...macdSeriesOptions, color }), [color]);
 
-    const seriesOptions = useMemo(() => ({ ...macdSeriesOptions, color }), [color]);
-
-    return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-        <SeriesLegendWithoutMenus name="MACD" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+  return (
+    <Chart.Series id="macd" type="Line" data={data} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="MACD" color={seriesOptions.color}>
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
+  );
+}
 
 const signalSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> = {
   lineWidth: 2,
@@ -189,55 +195,57 @@ const signalSeriesOptions: DeepPartial<LineStyleOptions & SeriesOptionsCommon> =
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const SignalSeries = forwardRef<o.Option<SeriesObj>, { data: LineData[]; color: HexColor }>(
-  function SignalSeries(props, ref) {
-    const { data, color } = props;
+type SignalSeriesProps = { data: LineData[]; color: HexColor; maxDecimalDigits?: number };
+function SignalSeries(props: SignalSeriesProps) {
+  const { data, color, maxDecimalDigits } = props;
 
-    const _series = useSeriesObjRef(ref);
-    const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
+  const seriesOptions = useMemo(() => ({ ...signalSeriesOptions, color }), [color]);
 
-    const seriesOptions = useMemo(() => ({ ...signalSeriesOptions, color }), [color]);
-
-    return (
-      <Series ref={_series} type="Line" data={data} options={seriesOptions} crosshairMoveCb={updateLegend}>
-        <SeriesLegendWithoutMenus name="SIGNAL" color={seriesOptions.color} legend={legend} />
-      </Series>
-    );
-  },
-);
+  return (
+    <Chart.Series id="signal" type="Line" data={data} options={seriesOptions}>
+      <SeriesLegendWithoutMenus name="SIGNAL" color={seriesOptions.color}>
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
+  );
+}
 
 const histogramSeriesOptions: DeepPartial<HistogramStyleOptions & SeriesOptionsCommon> = {
   lastValueVisible: false,
   priceLineVisible: false,
 };
-const HistogramSeries = forwardRef<o.Option<SeriesObj>, { data: HistogramData[] }>(function HistogramSeries(
-  { data },
-  ref,
-) {
-  const _series = useSeriesObjRef(ref);
-  const { legend, updateLegend } = useSeriesLegend({ data, seriesRef: _series });
-
+type HistogramSeriesProps = { data: HistogramData[]; maxDecimalDigits?: number };
+function HistogramSeries({ data, maxDecimalDigits }: HistogramSeriesProps) {
   return (
-    <Series
-      ref={_series}
-      type="Histogram"
-      data={data}
-      options={histogramSeriesOptions}
-      crosshairMoveCb={updateLegend}
-    >
-      <SeriesLegendWithoutMenus name="HISTOGRAM" color="#696969" legend={legend} />
-    </Series>
+    <Chart.Series id="histogram" type="Histogram" data={data} options={histogramSeriesOptions}>
+      <SeriesLegendWithoutMenus name="HISTOGRAM" color="#696969">
+        <Chart.SeriesValue defaultValue={data.at(-1)?.value} formatValue={formatValue(4, maxDecimalDigits)} />
+      </SeriesLegendWithoutMenus>
+    </Chart.Series>
   );
-});
+}
 
 function SettingsForm({ control }: { control: Control<MacdSettings> }) {
   return (
     <form className="flex flex-col py-6">
       <div className="flex flex-col space-y-2">
         <SourceField control={control} />
-        <IntegerConfigField id="short-period" label="Short period" name="shortPeriod" control={control} />
-        <IntegerConfigField id="long-period" label="Long period" name="longPeriod" control={control} />
-        <IntegerConfigField id="signal-period" label="Signal period" name="signalPeriod" control={control} />
+        <IntegerFieldRf
+          controllerProps={{ control, name: 'shortPeriod', rules: { required: 'Short period is required' } }}
+          fieldProps={{ id: 'short-period', label: 'Short period', required: true }}
+        />
+        <IntegerFieldRf
+          controllerProps={{ control, name: 'longPeriod', rules: { required: 'Long period is required' } }}
+          fieldProps={{ id: 'long-period', label: 'Long period', required: true }}
+        />
+        <IntegerFieldRf
+          controllerProps={{
+            control,
+            name: 'signalPeriod',
+            rules: { required: 'Signal period is required' },
+          }}
+          fieldProps={{ id: 'signal-period', label: 'Signal period', required: true }}
+        />
       </div>
       <Divider>Style</Divider>
       <div className="flex flex-col space-y-2 pt-2">

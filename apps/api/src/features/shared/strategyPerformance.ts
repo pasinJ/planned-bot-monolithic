@@ -3,34 +3,12 @@ import { max, min, propEq } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 import { z } from 'zod';
 
-import { isUndefined } from '#shared/utils/general.js';
 import { to2DigitDecimalNumber, to8DigitDecimalNumber } from '#shared/utils/number.js';
 
-import { Kline } from './kline.js';
 import { FilledOrder } from './order.js';
 import { InitialCapital } from './strategy.js';
 import { Loss, Profit, Return } from './strategyExecutorContext/strategy.js';
 import { ClosedTrade } from './trade.js';
-
-export type BuyAndHoldReturn = number & z.BRAND<'BuyAndHoldReturn'>;
-export function calculateBuyAndHoldReturn(
-  initialCapital: InitialCapital,
-  firstEntryOrder: Extract<FilledOrder, { orderSide: 'ENTRY' }> | undefined,
-  lastKline: Kline,
-): BuyAndHoldReturn {
-  if (isUndefined(firstEntryOrder)) return 0 as BuyAndHoldReturn;
-
-  const feeRate = new Decimal(firstEntryOrder.fee.amount).dividedBy(firstEntryOrder.quantity);
-  const allInQuantity = new Decimal(initialCapital).dividedBy(firstEntryOrder.filledPrice);
-  const allInFee = allInQuantity.times(feeRate);
-  const buyAndHoldReturn = new Decimal(lastKline.close)
-    .minus(firstEntryOrder.filledPrice)
-    .times(allInQuantity.minus(allInFee))
-    .toDecimalPlaces(8, Decimal.ROUND_HALF_UP)
-    .toNumber();
-
-  return buyAndHoldReturn as BuyAndHoldReturn;
-}
 
 export type ReturnOfInvestment = number & z.BRAND<'ReturnOfInvestment'>;
 export function calculateReturnOfInvestment(
@@ -153,5 +131,7 @@ export function calculateWinLossMetrics(closedTrades: readonly ClosedTrade[]): W
 
 export type ProfitFactor = number & z.BRAND<'ProfitFactor'>;
 export function calculateProfitFactor(netProfit: Profit, netLoss: Loss): ProfitFactor {
-  return to2DigitDecimalNumber(new Decimal(netProfit).dividedBy(netLoss)) as ProfitFactor;
+  return (
+    netLoss === 0 ? 0 : to2DigitDecimalNumber(new Decimal(netProfit).dividedBy(netLoss))
+  ) as ProfitFactor;
 }

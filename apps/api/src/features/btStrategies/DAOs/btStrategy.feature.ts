@@ -9,8 +9,14 @@ import { BtStrategyId, BtStrategyModel } from '../dataModels/btStrategy.js';
 import { BtStrategyDaoError, createBtStrategyDaoError } from './btStrategy.error.js';
 import { BtStrategyMongooseModel } from './btStrategy.js';
 
-export function addBtStrategyModel({ mongooseModel }: { mongooseModel: BtStrategyMongooseModel }) {
-  return (btStrategy: BtStrategyModel): te.TaskEither<BtStrategyDaoError<'AddFailed'>, void> =>
+export type AddBtStrategy = (btStrategy: BtStrategyModel) => te.TaskEither<AddBtStrategyErr, void>;
+export type AddBtStrategyErr = BtStrategyDaoError<'AddFailed'>;
+export function addBtStrategyModel({
+  mongooseModel,
+}: {
+  mongooseModel: BtStrategyMongooseModel;
+}): AddBtStrategy {
+  return (btStrategy) =>
     pipe(
       te.tryCatch(
         () => mongooseModel.create(btStrategy),
@@ -58,6 +64,59 @@ export function getBtStrategyModelById({
       ),
       te.map((btStrategyModel) =>
         omit(['_id', '__v'], { ...btStrategyModel, id: btStrategyModel._id as BtStrategyId }),
+      ),
+    );
+}
+
+export type GetBtStrategies = te.TaskEither<GetBtStrategiesErr, readonly BtStrategyModel[]>;
+export type GetBtStrategiesErr = BtStrategyDaoError<'GetBtStrategiesFailed'>;
+export function getBtStrategies({
+  mongooseModel,
+}: {
+  mongooseModel: BtStrategyMongooseModel;
+}): GetBtStrategies {
+  return pipe(
+    te.tryCatch(
+      () => mongooseModel.find().lean(),
+      createErrorFromUnknown(
+        createBtStrategyDaoError('GetBtStrategiesFailed', 'Getting backtesting strategies failed'),
+      ),
+    ),
+    te.map((btStrategies) =>
+      btStrategies.map((btStrategy) =>
+        omit(['_id', '__v'], { ...btStrategy, id: btStrategy._id as BtStrategyId }),
+      ),
+    ),
+  );
+}
+
+export type UpdateBtStrategyById = (
+  id: string,
+  updateTo: Partial<BtStrategyModel>,
+) => te.TaskEither<UpdateBtStrategyByIdErr, void>;
+export type UpdateBtStrategyByIdErr = BtStrategyDaoError<'NotExist' | 'UpdateByIdFailed'>;
+export function updateBtStrategyById({
+  mongooseModel,
+}: {
+  mongooseModel: BtStrategyMongooseModel;
+}): UpdateBtStrategyById {
+  return (id, updateTo) =>
+    pipe(
+      te.tryCatch(
+        () => mongooseModel.updateOne({ _id: id }, { ...updateTo, $inc: { version: 1 } }),
+        createErrorFromUnknown(
+          createBtStrategyDaoError('UpdateByIdFailed', 'Updating backtesting strategy by ID failed'),
+        ),
+      ),
+      te.chainEitherKW(({ matchedCount }) =>
+        matchedCount === 0
+          ? e.left(
+              createBtStrategyDaoError(
+                'NotExist',
+                `Backtesting strategy (${id}) cannot be updated b/c it does not exist`,
+              ),
+            )
+          : e.right(undefined),
       ),
     );
 }

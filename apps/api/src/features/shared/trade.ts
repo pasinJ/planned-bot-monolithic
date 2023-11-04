@@ -34,7 +34,7 @@ export type {
 } from '#SECT/Trade.js';
 
 export function generateTradeId(): TradeId {
-  return nanoid() as TradeId;
+  return nanoid(8) as TradeId;
 }
 
 export function createFullOpeningTrade(

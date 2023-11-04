@@ -1,6 +1,6 @@
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
-import { isNotNil } from 'ramda';
+import { isNil, isNotNil } from 'ramda';
 
 import { createErrorFromUnknown } from '#shared/errors/appError.js';
 import { getDiffInMs } from '#shared/utils/date.js';
@@ -104,4 +104,34 @@ export function getBtExecutionResultById({
       }),
     );
   };
+}
+
+export type GetLastBtExecutionProgress = (
+  btStrategyId: string,
+) => te.TaskEither<GetLastBtExecutionProgressErr, BtExecutionProgress | null>;
+export type GetLastBtExecutionProgressErr = BtExecutionDaoError<'GetLastBtExecutionProgressFailed'>;
+export function getLastBtExecutionProgress({
+  mongooseModel,
+}: {
+  mongooseModel: BtExecutionMongooseModel;
+}): GetLastBtExecutionProgress {
+  return (btStrategyId) =>
+    pipe(
+      te.tryCatch(
+        () =>
+          mongooseModel
+            .findOne({ name: btJobName, 'data.btStrategyId': btStrategyId })
+            .sort({ nextRunAt: 'desc' })
+            .lean(),
+        createErrorFromUnknown(
+          createBtExecutionDaoError(
+            'GetLastBtExecutionProgressFailed',
+            'Getting the last backtesting execution progress failed',
+          ),
+        ),
+      ),
+      te.map((btExecution) =>
+        isNil(btExecution) ? btExecution : { ...btExecution.data, logs: btExecution.result?.logs ?? [] },
+      ),
+    );
 }

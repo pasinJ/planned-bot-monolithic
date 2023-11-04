@@ -37,13 +37,48 @@ describe('UUT: Orders module', () => {
 
   describe('UUT: Enter with market order', () => {
     describe('[WHEN] enter a trade position with market order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
 
         const result = ordersModule.enterMarket({ quantity });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'ENTRY',
+          type: 'MARKET',
+          quantity,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] enter a trade position with market order', () => {
+        it('[THEN] it will return pending order request with rounded quantity value', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'MARKET_LOT_SIZE', minQty: 2, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+
+          const result = ordersModule.enterMarket({ quantity });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 2 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digits more than base asset precision', () => {
+      describe('[WHEN] enter a trade position with market order', () => {
+        it('[THEN] it will return an array that contains the market order with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1.006;
+
+          const result = ordersModule.enterMarket({ quantity });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 1.01 }));
+        });
       });
     });
     describe('[GIVEN] user has entered trade position with market order', () => {
@@ -73,33 +108,70 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has entered trade position with market order [AND] quantity of the market order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the market order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1.006;
-
-          ordersModule.enterMarket({ quantity });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 1.01 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Enter with limit order', () => {
     describe('[WHEN] enter a trade position with limit order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
         const limitPrice = 10;
 
         const result = ordersModule.enterLimit({ quantity, limitPrice });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'ENTRY',
+          type: 'LIMIT',
+          quantity,
+          limitPrice,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] enter a trade position with limit order', () => {
+        it('[THEN] it will return pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'LOT_SIZE', minQty: 2, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 15;
+          const limitPrice = 1;
+
+          const result = ordersModule.enterLimit({ quantity, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 10 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] enter a trade position with limit order', () => {
+        it('[THEN] it will return a pending order request with roundeded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1.001;
+          const limitPrice = 1;
+
+          const result = ordersModule.enterLimit({ quantity, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 1 }));
+        });
+      });
+    });
+    describe('[GIVEN] limit price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] get pending orders', () => {
+        it('[THEN] it will return a pending order request with rounded limit price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const limitPrice = 2.1236;
+
+          const result = ordersModule.enterLimit({ quantity, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ limitPrice: 2.124 }));
+        });
       });
     });
     describe('[GIVEN] user has entered trade position with limit order', () => {
@@ -131,50 +203,70 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has entered trade position with limit order [AND] quantity of the limit order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the limit order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1.001;
-          const limitPrice = 1;
-
-          ordersModule.enterLimit({ quantity, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 1 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with limit order [AND] limit price of the limit order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the limit order with rouned limit price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const limitPrice = 2.1236;
-
-          ordersModule.enterLimit({ quantity, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ limitPrice: 2.124 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Enter with stop market order', () => {
     describe('[WHEN] enter a trade position with stop market order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return a pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
         const stopPrice = 10;
 
         const result = ordersModule.enterStopMarket({ quantity, stopPrice });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'ENTRY',
+          type: 'STOP_MARKET',
+          quantity,
+          stopPrice,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] enter a trade position with stop market order', () => {
+        it('[THEN] it will return pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'LOT_SIZE', minQty: 2, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 3.2001;
+          const stopPrice = 1;
+
+          const result = ordersModule.enterStopMarket({ quantity, stopPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 3.2 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] enter a trade position with stop market order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 3.0001;
+          const stopPrice = 1;
+
+          const result = ordersModule.enterStopMarket({ quantity, stopPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 3 }));
+        });
+      });
+    });
+    describe('[GIVEN] stop price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] enter a trade position with stop market order', () => {
+        it('[THEN] it will return a pending order request with rounded stop price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const stopPrice = 2.1236;
+
+          const result = ordersModule.enterStopMarket({ quantity, stopPrice });
+
+          expect(result).toEqual(expect.objectContaining({ stopPrice: 2.124 }));
+        });
       });
     });
     describe('[GIVEN] user has entered trade position with stop market order', () => {
@@ -206,43 +298,11 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has entered trade position with stop market order [AND] quantity of the stop market order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop market order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 3.0001;
-          const stopPrice = 1;
-
-          ordersModule.enterStopMarket({ quantity, stopPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 3 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with stop market order [AND] stop price of the stop market order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop market order with rouned stop price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const stopPrice = 2.1236;
-
-          ordersModule.enterStopMarket({ quantity, stopPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ stopPrice: 2.124 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Enter with stop limit order', () => {
     describe('[WHEN] enter a trade position with stop limit order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return a pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
         const stopPrice = 10;
@@ -250,7 +310,78 @@ describe('UUT: Orders module', () => {
 
         const result = ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'ENTRY',
+          type: 'STOP_LIMIT',
+          quantity,
+          stopPrice,
+          limitPrice,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] enter a trade position with stop limit order', () => {
+        it('[THEN] it will return pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'LOT_SIZE', minQty: 2, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 0.0001;
+          const stopPrice = 10;
+          const limitPrice = 11;
+
+          const result = ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 2 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] enter a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 3.0001;
+          const stopPrice = 10;
+          const limitPrice = 11;
+
+          const result = ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 3 }));
+        });
+      });
+    });
+    describe('[GIVEN] stop price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] enter a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded stop price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const stopPrice = 2.1236;
+          const limitPrice = 11;
+
+          const result = ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ stopPrice: 2.124 }));
+        });
+      });
+    });
+    describe('[GIVEN] limit price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] enter a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded limit price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const stopPrice = 2;
+          const limitPrice = 5.2432;
+
+          const result = ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ limitPrice: 5.243 }));
+        });
       });
     });
     describe('[GIVEN] user has entered trade position with stop limit order', () => {
@@ -284,68 +415,52 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has entered trade position with stop limit order [AND] quantity of the stop limit order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop limit order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 3.0001;
-          const stopPrice = 10;
-          const limitPrice = 11;
-
-          ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 3 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with stop limit order [AND] stop price of the stop limit order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop limit order with rouned stop price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const stopPrice = 2.1236;
-          const limitPrice = 11;
-
-          ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ stopPrice: 2.124 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with stop limit order [AND] limit price of the stop limit order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop limit order with rouned limit price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const stopPrice = 2;
-          const limitPrice = 5.2432;
-
-          ordersModule.enterStopLimit({ quantity, stopPrice, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ limitPrice: 5.243 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Exit with market order', () => {
     describe('[WHEN] exit a trade position with market order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return a pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
 
         const result = ordersModule.exitMarket({ quantity });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'EXIT',
+          type: 'MARKET',
+          quantity,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] exit a trade position with market order', () => {
+        it('[THEN] it will return pending order request with rounded quantity value', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'MARKET_LOT_SIZE', minQty: 3, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+
+          const result = ordersModule.exitMarket({ quantity });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 3 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] exit a trade position with market order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1.006;
+
+          const result = ordersModule.exitMarket({ quantity });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 1.01 }));
+        });
       });
     });
     describe('[GIVEN] user has exited trade position with market order', () => {
@@ -375,33 +490,70 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has exited trade position with market order [AND] quantity of the market order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the market order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1.006;
-
-          ordersModule.exitMarket({ quantity });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 1.01 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Exit with limit order', () => {
     describe('[WHEN] exit a trade position with limit order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return a pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
         const limitPrice = 10;
 
         const result = ordersModule.exitLimit({ quantity, limitPrice });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'EXIT',
+          type: 'LIMIT',
+          quantity,
+          limitPrice,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] exit a trade position with limit order', () => {
+        it('[THEN] it will return pending order request with rounded quantity value', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'LOT_SIZE', minQty: 3, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 11.001;
+          const limitPrice = 1;
+
+          const result = ordersModule.exitLimit({ quantity, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 10 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] exit a trade position with limit order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1.001;
+          const limitPrice = 1;
+
+          const result = ordersModule.exitLimit({ quantity, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 1 }));
+        });
+      });
+    });
+    describe('[GIVEN] limit price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] exit a trade position with limit order', () => {
+        it('[THEN] it will return a pending order request with rounded limit price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const limitPrice = 2.1236;
+
+          const result = ordersModule.exitLimit({ quantity, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ limitPrice: 2.124 }));
+        });
       });
     });
     describe('[GIVEN] user has exited trade position with limit order', () => {
@@ -433,50 +585,70 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has exited trade position with limit order [AND] quantity of the limit order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the limit order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1.001;
-          const limitPrice = 1;
-
-          ordersModule.exitLimit({ quantity, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 1 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has exited trade position with limit order [AND] limit price of the limit order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the limit order with rouned limit price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const limitPrice = 2.1236;
-
-          ordersModule.exitLimit({ quantity, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ limitPrice: 2.124 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Exit with stop market order', () => {
     describe('[WHEN] exit a trade position with stop market order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return a pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
         const stopPrice = 10;
 
         const result = ordersModule.exitStopMarket({ quantity, stopPrice });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'EXIT',
+          type: 'STOP_MARKET',
+          quantity,
+          stopPrice,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] exit a trade position with stop market order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity value', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'LOT_SIZE', minQty: 3, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 5.0001;
+          const stopPrice = 1;
+
+          const result = ordersModule.exitStopMarket({ quantity, stopPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 5 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] exit a trade position with stop market order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 3.0001;
+          const stopPrice = 1;
+
+          const result = ordersModule.exitStopMarket({ quantity, stopPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 3 }));
+        });
+      });
+    });
+    describe('[GIVEN] stop price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] exit a trade position with stop market order', () => {
+        it('[THEN] it will return a pending order request with rounded stop price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const stopPrice = 2.1236;
+
+          const result = ordersModule.exitStopMarket({ quantity, stopPrice });
+
+          expect(result).toEqual(expect.objectContaining({ stopPrice: 2.124 }));
+        });
       });
     });
     describe('[GIVEN] user has exited trade position with stop market order', () => {
@@ -508,43 +680,11 @@ describe('UUT: Orders module', () => {
         });
       });
     });
-    describe('[GIVEN] user has exited trade position with stop market order [AND] quantity of the stop market order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop market order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 3.0001;
-          const stopPrice = 1;
-
-          ordersModule.exitStopMarket({ quantity, stopPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 3 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has exited trade position with stop market order [AND] stop price of the stop market order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop market order with rouned stop price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const stopPrice = 2.1236;
-
-          ordersModule.exitStopMarket({ quantity, stopPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ stopPrice: 2.124 }));
-        });
-      });
-    });
   });
 
   describe('UUT: Exit with stop limit order', () => {
     describe('[WHEN] exit a trade position with stop limit order', () => {
-      it('[THEN] it will return void', () => {
+      it('[THEN] it will return a pending order request', () => {
         const ordersModule = buildOrdersModule(mockDeps(), mockBnbSymbol(), defaultOrders);
         const quantity = 1;
         const stopPrice = 10;
@@ -552,7 +692,78 @@ describe('UUT: Orders module', () => {
 
         const result = ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
 
-        expect(result).toBeUndefined();
+        expect(result).toEqual({
+          id: expect.toBeString(),
+          orderSide: 'EXIT',
+          type: 'STOP_LIMIT',
+          quantity,
+          stopPrice,
+          limitPrice,
+          status: 'PENDING',
+          createdAt: expect.toBeDate(),
+        });
+      });
+    });
+    describe("[GIVEN] quantity input does not satisfy symbol's filter", () => {
+      describe('[WHEN] exit a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity value', () => {
+          const symbol = mockBnbSymbol({
+            filters: [{ type: 'LOT_SIZE', minQty: 3, maxQty: 10, stepSize: 0.1 }],
+          });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 10.0001;
+          const stopPrice = 10;
+          const limitPrice = 11;
+
+          const result = ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 10 }));
+        });
+      });
+    });
+    describe('[GIVEN] quantity input has decimal digit more than base asset precision', () => {
+      describe('[WHEN] exit a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded quantity', () => {
+          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 3.0001;
+          const stopPrice = 10;
+          const limitPrice = 11;
+
+          const result = ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ quantity: 3 }));
+        });
+      });
+    });
+    describe('[GIVEN] stop price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] exit a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded stop price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const stopPrice = 2.1236;
+          const limitPrice = 11;
+
+          const result = ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ stopPrice: 2.124 }));
+        });
+      });
+    });
+    describe('[GIVEN] limit price input has decimal digit more than quote asset precision', () => {
+      describe('[WHEN] exit a trade position with stop limit order', () => {
+        it('[THEN] it will return a pending order request with rounded limit price', () => {
+          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
+          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
+          const quantity = 1;
+          const stopPrice = 2;
+          const limitPrice = 5.2432;
+
+          const result = ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
+
+          expect(result).toEqual(expect.objectContaining({ limitPrice: 5.243 }));
+        });
       });
     });
     describe('[GIVEN] user has exited trade position with stop limit order', () => {
@@ -583,57 +794,6 @@ describe('UUT: Orders module', () => {
             limitPrice,
             status: 'PENDING',
           });
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with stop limit order [AND] quantity of the stop limit order has decimal digit more than base asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop limit order with rouned quantity', () => {
-          const symbol = mockBnbSymbol({ baseAssetPrecision: 2 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 3.0001;
-          const stopPrice = 10;
-          const limitPrice = 11;
-
-          ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ quantity: 3 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with stop limit order [AND] stop price of the stop limit order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop limit order with rouned stop price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const stopPrice = 2.1236;
-          const limitPrice = 11;
-
-          ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ stopPrice: 2.124 }));
-        });
-      });
-    });
-    describe('[GIVEN] user has entered trade position with stop limit order [AND] limit price of the stop limit order has decimal digit more than quote asset precision', () => {
-      describe('[WHEN] get pending orders', () => {
-        it('[THEN] it will return an array that contains the stop limit order with rouned limit price', () => {
-          const symbol = mockBnbSymbol({ quoteAssetPrecision: 3 });
-          const ordersModule = buildOrdersModule(mockDeps(), symbol, defaultOrders);
-          const quantity = 1;
-          const stopPrice = 2;
-          const limitPrice = 5.2432;
-
-          ordersModule.exitStopLimit({ quantity, stopPrice, limitPrice });
-
-          const result = ordersModule.getPendingOrders();
-
-          expect(result).toContainEqual(expect.objectContaining({ limitPrice: 5.243 }));
         });
       });
     });

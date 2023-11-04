@@ -8,14 +8,14 @@ import { validDateSchema } from '#shared/utils/date.js';
 import { validateWithZod } from '#shared/utils/zod.js';
 
 export type DateRange = z.infer<typeof dateRangeSchema>;
-const dateRangeSchema = z
+export const dateRangeSchema = z
   .object({ start: validDateSchema, end: validDateSchema })
   .refine(
     ({ start, end }) => isBefore(start, end) || isEqual(start, end),
     `Start date must be before or equal to end date`,
   )
   .readonly()
-  .brand('DateRage');
+  .brand('DateRange');
 
 export type CreateDateRangeError = GeneralError<'CraeteDateRangeFailed'>;
 export function createDateRange(startDate: Date, endDate: Date): e.Either<CreateDateRangeError, DateRange> {

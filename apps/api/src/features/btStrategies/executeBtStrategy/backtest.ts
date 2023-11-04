@@ -13,7 +13,7 @@ import { append, assoc, drop, isNotNil, mergeRight } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
 import { ExchangeName } from '#features/shared/exchange.js';
-import { Kline } from '#features/shared/kline.js';
+import { Kline, calculateNumOfKlinesInDateRange } from '#features/shared/kline.js';
 import { DateRange, createDateRange } from '#features/shared/objectValues/dateRange.js';
 import { OrderId, PendingOrderRequest } from '#features/shared/order.js';
 import { mapCapitalCurrencyToAssetCurrency } from '#features/shared/strategy.js';
@@ -50,22 +50,24 @@ import { executeIo, executeT, unsafeUnwrapEitherRight } from '#shared/utils/fp.j
 import { isError } from '#shared/utils/general.js';
 import { isString } from '#shared/utils/string.js';
 
-import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import {
   AddKlines,
+  CountKlines,
+  CountKlinesFilter,
   CreateKlinesIteratorError,
   GetFirstKlineBefore,
   GetKlinesBefore,
   GetNextKlineIterationError,
   IterateThroughKlines,
-} from '../DAOs/kline.feature.js';
+} from '../../klines/DAOs/kline.feature.js';
+import { BtStrategyDaoError } from '../DAOs/btStrategy.error.js';
 import {
   BT_PROGRESS_PERCENTAGE_FINISHED,
   BtProgressPercentage,
   btExecutionStatusEnum,
   calculateProgressPercentage,
 } from '../dataModels/btExecution.js';
-import { BtStrategyId, BtStrategyModel } from '../dataModels/btStrategy.js';
+import { BtStrategyId, BtStrategyModel, extendBtRange } from '../dataModels/btStrategy.js';
 import { GetKlinesForBt } from '../services/binance/getKlinesForBt.js';
 import { BtProgressUpdateInterval } from './backtesting.job.config.js';
 import { BtJobData } from './backtesting.job.js';
@@ -85,6 +87,7 @@ export type BacktestDeps = { job: Job<BtJobData> } & DeepReadonly<{
   bnbService: { getKlinesForBt: GetKlinesForBt };
   klineDao: {
     add: AddKlines;
+    count: CountKlines;
     getBefore: GetKlinesBefore;
     getFirstBefore: GetFirstKlineBefore;
     iterateThroughKlines: IterateThroughKlines;
@@ -125,21 +128,49 @@ export function backtest(deps: BacktestDeps) {
   );
   function getKlinesFromExchange(btStrategy: BtStrategyModel) {
     const executionId = job.attrs.data.id;
+    const extendedStart = extendBtRange(
+      btStrategy.startTimestamp,
+      btStrategy.timeframe,
+      btStrategy.maxNumKlines,
+    );
+    const countKlinesFilter: CountKlinesFilter = {
+      exchange: btStrategy.exchange,
+      symbol: btStrategy.symbol,
+      timeframe: btStrategy.timeframe,
+      start: extendedStart,
+      end: btStrategy.endTimestamp,
+    };
+    const expectedKlines = calculateNumOfKlinesInDateRange(
+      { start: extendedStart, end: btStrategy.endTimestamp } as unknown as DateRange,
+      btStrategy.timeframe,
+    );
+    const downloadKlinesRequest = {
+      executionId,
+      symbol: btStrategy.symbol,
+      timeframe: btStrategy.timeframe,
+      maxKlinesNum: btStrategy.maxNumKlines,
+      startTimestamp: btStrategy.startTimestamp,
+      endTimestamp: btStrategy.endTimestamp,
+    };
     return pipe(
-      {
-        executionId,
-        symbol: btStrategy.symbol,
-        timeframe: btStrategy.timeframe,
-        maxKlinesNum: btStrategy.maxNumKlines,
-        startTimestamp: btStrategy.startTimestamp,
-        endTimestamp: btStrategy.endTimestamp,
-      },
-      (filter) => bnbService.getKlinesForBt(filter),
-      te.chainFirstIOK((klines) =>
-        loggerIo.infoIo(`Got ${klines.length} klines of ${btStrategy.symbol} from ${btStrategy.exchange}`),
+      klineDao.count(countKlinesFilter),
+      te.chainW((existingKlines) =>
+        existingKlines >= expectedKlines
+          ? te.fromIO(
+              loggerIo.infoIo(`Expected klines of ${btStrategy.symbol} already exists. Skip downloading.`),
+            )
+          : pipe(
+              bnbService.getKlinesForBt(downloadKlinesRequest),
+              te.chainFirstIOK((klines) =>
+                loggerIo.infoIo(
+                  `Downloaded ${klines.length} klines of ${btStrategy.symbol} from ${btStrategy.exchange}`,
+                ),
+              ),
+              te.chainW(klineDao.add),
+              te.chainFirstIOK(() => loggerIo.infoIo(`Added klines to database`)),
+              te.asUnit,
+            ),
       ),
-      te.chainW(klineDao.add),
-      te.chainFirstIOK(() => loggerIo.infoIo(`Added klines to database`)),
     );
   }
   function getSymbol(btStrategy: BtStrategyModel) {

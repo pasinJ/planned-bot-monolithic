@@ -8,26 +8,67 @@ export async function addBtStrategy(body: Record<string, unknown> = mockValidAdd
   return { request: { body }, response: await client.request({ method, url, data: body }) };
 }
 
+export async function updateBtStrategy(btStrategyId: string, body: Record<string, unknown>) {
+  const { method, url: urlTemplate } = BT_STRATEGY_ENDPOINTS.UPDATE_BT_STRATEGY;
+  const url = urlTemplate.replace(':btStrategyId', btStrategyId);
+
+  return { request: { body }, response: await client.request({ method, url, data: body }) };
+}
+
 export async function executeBtStrategy(btStrategyId = 'IP3t1OJ5Cd') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.EXECUTE_BT_STRATEGY;
   return {
     request: { id: btStrategyId },
-    response: await client.request({ method, url: url.replace(':id', btStrategyId), data: {} }),
+    response: await client.request({ method, url: url.replace(':btStrategyId', btStrategyId), data: {} }),
   };
 }
 
-export async function getBtExecutionProgressById(executionId = 'n_D65q3SUG') {
+export async function getBtStrategy(btStrategyId: string) {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_STRATEGY;
+  return {
+    request: { btStrategyId },
+    response: await client.request({ method, url: url.replace(':btStrategyId', btStrategyId) }),
+  };
+}
+
+export async function getBtStrategies() {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_STRATEGIES;
+  return {
+    response: await client.request({ method, url }),
+  };
+}
+
+export async function getBtExecutionProgressById(btStrategyId = 'eOZ27sKqgq', btExecutionId = 'n_D65q3SUG') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_PROGRESS;
   return {
-    request: { id: executionId },
-    response: await client.request({ method, url: url.replace(':id', executionId), data: {} }),
+    request: { id: btExecutionId },
+    response: await client.request({
+      method,
+      url: url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', btExecutionId),
+      data: {},
+    }),
   };
 }
 
-export async function getBtExecutionResultById(executionId = '9IDRGAts6A') {
+export async function getBtExecutionResultById(btStrategyId = 'eOZ27sKqgq', btExecutionId = '9IDRGAts6A') {
   const { method, url } = BT_STRATEGY_ENDPOINTS.GET_BT_RESULT;
   return {
-    request: { id: executionId },
-    response: await client.request({ method, url: url.replace(':id', executionId), data: {} }),
+    request: { id: btExecutionId },
+    response: await client.request({
+      method,
+      url: url.replace(':btStrategyId', btStrategyId).replace(':btExecutionId', btExecutionId),
+      data: {},
+    }),
+  };
+}
+
+export async function getLastBtExecutionProgress(btStrategyId = 'eOZ27sKqgq') {
+  const { method, url } = BT_STRATEGY_ENDPOINTS.GET_LAST_EXECUTION_PROGRESS;
+  return {
+    request: { btStrategyId },
+    response: await client.request({
+      method,
+      url: url.replace(':btStrategyId', btStrategyId),
+    }),
   };
 }

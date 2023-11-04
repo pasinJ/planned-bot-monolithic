@@ -6,7 +6,7 @@ import { executeT } from '#shared/utils/fp.js';
 
 import { extractZipFile } from './extractZipFile.js';
 
-const outputPath = './downloads/klines.csv';
+const outputPath = './klines.csv';
 
 afterEach(() => rm(outputPath));
 
