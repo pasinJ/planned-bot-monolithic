@@ -1,12 +1,13 @@
 import { Agenda, Processor } from 'agenda';
-import { ChildProcess, fork } from 'child_process';
+import { fork } from 'child_process';
 import e from 'fp-ts/lib/Either.js';
 import io from 'fp-ts/lib/IO.js';
 import ioe from 'fp-ts/lib/IOEither.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
+import fs from 'node:fs/promises';
 import { join } from 'path';
-import { equals, propSatisfies } from 'ramda';
+import { equals, isNil, propSatisfies } from 'ramda';
 import { DeepReadonly } from 'ts-essentials';
 
 import {
@@ -22,7 +23,7 @@ import { LoggerIo } from '#infra/logging.js';
 import { DateService } from '#infra/services/date/service.js';
 import { JobSchedulerError, createJobSchedulerError } from '#infra/services/jobScheduler/error.js';
 import { JobRecord } from '#infra/services/jobScheduler/service.js';
-import { createErrorFromUnknown } from '#shared/errors/appError.js';
+import { createAppError, createErrorFromUnknown } from '#shared/errors/appError.js';
 import { ValidDate } from '#shared/utils/date.js';
 
 import { BtStrategyId } from '../dataModels/btStrategy.js';
@@ -88,31 +89,47 @@ function buildBtJobProcessor(fork: BtJobDeps['fork'], timeout: BtJobTimeout): Pr
     const jobId = job.attrs._id;
     const executionId = job.attrs.data.id;
 
-    job.attrs.data.status = btExecutionStatusEnum.RUNNING;
-    await job.save();
-
-    let worker: ChildProcess;
-
     try {
-      worker = fork(WORKER_ENTRY_POINT + '.js', [executionId], { timeout });
-    } catch (error) {
-      worker = fork(WORKER_ENTRY_POINT + '.ts', [executionId], { timeout });
-    }
+      job.attrs.data.status = btExecutionStatusEnum.RUNNING;
+      await job.save();
 
-    worker.on('close', (exitCode) => {
-      if (exitCode !== 0) {
+      const workerPath = await fs
+        .access(WORKER_ENTRY_POINT + '.js', fs.constants.R_OK)
+        .then(() => WORKER_ENTRY_POINT + '.js')
+        .catch(() => fs.access(WORKER_ENTRY_POINT + '.ts', fs.constants.R_OK))
+        .then((workerPath) => (workerPath ? workerPath : WORKER_ENTRY_POINT + '.ts'))
+        .catch(() => undefined);
+
+      if (isNil(workerPath)) {
         job.attrs.data.status = btExecutionStatusEnum.FAILED;
-        done();
+        job.attrs.result = {
+          ...(job.attrs.result ?? {}),
+          error: createAppError({
+            name: 'BtJobProcessorError',
+            message: `Worker path ${WORKER_ENTRY_POINT}.(js|ts) does not exist`,
+          }),
+        };
       } else {
-        void job.agenda._collection
-          .findOne<{ _id: string; data: BtJobData }>({ _id: jobId }, { projection: { data: 1 } })
-          .then((refreshedJob) => {
-            if (refreshedJob) job.attrs.data = refreshedJob.data;
-            return;
-          })
-          .finally(() => done());
+        const worker = fork(workerPath, [executionId], { timeout });
+        worker.on('close', (exitCode) => {
+          if (exitCode !== 0) {
+            job.attrs.data.status = btExecutionStatusEnum.FAILED;
+            done();
+          } else {
+            void job.agenda._collection
+              .findOne<{ _id: string; data: BtJobData }>({ _id: jobId }, { projection: { data: 1 } })
+              .then((refreshedJob) => {
+                if (refreshedJob) job.attrs.data = refreshedJob.data;
+                return;
+              })
+              .finally(() => done());
+          }
+        });
       }
-    });
+    } catch (error) {
+      job.attrs.data.status = btExecutionStatusEnum.FAILED;
+      done();
+    }
   };
 }
 
