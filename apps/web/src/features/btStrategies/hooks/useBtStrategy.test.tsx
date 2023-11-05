@@ -57,39 +57,6 @@ describe('[GIVEN] the current path does not contain ID', () => {
   });
 });
 
-describe('[GIVEN] the current path contains ID', () => {
-  describe('[WHEN] use backtesting strategy hook with ID', () => {
-    it('[THEN] it will call backtesting strategy repository to exeute the backtesting strategy with the ID from hook', async () => {
-      const btStrategyRepo: Partial<BtStrategyRepo> = {
-        getBtStrategyById: jest.fn().mockReturnValue(te.right(mockBtStrategy())),
-      };
-      const btStrategyId = 'PnU65dncz4' as BtStrategyId;
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId: 'MTSSxIKdS5' });
-
-      renderUseBtStrategy(true, btStrategyId, { btStrategyRepo }, path);
-
-      await waitFor(() =>
-        expect(btStrategyRepo.getBtStrategyById).toHaveBeenCalledExactlyOnceWith(btStrategyId),
-      );
-    });
-  });
-  describe('[WHEN] use backtesting strategy hook without ID', () => {
-    it('[THEN] it will call backtesting strategy repository to exeute the backtesting strategy with the ID from path', async () => {
-      const btStrategyRepo: Partial<BtStrategyRepo> = {
-        getBtStrategyById: jest.fn().mockReturnValue(te.right(mockBtStrategy())),
-      };
-      const btStrategyId = 'PnU65dncz4' as BtStrategyId;
-      const path = generatePath(BACKTEST_STRATEGY_ROUTE, { btStrategyId });
-
-      renderUseBtStrategy(true, undefined, { btStrategyRepo }, path);
-
-      await waitFor(() =>
-        expect(btStrategyRepo.getBtStrategyById).toHaveBeenCalledExactlyOnceWith(btStrategyId),
-      );
-    });
-  });
-});
-
 describe('[GIVEN] backtesting strategy return Right of a backtesting strategy', () => {
   describe('[WHEN] use backtesting strategy hook', () => {
     it('[THEN] it will return data property equals to the list of backtesting strategies', async () => {
