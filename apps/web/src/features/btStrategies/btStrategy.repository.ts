@@ -77,7 +77,7 @@ export function createBtStrategyRepo({ httpClient }: { httpClient: HttpClient })
   };
 }
 
-type GetBtStrategyById = (id: BtStrategyId) => te.TaskEither<GetBtStrategyByIdError, BtStrategy>;
+type GetBtStrategyById = (id: string) => te.TaskEither<GetBtStrategyByIdError, BtStrategy>;
 export type GetBtStrategyByIdError = BtStrategyRepoError<'GetBtStrategyByIdFailed'>;
 export function getBtStrategyById({ httpClient }: { httpClient: HttpClient }): GetBtStrategyById {
   const { method, url, responseSchema } = API_ENDPOINTS.GET_BT_STRATEGY;

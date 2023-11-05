@@ -2,8 +2,9 @@ import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import Stepper from '@mui/material/Stepper';
 import * as o from 'fp-ts/lib/Option';
-import { pick, propEq } from 'ramda';
+import { isNil, isNotNil, propEq } from 'ramda';
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 import PendingFetch from '#components/PendingFetch';
 import { BtExecutionId } from '#features/btStrategies/btExecution';
@@ -71,18 +72,21 @@ export default function BacktestStrategyForm() {
   const [selectedSymbol, setSelectedSymbol] = useOptionState<Symbol>(o.none);
   const [lastExecution, setLastExecution] = useOptionState<LastExecution>(o.none);
 
-  const fetchBtStrategy = useBtStrategy(o.isNone(generalDetails) && o.isNone(strategyDetails), undefined);
+  const params = useParams();
+  const [fetchBtStrategy, handleRefetchBtStrategy] = useAutoFetch(
+    isNotNil(params.btStrategyId),
+    useBtStrategy,
+    [params.btStrategyId],
+  );
   useEffect(() => {
-    if (!isUndefined(fetchBtStrategy.data)) {
+    if (isNotNil(fetchBtStrategy.data)) {
       setFormsValues(createDefaultFormValuesFromBtStrategy(fetchBtStrategy.data));
-      setGeneralDetails(o.some(createGeneralDetailsFromBtStrategy(fetchBtStrategy.data)));
-      setStrategyDetails(o.some(createStrategyDetailsFromBtStrategy(fetchBtStrategy.data)));
     }
-  }, [fetchBtStrategy.data, setFormsValues, setGeneralDetails, setStrategyDetails, setSelectedSymbol]);
+  }, [fetchBtStrategy.data, setFormsValues]);
 
   const moveForwardToStrategyDetailsTab = (formValues: GeneralDetailsFormValues, details: GeneralDetails) => {
     const selectedSymbol = fetchSymbols.data?.find(propEq(details.symbol, 'name'));
-    setSelectedSymbol(selectedSymbol ? o.some(selectedSymbol) : o.none);
+    setSelectedSymbol(isNotNil(selectedSymbol) ? o.some(selectedSymbol) : o.none);
 
     setFormsValues((prev) =>
       prev.capitalCurrency === selectedSymbol?.baseAsset ||
@@ -102,15 +106,10 @@ export default function BacktestStrategyForm() {
   const moveForwarToBacktestResultTab = (
     formValues: StrategyDetailsFormValues,
     details: StrategyDetails & { assetCurrency: AssetCurrency },
-    isFormDirty: boolean,
   ) => {
-    if (isFormDirty) {
-      setFormsValues((prev) => ({ ...prev, ...formValues }));
-      setStrategyDetails((prev) =>
-        o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details }),
-      );
-    }
-
+    setFormsValues((prev) => ({ ...prev, ...formValues }));
+    setStrategyDetails((prev) => (o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details })));
+    handleRefetchBtStrategy();
     setActiveTab(2);
   };
   const moveBackToStrategyDetailsTab = () => setActiveTab(1);
@@ -132,11 +131,17 @@ export default function BacktestStrategyForm() {
         ))}
       </Stepper>
       <div className="mt-4 flex flex-grow justify-center">
-        {isUndefined(fetchSymbols.data) ? (
+        {isNil(fetchSymbols.data) ? (
           <PendingFetch
             isLoading={fetchSymbols.isInitialLoading}
             error={fetchSymbols.error}
             retryFetch={handleRefetchSymbols}
+          />
+        ) : activeTab === 0 && isNotNil(params.btStrategyId) && isNil(fetchBtStrategy.data) ? (
+          <PendingFetch
+            isLoading={fetchBtStrategy.isInitialLoading}
+            error={fetchBtStrategy.error}
+            retryFetch={handleRefetchBtStrategy}
           />
         ) : activeTab === 0 ? (
           <GeneralDetailsTab
@@ -213,24 +218,4 @@ function createDefaultFormValuesFromBtStrategy(btStrategy: BtStrategy): FormsVal
     language: btStrategy.language,
     body: btStrategy.body,
   };
-}
-
-function createGeneralDetailsFromBtStrategy(btStrategy: BtStrategy): GeneralDetails {
-  return pick(['name', 'exchange', 'symbol', 'timeframe', 'maxNumKlines', 'btRange'], btStrategy);
-}
-function createStrategyDetailsFromBtStrategy(
-  btStrategy: BtStrategy,
-): StrategyDetails & { assetCurrency: AssetCurrency } {
-  return pick(
-    [
-      'capitalCurrency',
-      'assetCurrency',
-      'initialCapital',
-      'takerFeeRate',
-      'makerFeeRate',
-      'language',
-      'body',
-    ],
-    btStrategy,
-  );
 }

@@ -48,7 +48,7 @@ describe('UUT: Get backtesting strategy by ID', () => {
           return res(ctx.status(200), ctx.json(mockBtStrategy()));
         }),
       );
-      const id = 'M0rCxGh2EW' as BtStrategyId;
+      const id = 'M0rCxGh2EW';
 
       await executeT(btStrategyRepo.getBtStrategyById(id));
 
@@ -75,7 +75,7 @@ describe('UUT: Get backtesting strategy by ID', () => {
     describe('[WHEN] get backtesting strategy by ID', () => {
       it('[THEN] it will return Left of error', async () => {
         server.use(addRestRoute(method, createApiPath(url), (_, res, ctx) => res(ctx.status(500))));
-        const id = 'M0rCxGh2EW' as BtStrategyId;
+        const id = 'M0rCxGh2EW';
 
         const result = await executeT(btStrategyRepo.getBtStrategyById(id));
 

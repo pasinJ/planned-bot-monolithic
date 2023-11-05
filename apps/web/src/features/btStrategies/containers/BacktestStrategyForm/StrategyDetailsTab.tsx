@@ -124,7 +124,6 @@ type StrategyDetailsFormProps = {
   moveToNextTab: (
     formValues: StrategyDetailsFormValues,
     formValidValues: StrategyDetails & { assetCurrency: AssetCurrency },
-    isSubFormDirty: boolean,
   ) => void;
   lastExecution: o.Option<LastExecution>;
   setLastExecution: (lastExecution: o.Option<LastExecution>) => void;
@@ -173,7 +172,7 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
         setLastExecution(o.some({ btExecutionId: id, request: newRequest }));
       }
 
-      moveToNextTab(getValues(), { ...strategyDetails, assetCurrency }, isDirty);
+      moveToNextTab(getValues(), { ...strategyDetails, assetCurrency });
     })(e);
   };
   const handleBackToPrevTab: MouseEventHandler<HTMLButtonElement> = () => {
@@ -182,8 +181,6 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
 
   return (
     <>
-      <PendingSaveBtStrategy isLoading={saveBtStrategy.isLoading} />
-      <PendingExecuteBtStrategy isLoading={executeBtStrategy.isLoading} />
       <form className="flex flex-col gap-y-4" onSubmit={handleSubmitForm}>
         <div className="mt-4 flex flex-wrap gap-x-6">
           <CapitalCurrencyField control={control} selectedSymbol={selectedSymbol} />
@@ -201,9 +198,15 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
           <Button variant="outlined" onClick={handleBackToPrevTab}>
             Back
           </Button>
+          <PendingSaveBtStrategy isLoading={saveBtStrategy.isLoading} />
+          <PendingExecuteBtStrategy isLoading={executeBtStrategy.isLoading} />
           <ErrorMessage error={saveBtStrategy.error ?? executeBtStrategy.error} />
-          <Button type="submit" variant="contained">
-            Save & Execute
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saveBtStrategy.isLoading || executeBtStrategy.isLoading}
+          >
+            View result
           </Button>
         </div>
       </form>
@@ -341,21 +344,17 @@ const StrategyBodyField = forwardRef<
 
 function PendingSaveBtStrategy({ isLoading }: { isLoading: boolean }) {
   return isLoading ? (
-    <div className="absolute z-10 flex h-full w-full flex-col items-center justify-center space-y-8 rounded-xl bg-gray-200/70">
-      <CircularProgress size="3rem" />
-      <Typography variant="h5" component="p">
-        Saving backtesting strategy
-      </Typography>
+    <div className="flex items-center gap-x-4">
+      <CircularProgress size="2rem" />
+      <Typography>Saving backtesting strategy</Typography>
     </div>
   ) : undefined;
 }
 function PendingExecuteBtStrategy({ isLoading }: { isLoading: boolean }) {
   return isLoading ? (
-    <div className="absolute z-10 flex h-full w-full flex-col items-center justify-center space-y-8 rounded-xl bg-gray-200/70">
-      <CircularProgress size="3rem" />
-      <Typography variant="h5" component="p">
-        Submitting execution request
-      </Typography>
+    <div className="flex items-center gap-x-4">
+      <CircularProgress size="2rem" />
+      <Typography>Submitting execution request</Typography>
     </div>
   ) : undefined;
 }

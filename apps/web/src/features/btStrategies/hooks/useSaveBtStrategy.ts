@@ -1,4 +1,4 @@
-import { UseMutationResult, useMutation } from '@tanstack/react-query';
+import { UseMutationResult, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as te from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/function';
 import { useContext } from 'react';
@@ -46,6 +46,7 @@ export default function useSaveBtStrategy(): UseMutationResult<
   UseSaveBtStrategyRequest
 > {
   const { btStrategyRepo, dateService } = useContext(InfraContext);
+  const queryClient = useQueryClient();
   const params = useParams();
   const navigate = useNavigate();
 
@@ -65,6 +66,11 @@ export default function useSaveBtStrategy(): UseMutationResult<
             te.bindW('timezone', () => te.fromIO(dateService.getTimezone)),
             te.chainFirstW(({ id, timezone }) =>
               btStrategyRepo.updateBtStrategy({ id, ...request, timezone }),
+            ),
+            te.chainFirstIOK(
+              ({ id }) =>
+                () =>
+                  queryClient.invalidateQueries(['btStrategy', id]),
             ),
             te.map(({ id }) => id),
             executeTeToPromise,
