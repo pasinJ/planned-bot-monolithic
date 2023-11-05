@@ -15,7 +15,6 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import * as o from 'fp-ts/lib/Option';
 import { MarkerSeverity, editor } from 'monaco-editor';
-import { equals } from 'ramda';
 import {
   FormEventHandler,
   MouseEventHandler,
@@ -162,21 +161,26 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
 
     if (errors.body) return editorRef.current?.focus();
 
-    void handleSubmit(async (strategyDetails) => {
+    void handleSubmit((strategyDetails) => {
       const assetCurrency = getAssetCurrency(selectedSymbol, strategyDetails.capitalCurrency);
       const newRequest = { ...generalDetails, ...strategyDetails, assetCurrency };
 
-      if (o.isNone(lastExecution) || !equals(newRequest, lastExecution.value.request)) {
-        const btStrategyId = await saveBtStrategy.mutateAsync(newRequest);
-        const { id } = await executeBtStrategy.mutateAsync(btStrategyId);
-        setLastExecution(o.some({ btExecutionId: id, request: newRequest }));
-      }
-
-      moveToNextTab(getValues(), { ...strategyDetails, assetCurrency });
+      void saveBtStrategy
+        .mutateAsync(newRequest)
+        .then((btStrategyId) => executeBtStrategy.mutateAsync(btStrategyId))
+        .then(({ id }) => setLastExecution(o.some({ btExecutionId: id, request: newRequest })))
+        .then(() => moveToNextTab(getValues(), { ...strategyDetails, assetCurrency }));
     })(e);
   };
+
   const handleBackToPrevTab: MouseEventHandler<HTMLButtonElement> = () => {
     return moveToPrevTab(getValues(), isDirty);
+  };
+  const handleForwardToNextTab: MouseEventHandler<HTMLButtonElement> = (e) => {
+    void handleSubmit((strategyDetails) => {
+      const assetCurrency = getAssetCurrency(selectedSymbol, strategyDetails.capitalCurrency);
+      moveToNextTab(getValues(), { ...strategyDetails, assetCurrency });
+    })(e);
   };
 
   return (
@@ -201,13 +205,24 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
           <PendingSaveBtStrategy isLoading={saveBtStrategy.isLoading} />
           <PendingExecuteBtStrategy isLoading={executeBtStrategy.isLoading} />
           <ErrorMessage error={saveBtStrategy.error ?? executeBtStrategy.error} />
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={saveBtStrategy.isLoading || executeBtStrategy.isLoading}
-          >
-            View result
-          </Button>
+          <div className="flex gap-x-2">
+            {o.isSome(lastExecution) ? (
+              <Button
+                variant="outlined"
+                disabled={saveBtStrategy.isLoading || executeBtStrategy.isLoading}
+                onClick={handleForwardToNextTab}
+              >
+                View result
+              </Button>
+            ) : undefined}
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={saveBtStrategy.isLoading || executeBtStrategy.isLoading}
+            >
+              Save & Execute
+            </Button>
+          </div>
         </div>
       </form>
     </>
