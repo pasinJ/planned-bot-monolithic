@@ -10,11 +10,13 @@ function monacoSetup(monaco: Monaco) {
   //https://microsoft.github.io/monaco-editor/playground.html?source=v0.44.0#example-extending-language-services-configure-javascript-defaults
 
   // validation settings
-  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+  const diagnosticsOptions: languages.typescript.DiagnosticsOptions = {
     noSemanticValidation: false,
     noSyntaxValidation: false,
     diagnosticCodesToIgnore: [1375],
-  });
+  };
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions(diagnosticsOptions);
+  monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(diagnosticsOptions);
 
   // compiler options
   const compilerOptions: languages.typescript.CompilerOptions = {
