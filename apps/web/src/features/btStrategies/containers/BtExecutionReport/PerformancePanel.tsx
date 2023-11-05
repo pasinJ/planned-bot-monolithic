@@ -109,7 +109,7 @@ export default function PerformancePanel(props: PerformancePanelProps) {
         <WinLossCard winLossMetrics={performance.winLossMetrics} capitalCurrency={capitalCurrency} />
       </div>
       <div className="flex flex-wrap justify-evenly gap-6">
-        <div className="flex w-1/2 min-w-[40rem] flex-grow flex-col">
+        <div className="flex w-1/2 flex-grow flex-col md:min-w-[40rem]">
           <div className="flex flex-grow flex-wrap justify-around gap-x-12 gap-y-4 px-8 py-4">
             <UpDownCard
               className="max-w-xs flex-grow"

@@ -66,7 +66,7 @@ export default function BtExecutionReport(props: BtExecutionReportProps) {
         ))}
       </TabList>
       {toPairs(tabMap).map((pair) => (
-        <TabPanel key={pair[0]} value={pair[0]}>
+        <TabPanel key={pair[0]} value={pair[0]} className="px-1 md:p-6">
           {match(pair)
             .with(['logs', P.any], ([, val]) =>
               val.panelComponent({

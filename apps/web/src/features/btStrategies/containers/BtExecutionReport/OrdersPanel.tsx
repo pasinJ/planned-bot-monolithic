@@ -182,7 +182,7 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
         enableColumnResizing
         enableStickyHeader
         renderTopToolbarCustomActions={() => (
-          <div className="flex flex-wrap gap-2 px-4">
+          <div className="flex w-0 flex-grow items-center gap-2 overflow-x-auto pt-1 scrollbar dark:scrollbar-thin dark:scrollbar-track-gray-500/10 dark:scrollbar-thumb-gray-700 md:px-4">
             {toPairs(displayPreset).map(([key, val]) => (
               <Chip
                 key={key}
@@ -190,6 +190,7 @@ export default function OrdersPanel({ orders, klines }: OrdersPanelProps) {
                 onClick={() => setActiveDisplayPreset(key)}
                 variant={activeDisplayPreset === key ? 'filled' : 'outlined'}
                 color="secondary"
+                className="min-w-fit"
               />
             ))}
           </div>

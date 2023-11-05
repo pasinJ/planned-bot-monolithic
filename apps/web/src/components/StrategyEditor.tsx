@@ -1,4 +1,5 @@
 import Editor, { Monaco, OnChange, OnMount, OnValidate } from '@monaco-editor/react';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { editor, languages } from 'monaco-editor';
 import { isNotNil } from 'ramda';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
@@ -50,6 +51,8 @@ type StrategyEditorProps = {
 const StrategyEditor = forwardRef<editor.IStandaloneCodeEditor | null, StrategyEditorProps>(
   function StrategyEditor(props, ref) {
     const { language, value, wrapperProps, onValidate, onChange } = props;
+    const theme = useTheme();
+    const lessThanSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
     const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
     useImperativeHandle<editor.IStandaloneCodeEditor | null, editor.IStandaloneCodeEditor | null>(
@@ -73,7 +76,7 @@ const StrategyEditor = forwardRef<editor.IStandaloneCodeEditor | null, StrategyE
         options={{
           ariaLabel: 'strategy body editor',
           padding: { top: 16, bottom: 16 },
-          fontSize: 16,
+          fontSize: lessThanSmall ? 14 : 16,
           scrollBeyondLastLine: false,
           cursorWidth: 4,
         }}

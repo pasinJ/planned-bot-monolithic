@@ -69,21 +69,21 @@ export default function BacktestReportPage() {
           </Button>
         </header>
         <Divider className="my-4" />
-        <div className="flex justify-between px-6">
+        <div className="flex flex-wrap justify-between px-6">
           <div className="flex gap-x-2">
-            <Typography className="font-medium">Name: </Typography>
+            <Typography className="font-bold">Name: </Typography>
             <Typography>{fetchBtStrategy.data.name}</Typography>
           </div>
           <div className="flex gap-x-2">
-            <Typography className="font-medium">Exchange: </Typography>
+            <Typography className="font-bold">Exchange: </Typography>
             <Typography>{fetchBtStrategy.data.exchange}</Typography>
           </div>
           <div className="flex gap-x-2">
-            <Typography className="font-medium">Symbol: </Typography>
+            <Typography className="font-bold">Symbol: </Typography>
             <Typography>{fetchBtStrategy.data.symbol}</Typography>
           </div>
           <div className="flex gap-x-2">
-            <Typography className="font-medium">Timeframe: </Typography>
+            <Typography className="font-bold">Timeframe: </Typography>
             <Typography>{fetchBtStrategy.data.timeframe}</Typography>
           </div>
         </div>

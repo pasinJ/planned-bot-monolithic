@@ -14,6 +14,7 @@ import { MouseEventHandler, PropsWithChildren, useState } from 'react';
 import MaterialSymbol from '#components/MaterialSymbol';
 import { NavLinkComponent } from '#routes/components/NavLinkBase';
 import { BacktestMainPageLink } from '#routes/components/pageLinks';
+import ThemeSwitch from '#styles/containers/ThemeSwitch';
 
 export default function MainLayoutSm({ children }: PropsWithChildren) {
   const [isDrawerOpening, setIsDrawerOpening] = useState(false);
@@ -26,7 +27,7 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
       <SideNav isDrawerOpening={isDrawerOpening} toggleDrawer={toggleDrawer} />
       <main className="relative flex min-h-screen w-full flex-col">
         <Toolbar />
-        <div className="flex-grow bg-gray-100 px-4 py-6">{children}</div>
+        <div className="flex-grow bg-gray-100 px-4 py-6 dark:bg-background">{children}</div>
       </main>
     </div>
   );
@@ -35,15 +36,16 @@ export default function MainLayoutSm({ children }: PropsWithChildren) {
 function TopAppBar({ toggleDrawer }: { toggleDrawer: MouseEventHandler }) {
   return (
     <AppBar component="nav" className="bg-surface-1 text-textColor-onPrimary">
-      <Toolbar className="grid grid-cols-[1fr_auto_1fr] items-center">
+      <Toolbar className="flex">
         <Box>
           <IconButton color="inherit" aria-label="open navigation drawer" onClick={toggleDrawer}>
             <MaterialSymbol symbol="menu" className="text-3xl" />
           </IconButton>
         </Box>
-        <Typography variant="h4" aria-hidden="true" color="primary" className="text-center">
+        <Typography variant="h4" aria-hidden="true" color="primary" className="flex-grow text-center">
           Planned
         </Typography>
+        <ThemeSwitch className="w-14" />
       </Toolbar>
     </AppBar>
   );
@@ -65,13 +67,13 @@ function SideNav({
         ModalProps={{ keepMounted: true }}
         PaperProps={{ className: 'box-border w-72' }}
       >
-        <Box className="px-4 py-2 text-right">
+        <Box className="flex justify-end px-4 py-2">
           <IconButton color="inherit" aria-label="close drawer" onClick={toggleDrawer}>
             <MaterialSymbol symbol="close" className="text-3xl" />
           </IconButton>
         </Box>
         <Divider />
-        <List className="h-full py-4" component="nav">
+        <List className="h-full p-0" component="nav">
           <SideNavItemButton
             symbol="youtube_searched_for"
             text="Backtesting"
