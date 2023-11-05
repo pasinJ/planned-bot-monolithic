@@ -1,6 +1,6 @@
 import * as o from 'fp-ts/lib/Option';
 import { equals } from 'ramda';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 
 import { isFunction } from '#shared/utils/typeGuards';
 
@@ -9,7 +9,7 @@ export default function useOptionState<T>(
 ): [o.Option<T>, Dispatch<SetStateAction<o.Option<T>>>] {
   const [state, setState] = useState(initialState);
 
-  const setOptionState: Dispatch<SetStateAction<o.Option<T>>> = (newValue) => {
+  const setOptionState: Dispatch<SetStateAction<o.Option<T>>> = useCallback((newValue) => {
     if (isFunction(newValue)) {
       setState((prev) => newValue(prev));
     } else {
@@ -23,7 +23,7 @@ export default function useOptionState<T>(
           : newValue,
       );
     }
-  };
+  }, []);
 
   return [state, setOptionState];
 }
