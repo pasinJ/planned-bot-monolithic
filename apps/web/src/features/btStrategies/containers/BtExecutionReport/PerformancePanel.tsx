@@ -322,7 +322,7 @@ function EtcCard(props: EtcSectionProps) {
         info={
           <div className="text-right">
             <Typography>
-              {toLocale(totalFees.inCapitalCurrency, 4)} {assetCurrency}
+              {toLocale(totalFees.inAssetCurrency, 8)} {assetCurrency}
             </Typography>
             <Typography>
               {toLocale(totalFees.inCapitalCurrency, 4)} {capitalCurrency}

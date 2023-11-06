@@ -149,7 +149,7 @@ function OrderDetails({ order }: { order: FilledEntryOrder | FilledExitOrder }) 
       <Typography>{order.filledPrice}</Typography>
       <Typography>Fee</Typography>
       <Typography>
-        {order.fee.amount} {order.fee.currency}
+        {toDigits(order.fee.amount, 4)} {order.fee.currency}
       </Typography>
       <Typography>Created at</Typography>
       <Typography>{formatInTimeZone(order.createdAt, timezone, dateFormat)}</Typography>

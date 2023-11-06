@@ -108,9 +108,9 @@ describe('UUT: Get backtesting execution result use case', () => {
     const logs = ['log1'];
     const executionTimeMs = 10 as Milliseconds;
     const strategyModule = mockStrategyModule({
-      netReturn: 1,
-      netProfit: 2,
-      netLoss: 3,
+      netReturn: 0,
+      netProfit: 0,
+      netLoss: 0,
       maxDrawdown: 4,
       maxRunup: 5,
       totalFees: { inCapitalCurrency: 6, inAssetCurrency: 7 },
@@ -177,13 +177,13 @@ describe('UUT: Get backtesting execution result use case', () => {
           orders,
           trades,
           performance: {
-            netReturn: 1,
-            netProfit: 2,
-            netLoss: 3,
+            netReturn: 0,
+            netProfit: 0,
+            netLoss: 0,
             maxDrawdown: 4,
             maxRunup: 5,
-            returnOfInvestment: 0.010001,
-            profitFactor: 0.67,
+            returnOfInvestment: 0,
+            profitFactor: 0,
             totalTradeVolume: 0,
             totalFees: { inCapitalCurrency: 6, inAssetCurrency: 7 },
             backtestDuration: '1 day',
