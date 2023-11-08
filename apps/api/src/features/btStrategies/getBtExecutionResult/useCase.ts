@@ -1,3 +1,4 @@
+import { Decimal } from 'decimal.js';
 import io from 'fp-ts/lib/IO.js';
 import te from 'fp-ts/lib/TaskEither.js';
 import { pipe } from 'fp-ts/lib/function.js';
@@ -167,11 +168,21 @@ function createPerformanceReport(
 ) {
   const { endTimestamp, startTimestamp } = btStrategy;
   const { strategyModule, orders, trades } = request;
-  const { initialCapital, netReturn, netProfit, netLoss, maxDrawdown, maxRunup, totalFees } = strategyModule;
+  const { initialCapital, maxDrawdown, maxRunup, totalFees } = strategyModule;
   const { filledOrders } = orders;
   const { closedTrades } = trades;
 
   const backtestRange = unsafeUnwrapEitherRight(createDateRange(startTimestamp, endTimestamp));
+
+  const netProfit = trades.closedTrades
+    .filter((t) => t.netReturn > 0)
+    .reduce((sum, t) => sum.plus(t.netReturn), new Decimal(0))
+    .toNumber() as Profit;
+  const netLoss = trades.closedTrades
+    .filter((t) => t.netReturn < 0)
+    .reduce((sum, t) => sum.plus(t.netReturn), new Decimal(0))
+    .toNumber() as Loss;
+  const netReturn = new Decimal(netProfit).plus(netLoss).toNumber() as Return;
 
   return {
     netReturn,

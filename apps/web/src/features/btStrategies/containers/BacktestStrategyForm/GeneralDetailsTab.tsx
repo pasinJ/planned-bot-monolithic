@@ -214,7 +214,7 @@ function MaxNumKlinesField({ control }: { control: GeneralDetailsFormControl }) 
     <IntegerFieldRf
       controllerProps={{ control, name: 'maxNumKlines' }}
       fieldProps={{
-        label: 'Maximum number of candlesticks per execution',
+        label: 'Maximum number of klines per execution',
         className: 'min-w-[25rem] flex-grow',
         required: true,
       }}

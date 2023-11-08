@@ -430,9 +430,10 @@ function roundMarketQuantity(quantity: number, symbol: Symbol): number {
   let roundedQuantity = new Decimal(quantity);
 
   if (marketLotSizeFilter) {
-    roundedQuantity = roundedQuantity
-      .clampedTo(marketLotSizeFilter.minQty, marketLotSizeFilter.maxQty)
-      .toNearest(marketLotSizeFilter.stepSize, Decimal.ROUND_DOWN);
+    roundedQuantity = roundedQuantity.clampedTo(marketLotSizeFilter.minQty, marketLotSizeFilter.maxQty);
+  }
+  if (marketLotSizeFilter && marketLotSizeFilter.stepSize !== 0) {
+    roundedQuantity = roundedQuantity.toNearest(marketLotSizeFilter.stepSize, Decimal.ROUND_DOWN);
   }
 
   return roundQuantity(roundedQuantity, symbol);
@@ -443,9 +444,10 @@ function roundQuantity(quantity: number | Decimal, symbol: Symbol): number {
   let roundedQuantity = new Decimal(quantity);
 
   if (lotSizeFilter) {
-    roundedQuantity = roundedQuantity
-      .clampedTo(lotSizeFilter.minQty, lotSizeFilter.maxQty)
-      .toNearest(lotSizeFilter.stepSize, Decimal.ROUND_DOWN);
+    roundedQuantity = roundedQuantity.clampedTo(lotSizeFilter.minQty, lotSizeFilter.maxQty);
+  }
+  if (lotSizeFilter && lotSizeFilter.stepSize !== 0) {
+    roundedQuantity = roundedQuantity.toNearest(lotSizeFilter.stepSize, Decimal.ROUND_DOWN);
   }
 
   return roundedQuantity
