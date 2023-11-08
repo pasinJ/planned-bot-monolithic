@@ -215,7 +215,7 @@ function MaxNumKlinesField({ control }: { control: GeneralDetailsFormControl }) 
       controllerProps={{ control, name: 'maxNumKlines' }}
       fieldProps={{
         label: 'Maximum number of klines per execution',
-        className: 'min-w-[25rem] flex-grow',
+        className: 'min-w-[12rem] flex-grow',
         required: true,
       }}
     />

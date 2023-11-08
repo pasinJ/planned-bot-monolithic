@@ -45,7 +45,7 @@ export const capitalCurrencySchema = schemaForType<CapitalCurrency>().with(
   z.union([baseAssetSchema, quoteAssetschema]).brand('CapitalCurrency'),
 );
 export type AssetCurrency = (BaseAsset | QuoteAsset) & z.BRAND<'AssetCurrency'>;
-const assetCurrencySchema = schemaForType<AssetCurrency>().with(
+export const assetCurrencySchema = schemaForType<AssetCurrency>().with(
   z.union([baseAssetSchema, quoteAssetschema]).brand('AssetCurrency'),
 );
 

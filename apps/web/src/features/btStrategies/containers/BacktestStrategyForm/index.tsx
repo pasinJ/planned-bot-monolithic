@@ -50,6 +50,7 @@ const defaultFormsValues: FormsValues = {
   maxNumKlines: '100' as IntegerString,
   btRange: { start: new Date() as ValidDate, end: new Date() as ValidDate },
   capitalCurrency: '',
+  assetCurrency: '',
   initialCapital: '1000' as DecimalString,
   takerFeeRate: '0' as DecimalString,
   makerFeeRate: '0' as DecimalString,
@@ -89,10 +90,14 @@ export default function BacktestStrategyForm() {
     setSelectedSymbol(isNotNil(selectedSymbol) ? o.some(selectedSymbol) : o.none);
 
     setFormsValues((prev) =>
-      prev.capitalCurrency === selectedSymbol?.baseAsset ||
-      prev.capitalCurrency === selectedSymbol?.quoteAsset
-        ? { ...prev, ...formValues }
-        : { ...prev, ...formValues, capitalCurrency: '' },
+      isNotNil(selectedSymbol)
+        ? {
+            ...prev,
+            ...formValues,
+            capitalCurrency: selectedSymbol.quoteAsset,
+            assetCurrency: selectedSymbol.baseAsset,
+          }
+        : { ...prev, ...formValues },
     );
     setGeneralDetails((prev) => (o.isNone(prev) ? o.some(details) : o.some({ ...prev.value, ...details })));
 
@@ -212,6 +217,7 @@ function createDefaultFormValuesFromBtStrategy(btStrategy: BtStrategy): FormsVal
     maxNumKlines: numberToIntegerString(btStrategy.maxNumKlines),
     btRange: btStrategy.btRange,
     capitalCurrency: btStrategy.capitalCurrency,
+    assetCurrency: btStrategy.assetCurrency,
     initialCapital: numberToDecimalString(btStrategy.initialCapital),
     takerFeeRate: numberToDecimalString(btStrategy.takerFeeRate),
     makerFeeRate: numberToDecimalString(btStrategy.makerFeeRate),

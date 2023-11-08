@@ -95,7 +95,7 @@ export const worker = setupWorker(
   rest.get(getExecutionProgressUrl, (_, res, ctx) => {
     const body =
       counter === 0
-        ? { status: 'FAILED', percentage: 0, logs: [] }
+        ? { status: 'PENDING', percentage: 0, logs: [] }
         : counter === 1
         ? { status: 'RUNNING', percentage: 0, logs: [] }
         : counter === 2
