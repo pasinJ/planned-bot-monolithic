@@ -12,7 +12,6 @@
     - [`strategy.inOrdersCapital`](#strategyinorderscapital)
     - [`strategy.availableCapital`](#strategyavailablecapital)
     - [`strategy.assetCurrency`](#strategyassetcurrency)
-    - [`strategy.assetCurrency`](#strategyassetcurrency-1)
     - [`strategy.totalAssetQuantity`](#strategytotalassetquantity)
     - [`strategy.inOrdersAssetQuantity`](#strategyinordersassetquantity)
     - [`strategy.availableAssetQuantity`](#strategyavailableassetquantity)
@@ -110,10 +109,6 @@ Total amount of capital that is in opening orders.<br/>
 ### `strategy.availableCapital`
 Total amount of capital that can be put in a new order.<br/>
 **Type:** `number`
-
-### `strategy.assetCurrency`
-Asset currency. Either base or quote asset.<br/>
-**Type:** `string`
 
 ### `strategy.assetCurrency`
 Asset currency. Either base or quote asset.<br/>
