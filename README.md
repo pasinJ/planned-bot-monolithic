@@ -43,7 +43,7 @@ Crypto trading is a high-risk investment. You should know what you are doing and
 #### HTTP
   ``` console
   foo@bar:~$ git clone git@github.com:pasinJ/planned-bot-monolithic.git
-  foo@bar:~$ cd /planned-bot-monolithic/infra/docker
+  foo@bar:~$ cd ./planned-bot-monolithic/infra/docker
   foo@bar:~$ docker compose up -d frontend
   ```
   - Visit http://localhost
@@ -51,7 +51,7 @@ Crypto trading is a high-risk investment. You should know what you are doing and
   - Note: Generating a self-signed certificate could take a long time.
   ``` console
   foo@bar:~$ git clone git@github.com:pasinJ/planned-bot-monolithic.git
-  foo@bar:~$ cd /planned-bot-monolithic/infra/docker
+  foo@bar:~$ cd ./planned-bot-monolithic/infra/docker
   foo@bar:~$ docker compose -f https.docker-compose.yml up -d frontend
   ```
   - Visit https://localhost
