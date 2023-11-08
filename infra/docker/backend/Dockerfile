@@ -1,19 +1,27 @@
 # syntax=docker/dockerfile:1
 # for using build contexts
 
-FROM node:18.17-alpine as build
+FROM node:18-bookworm-slim as builder
+RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 
-COPY --from=sect . /strategyExecutorContextTypes
-WORKDIR /strategyExecutorContextTypes
+WORKDIR /usr/strategyExecutorContextTypes
+COPY --from=sect package*.json ./
 RUN npm ci
+COPY --from=sect ./ ./
 
-COPY --from=api . /api
-WORKDIR /api
-RUN npm ci --ignore-scripts && npm run build
+WORKDIR /usr/api
+COPY --from=api package*.json ./
+RUN npm ci --ignore-scripts
+COPY --from=api ./ ./
+RUN npm run build
+RUN npm ci --only=production
 
-FROM node:18.17-alpine
-WORKDIR /app
-COPY --from=build /api/package.json /api/package-lock.json /api/tsconfig.json /app/
-COPY --from=build /api/dist /app/dist
-RUN npm ci --omit=dev
-CMD ["npm","start"]
+FROM node:18-bookworm-slim
+ENV NODE_ENV production
+COPY --from=builder /usr/bin/dumb-init /usr/bin/dumb-init
+WORKDIR /usr/backend
+COPY --from=builder --chown=node:node /usr/api/node_modules ./node_modules
+COPY --from=builder --chown=node:node /usr/api/package.json ./package.json
+COPY --from=builder --chown=node:node /usr/api/dist ./dist
+USER node
+CMD ["dumb-init", "node", "--experimental-specifier-resolution=node", "--no-warnings", "./dist/api/src/main.js"]

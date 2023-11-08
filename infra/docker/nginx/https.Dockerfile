@@ -1,20 +1,25 @@
 # syntax=docker/dockerfile:1
 # for using build contexts
 
-FROM node:18.17-alpine as build
+FROM node:18-bookworm-slim as builder
 
-COPY --from=sect . /strategyExecutorContextTypes
-WORKDIR /strategyExecutorContextTypes
-RUN npm ci && npm run genType
+WORKDIR /usr/strategyExecutorContextTypes
+COPY --from=sect package*.json ./
+RUN npm ci
+COPY --from=sect ./ ./
+RUN npm run genType
 
-COPY --from=web . /web
-WORKDIR /web
+WORKDIR /usr/web
+COPY --from=web package*.json ./
+RUN npm ci
+COPY --from=web ./ ./
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN npm ci && npm run build
+RUN npm run build
 
-WORKDIR /nginx
-RUN apk add --update --no-cache openssl
+WORKDIR /usr/nginx
+RUN apt-get update && \
+    apt-get install -y openssl
 ARG DOMAIN_NAME=localhost
 ARG DAYS_VALID=30
 RUN echo "Creating self-signed certificate valid for ${DAYS_VALID} days for domain ${DOMAIN_NAME}" && \
@@ -26,16 +31,15 @@ RUN echo "Creating self-signed certificate valid for ${DAYS_VALID} days for doma
     -keyout /tmp/nginx-selfsigned.key \
     -out /tmp/nginx-selfsigned.crt
 RUN openssl dhparam -out /tmp/dhparam.pem 4096
-COPY ./conf.d/https.default.conf /nginx/conf.d/default.conf
-RUN sed -i "s/<<DOMAIN_NAME>>/${DOMAIN_NAME}/g" /nginx/conf.d/default.conf
+COPY ./conf.d/https.default.conf ./conf.d/default.conf
+RUN sed -i "s/<<DOMAIN_NAME>>/${DOMAIN_NAME}/g" ./conf.d/default.conf
 
 
-# ARG NGINX_VERSION=1.25-alpine
-FROM nginx:1.25-alpine
-COPY --from=build /web/dist /var/www/html
-COPY --from=build /tmp/nginx-selfsigned.key /etc/nginx/ssl/nginx-selfsigned.key
-COPY --from=build /tmp/nginx-selfsigned.crt /etc/nginx/ssl/nginx-selfsigned.crt
-COPY --from=build /tmp/dhparam.pem /etc/nginx/ssl/dhparam.pem
-COPY --from=build /nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+FROM nginx:1.25-bookworm
+COPY --from=builder /usr/web/dist /var/www/html
+COPY --from=builder /tmp/nginx-selfsigned.key /etc/nginx/ssl/nginx-selfsigned.key
+COPY --from=builder /tmp/nginx-selfsigned.crt /etc/nginx/ssl/nginx-selfsigned.crt
+COPY --from=builder /tmp/dhparam.pem /etc/nginx/ssl/dhparam.pem
+COPY --from=builder /usr/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
