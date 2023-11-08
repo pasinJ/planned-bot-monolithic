@@ -62,15 +62,15 @@ it('[WHEN] user create a new strategy for backtesting', () => {
   cy.findByRole('option', { name: symbol.name }).click();
   cy.findByRole('combobox', { name: /timeframe/i }).click();
   cy.findByRole('option', { name: /1 hour/i }).click();
-  cy.findByRole('textbox', { name: /maximum number of candlesticks/i }).type(`{selectall}${200}`);
+  cy.findByRole('textbox', { name: /maximum number of klines/i }).type(`{selectall}${200}`);
   cy.findByRole('textbox', { name: /start timestamp/i }).type(`10/10/2022 12:00`);
   cy.findByRole('textbox', { name: /end timestamp/i }).type(`10/10/2022 14:00`);
 
   interceptGetKlines([mockKline()]);
   cy.findByRole('button', { name: /next/i }).click();
 
-  cy.findByRole('combobox', { name: /capital currency/i }).click();
-  cy.findByRole('option', { name: symbol.quoteAsset }).click();
+  // cy.findByRole('combobox', { name: /capital currency/i }).click();
+  // cy.findByRole('option', { name: symbol.quoteAsset }).click();
   cy.findByRole('textbox', { name: /initial capital/i }).type(`{selectall}${200}`);
   cy.findByRole('textbox', { name: /taker fee rate/i }).type(`{selectall}${0.1}`);
   cy.findByRole('textbox', { name: /maker fee rate/i }).type(`{selectall}${0.2}`);

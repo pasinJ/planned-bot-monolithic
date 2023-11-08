@@ -30,6 +30,7 @@ import DecimalFieldRf from '#components/DecimalFieldRf';
 import MaterialSymbol from '#components/MaterialSymbol';
 import SelectFieldRf from '#components/SelectFieldRf';
 import StrategyEditor from '#components/StrategyEditor';
+import TextFieldRf from '#components/TextFieldRf';
 import TechnicalChart from '#containers/TechnicalChart';
 import {
   AssetCurrency,
@@ -39,6 +40,7 @@ import {
   MakerFeeRate,
   StrategyLanguage,
   TakerFeeRate,
+  assetCurrencySchema,
   btStrategyBodySchema,
   capitalCurrencySchema,
   getAssetCurrency,
@@ -83,6 +85,7 @@ type StrategyDetailsFormControl = Control<StrategyDetailsFormValues>;
 
 export type StrategyDetailsFormValues = {
   capitalCurrency: BaseAsset | QuoteAsset | '';
+  assetCurrency: BaseAsset | QuoteAsset | '';
   initialCapital: DecimalString;
   takerFeeRate: DecimalString;
   makerFeeRate: DecimalString;
@@ -91,6 +94,7 @@ export type StrategyDetailsFormValues = {
 };
 export type StrategyDetails = {
   capitalCurrency: CapitalCurrency;
+  assetCurrency: AssetCurrency;
   initialCapital: InitialCapital;
   takerFeeRate: TakerFeeRate;
   makerFeeRate: MakerFeeRate;
@@ -102,6 +106,7 @@ const strategyDetailsSchema = schemaForType<StrategyDetails>().with(
     capitalCurrency: z
       .string({ invalid_type_error: 'Capital currency is required' })
       .pipe(capitalCurrencySchema),
+    assetCurrency: z.string().pipe(assetCurrencySchema),
     initialCapital: z.coerce.number().pipe(initialCapitalSchema),
     takerFeeRate: z.coerce.number().pipe(takerFeeRateSchema),
     makerFeeRate: z.coerce.number().pipe(makerFeeRateSchema),
@@ -162,14 +167,13 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
     if (errors.body) return editorRef.current?.focus();
 
     void handleSubmit((strategyDetails) => {
-      const assetCurrency = getAssetCurrency(selectedSymbol, strategyDetails.capitalCurrency);
-      const newRequest = { ...generalDetails, ...strategyDetails, assetCurrency };
+      const saveReq = { ...generalDetails, ...strategyDetails };
 
       void saveBtStrategy
-        .mutateAsync(newRequest)
+        .mutateAsync(saveReq)
         .then((btStrategyId) => executeBtStrategy.mutateAsync(btStrategyId))
-        .then(({ id }) => setLastExecution(o.some({ btExecutionId: id, request: newRequest })))
-        .then(() => moveToNextTab(getValues(), { ...strategyDetails, assetCurrency }));
+        .then(({ id }) => setLastExecution(o.some({ btExecutionId: id, request: saveReq })))
+        .then(() => moveToNextTab(getValues(), strategyDetails));
     })(e);
   };
 
@@ -188,6 +192,7 @@ function StrategyDetailsForm(props: StrategyDetailsFormProps) {
       <form className="flex flex-col gap-y-4" onSubmit={handleSubmitForm}>
         <div className="mt-4 flex flex-wrap gap-x-6">
           <CapitalCurrencyField control={control} selectedSymbol={selectedSymbol} />
+          <AssetCurrencyField control={control} />
           <InitialCapitalField control={control} />
           <div className="flex flex-grow flex-wrap gap-x-6">
             <TakerFeeRateField control={control} />
@@ -243,6 +248,7 @@ function CapitalCurrencyField(props: {
         label: 'Capital currency',
         labelId: 'capital-currency-label',
         required: true,
+        disabled: true,
       }}
     >
       <MenuItem value={''}>None</MenuItem>
@@ -254,6 +260,21 @@ function CapitalCurrencyField(props: {
           ))
         : undefined}
     </SelectFieldRf>
+  );
+}
+function AssetCurrencyField(props: { control: StrategyDetailsFormControl }) {
+  const { control } = props;
+
+  return (
+    <TextFieldRf
+      controllerProps={{ control, name: 'assetCurrency' }}
+      fieldProps={{
+        id: 'asset-currency',
+        label: 'Asset currency',
+        required: true,
+        disabled: true,
+      }}
+    />
   );
 }
 function InitialCapitalField({ control }: { control: StrategyDetailsFormControl }) {
