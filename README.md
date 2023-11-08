@@ -3,7 +3,7 @@
   <h1>Planned</h1>
 </div>
 
-Planned is a **crypto trading bot system** that will allow you to develop trading strategies and execute them automatically in a real-time market.
+Planned is a **crypto trading bot system** that allow you to develop your own trading strategies and execute them automatically in a real-time market.
 
 The main purpose of this system isn't to provide you with out-of-the-box smart fancy strategies that take your money and make you rich. It's just a tool that provides you a way to develop your strategies through <u>backtesting</u> and <u>forward testing</u> then it will execute them as you **"planned"**.
 
