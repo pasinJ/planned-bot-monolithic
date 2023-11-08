@@ -1,4 +1,4 @@
-# Orders
+# Orders Module
 
 - [Orders](#orders)
     - [`orders.enterMarket`](#ordersentermarket)
