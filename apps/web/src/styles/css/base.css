@@ -1,0 +1,12 @@
+@layer base {
+  body > div#root {
+    min-height: 100vh;
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+  img {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+  }
+}

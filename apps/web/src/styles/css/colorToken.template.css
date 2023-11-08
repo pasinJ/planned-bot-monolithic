@@ -1,0 +1,78 @@
+@layer base {
+  :root {
+    --primary-color: '%LT_PRIMARY%';
+    --primary-light-color: '%LT_PRIMARY_LIGHT%';
+    --primary-dark-color: '%LT_PRIMARY_DARK%';
+    --secondary-color: '%LT_SECONDARY%';
+    --secondary-light-color: '%LT_SECONDARY_LIGHT%';
+    --secondary-dark-color: '%LT_SECONDARY_DARK%';
+    --success-color: '%LT_SUCCESS%';
+    --success-light-color: '%LT_SUCCESS_LIGHT%';
+    --success-dark-color: '%LT_SUCCESS_DARK%';
+    --info-color: '%LT_INFO%';
+    --info-light-color: '%LT_INFO_LIGHT%';
+    --info-dark-color: '%LT_INFO_DARK%';
+    --warn-color: '%LT_WARN%';
+    --warn-light-color: '%LT_WARN_LIGHT%';
+    --warn-dark-color: '%LT_WARN_DARK%';
+    --error-color: '%LT_ERROR%';
+    --error-light-color: '%LT_ERROR_LIGHT%';
+    --error-dark-color: '%LT_ERROR_DARK%';
+
+    --text-color: '%LT_TEXT%';
+    --text-secondary-color: '%LT_TEXT_SECONDARY%';
+    --text-disabled-color: '%LT_TEXT_DISABLE%';
+    --text-on-primary-color: '%LT_TEXT_ON_PRIMARY%';
+    --text-on-secondary-color: '%LT_TEXT_ON_SECONDARY%';
+    --text-on-success-color: '%LT_TEXT_ON_SUCCESS%';
+    --text-on-info-color: '%LT_TEXT_ON_INFO%';
+    --text-on-warn-color: '%LT_TEXT_ON_WARN%';
+    --text-on-error-color: '%LT_TEXT_ON_ERROR%';
+
+    --outline-color: '%LT_OUTLINE%';
+
+    --background-color: '%LT_BG%';
+    --surface-color: '%LT_SURFACE%';
+
+    --up-color: '%LT_UP_COLOR%';
+    --down-color: '%LT_DOWN_COLOR%';
+  }
+  :root .dark {
+    --primary-color: '%DT_PRIMARY%';
+    --primary-light-color: '%DT_PRIMARY_LIGHT%';
+    --primary-dark-color: '%DT_PRIMARY_DARK%';
+    --secondary-color: '%DT_SECONDARY%';
+    --secondary-light-color: '%DT_SECONDARY_LIGHT%';
+    --secondary-dark-color: '%DT_SECONDARY_DARK%';
+    --success-color: '%DT_SUCCESS%';
+    --success-light-color: '%DT_SUCCESS_LIGHT%';
+    --success-dark-color: '%DT_SUCCESS_DARK%';
+    --info-color: '%DT_INFO%';
+    --info-light-color: '%DT_INFO_LIGHT%';
+    --info-dark-color: '%DT_INFO_DARK%';
+    --warn-color: '%DT_WARN%';
+    --warn-light-color: '%DT_WARN_LIGHT%';
+    --warn-dark-color: '%DT_WARN_DARK%';
+    --error-color: '%DT_ERROR%';
+    --error-light-color: '%DT_ERROR_LIGHT%';
+    --error-dark-color: '%DT_ERROR_DARK%';
+
+    --text-color: '%DT_TEXT%';
+    --text-secondary-color: '%DT_TEXT_SECONDARY%';
+    --text-disabled-color: '%DT_TEXT_DISABLE%';
+    --text-onPrimary-color: '%DT_TEXT_ON_PRIMARY%';
+    --text-onSecondary-color: '%DT_TEXT_ON_SECONDARY%';
+    --text-onSuccess-color: '%DT_TEXT_ON_SUCCESS%';
+    --text-onInfo-color: '%DT_TEXT_ON_INFO%';
+    --text-onWarn-color: '%DT_TEXT_ON_WARN%';
+    --text-onError-color: '%DT_TEXT_ON_ERROR%';
+
+    --outline-color: '%DT_OUTLINE%';
+
+    --background-color: '%DT_BG%';
+    --surface-color: '%DT_SURFACE%';
+
+    --up-color: '%DT_UP_COLOR%';
+    --down-color: '%DT_DOWN_COLOR%';
+  }
+}

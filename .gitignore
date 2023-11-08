@@ -1,0 +1,6 @@
+.env*
+!**/.env.template
+
+infra/docker/mongoDb/data
+
+.scannerwork

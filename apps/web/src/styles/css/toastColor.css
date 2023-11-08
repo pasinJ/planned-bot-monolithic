@@ -1,0 +1,22 @@
+@layer base {
+  :root {
+    --toastify-color-light: 18, 18, 18;
+    --toastify-color-dark: 255, 255, 255;
+    --toastify-color-info: 41, 182, 246;
+    --toastify-color-success: 102, 187, 106;
+    --toastify-color-warning: 255, 167, 38;
+    --toastify-color-error: 244, 67, 54;
+    --toastify-text-color-light: 255, 255, 255;
+    --toastify-text-color-dark: rgba(0, 0, 0, 0.87);
+  }
+  :root .dark {
+    --toastify-color-light: 18, 18, 18;
+    --toastify-color-dark: 255, 255, 255;
+    --toastify-color-info: 41, 182, 246;
+    --toastify-color-success: 102, 187, 106;
+    --toastify-color-warning: 255, 167, 38;
+    --toastify-color-error: 244, 67, 54;
+    --toastify-text-color-light: 255, 255, 255;
+    --toastify-text-color-dark: rgba(0, 0, 0, 0.87);
+  }
+}

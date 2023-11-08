@@ -1,0 +1,31 @@
+{
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "material-icon-theme.files.associations": {
+    "*.itest.ts": "test-ts",
+    "*.cy.ts": "cypress"
+  },
+  "material-icon-theme.folders.associations": {
+    "jest": "test",
+    "test-utils": "test"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["Classes \\=([^;]*);", "'([^']*)'"],
+    ["Classes \\=([^;]*);", "\"([^\"]*)\""],
+    ["Classes \\=([^;]*);", "\\`([^\\`]*)\\`"],
+    ["ClassName \\=([^;]*);", "'([^']*)'"],
+    ["ClassName \\=([^;]*);", "\"([^\"]*)\""],
+    ["ClassName \\=([^;]*);", "\\`([^\\`]*)\\`"],
+    ["Tw \\=([^;]*);", "'([^']*)'"],
+    ["Tw \\=([^;]*);", "\"([^\"]*)\""],
+    ["Tw \\=([^;]*);", "\\`([^\\`]*)\\`"],
+    ["[a-zA-Z]+Props=\\{\\{([^}}]+)\\}\\}", "'([^']*)'"],
+    ["[a-zA-Z]+Props=\\{\\{([^}}]+)\\}\\}", "\"([^\"]*)\""],
+    ["[a-zA-Z]+Props=\\{\\{([^}}]+)\\}\\}", "\\`([^\\`]*)\\`"]
+  ],
+  "tailwindCSS.classAttributes": ["class", "className", "ngClass", "classes"],
+  "files.exclude": {
+    "**/.git": false
+  },
+  "npm.packageManager": "npm",
+  "mui-snippets.importPaths": "second level"
+}

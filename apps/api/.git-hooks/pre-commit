@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Stop execution instantly while having a non-zero status.
+set -e
+
+echo "[INFO] Pre-commit hook of API project"
+
+changeNum=$(git diff --staged --name-only -- apps/api | wc -l)
+
+if [ $changeNum != 0 ]; then
+    CURRENT_DIR=$(dirname "$0")
+    cd $CURRENT_DIR/../
+
+    npx lint-staged
+    npm run test:u -- --onlyChanged
+    
+    echo "[INFO] Pre-commit hook of API project done"
+else
+    echo "[INFO] Skipped because no changes from this directory is being committed"
+fi

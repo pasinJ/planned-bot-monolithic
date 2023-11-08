@@ -1,0 +1,26 @@
+#!/bin/bash
+
+echo "[INFO] Starting execute pre-commit hook"
+
+hooks=( $( find . \
+            \( -path node_modules -o -path ./.git-hooks \) -prune -o \
+            \( -path "*/.git-hooks/pre-commit" -type f -executable \) -print \
+        ) )
+
+echo "[INFO] Found ${#hooks[@]} pre-commit scripts in sub-directories"
+echo "====================================================================="
+
+for hook in ${hooks[@]}
+do
+    echo "[INFO] Starting execute pre-commit script ($hook)"
+    sh $hook
+
+    exitCode="$?"
+    if [ $exitCode != 0 ]; then
+        RED='\033[0;31m'
+	    END_STYLE='\033[0m'
+        echo -e "${RED}[ERROR]${END_STYLE} Pre-commit hook ($hook) exited with code $exitCode"
+        exit $exitCode
+    fi
+    echo "====================================================================="
+done

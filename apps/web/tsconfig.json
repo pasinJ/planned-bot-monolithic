@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "#assets/*": ["src/assets/*"],
+      "#components/*": ["src/components/*"],
+      "#containers/*": ["src/containers/*"],
+      "#features/*": ["src/features/*"],
+      "#hooks/*": ["src/hooks/*"],
+      "#infra/*": ["src/infra/*"],
+      "#layouts/*": ["src/layouts/*"],
+      "#pages/*": ["src/pages/*"],
+      "#routes/*": ["src/routes/*"],
+      "#state/*": ["src/state/*"],
+      "#styles/*": ["src/styles/*"],
+      "#shared/*": ["src/shared/*"],
+      "#test-utils/*": ["test-utils/*"]
+    }
+  },
+  "include": [
+    "src",
+    "types",
+    "test-utils",
+    "mocks",
+    "../strategyExecutorContextTypes/dist/index.d.cts",
+    "tailwind.config.ts",
+    "tailwind.tremor.config.ts"
+  ]
+}

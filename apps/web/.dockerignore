@@ -1,0 +1,10 @@
+.git-hooks
+.scannerwork
+cypress
+dist
+env
+jest
+node_modules
+.eslintcache
+.sonarscan.cjs
+README.md

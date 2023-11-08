@@ -1,0 +1,78 @@
+@layer base {
+  :root {
+    --primary-color: 0, 150, 136;
+    --primary-light-color: 51, 171, 159;
+    --primary-dark-color: 0, 105, 95;
+    --secondary-color: 255, 160, 0;
+    --secondary-light-color: 255, 179, 51;
+    --secondary-dark-color: 178, 112, 0;
+    --success-color: 46, 125, 50;
+    --success-light-color: 76, 175, 80;
+    --success-dark-color: 27, 94, 32;
+    --info-color: 2, 136, 209;
+    --info-light-color: 3, 169, 244;
+    --info-dark-color: 1, 87, 155;
+    --warn-color: 237, 108, 2;
+    --warn-light-color: 255, 152, 0;
+    --warn-dark-color: 230, 81, 0;
+    --error-color: 211, 47, 47;
+    --error-light-color: 239, 83, 80;
+    --error-dark-color: 198, 40, 40;
+
+    --text-color: rgba(0, 0, 0, 0.87);
+    --text-secondary-color: rgba(0, 0, 0, 0.6);
+    --text-disabled-color: rgba(0, 0, 0, 0.38);
+    --text-on-primary-color: 255, 255, 255;
+    --text-on-secondary-color: rgba(0, 0, 0, 0.87);
+    --text-on-success-color: 255, 255, 255;
+    --text-on-info-color: 255, 255, 255;
+    --text-on-warn-color: 255, 255, 255;
+    --text-on-error-color: 255, 255, 255;
+
+    --outline-color: rgba(0, 0, 0, 0.12);
+
+    --background-color: 255, 255, 255;
+    --surface-color: 255, 255, 255;
+
+    --up-color: 52, 211, 153;
+    --down-color: 244, 63, 94;
+  }
+  :root .dark {
+    --primary-color: 0, 150, 136;
+    --primary-light-color: 51, 171, 159;
+    --primary-dark-color: 0, 105, 95;
+    --secondary-color: 255, 160, 0;
+    --secondary-light-color: 255, 179, 51;
+    --secondary-dark-color: 178, 112, 0;
+    --success-color: 102, 187, 106;
+    --success-light-color: 129, 199, 132;
+    --success-dark-color: 56, 142, 60;
+    --info-color: 41, 182, 246;
+    --info-light-color: 79, 195, 247;
+    --info-dark-color: 2, 136, 209;
+    --warn-color: 255, 167, 38;
+    --warn-light-color: 255, 183, 77;
+    --warn-dark-color: 245, 124, 0;
+    --error-color: 244, 67, 54;
+    --error-light-color: 229, 115, 115;
+    --error-dark-color: 211, 47, 47;
+
+    --text-color: 255, 255, 255;
+    --text-secondary-color: rgba(255, 255, 255, 0.7);
+    --text-disabled-color: rgba(255, 255, 255, 0.5);
+    --text-onPrimary-color: 255, 255, 255;
+    --text-onSecondary-color: rgba(0, 0, 0, 0.87);
+    --text-onSuccess-color: rgba(0, 0, 0, 0.87);
+    --text-onInfo-color: rgba(0, 0, 0, 0.87);
+    --text-onWarn-color: rgba(0, 0, 0, 0.87);
+    --text-onError-color: 255, 255, 255;
+
+    --outline-color: rgba(255, 255, 255, 0.12);
+
+    --background-color: 18, 18, 18;
+    --surface-color: 18, 18, 18;
+
+    --up-color: 38, 166, 154;
+    --down-color: 255, 82, 82;
+  }
+}

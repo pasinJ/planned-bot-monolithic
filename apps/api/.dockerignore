@@ -1,0 +1,12 @@
+.env
+.husky
+.DS_Store
+
+dist
+e2e
+jest
+logs
+node_modules
+test-utils
+
+README.md

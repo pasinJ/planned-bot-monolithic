@@ -1,0 +1,34 @@
+{
+  "name": "strategymodulestype",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "genType": "tsup && replace-in-file --configFile=post-processing.cjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tsconfig/node-lts": "^18.12.5",
+    "@types/lodash": "^4.14.199",
+    "replace-in-file": "^7.0.1",
+    "ts-essentials": "^9.4.1",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2",
+    "zod": "^3.22.4"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "target": "es2016",
+    "outDir": "./dist",
+    "dts": {
+      "resolve": true,
+      "only": true
+    },
+    "clean": true
+  }
+}

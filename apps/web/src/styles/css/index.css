@@ -1,0 +1,13 @@
+@import 'tailwindcss/base';
+@import './base.css';
+@import './colorToken.css';
+@import './toastColor.css';
+@import './fontSize.css';
+
+@import './components.css';
+@import 'tailwindcss/components';
+
+@import './utils.css';
+@import 'tailwindcss/utilities';
+
+@config "../../../tailwind.config.ts";
