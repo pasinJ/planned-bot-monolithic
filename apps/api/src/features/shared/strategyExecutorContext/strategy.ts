@@ -58,7 +58,6 @@ export function initiateStrategyModule(
 ): StrategyModule {
   return {
     name: request.name,
-    exchange: request.exchange,
     symbol,
     timeframe: request.timeframe,
     takerFeeRate: request.takerFeeRate,

@@ -1,4 +1,4 @@
-import { omit } from 'ramda';
+import { dissoc, omit } from 'ramda';
 
 import { mockBnbSymbol } from '#test-utils/features/shared/bnbSymbol.js';
 import {
@@ -54,7 +54,7 @@ describe('UUT: Initiate strategy module', () => {
       const result = initiateStrategyModule(request, symbol);
 
       expect(result).toEqual({
-        ...request,
+        ...dissoc('exchange', request),
         symbol,
         totalCapital: request.initialCapital,
         inOrdersCapital: 0,
